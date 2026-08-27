@@ -28,3 +28,10 @@ yarn-error.log*
 # misc
 *.local
 .env*.local
+
+# rust
+target/
+**/*.rs.bk
+.cargo/
+Cargo.lock.bak
+*.pdb

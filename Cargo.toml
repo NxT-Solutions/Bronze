@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = [
+    "bronze-domain",
+    "bronze-capture",
+    "bronze-storage",
+    "bronze-settings",
+    "bronze-diagnostics",
+    "bronze-platform",
+    "bronze-platform-macos",
+]
