@@ -14,7 +14,9 @@ location: docs/06-system-architecture.md, docs/14-agentic-implementation-plan.md
 source_spec: `1-3-scaffold-cargo-workspace.md`
 severity: low
 reason: architecture spine and later stories reference them; 1.3 scope was only crates + verify
-status: open
+status: done 2026-08-27
+resolution: resolved by sweep bundle dw-crate-path-doc-cross-refs
+resolution-undo: 9cbed12e8a32fa3c3ed3af4f75f83dfe1921ec5d390e1a7b8d4a821f26ace450 2026-08-27 7374617475733a206f70656e
 
 ### DW-3: Follow-up review still recommended for 1-5-empty-tauri-app-with-csp-deny after the damping cap was spent
 origin: review-budget-followup
@@ -86,4 +88,52 @@ location: _bmad-output/implementation-artifacts/1-8-workspace-verify-aggregate.m
 source_spec: `spec-dw-1-cargo-fmt-clippy-verify-gates.md`
 severity: low
 reason: 1-8 spec AC, design note, and epics.md describe "cargo test --workspace" without the new gates; no later story owns the aggregate per DW-1.
+status: open
+
+### DW-12: Stale `crates/` references and missing bronze-settings cross-reference remain in other planning artifacts (ARCHITECTURE-SPINE.md, 1-3 spec, epic context) after the targeted update.
+origin: spec-deferred 046fa2989049
+location: _bmad-output/planning-artifacts/architecture/architecture-bronze-app-2026-08-27/ARCHITECTURE-SPINE.md:204
+source_spec: `spec-dw-2-crate-path-doc-cross-refs.md`
+severity: low
+reason: DW-2 bundle intent and spec explicitly limited the scope to exactly docs/06-system-architecture.md and docs/14-agentic-implementation-plan.md; other files that duplicated the old diagrams were intentionally untouched.
+status: open
+
+### DW-13: Updated tree diagrams omit root-level peers (Cargo.toml, package.json, tooling/, docs/) and do not document cargo vs pnpm/turbo manager differences for the sibling entries.
+origin: spec-deferred 983821958004
+location: docs/06-system-architecture.md:181 ; docs/14-agentic-implementation-plan.md:36
+source_spec: `spec-dw-2-crate-path-doc-cross-refs.md`
+severity: low
+reason: Pre-existing abbreviated diagram style; narrow intent asked only to remove the fictional crates/ prefix and add the one table row.
+status: open
+
+### DW-14: Ownership table now lists bronze-settings but still omits apps/desktop/src-tauri (a workspace member) and the new row is the only one using (SET-*) requirement tag.
+origin: spec-deferred cea7016c5836
+location: docs/06-system-architecture.md:207
+source_spec: `spec-dw-2-crate-path-doc-cross-refs.md`
+severity: low
+reason: Table historically listed selective packages; the inserted row text was taken verbatim from the spec's prescribed value for this DW.
+status: open
+
+### DW-15: 06 and 14 diagrams remain asymmetric (no JS/Rust grouping, different fence styles ~~~ vs ```, asymmetric coverage of tooling/docs/test-support, src vs src-tauri naming).
+origin: spec-deferred 64ef912fbeda
+location: n/a
+source_spec: `spec-dw-2-crate-path-doc-cross-refs.md`
+severity: low
+reason: Pre-existing inconsistencies between the two documents' views of the layout; this change only performed the crate flattening and single table addition.
+status: open
+
+### DW-16: bronze-settings "Must not own" column lists "capture decisions" which overlaps the responsibility stated for bronze-capture.
+origin: spec-deferred eaec7c729565
+location: docs/06-system-architecture.md:207
+source_spec: `spec-dw-2-crate-path-doc-cross-refs.md`
+severity: low
+reason: Exact row text (including the must-not phrase) was dictated by the spec's "using:" instruction derived from the bundle intent.
+status: open
+
+### DW-17: docs/14 bronze-domain comment still says "capture state/result", which contradicts the 06 domain ownership row (entities/lifecycle/undo) and belongs with bronze-capture.
+origin: spec-deferred bd3d34b39201
+location: docs/14-agentic-implementation-plan.md:36
+source_spec: `spec-dw-2-crate-path-doc-cross-refs.md`
+severity: low
+reason: Pre-existing 14 comment text was preserved on flatten; 06 domain row is "Entities, lifecycle, order, undo invariants" while 14 labels bronze-domain with capture state/result at root indent.
 status: open
