@@ -28,6 +28,7 @@ Research cutoff: **2026-08-27**. Working name: **Bronze**; renameable before imp
 20. [Sources and evidence](docs/19-sources.md)
 21. [Implementation bootstrap](docs/20-implementation-bootstrap.md)
 22. [Pre-implementation reconciliation](docs/21-preimplementation-reconciliation.md)
+23. [bmad-loop policy](docs/22-bmad-loop-policy.md)
 
 Implementation agents: [Bronze agent instructions](AGENTS.md).
 
