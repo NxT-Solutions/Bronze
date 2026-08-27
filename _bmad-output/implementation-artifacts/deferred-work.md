@@ -76,7 +76,9 @@ location: packages/ui/src/styles/globals.test.ts:12
 source_spec: `1-8-workspace-verify-aggregate.md`
 severity: medium
 reason: Pre-existing Story 1.7 test; still passed after hygiene stripped !important. This review restored !important but did not extend the test.
-status: open
+status: done 2026-08-27
+resolution: resolved by sweep bundle dw-globals-a11y-important-tests
+resolution-undo: 02d83bf315ea5c8706dc9e070754e26a382a998ff08d84abc9aca036a67a5059 2026-08-27 7374617475733a206f70656e
 
 ### DW-10: The root verify script addition has no automated regression guard; presence of the fmt/clippy sub-commands (and their fail-closed ordering) is asserted only by manual grep inside this spec and ad-hoc
 origin: spec-deferred ab433c465df9
