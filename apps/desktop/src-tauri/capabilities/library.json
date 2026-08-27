@@ -1,0 +1,9 @@
+{
+  "identifier": "library",
+  "description": "Capability for the library window",
+  "local": true,
+  "windows": ["library"],
+  "permissions": [
+    "core:default"
+  ]
+}

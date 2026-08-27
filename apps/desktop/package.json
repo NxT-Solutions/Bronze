@@ -1,5 +1,14 @@
 {
   "name": "desktop",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.11.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
 }

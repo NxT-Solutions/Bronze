@@ -13,3 +13,11 @@ source_spec: `1-3-scaffold-cargo-workspace.md`
 severity: low
 reason: architecture spine and later stories reference them; 1.3 scope was only crates + verify
 status: open
+
+### DW-3: Follow-up review still recommended for 1-5-empty-tauri-app-with-csp-deny after the damping cap was spent
+origin: review-budget-followup
+location: n/a
+source_spec: `1-5-empty-tauri-app-with-csp-deny.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260827-110451-2bb6; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
