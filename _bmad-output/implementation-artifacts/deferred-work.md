@@ -32,7 +32,9 @@ location: packages/i18n/src/formatters.ts:1
 source_spec: `1-6-i18n-catalogs-and-pseudo-locales.md`
 severity: low
 reason: no other callers yet; story focused on catalog+validate+fallback gate; full formatters belong with UI consumption stories
-status: open
+status: done 2026-08-27
+resolution: resolved by sweep bundle dw-i18n-adapter-and-formatters
+resolution-undo: 4e1b85342874265351d02e2c5380b03d7471802bdbb7f580577ef76fcd5fc723 2026-08-27 7374617475733a206f70656e
 
 ### DW-5: no Bronze adapter wrapper or typed t() facade exported; createI18n returns raw i18next instance
 origin: spec-deferred 6b8c7f8970b8
@@ -40,7 +42,9 @@ location: packages/i18n/src/create-i18n.ts:37
 source_spec: `1-6-i18n-catalogs-and-pseudo-locales.md`
 severity: medium
 reason: ADR-014 and docs/11 call for "Bronze localization adapter"; later UI stories will need stable surface
-status: open
+status: done 2026-08-27
+resolution: resolved by sweep bundle dw-i18n-adapter-and-formatters
+resolution-undo: 4e1b85342874265351d02e2c5380b03d7471802bdbb7f580577ef76fcd5fc723 2026-08-27 7374617475733a206f70656e
 
 ### DW-6: extract script and generated-message-ids regeneration not wired; manual seed only
 origin: spec-deferred 1b06d7df56ab
@@ -136,4 +140,20 @@ location: docs/14-agentic-implementation-plan.md:36
 source_spec: `spec-dw-2-crate-path-doc-cross-refs.md`
 severity: low
 reason: Pre-existing 14 comment text was preserved on flatten; 06 domain row is "Entities, lifecycle, order, undo invariants" while 14 labels bronze-domain with capture state/result at root indent.
+status: open
+
+### DW-18: REACT_SIDE_EFFECT is specified as useTranslation() in a component; tests only assert getI18n() after createI18n because @bronze/i18n has no React runtime or renderer and Never forbids new dependency p
+origin: spec-deferred 2b881cd5cf0c
+location: packages/i18n/test/locale.test.ts:132
+source_spec: `spec-dw-i18n-adapter-and-formatters.md`
+severity: medium
+reason: packages/i18n/package.json has react-i18next but no react/react-dom; vitest environment is node; intent matrix names useTranslation in a component; getI18n().t is a singleton proxy.
+status: open
+
+### DW-19: Each createI18n() call does createInstance().use(initReactI18next), which rebinds react-i18next's module singleton to the latest instance.
+origin: spec-deferred 0e40572d2ddc
+location: packages/i18n/src/create-i18n.ts:35
+source_spec: `spec-dw-i18n-adapter-and-formatters.md`
+severity: medium
+reason: Tests already invoke createI18n multiple times (en, en-XA, zh-Hant-HK, pt-BR). getI18n() reflects the last init. Pre-existed before this story's adapter wrap.
 status: open
