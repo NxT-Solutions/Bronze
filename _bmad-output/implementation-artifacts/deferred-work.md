@@ -4,7 +4,9 @@ location: tooling/planning-checks.py
 source_spec: `1-3-scaffold-cargo-workspace.md`
 severity: low
 reason: verification-gap reviewer and emit_epics.py show cargo commands are story-specific; aggregate in 1.8; current run exercised manually
-status: open
+status: done 2026-08-27
+resolution: resolved by sweep bundle dw-cargo-fmt-clippy-verify-gates
+resolution-undo: 65221d4f1b11eff0ac4987a215f01d214b9fc51b922cea9a5ea231208d398ee6 2026-08-27 7374617475733a206f70656e
 
 ### DW-2: cross-references to new crates missing from planning docs and apps/desktop package metadata
 origin: spec-deferred cf822f742eeb
@@ -68,4 +70,20 @@ location: packages/ui/src/styles/globals.test.ts:12
 source_spec: `1-8-workspace-verify-aggregate.md`
 severity: medium
 reason: Pre-existing Story 1.7 test; still passed after hygiene stripped !important. This review restored !important but did not extend the test.
+status: open
+
+### DW-10: The root verify script addition has no automated regression guard; presence of the fmt/clippy sub-commands (and their fail-closed ordering) is asserted only by manual grep inside this spec and ad-hoc
+origin: spec-deferred ab433c465df9
+location: package.json:7
+source_spec: `spec-dw-1-cargo-fmt-clippy-verify-gates.md`
+severity: medium
+reason: Removing the two subcommands from package.json:7 lets `pnpm verify` still exit 0 (biome+turbo+cargo-test+planning pass); only manual inspection or deliberate violation demos (which are not part of recurring gates) would catch omission. Matches the verification style used for cargo test in 1.8.
+status: open
+
+### DW-11: Story 1.8 ACs and related planning docs continue to list the verify aggregate as containing only cargo test for the Rust side (fmt/clippy still appear deferred or omitted).
+origin: spec-deferred aafb20b1cc07
+location: _bmad-output/implementation-artifacts/1-8-workspace-verify-aggregate.md , epics.md
+source_spec: `spec-dw-1-cargo-fmt-clippy-verify-gates.md`
+severity: low
+reason: 1-8 spec AC, design note, and epics.md describe "cargo test --workspace" without the new gates; no later story owns the aggregate per DW-1.
 status: open
