@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+/* Bronze design tokens - system fonts only (SEC-001), no remote */
+:root {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Light (from DESIGN.md) */
+  --background: #f7f4ef;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --muted: #efe8de;
+  --muted-foreground: #5c564e;
+  --border: #756b60;
+  --input: #756b60;
+  --ring: #8c6239;
+  --primary: #8c6239;
+  --primary-foreground: #ffffff;
+  --accent: #c4a265;
+  --accent-foreground: #1c1917;
+  --success: #2f6f4f;
+  --success-foreground: #ffffff;
+  --warning: #8a4e0e;
+  --warning-foreground: #ffffff;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --secondary: #efe8de;
+  --secondary-foreground: #1c1917;
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: #1a1714;
+  --foreground: #f7f4ef;
+  --card: #2a2520;
+  --card-foreground: #f7f4ef;
+  --muted: #2a2520;
+  --muted-foreground: #e3d5c3;
+  --border: #a3988a;
+  --input: #a3988a;
+  --ring: #d4b483;
+  --primary: #d4b483;
+  --primary-foreground: #1a1714;
+  --accent: #d4b483;
+  --accent-foreground: #1a1714;
+  --success: #7bc49a;
+  --success-foreground: #1a1714;
+  --warning: #e0b070;
+  --warning-foreground: #1a1714;
+  --destructive: #f0a8a0;
+  --destructive-foreground: #1a1714;
+  --secondary: #2a2520;
+  --secondary-foreground: #f7f4ef;
+}
+
+/* shadcn/aria style tokens bridge */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+}
+
+/* Visible focus - do not remove without replacement */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Reduce Motion hook (A11Y-003) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Increase Contrast hook (A11Y-003) - strengthen borders, ring, no subtle */
+@media (prefers-contrast: more) {
+  :root {
+    --border: #000000;
+    --input: #000000;
+    --ring: #000000;
+    --muted-foreground: #000000;
+  }
+  .dark {
+    --border: #ffffff;
+    --input: #ffffff;
+    --ring: #ffffff;
+    --muted-foreground: #ffffff;
+  }
+  button,
+  [role="button"],
+  input,
+  textarea,
+  [role="dialog"] {
+    border-width: 2px !important;
+  }
+}
+
+/* Base resets for semantic UI */
+body {
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
+}

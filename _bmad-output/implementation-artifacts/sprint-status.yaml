@@ -42,7 +42,7 @@ development_status:
   1-4-scaffold-swift-package: done
   1-5-empty-tauri-app-with-csp-deny: done
   1-6-i18n-catalogs-and-pseudo-locales: done
-  1-7-shadcn-react-aria-foundation: ready-for-dev
+  1-7-shadcn-react-aria-foundation: done
   1-8-workspace-verify-aggregate: ready-for-dev
   epic-1-retrospective: optional
 

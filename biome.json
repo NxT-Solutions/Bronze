@@ -1,0 +1,14 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "formatWithErrors": true },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": { "useSemanticElements": "warn" },
+      "complexity": { "noImportantStyles": "warn" }
+    }
+  },
+  "javascript": { "formatter": { "quoteStyle": "double" } },
+  "css": { "parser": { "tailwindDirectives": true } }
+}

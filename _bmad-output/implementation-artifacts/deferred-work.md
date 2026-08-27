@@ -53,3 +53,11 @@ source_spec: `1-6-i18n-catalogs-and-pseudo-locales.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260827-110451-2bb6; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+### DW-8: Follow-up review still recommended for 1-7-shadcn-react-aria-foundation after the damping cap was spent
+origin: review-budget-followup
+location: n/a
+source_spec: `1-7-shadcn-react-aria-foundation.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260827-110451-2bb6; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
