@@ -1,0 +1,5 @@
+{
+  "app.name": "Bronze",
+  "queue.count": "{count, plural, =0 {0 items} one {1 item} other {# items}}",
+  "capture.source": "From {appName}"
+}
