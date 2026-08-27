@@ -1,24 +1,27 @@
 #!/usr/bin/env tsx
 
-import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, '..');
-const LOCALES = resolve(ROOT, 'locales');
-const BASE = 'en';
+const ROOT = resolve(__dirname, "..");
+const LOCALES = resolve(ROOT, "locales");
+const BASE = "en";
 
-export function loadLocale(tag: string, localesDir = LOCALES): Record<string, string> {
-  const p = resolve(localesDir, tag, 'app.json');
-  const raw = readFileSync(p, 'utf8');
+export function loadLocale(
+  tag: string,
+  localesDir = LOCALES,
+): Record<string, string> {
+  const p = resolve(localesDir, tag, "app.json");
+  const raw = readFileSync(p, "utf8");
   const obj = JSON.parse(raw);
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
     throw new Error(`${tag} catalog must be an object`);
   }
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (typeof v !== 'string') {
+    if (typeof v !== "string") {
       throw new Error(`${tag}:${k} is not a string`);
     }
     out[k] = v;
@@ -31,8 +34,8 @@ function skipBalanced(msg: string, start: number): number {
   let j = start;
   const n = msg.length;
   while (j < n) {
-    if (msg[j] === '{') depth++;
-    else if (msg[j] === '}') {
+    if (msg[j] === "{") depth++;
+    else if (msg[j] === "}") {
       depth--;
       j++;
       if (depth === 0) return j;
@@ -48,7 +51,7 @@ export function extractPlaceholders(msg: string): string[] {
   let i = 0;
   const n = msg.length;
   while (i < n) {
-    if (msg[i] === '{') {
+    if (msg[i] === "{") {
       const end = skipBalanced(msg, i);
       if (end === i + 1) {
         i++;
@@ -71,11 +74,11 @@ export function hasIcu(msg: string): boolean {
 }
 
 function stripBalancedBraces(msg: string): string {
-  let out = '';
+  let out = "";
   let i = 0;
   const n = msg.length;
   while (i < n) {
-    if (msg[i] === '{') {
+    if (msg[i] === "{") {
       const end = skipBalanced(msg, i);
       if (end === i + 1) {
         out += msg[i];
@@ -99,8 +102,8 @@ export function looksConcatenated(msg: string): boolean {
 export function isValidBcp47Tag(tag: string): boolean {
   if (!/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(tag)) return false;
   try {
-    const canon = Intl.getCanonicalLocales(tag.replace(/_/g, '-'));
-    return canon.length > 0 && !canon[0].toLowerCase().startsWith('und');
+    const canon = Intl.getCanonicalLocales(tag.replace(/_/g, "-"));
+    return canon.length > 0 && !canon[0].toLowerCase().startsWith("und");
   } catch {
     return false;
   }
@@ -136,8 +139,9 @@ export function collectCatalogErrors(
     const locKeys = Object.keys(loc).sort();
     const missing = baseKeys.filter((k) => !locKeys.includes(k));
     const extra = locKeys.filter((k) => !baseKeys.includes(k));
-    if (missing.length) errors.push(`${tag}: missing keys ${missing.join(',')}`);
-    if (extra.length) errors.push(`${tag}: extra keys ${extra.join(',')}`);
+    if (missing.length)
+      errors.push(`${tag}: missing keys ${missing.join(",")}`);
+    if (extra.length) errors.push(`${tag}: extra keys ${extra.join(",")}`);
 
     for (const k of baseKeys) {
       if (!Object.hasOwn(loc, k)) continue;
@@ -159,12 +163,15 @@ export function collectCatalogErrors(
 
 export function listLocaleTags(localesDir = LOCALES): string[] {
   return readdirSync(localesDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .filter((d) => d.isDirectory() && !d.name.startsWith("."))
     .map((d) => d.name)
     .sort();
 }
 
-export function runValidate(localesDir = LOCALES): { ok: boolean; errors: string[] } {
+export function runValidate(localesDir = LOCALES): {
+  ok: boolean;
+  errors: string[];
+} {
   const tags = listLocaleTags(localesDir);
   const errors: string[] = [];
   for (const t of tags) {
@@ -199,8 +206,8 @@ function isCli(): boolean {
 function main(): void {
   const { ok, errors } = runValidate();
   if (!ok) {
-    console.error('VALIDATE FAIL:');
-    for (const e of errors) console.error(' - ' + e);
+    console.error("VALIDATE FAIL:");
+    for (const e of errors) console.error(` - ${e}`);
     process.exit(1);
   }
 }

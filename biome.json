@@ -1,6 +1,11 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
-  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "formatWithErrors": true },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "formatWithErrors": true
+  },
   "linter": {
     "enabled": true,
     "rules": {
@@ -10,5 +15,21 @@
     }
   },
   "javascript": { "formatter": { "quoteStyle": "double" } },
-  "css": { "parser": { "tailwindDirectives": true } }
+  "css": { "parser": { "tailwindDirectives": true } },
+  "files": {
+    "includes": [
+      "**",
+      "!!.claude",
+      "!!.agents",
+      "!!.opencode",
+      "!!_bmad",
+      "!!_bmad-output",
+      "!!.bmad-loop"
+    ]
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  }
 }

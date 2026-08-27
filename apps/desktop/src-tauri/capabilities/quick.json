@@ -3,7 +3,5 @@
   "description": "Capability for the quick panel window",
   "local": true,
   "windows": ["quick"],
-  "permissions": [
-    "core:default"
-  ]
+  "permissions": ["core:default"]
 }

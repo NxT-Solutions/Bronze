@@ -1,15 +1,15 @@
-export type SupportedLocale = 'en' | 'en-XA' | 'ar-XB';
+export type SupportedLocale = "en" | "en-XA" | "ar-XB";
 export type FallbackChain = readonly string[];
 
-const SUPPORTED: SupportedLocale[] = ['en', 'en-XA', 'ar-XB'];
+const SUPPORTED: SupportedLocale[] = ["en", "en-XA", "ar-XB"];
 
 export function canonicalizeBcp47(tag: string): string {
   try {
-    const normalized = tag.replace(/_/g, '-');
+    const normalized = tag.replace(/_/g, "-");
     const canon = Intl.getCanonicalLocales(normalized);
-    return canon[0] ?? 'und';
+    return canon[0] ?? "und";
   } catch {
-    return 'und';
+    return "und";
   }
 }
 
@@ -24,29 +24,29 @@ function splitSubtags(tag: string): string[] {
 
 export function computeFallbackChain(requested: string): FallbackChain {
   const canon = canonicalizeBcp47(requested);
-  if (!canon || canon === 'und') {
-    return ['en'];
+  if (!canon || canon === "und") {
+    return ["en"];
   }
-  if (canon === 'en') {
-    return ['en'];
+  if (canon === "en") {
+    return ["en"];
   }
 
   const chain: string[] = [];
   let current = canon;
 
-  while (current && current !== 'en') {
+  while (current && current !== "en") {
     if (chain.includes(current)) break;
     chain.push(current);
     const parts = splitSubtags(current);
     if (parts.length <= 1) break;
 
-    const next = parts.slice(0, -1).join('-');
+    const next = parts.slice(0, -1).join("-");
     if (!next || next === current) break;
     current = next;
   }
 
-  if (!chain.includes('en')) {
-    chain.push('en');
+  if (!chain.includes("en")) {
+    chain.push("en");
   }
 
   // dedup preserve order

@@ -3,7 +3,5 @@
   "description": "Capability for the onboarding window",
   "local": true,
   "windows": ["onboarding"],
-  "permissions": [
-    "core:default"
-  ]
+  "permissions": ["core:default"]
 }

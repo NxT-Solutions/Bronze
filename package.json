@@ -3,7 +3,8 @@
   "private": true,
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "verify": "biome check . && turbo run typecheck && turbo run test && turbo run validate && cargo test --workspace && python3 tooling/planning-checks.py"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.10",

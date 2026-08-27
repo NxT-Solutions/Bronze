@@ -2,9 +2,9 @@
 // Used for future compile-time key safety (no string literals for keys outside this).
 
 export const MessageIds = {
-  'app.name': 'app.name',
-  'queue.count': 'queue.count',
-  'capture.source': 'capture.source',
+  "app.name": "app.name",
+  "queue.count": "queue.count",
+  "capture.source": "capture.source",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

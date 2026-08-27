@@ -61,3 +61,11 @@ source_spec: `1-7-shadcn-react-aria-foundation.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260827-110451-2bb6; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+### DW-9: packages/ui globals.test.ts only regex-matches media-query strings, not !important or computed override of Tailwind utilities (A11Y-003).
+origin: spec-deferred 85c20f214fb5
+location: packages/ui/src/styles/globals.test.ts:12
+source_spec: `1-8-workspace-verify-aggregate.md`
+severity: medium
+reason: Pre-existing Story 1.7 test; still passed after hygiene stripped !important. This review restored !important but did not extend the test.
+status: open
