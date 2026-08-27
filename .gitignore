@@ -35,3 +35,6 @@ target/
 .cargo/
 Cargo.lock.bak
 *.pdb
+
+# swiftpm
+**/.build/
