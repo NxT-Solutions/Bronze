@@ -46,16 +46,9 @@ Permissions are independent:
 | Global shortcut registration | Tauri global-shortcut result | standard chord | status menu/manual composer |
 | Launch at Login | platform registration API | optional startup | all capture behavior after manual launch |
 
-Permission state:
+Permission state is a closed enum, not a single linear path. Valid values:
 
-    unknown
-    → not_requested
-    → denied
-    → granted_unverified
-    → healthy
-    → degraded
-    → unavailable
-    → requires_relaunch
+    unknown | not_requested | denied | granted_unverified | healthy | degraded | unavailable | requires_relaunch
 
 “Granted” never implies healthy. Health requires operation-level self-test. Permission service:
 

@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""Planning-pack parity checks. Exit 0 only when every gate passes."""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+DOCS = ROOT / "docs"
+
+PRD_IDS = [
+    *[f"G-{i:02d}" for i in range(1, 8)],
+    *[f"CAP-{i:03d}" for i in range(1, 11)],
+    *[f"QUE-{i:03d}" for i in range(1, 9)],
+    *[f"WIN-{i:03d}" for i in range(1, 6)],
+    *[f"DAT-{i:03d}" for i in range(1, 5)],
+    *[f"SEC-{i:03d}" for i in range(1, 7)],
+    *[f"A11Y-{i:03d}" for i in range(1, 7)],
+    *[f"I18N-{i:03d}" for i in range(1, 5)],
+    *[f"SET-{i:03d}" for i in range(1, 5)],
+    "SUP-001",
+    "SUP-002",
+]
+
+ENUMS = {
+    "item_lifecycle": [
+        "queued",
+        "copied",
+        "active",
+        "done",
+        "skipped",
+        "trashed",
+    ],
+    "permission": [
+        "unknown",
+        "not_requested",
+        "denied",
+        "granted_unverified",
+        "healthy",
+        "degraded",
+        "unavailable",
+        "requires_relaunch",
+    ],
+    "post_copy": ["unchanged", "copied", "active", "done"],
+    "advance": ["keep", "nextQueued"],
+    "backup": ["daily", "weekly"],
+    "capture_terminal": ["saved", "rejected", "failed", "cancelled"],
+}
+
+LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+ID_ROW_RE = re.compile(r"^\| (G-\d{2}|CAP-\d{3}|QUE-\d{3}|WIN-\d{3}|DAT-\d{3}|SEC-\d{3}|A11Y-\d{3}|I18N-\d{3}|SET-\d{3}|SUP-\d{3}) \|", re.M)
+
+
+def fail(errors: list[str]) -> int:
+    for item in errors:
+        print(f"FAIL: {item}")
+    print(f"{len(errors)} failure(s)")
+    return 1
+
+
+def check_requirement_parity() -> list[str]:
+    errors: list[str] = []
+    prd = (DOCS / "03-prd.md").read_text()
+    backlog = (DOCS / "15-backlog-traceability.md").read_text()
+    recon = (DOCS / "21-preimplementation-reconciliation.md").read_text()
+    for req_id in PRD_IDS:
+        if req_id not in prd:
+            errors.append(f"PRD missing {req_id}")
+        if req_id not in backlog:
+            errors.append(f"traceability missing {req_id}")
+        if req_id not in recon and req_id.startswith("G-"):
+            continue
+    backlog_ids = set(ID_ROW_RE.findall(backlog))
+    row_ids = [req_id for req_id in PRD_IDS if not req_id.startswith("G-")]
+    missing_rows = [req_id for req_id in row_ids if req_id not in backlog_ids]
+    extra_rows = sorted(backlog_ids - set(PRD_IDS))
+    for req_id in missing_rows:
+        errors.append(f"traceability table missing row {req_id}")
+    for req_id in extra_rows:
+        errors.append(f"traceability table has unknown ID {req_id}")
+    return errors
+
+
+def check_enums() -> list[str]:
+    errors: list[str] = []
+    texts = {
+        "04": (DOCS / "04-functional-spec.md").read_text(),
+        "06": (DOCS / "06-system-architecture.md").read_text(),
+        "07": (DOCS / "07-macos-capture-reliability.md").read_text(),
+        "08": (DOCS / "08-data-model-and-portability.md").read_text(),
+        "12": (DOCS / "12-settings-and-shortcuts.md").read_text(),
+        "21": (DOCS / "21-preimplementation-reconciliation.md").read_text(),
+    }
+    for name in ENUMS["permission"]:
+        if name not in texts["07"] or name not in texts["12"]:
+            errors.append(f"permission enum {name} missing from 07 or 12")
+    for name in ENUMS["item_lifecycle"]:
+        if name not in texts["06"] or name not in texts["08"]:
+            errors.append(f"lifecycle {name} missing from 06 or 08")
+    for name in ENUMS["post_copy"]:
+        if name not in texts["08"] or name not in texts["12"]:
+            errors.append(f"post_copy {name} missing from 08 or 12")
+    for name in ENUMS["advance"]:
+        if name not in texts["08"] or name not in texts["12"]:
+            errors.append(f"advance {name} missing from 08 or 12")
+    for name in ENUMS["backup"]:
+        if name not in texts["12"]:
+            errors.append(f"backup schedule {name} missing from 12")
+    if '"off"' in texts["12"] and 'backupSchedule: "daily" | "weekly"' not in texts["12"]:
+        errors.append("backupSchedule lost daily|weekly contract")
+    if "manual-only" in texts["12"] and "cannot be replaced by manual-only" not in texts["12"]:
+        errors.append("manual-only backup prohibition missing")
+    for name in ENUMS["capture_terminal"]:
+        if name not in texts["07"]:
+            errors.append(f"capture terminal {name} missing from 07")
+    if "ShortcutActionId" not in texts["12"] or "capture.selection" not in texts["12"]:
+        errors.append("shortcut action registry missing from settings schema")
+    if "diagnostic_events" not in texts["04"]:
+        errors.append("functional spec diagnostics not aligned to diagnostic_events")
+    if "closed enum" not in texts["07"]:
+        errors.append("permission closed-enum wording missing from 07")
+    return errors
+
+
+def resolve_link(source: Path, target: str) -> Path | None:
+    href = target.split("#", 1)[0].split(" ", 1)[0].strip()
+    if not href or href.startswith(("http://", "https://", "mailto:", "tel:")):
+        return None
+    if href.startswith("#"):
+        return source
+    return (source.parent / href).resolve()
+
+
+def check_local_links() -> list[str]:
+    errors: list[str] = []
+    roots = [
+        ROOT / "README.md",
+        ROOT / "AGENTS.md",
+        *sorted((ROOT / "docs").glob("*.md")),
+        *sorted((ROOT / "research").glob("*.md")),
+        ROOT / "assets" / "README.md",
+    ]
+    for path in roots:
+        text = path.read_text()
+        for match in LINK_RE.finditer(text):
+            dest = resolve_link(path, match.group(2))
+            if dest is None:
+                continue
+            if not dest.exists():
+                errors.append(f"{path.relative_to(ROOT)} -> {match.group(2)}")
+    return errors
+
+
+def main() -> int:
+    errors: list[str] = []
+    errors.extend(check_requirement_parity())
+    errors.extend(check_enums())
+    errors.extend(check_local_links())
+    if errors:
+        return fail(errors)
+    print("PASS requirement-parity")
+    print("PASS enum/schema")
+    print("PASS local-links")
+    print("PASS traceability")
+    print(f"checked {len(PRD_IDS)} requirement IDs")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

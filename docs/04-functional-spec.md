@@ -142,7 +142,7 @@ Permission center shows each capability independently:
 
 Statuses: `unknown`, `not_requested`, `denied`, `granted_unverified`, `healthy`, `degraded`, `unavailable`, `requires_relaunch`. “Granted” is not “healthy.” User can retest; failures link to specific System Settings guidance and safe alternative.
 
-Diagnostics event fields: timestamp, request ID, app bundle ID if allowed, trigger type, stage durations, provider result enum, permission snapshot, build/version, store result. Never selected content, window title, URL, clipboard payload, keystroke stream, or secret.
+Diagnostics event fields match the persisted `diagnostic_events` schema: timestamp, request ID, stage, result code, duration, trigger kind, provider kind, permission state, source bundle ID only when policy permits, app schema version, queue depth, overflow count, tap health, store result code, and build ID. Never selected content, window title, URL, clipboard payload, keystroke stream, or secret.
 
 ## 8. Import/export and recovery
 

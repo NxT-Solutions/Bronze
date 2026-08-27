@@ -26,6 +26,8 @@ Research cutoff: **2026-08-27**. Working name: **Bronze**; renameable before imp
 18. [Agent-skill recommendations](docs/17-agent-skills-recommendations.md)
 19. [Architecture decisions](docs/18-adrs.md)
 20. [Sources and evidence](docs/19-sources.md)
+21. [Implementation bootstrap](docs/20-implementation-bootstrap.md)
+22. [Pre-implementation reconciliation](docs/21-preimplementation-reconciliation.md)
 
 Implementation agents: [Bronze agent instructions](AGENTS.md).
 
@@ -57,4 +59,4 @@ Original visual direction: [Bronze UI concept](assets/bronze-ui-concept.png). It
 
 ## Scope status
 
-Planning complete. Implementation has not started. No Git repository, branch, commit, clone, or other Git mutation was created by this research task.
+Planning pack is the source of truth. Implementation proceeds on local branch `bmad/bronze-autonomous`. `main` stays at the planning baseline until explicitly merged. The original research task did not create Git state; this repository now exists.

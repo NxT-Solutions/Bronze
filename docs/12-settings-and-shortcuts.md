@@ -12,7 +12,40 @@
 
 Illustrative TypeScript contract mirrored/generated from Rust schema:
 
+Canonical shortcut persistence is the `shortcuts` table keyed by `ShortcutActionId` (ADR-016). `SettingsV1.capture.standardChord` is the settings-window view of `capture.selection` only. Other registry actions are not omitted from the product; they are not duplicated inside the settings JSON blob. `modifierTap.action` may only map the optional double-tap gesture to `capture.selection` or `app.togglePanel`.
+
 ```ts
+type ShortcutActionId =
+  | "app.togglePanel"
+  | "capture.selection"
+  | "capture.newNote"
+  | "queue.copy"
+  | "queue.copyWithProfile"
+  | "queue.copyAndAdvance"
+  | "queue.complete"
+  | "queue.edit"
+  | "queue.moveUp"
+  | "queue.moveDown"
+  | "queue.search"
+  | "queue.undo"
+  | "window.settings"
+
+type ShortcutBinding = {
+  action: ShortcutActionId
+  trigger: "accelerator" | "modifier_double_tap" | "disabled"
+  modifiers?: Array<"Command" | "Option" | "Control" | "Shift" | "Fn">
+  keyMode?: "physical" | "logical"
+  physicalCode?: string
+  logicalKey?: string
+  modifierSide?: "either" | "left" | "right" | "same"
+  gapMs?: number
+  maxHoldMs?: number
+  enabled: boolean
+  schemaVersion: number
+  revision: number
+  tested?: "tested" | "untested" | "skipped"
+}
+
 type SettingsV1 = {
   schemaVersion: 1
   general: {
@@ -64,7 +97,7 @@ type SettingsV1 = {
   data: {
     trashRetentionDays: number
     backupSchedule: "daily" | "weekly"
-    backupRetention: number
+    backupRetention: number // closed to safe UI bounds; no off/manual-only schedule
   }
   accessibility: {
     appScale: number
