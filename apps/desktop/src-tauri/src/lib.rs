@@ -17,6 +17,7 @@ fn start_native_or_die() {
                 .expect("BronzeNative version query (CAP-004)");
             bronze_platform_macos::check_abi_version(version)
                 .expect("BronzeNative ABI mismatch is fail-closed (CAP-004)");
+            let _ = runtime.event_tap_start();
             // Process-lifetime: dropping would shutdown the in-process static lib.
             std::mem::forget(runtime);
         }
@@ -26,6 +27,9 @@ fn start_native_or_die() {
 
 #[cfg(test)]
 mod abi_ownership;
+
+#[cfg(test)]
+mod event_tap;
 
 #[cfg(test)]
 pub(crate) fn lock_native_runtime() -> std::sync::MutexGuard<'static, ()> {

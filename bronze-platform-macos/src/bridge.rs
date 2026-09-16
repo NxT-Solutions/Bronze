@@ -4,9 +4,10 @@
 //! or the raw `extern "C"` symbols. Panic at the FFI boundary is contained.
 
 use crate::abi::{
-    self, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_STATUS_CANCELLED,
-    BRONZE_STATUS_DOUBLE_COMPLETION, BRONZE_STATUS_INVALID_UTF8, BRONZE_STATUS_NOT_FOUND,
-    BRONZE_STATUS_OK, BRONZE_STATUS_SHUTTING_DOWN,
+    self, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_EVENT_TAP_DEGRADED,
+    BRONZE_EVENT_TAP_IDLE, BRONZE_EVENT_TAP_LISTENING, BRONZE_STATUS_CANCELLED,
+    BRONZE_STATUS_DEGRADED, BRONZE_STATUS_DOUBLE_COMPLETION, BRONZE_STATUS_INVALID_UTF8,
+    BRONZE_STATUS_NOT_FOUND, BRONZE_STATUS_OK, BRONZE_STATUS_SHUTTING_DOWN,
 };
 use std::fmt;
 use std::panic::{self, AssertUnwindSafe};
@@ -22,6 +23,7 @@ pub enum NativeError {
     DoubleCompletion,
     NotFound,
     ShuttingDown,
+    Degraded,
 }
 
 impl fmt::Display for NativeError {
@@ -38,8 +40,25 @@ impl fmt::Display for NativeError {
             Self::DoubleCompletion => write!(f, "double completion forbidden (CAP-004)"),
             Self::NotFound => write!(f, "probe id not found"),
             Self::ShuttingDown => write!(f, "native runtime is shutting down"),
+            Self::Degraded => write!(
+                f,
+                "event tap degraded; chord/menu remain (CAP-002, no event suppression)"
+            ),
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EventTapHealth {
+    Idle,
+    Listening,
+    Degraded,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct EventTapRecord {
+    pub kind: u32,
+    pub sequence: u64,
 }
 
 /// Terminal for a one-shot probe. Cancel is a valid outcome, not a drop.
@@ -104,6 +123,7 @@ fn map_status(status: u32) -> Result<(), NativeError> {
         BRONZE_STATUS_CANCELLED => Err(NativeError::Cancelled),
         BRONZE_STATUS_NOT_FOUND => Err(NativeError::NotFound),
         BRONZE_STATUS_SHUTTING_DOWN => Err(NativeError::ShuttingDown),
+        BRONZE_STATUS_DEGRADED => Err(NativeError::Degraded),
         _ => Err(NativeError::InvalidUtf8),
     }
 }
@@ -259,6 +279,79 @@ impl NativeRuntime {
         catch_ffi(|| unsafe { abi::bronze_native_probe_outstanding() })
     }
 
+    pub fn event_tap_start(&self) -> Result<EventTapHealth, NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_event_tap_start() })?;
+        match status {
+            BRONZE_STATUS_OK => Ok(self.event_tap_health()?),
+            BRONZE_STATUS_DEGRADED => Ok(EventTapHealth::Degraded),
+            other => map_status(other).map(|()| EventTapHealth::Idle),
+        }
+    }
+
+    pub fn event_tap_stop(&self) -> Result<(), NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_event_tap_stop() })?;
+        map_status(status)
+    }
+
+    pub fn event_tap_health(&self) -> Result<EventTapHealth, NativeError> {
+        let raw = catch_ffi(|| unsafe { abi::bronze_native_event_tap_health() })?;
+        match raw {
+            BRONZE_EVENT_TAP_IDLE => Ok(EventTapHealth::Idle),
+            BRONZE_EVENT_TAP_LISTENING => Ok(EventTapHealth::Listening),
+            BRONZE_EVENT_TAP_DEGRADED => Ok(EventTapHealth::Degraded),
+            _ => Err(NativeError::NotFound),
+        }
+    }
+
+    pub fn event_tap_set_enabled(&self, enabled: bool) -> Result<(), NativeError> {
+        let status =
+            catch_ffi(|| unsafe { abi::bronze_native_event_tap_set_enabled(u32::from(enabled)) })?;
+        map_status(status)
+    }
+
+    pub fn event_tap_drain(&self) -> Result<Option<EventTapRecord>, NativeError> {
+        let mut kind = 0u32;
+        let mut sequence = 0u64;
+        let status =
+            catch_ffi(|| unsafe { abi::bronze_native_event_tap_drain(&mut kind, &mut sequence) })?;
+        map_status(status)?;
+        if kind == 0 {
+            Ok(None)
+        } else {
+            Ok(Some(EventTapRecord { kind, sequence }))
+        }
+    }
+
+    pub fn event_tap_fsm_state(&self) -> Result<u32, NativeError> {
+        catch_ffi(|| unsafe { abi::bronze_native_event_tap_fsm_state() })
+    }
+
+    pub fn event_tap_test_attach(&self) -> Result<(), NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_event_tap_test_attach() })?;
+        map_status(status)
+    }
+
+    pub fn event_tap_test_feed(
+        &self,
+        kind: u32,
+        carbon_key: i32,
+        time_ns: u64,
+    ) -> Result<(), NativeError> {
+        let status = catch_ffi(|| unsafe {
+            abi::bronze_native_event_tap_test_feed(kind, carbon_key, time_ns)
+        })?;
+        map_status(status)
+    }
+
+    pub fn event_tap_test_disable(&self) -> Result<(), NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_event_tap_test_disable() })?;
+        map_status(status)
+    }
+
+    pub fn event_tap_test_enqueue_from_caller(&self, kind: u32) -> Result<(), NativeError> {
+        map_status(event_tap_enqueue_raw(kind))
+    }
+
     pub fn shutdown(self) -> Result<(), NativeError> {
         Self::force_shutdown()
     }
@@ -267,6 +360,14 @@ impl NativeRuntime {
         let result = catch_ffi(|| unsafe { abi::bronze_native_shutdown() });
         ACTIVE.store(false, std::sync::atomic::Ordering::SeqCst);
         result
+    }
+}
+
+/// Raw SPSC write for single-producer tests. Must not be used as a second product route.
+pub fn event_tap_enqueue_raw(kind: u32) -> u32 {
+    match catch_ffi(|| unsafe { abi::bronze_native_event_tap_test_enqueue_from_caller(kind) }) {
+        Ok(status) => status,
+        Err(_) => crate::abi::BRONZE_STATUS_NOT_FOUND,
     }
 }
 
@@ -504,5 +605,64 @@ mod tests {
             Ok(super::ProbeTerminal::Completed),
             "second complete after race must not succeed"
         );
+    }
+
+    #[test]
+    fn event_tap_callback_sources_have_no_forbidden_work() {
+        let engine = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        ));
+        for needle in [
+            "AXUIElement",
+            "NSPasteboard",
+            "NSWindow",
+            "NSWorkspace",
+            "sqlite",
+            "NSLog",
+            "os_log",
+            "print(",
+            "Logger(",
+            "FileManager",
+        ] {
+            assert!(
+                !engine.contains(needle),
+                "event-tap callback file must not contain {needle} (CAP-002/CAP-004)"
+            );
+        }
+    }
+
+    #[test]
+    fn event_tap_spsc_single_producer_and_disable_resets_fsm() {
+        let _guard = lock_runtime();
+        let runtime = NativeRuntime::start().expect("start");
+        let health = runtime.event_tap_start().expect("start tap");
+        assert!(
+            health == super::EventTapHealth::Degraded || health == super::EventTapHealth::Listening
+        );
+        runtime.event_tap_stop().expect("stop");
+        runtime.event_tap_test_attach().expect("attach");
+        runtime.event_tap_set_enabled(true).expect("enable");
+        runtime
+            .event_tap_test_feed(crate::abi::BRONZE_TAP_FEED_DOWN, 56, 1_000)
+            .expect("down");
+        assert_eq!(runtime.event_tap_fsm_state().expect("state"), 1);
+        runtime.event_tap_test_disable().expect("disable");
+        assert_eq!(runtime.event_tap_fsm_state().expect("idle"), 0);
+        let rec = runtime.event_tap_drain().expect("drain").expect("disabled");
+        assert_eq!(rec.kind, crate::abi::BRONZE_TAP_REC_DISABLED);
+        runtime
+            .event_tap_test_enqueue_from_caller(crate::abi::BRONZE_TAP_REC_RESET)
+            .expect("producer enqueue");
+        let foreign = std::thread::spawn(|| {
+            let status = unsafe { crate::abi::bronze_native_event_tap_test_enqueue_from_caller(1) };
+            status
+        });
+        assert_eq!(
+            foreign.join().expect("join"),
+            crate::abi::BRONZE_STATUS_NOT_FOUND
+        );
+        runtime.event_tap_stop().expect("stop");
+        runtime.shutdown().expect("shutdown");
     }
 }

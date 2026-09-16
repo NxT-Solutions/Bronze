@@ -4,12 +4,15 @@
 //! `abi-stub` there.
 
 use crate::abi::{
-    BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_STATUS_CANCELLED,
-    BRONZE_STATUS_DOUBLE_COMPLETION, BRONZE_STATUS_INVALID_UTF8, BRONZE_STATUS_NOT_FOUND,
-    BRONZE_STATUS_OK, BRONZE_STATUS_SHUTTING_DOWN,
+    BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_EVENT_TAP_DEGRADED, BRONZE_EVENT_TAP_IDLE,
+    BRONZE_STATUS_CANCELLED, BRONZE_STATUS_DEGRADED, BRONZE_STATUS_DOUBLE_COMPLETION,
+    BRONZE_STATUS_INVALID_UTF8, BRONZE_STATUS_NOT_FOUND, BRONZE_STATUS_OK,
+    BRONZE_STATUS_SHUTTING_DOWN, BRONZE_TAP_FEED_CANCEL, BRONZE_TAP_FEED_DOWN, BRONZE_TAP_FEED_UP,
+    BRONZE_TAP_REC_DISABLED, BRONZE_TAP_REC_TRIGGER,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Mutex;
+use std::thread::ThreadId;
 
 enum ProbePhase {
     Open { ptr: usize, len: u64 },
@@ -287,4 +290,170 @@ pub extern "C" fn bronze_native_probe_outstanding() -> u64 {
         .values()
         .filter(|phase| matches!(phase, ProbePhase::Open { .. }))
         .count() as u64
+}
+
+struct EventTapStub {
+    health: u32,
+    fsm: u32,
+    enabled: bool,
+    producer: Option<ThreadId>,
+    queue: VecDeque<(u32, u64)>,
+    next_seq: u64,
+}
+
+fn lock_tap() -> std::sync::MutexGuard<'static, EventTapStub> {
+    static TAP: std::sync::OnceLock<Mutex<EventTapStub>> = std::sync::OnceLock::new();
+    TAP.get_or_init(|| {
+        Mutex::new(EventTapStub {
+            health: BRONZE_EVENT_TAP_IDLE,
+            fsm: 0,
+            enabled: false,
+            producer: None,
+            queue: VecDeque::new(),
+            next_seq: 1,
+        })
+    })
+    .lock()
+    .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+fn tap_enqueue(tap: &mut EventTapStub, kind: u32) -> bool {
+    let Some(producer) = tap.producer else {
+        return false;
+    };
+    if std::thread::current().id() != producer {
+        return false;
+    }
+    let seq = tap.next_seq;
+    tap.next_seq = tap.next_seq.wrapping_add(1);
+    if tap.queue.len() < 32 {
+        tap.queue.push_back((kind, seq));
+    }
+    true
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_start() -> u32 {
+    let mut tap = lock_tap();
+    tap.health = BRONZE_EVENT_TAP_DEGRADED;
+    tap.producer = Some(std::thread::current().id());
+    tap.fsm = 0;
+    tap.queue.clear();
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_stop() -> u32 {
+    let mut tap = lock_tap();
+    tap.health = BRONZE_EVENT_TAP_IDLE;
+    tap.fsm = 0;
+    tap.producer = None;
+    tap.queue.clear();
+    tap.next_seq = 1;
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_health() -> u32 {
+    lock_tap().health
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_set_enabled(enabled: u32) -> u32 {
+    let mut tap = lock_tap();
+    tap.enabled = enabled != 0;
+    tap.fsm = 0;
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_drain(kind: *mut u32, sequence: *mut u64) -> u32 {
+    if kind.is_null() || sequence.is_null() {
+        return BRONZE_STATUS_NOT_FOUND;
+    }
+    let mut tap = lock_tap();
+    match tap.queue.pop_front() {
+        Some((k, seq)) => {
+            unsafe {
+                *kind = k;
+                *sequence = seq;
+            }
+            BRONZE_STATUS_OK
+        }
+        None => {
+            unsafe {
+                *kind = 0;
+                *sequence = 0;
+            }
+            BRONZE_STATUS_OK
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_fsm_state() -> u32 {
+    lock_tap().fsm
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_test_attach() -> u32 {
+    let mut tap = lock_tap();
+    tap.producer = Some(std::thread::current().id());
+    tap.health = BRONZE_EVENT_TAP_IDLE;
+    tap.fsm = 0;
+    tap.queue.clear();
+    tap.next_seq = 1;
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_test_feed(
+    kind: u32,
+    _carbon_key: i32,
+    _time_ns: u64,
+) -> u32 {
+    let mut tap = lock_tap();
+    if tap.producer != Some(std::thread::current().id()) {
+        return BRONZE_STATUS_NOT_FOUND;
+    }
+    if kind == BRONZE_TAP_FEED_CANCEL {
+        tap.fsm = 0;
+        return BRONZE_STATUS_OK;
+    }
+    if !tap.enabled {
+        tap.fsm = 0;
+        return BRONZE_STATUS_OK;
+    }
+    match kind {
+        BRONZE_TAP_FEED_DOWN if tap.fsm == 0 => tap.fsm = 1,
+        BRONZE_TAP_FEED_UP if tap.fsm == 1 => tap.fsm = 2,
+        BRONZE_TAP_FEED_DOWN if tap.fsm == 2 => tap.fsm = 3,
+        BRONZE_TAP_FEED_UP if tap.fsm == 3 => {
+            tap.fsm = 0;
+            let _ = tap_enqueue(&mut tap, BRONZE_TAP_REC_TRIGGER);
+        }
+        _ => tap.fsm = 0,
+    }
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_test_disable() -> u32 {
+    let mut tap = lock_tap();
+    tap.fsm = 0;
+    if tap_enqueue(&mut tap, BRONZE_TAP_REC_DISABLED) {
+        BRONZE_STATUS_OK
+    } else {
+        BRONZE_STATUS_NOT_FOUND
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_event_tap_test_enqueue_from_caller(kind: u32) -> u32 {
+    let mut tap = lock_tap();
+    if tap_enqueue(&mut tap, kind) {
+        BRONZE_STATUS_OK
+    } else {
+        BRONZE_STATUS_NOT_FOUND
+    }
 }

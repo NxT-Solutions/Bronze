@@ -33,7 +33,21 @@ extern "C" {
 #define BRONZE_STATUS_CANCELLED          3u
 #define BRONZE_STATUS_NOT_FOUND          4u
 #define BRONZE_STATUS_SHUTTING_DOWN      5u
+#define BRONZE_STATUS_DEGRADED           6u
 // Additional codes may be added in future stories; consumers must treat unknown as failure.
+
+#define BRONZE_EVENT_TAP_IDLE            0u
+#define BRONZE_EVENT_TAP_LISTENING       1u
+#define BRONZE_EVENT_TAP_DEGRADED        2u
+
+#define BRONZE_TAP_REC_NONE              0u
+#define BRONZE_TAP_REC_TRIGGER           1u
+#define BRONZE_TAP_REC_RESET             2u
+#define BRONZE_TAP_REC_DISABLED          3u
+
+#define BRONZE_TAP_FEED_DOWN             1u
+#define BRONZE_TAP_FEED_UP               2u
+#define BRONZE_TAP_FEED_CANCEL           3u
 
 // Non-owning UTF-8 view. ptr may be NULL only when len==0.
 // Length-delimited: never assumes NUL; embedded 0x00 is valid UTF-8 (U+0000).
@@ -79,6 +93,21 @@ uint32_t bronze_native_probe_cancel(uint64_t request_id);
 
 // Count of probes still open (owned, not yet complete/cancel). Leak detector.
 uint64_t bronze_native_probe_outstanding(void);
+
+// Session listenOnly event tap (story 3.3, CAP-002, ADR-005).
+// start never prompts TCC. Denial returns DEGRADED and does not suppress events.
+uint32_t bronze_native_event_tap_start(void);
+uint32_t bronze_native_event_tap_stop(void);
+uint32_t bronze_native_event_tap_health(void);
+uint32_t bronze_native_event_tap_set_enabled(uint32_t enabled);
+uint32_t bronze_native_event_tap_drain(uint32_t *kind, uint64_t *sequence);
+uint32_t bronze_native_event_tap_fsm_state(void);
+
+// Test hooks: attach current thread as the sole SPSC producer (no live tap).
+uint32_t bronze_native_event_tap_test_attach(void);
+uint32_t bronze_native_event_tap_test_feed(uint32_t kind, int32_t carbon_key, uint64_t time_ns);
+uint32_t bronze_native_event_tap_test_disable(void);
+uint32_t bronze_native_event_tap_test_enqueue_from_caller(uint32_t kind);
 
 #ifdef __cplusplus
 }
