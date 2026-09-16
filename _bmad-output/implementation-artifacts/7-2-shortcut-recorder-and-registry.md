@@ -1,6 +1,6 @@
 # Story 7.2: Shortcut recorder and registry
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -43,4 +43,15 @@ claiming conflict-free globally
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-settings/src/shortcuts.rs` — registry, failed register retains old, IME/VO not swallowed
+- `bronze-storage/src/shortcuts.rs` — persist every ShortcutActionId
+- `packages/ui/src/components/shortcut-recorder.tsx` — recorder, skippable test
+- `apps/desktop/src/settings.html` — shortcut registry list
+
+### Notes
+
+- Does not claim conflict-free globally. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.

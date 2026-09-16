@@ -94,7 +94,7 @@ development_status:
 
   epic-7: in-progress
   7-1-settings-window-schema: done
-  7-2-shortcut-recorder-and-registry: ready-for-dev
+  7-2-shortcut-recorder-and-registry: done
   7-3-permission-health-center: ready-for-dev
   7-4-backup-export-import-ui: ready-for-dev
   7-5-native-and-webview-catalog-parity: ready-for-dev
