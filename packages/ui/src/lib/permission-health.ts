@@ -77,6 +77,18 @@ export function permissionHealthRows(states: {
   ];
 }
 
+export function permissionStatusKind(
+  row: Pick<PermissionHealthRow, "state" | "usage">,
+): "granted" | "denied" | "notUsed" {
+  if (row.usage === "notUsed") {
+    return "notUsed";
+  }
+  if (row.state === "granted_unverified" || row.state === "healthy") {
+    return "granted";
+  }
+  return "denied";
+}
+
 export function manualComposerAvailable(): boolean {
   return true;
 }

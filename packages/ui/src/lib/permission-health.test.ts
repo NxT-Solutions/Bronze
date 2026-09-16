@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   manualComposerAvailable,
   permissionHealthRows,
+  permissionStatusKind,
   retestUsedPermission,
   SCREEN_RECORDING_USED,
   shouldRevealSystemSettings,
@@ -26,6 +27,18 @@ describe("permission health (SET-003, SET-004, CAP-003)", () => {
     ).toBe("notUsed");
     expect(SCREEN_RECORDING_USED).toBe(false);
     expect(manualComposerAvailable()).toBe(true);
+    expect(permissionStatusKind({ state: "denied", usage: "required" })).toBe(
+      "denied",
+    );
+    expect(
+      permissionStatusKind({
+        state: "granted_unverified",
+        usage: "required",
+      }),
+    ).toBe("granted");
+    expect(
+      permissionStatusKind({ state: "unavailable", usage: "notUsed" }),
+    ).toBe("notUsed");
   });
 
   it("retest invokes the request hook and reveals settings after denial", async () => {

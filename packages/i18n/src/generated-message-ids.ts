@@ -67,6 +67,8 @@ export const MessageIds = {
   "settings.shortcuts.live": "settings.shortcuts.live",
   "settings.permission.title": "settings.permission.title",
   "settings.permission.retest": "settings.permission.retest",
+  "settings.permission.status.granted": "settings.permission.status.granted",
+  "settings.permission.status.denied": "settings.permission.status.denied",
   "settings.permission.inputMonitoring.why":
     "settings.permission.inputMonitoring.why",
   "settings.permission.inputMonitoring.alternative":

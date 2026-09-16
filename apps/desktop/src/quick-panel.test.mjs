@@ -17,7 +17,7 @@ test("quick panel is activating markup without a focus trap", () => {
   assert.doesNotMatch(html, /aria-modal\s*=\s*"true"/i);
   assert.doesNotMatch(html, /role\s*=\s*"dialog"/i);
   assert.match(html, /<main\b/);
-  assert.match(html, /padding-inline/);
+  assert.match(html, /chrome\.css/);
   assert.match(html, /data-physical-edge="(left|right|top)"/);
   assert.doesNotMatch(
     html,

@@ -11,8 +11,10 @@ import {
   TEXT_PAIRS,
 } from "@/lib/contrast";
 
-const css = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), "../styles/globals.css"),
+const here = dirname(fileURLToPath(import.meta.url));
+const css = readFileSync(resolve(here, "../styles/globals.css"), "utf8");
+const chrome = readFileSync(
+  resolve(here, "../../../../apps/desktop/src/chrome.css"),
   "utf8",
 );
 
@@ -30,5 +32,12 @@ describe("bronze tokens contrast (A11Y-003)", () => {
     expect(CONCEPT_PNG_IS_PIXEL_SPEC).toBe(false);
     expect(css.toLowerCase()).not.toMatch(/copper|cooper/);
     expect(css).toMatch(/from DESIGN\.md/);
+    const parchment = blockVars(chrome, ":root");
+    for (const [fg, bg] of TEXT_PAIRS) {
+      expect(
+        contrastRatio(parchment[fg], parchment[bg]),
+      ).toBeGreaterThanOrEqual(MIN_NORMAL_TEXT_CONTRAST);
+    }
+    expect(chrome.toLowerCase()).not.toMatch(/copper|cooper/);
   });
 });

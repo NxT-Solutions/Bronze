@@ -45,6 +45,8 @@ export function ItemList({
                 <Button
                   key={action}
                   type="button"
+                  size="sm"
+                  variant="ghost"
                   onPress={() => onAction(item.id, action)}
                 >
                   {labels[action]}

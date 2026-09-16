@@ -64,6 +64,8 @@
   "settings.shortcuts.live": "gninetsiL",
   "settings.permission.title": "htlaeh noissimreP",
   "settings.permission.retest": "tseteR",
+  "settings.permission.status.granted": "detnarG",
+  "settings.permission.status.denied": "deineD",
   "settings.permission.inputMonitoring.why": "drohc erutpac labolg eht rof dedeeN",
   "settings.permission.inputMonitoring.alternative": "resopmoc ro unem eht esU",
   "settings.permission.accessibility.why": "noitceles tnerruc eht daer ot dedeeN",

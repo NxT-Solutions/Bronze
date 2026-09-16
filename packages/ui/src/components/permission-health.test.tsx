@@ -6,6 +6,8 @@ import { PermissionHealth } from "@/components/permission-health";
 const labels = {
   title: "Permission health",
   retest: "Retest",
+  granted: "Granted",
+  denied: "Denied",
   notUsed: "Not used",
   composer: "Manual composer remains available",
   openSystemSettings: "Open System Settings",

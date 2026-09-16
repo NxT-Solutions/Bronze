@@ -21,7 +21,10 @@ export function PanelChrome({
       lang={locale}
       dir={chromeDir(locale)}
     >
-      <h1 data-i18n="panel.quick.title">{title}</h1>
+      <header>
+        <span aria-hidden="true" />
+        <h1 data-i18n="panel.quick.title">{title}</h1>
+      </header>
       {children}
     </main>
   );

@@ -57,7 +57,7 @@ export function Composer({
         <TextArea
           id="composer-body"
           aria-describedby={error ? errorId : undefined}
-          className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+          className="min-h-[5.5rem] w-full rounded-[8px] border border-input bg-background px-3 py-2 text-[0.9375rem]"
           onKeyDown={(event) => {
             if (
               composerShouldAdd({

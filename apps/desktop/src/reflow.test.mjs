@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
+const chrome = readFileSync(join(root, "chrome.css"), "utf8");
 const en = JSON.parse(
   readFileSync(
     join(root, "../../../packages/i18n/locales/en/app.json"),
@@ -20,8 +21,9 @@ const xa = JSON.parse(
 );
 
 test("320 CSS px reflow keeps one-axis scroll labeled overflow and composer", () => {
-  assert.match(html, /overflow-x:\s*hidden/);
-  assert.match(html, /flex-wrap:\s*wrap/);
+  assert.match(chrome, /overflow-x:\s*hidden/);
+  assert.match(chrome, /flex-wrap:\s*wrap/);
+  assert.match(html, /chrome\.css/);
   assert.match(html, /data-i18n="panel.toolbar.overflow"/);
   assert.match(html, /id="composer"/);
   assert.equal(en["panel.toolbar.overflow"], "More actions");

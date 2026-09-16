@@ -30,6 +30,12 @@
   --secondary: #efe8de;
   --secondary-foreground: #1c1917;
   --radius: 0.625rem;
+  --text-micro: 0.6875rem;
+  --text-caption: 0.8125rem;
+  --text-body: 0.9375rem;
+  --text-title: 1.25rem;
+  --text-display: 1.75rem;
+  --control-h: 2rem;
 }
 
 .dark {
@@ -152,6 +158,9 @@
 /* Base resets for semantic UI */
 body {
   font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  letter-spacing: -0.011em;
   background: var(--background);
   color: var(--foreground);
 }

@@ -4,145 +4,220 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bronze Settings</title>
-    <style>
-      body {
-        font-family: system-ui;
-        margin: 0;
-        min-height: 100vh;
-        padding-inline: 1rem;
-        padding-block: 0.75rem;
-        background: #111;
-        color: #eee;
-      }
-    </style>
+    <link rel="stylesheet" href="./chrome.css" />
   </head>
-  <body>
-    <main id="settings" data-slot="settings">
-      <h1 data-i18n="settings.title">Settings</h1>
-      <search>
+  <body class="page">
+    <main id="settings" class="page-shell" data-slot="settings">
+      <header class="chrome-header">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <h1 data-i18n="settings.title">Settings</h1>
+        </div>
+      </header>
+      <search class="search-card card">
         <label for="settings-search" data-i18n="settings.search.label">
           Search settings
         </label>
         <input id="settings-search" type="search" name="q" />
       </search>
-      <form>
+      <form class="card-stack">
         <fieldset data-settings-group="data">
           <legend data-i18n="settings.group.data">Data</legend>
-          <label for="backup-schedule" data-i18n="settings.field.backupSchedule">
-            Backup schedule
-          </label>
-          <select id="backup-schedule" name="backupSchedule">
-            <option value="daily" selected data-i18n="settings.backup.daily">
-              Daily
-            </option>
-            <option value="weekly" data-i18n="settings.backup.weekly">
-              Weekly
-            </option>
-          </select>
-          <button
-            type="button"
-            data-reset-field="data.backupSchedule"
-            data-i18n="settings.reset.field"
-          >
-            Reset field
-          </button>
+          <div class="field-block">
+            <label for="backup-schedule" data-i18n="settings.field.backupSchedule">
+              Backup schedule
+            </label>
+            <div class="field-row">
+              <select id="backup-schedule" name="backupSchedule">
+                <option value="daily" selected data-i18n="settings.backup.daily">
+                  Daily
+                </option>
+                <option value="weekly" data-i18n="settings.backup.weekly">
+                  Weekly
+                </option>
+              </select>
+              <button
+                type="button"
+                class="btn-ghost"
+                data-reset-field="data.backupSchedule"
+                data-i18n="settings.reset.field"
+              >
+                Reset field
+              </button>
+            </div>
+          </div>
         </fieldset>
         <fieldset data-settings-group="privacy">
           <legend data-i18n="settings.group.privacy">Privacy</legend>
-          <label
-            for="excluded-bundle-ids"
-            data-i18n="settings.field.excludedBundleIds"
-          >
-            Excluded apps
-          </label>
-          <input id="excluded-bundle-ids" type="text" name="excludedBundleIds" />
-          <button
-            type="button"
-            data-reset-field="privacy.excludedBundleIds"
-            data-i18n="settings.reset.field"
-          >
-            Reset field
-          </button>
+          <div class="field-block">
+            <label
+              for="excluded-bundle-ids"
+              data-i18n="settings.field.excludedBundleIds"
+            >
+              Excluded apps
+            </label>
+            <div class="field-row">
+              <input
+                id="excluded-bundle-ids"
+                type="text"
+                name="excludedBundleIds"
+              />
+              <button
+                type="button"
+                class="btn-ghost"
+                data-reset-field="privacy.excludedBundleIds"
+                data-i18n="settings.reset.field"
+              >
+                Reset field
+              </button>
+            </div>
+          </div>
         </fieldset>
-        <button type="button" data-i18n="settings.reset.group">Reset group</button>
-        <button type="button" data-i18n="settings.reset.all">Reset all</button>
+        <div class="toolbar">
+          <button type="button" class="btn-ghost" data-i18n="settings.reset.group">
+            Reset group
+          </button>
+          <button type="button" class="btn-ghost" data-i18n="settings.reset.all">
+            Reset all
+          </button>
+        </div>
       </form>
-      <section data-slot="permission-health" aria-labelledby="permission-health-title">
+      <section
+        class="card-stack"
+        data-slot="permission-health"
+        aria-labelledby="permission-health-title"
+      >
         <h2 id="permission-health-title" data-i18n="settings.permission.title">
           Permission health
         </h2>
-        <ul>
-          <li data-capability="inputMonitoring" data-usage="required">
-            <p data-i18n="settings.permission.inputMonitoring.why">
-              Needed for the global capture chord
-            </p>
-            <p data-i18n="settings.permission.inputMonitoring.alternative">
+        <ul class="health-list">
+          <li
+            class="health-card"
+            data-capability="inputMonitoring"
+            data-usage="required"
+            data-status="denied"
+          >
+            <div class="health-head">
+              <p data-i18n="settings.permission.inputMonitoring.why">
+                Needed for the global capture chord
+              </p>
+              <p
+                class="pill"
+                data-status="denied"
+                data-i18n="settings.permission.status.denied"
+              >
+                Denied
+              </p>
+            </div>
+            <p class="muted" data-i18n="settings.permission.inputMonitoring.alternative">
               Use the menu or composer
             </p>
-            <button
-              type="button"
-              data-permission-retest="inputMonitoring"
-              data-i18n="settings.permission.retest"
-            >
-              Retest
-            </button>
-            <button
-              type="button"
-              hidden
-              data-permission-open-settings="inputMonitoring"
-              data-i18n="settings.permission.openSystemSettings"
-            >
-              Open System Settings
-            </button>
+            <div class="toolbar">
+              <button
+                type="button"
+                data-permission-retest="inputMonitoring"
+                data-i18n="settings.permission.retest"
+              >
+                Retest
+              </button>
+              <button
+                type="button"
+                hidden
+                class="btn-ghost"
+                data-permission-open-settings="inputMonitoring"
+                data-i18n="settings.permission.openSystemSettings"
+              >
+                Open System Settings
+              </button>
+            </div>
           </li>
-          <li data-capability="accessibility" data-usage="required">
-            <p data-i18n="settings.permission.accessibility.why">
-              Needed to read the current selection
-            </p>
-            <p data-i18n="settings.permission.accessibility.alternative">
+          <li
+            class="health-card"
+            data-capability="accessibility"
+            data-usage="required"
+            data-status="denied"
+          >
+            <div class="health-head">
+              <p data-i18n="settings.permission.accessibility.why">
+                Needed to read the current selection
+              </p>
+              <p
+                class="pill"
+                data-status="denied"
+                data-i18n="settings.permission.status.denied"
+              >
+                Denied
+              </p>
+            </div>
+            <p class="muted" data-i18n="settings.permission.accessibility.alternative">
               Paste or type into the composer
             </p>
-            <button
-              type="button"
-              data-permission-retest="accessibility"
-              data-i18n="settings.permission.retest"
-            >
-              Retest
-            </button>
-            <button
-              type="button"
-              hidden
-              data-permission-open-settings="accessibility"
-              data-i18n="settings.permission.openSystemSettings"
-            >
-              Open System Settings
-            </button>
+            <div class="toolbar">
+              <button
+                type="button"
+                data-permission-retest="accessibility"
+                data-i18n="settings.permission.retest"
+              >
+                Retest
+              </button>
+              <button
+                type="button"
+                hidden
+                class="btn-ghost"
+                data-permission-open-settings="accessibility"
+                data-i18n="settings.permission.openSystemSettings"
+              >
+                Open System Settings
+              </button>
+            </div>
           </li>
-          <li data-capability="screenRecording" data-usage="notUsed">
-            <p data-i18n="settings.permission.screenRecording.why">
-              Bronze does not record the screen
-            </p>
-            <p data-screen-recording-used="false" data-i18n="settings.permission.screenRecording.notUsed">
-              Not used
-            </p>
+          <li
+            class="health-card"
+            data-capability="screenRecording"
+            data-usage="notUsed"
+            data-status="notUsed"
+          >
+            <div class="health-head">
+              <p data-i18n="settings.permission.screenRecording.why">
+                Bronze does not record the screen
+              </p>
+              <p
+                class="pill"
+                data-status="notUsed"
+                data-screen-recording-used="false"
+                data-i18n="settings.permission.screenRecording.notUsed"
+              >
+                Not used
+              </p>
+            </div>
           </li>
         </ul>
-        <p data-i18n="settings.permission.composer.available">
+        <p class="muted" data-i18n="settings.permission.composer.available">
           Manual composer remains available
         </p>
       </section>
-      <section data-slot="shortcut-recorder" aria-labelledby="shortcuts-title">
+      <section
+        class="card"
+        data-slot="shortcut-recorder"
+        aria-labelledby="shortcuts-title"
+      >
         <h2 id="shortcuts-title" data-i18n="settings.shortcuts.title">Shortcuts</h2>
-        <p role="status" data-shortcut-live data-i18n="settings.shortcuts.live">
+        <p class="muted" role="status" data-shortcut-live data-i18n="settings.shortcuts.live">
           Listening
         </p>
-        <label for="shortcut-record" data-i18n="settings.shortcuts.record">
-          Record shortcut
-        </label>
-        <input id="shortcut-record" type="text" />
-        <button type="button" data-i18n="settings.shortcuts.skipTest">Skip test</button>
+        <div class="field-block">
+          <label for="shortcut-record" data-i18n="settings.shortcuts.record">
+            Record shortcut
+          </label>
+          <div class="field-row">
+            <input id="shortcut-record" type="text" />
+            <button type="button" class="btn-ghost" data-i18n="settings.shortcuts.skipTest">
+              Skip test
+            </button>
+          </div>
+        </div>
         <p data-standard-chord="capture.selection"></p>
-        <ul data-shortcut-registry>
+        <ul class="shortcut-list" data-shortcut-registry>
           <li data-action="app.togglePanel">app.togglePanel</li>
           <li data-action="capture.selection">capture.selection</li>
           <li data-action="capture.newNote">capture.newNote</li>
@@ -158,12 +233,13 @@
           <li data-action="window.settings">window.settings</li>
         </ul>
       </section>
-      <section aria-labelledby="settings-export-preview">
+      <section class="card" aria-labelledby="settings-export-preview">
         <h2 id="settings-export-preview" data-i18n="settings.export.preview">
           Export preview
         </h2>
         <output data-export-preview>
           <p
+            class="muted"
             role="status"
             data-export-sensitive
             data-i18n="settings.export.sensitive"
