@@ -1,6 +1,6 @@
 # Story 6.2: Item list lifecycle and menus
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,14 @@ VoiceOver sign-off
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-storage/src/queue.rs` — complete/skip/trash/edit/move up-down; drag not required
+- `packages/ui/src/components/item-list.tsx` — semantic `ul`/`article`/`button`; keyboard actions
+- `packages/i18n/locales/*/app.json` — `queue.item.*` action labels
+
+### Notes
+
+- VoiceOver sign-off is a non-goal. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.

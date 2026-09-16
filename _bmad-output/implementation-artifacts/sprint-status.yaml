@@ -86,7 +86,7 @@ development_status:
 
   epic-6: in-progress
   6-1-composer-add-item: done
-  6-2-item-list-lifecycle-and-menus: ready-for-dev
+  6-2-item-list-lifecycle-and-menus: done
   6-3-sections-and-library-window: ready-for-dev
   6-4-output-profiles-and-copy: ready-for-dev
   6-5-local-search-ui: ready-for-dev
