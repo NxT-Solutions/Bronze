@@ -90,7 +90,7 @@ pub fn locator_avoids_icloud(path: &Path) -> bool {
 }
 
 pub struct Store {
-    conn: Connection,
+    pub(crate) conn: Connection,
     path: PathBuf,
     mode: StoreMode,
 }
