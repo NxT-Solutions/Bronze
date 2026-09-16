@@ -12,8 +12,10 @@
   "panel.toolbar.overflow": "More actions",
   "capture.announce.saved": "Captured to Bronze.",
   "composer.add.label": "Add item",
+  "composer.placeholder": "Type or Capture",
   "composer.add.submit": "Add",
   "composer.add.error": "Could not add item",
+  "panel.empty": "Select text and Capture, or type here.",
   "queue.item.moveUp": "Move up",
   "queue.item.moveDown": "Move down",
   "queue.item.complete": "Complete",
@@ -87,5 +89,5 @@
   "help.diagnostics.export": "Export support bundle",
   "help.limitations.humanGates": "Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.",
   "help.upload.none": "Bronze never uploads diagnostics automatically.",
-  "help.capture.composer": "Selection capture is not live; add items with the composer."
+  "help.capture.composer": "Use Capture in the menu bar, or type into the composer."
 }

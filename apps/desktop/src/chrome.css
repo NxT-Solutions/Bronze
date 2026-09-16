@@ -80,6 +80,18 @@ body.page {
   padding-block: var(--space-5);
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 #quick-panel,
 [data-slot="quick-panel"] {
   display: flex;
@@ -453,6 +465,22 @@ article {
 article p {
   margin: 0;
   font-size: var(--text-body);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+}
+
+.row-actions details {
+  position: relative;
 }
 
 menu {
@@ -461,6 +489,10 @@ menu {
   gap: 0.3rem;
   padding: 0;
   margin: var(--space-2) 0 0;
+}
+
+.row-actions menu {
+  margin: var(--space-1) 0 0;
 }
 
 .search-card {

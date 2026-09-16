@@ -8,10 +8,10 @@ const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
 
 test("queue action accessible names contain visible labels", () => {
-  assert.match(html, /data-i18n="queue.item.moveUp">Move up</);
-  assert.match(html, /data-i18n="queue.item.moveDown">\s*Move down/);
-  assert.match(html, /data-i18n="queue.item.complete">\s*Complete/);
-  assert.match(html, /data-i18n="queue.item.skip">Skip</);
-  assert.match(html, /data-i18n="queue.item.trash">Trash</);
-  assert.match(html, /data-i18n="queue.item.edit">Edit</);
+  assert.match(html, /data-i18n="queue.item.moveUp">\s*Move up\s*</);
+  assert.match(html, /data-i18n="queue.item.moveDown">\s*Move down\s*</);
+  assert.match(html, /data-i18n="queue.item.complete">\s*Complete\s*</);
+  assert.match(html, /data-i18n="queue.item.skip">\s*Skip\s*</);
+  assert.match(html, /data-i18n="queue.item.trash">\s*Trash\s*</);
+  assert.match(html, /data-i18n="queue.item.edit">\s*Edit\s*</);
 });

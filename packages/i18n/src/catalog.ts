@@ -20,7 +20,9 @@ export const NATIVE_GLOSSARY_KEYS = [
 export const PANEL_CHROME_KEYS = [
   "panel.quick.title",
   "panel.section.active",
+  "panel.empty",
   "composer.add.label",
+  "composer.placeholder",
 ] as const;
 
 export function chromeDir(locale: string): "ltr" | "rtl" {

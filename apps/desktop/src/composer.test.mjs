@@ -20,7 +20,10 @@ test("composer markup is a labeled textarea with catalog strings", () => {
   assert.match(html, /<button\b[^>]*type="submit"/);
   assert.match(html, /data-i18n="composer.add.label"/);
   assert.match(html, /data-i18n="composer.add.submit"/);
+  assert.match(html, /data-i18n-placeholder="composer.placeholder"/);
   assert.equal(en["composer.add.label"], "Add item");
+  assert.equal(en["composer.placeholder"], "Type or Capture");
   assert.equal(en["composer.add.submit"], "Add");
   assert.equal(en["composer.add.error"], "Could not add item");
+  assert.equal(en["panel.empty"], "Select text and Capture, or type here.");
 });

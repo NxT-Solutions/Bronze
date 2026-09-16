@@ -12,8 +12,10 @@
   "panel.toolbar.overflow": "snoitca eroM",
   "capture.announce.saved": ".eznorB ot derutpaC",
   "composer.add.label": "meti ddA",
+  "composer.placeholder": "erutpaC ro epyT",
   "composer.add.submit": "ddA",
   "composer.add.error": "meti dda ton dluoC",
+  "panel.empty": ".ereh epyt ro ,erutpaC dna txet tceleS",
   "queue.item.moveUp": "pu evoM",
   "queue.item.moveDown": "nwod evoM",
   "queue.item.complete": "etelpmoC",
@@ -87,5 +89,5 @@
   "help.diagnostics.export": "eldnub troppus tropxE",
   "help.limitations.humanGates": ".3.9 dna ,5.5 ,01.3 ,9.3 seirots :golkcab sniamer noitadilav namuH",
   "help.upload.none": ".yllacitamotua scitsongaid sdaolpu reven eznorB",
-  "help.capture.composer": ".resopmoc eht htiw smeti dda ;evil ton si erutpac noitceleS"
+  "help.capture.composer": ".resopmoc eht otni epyt ro ,rab unem eht ni erutpaC esU"
 }

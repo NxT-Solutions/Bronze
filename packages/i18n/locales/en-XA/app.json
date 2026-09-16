@@ -12,8 +12,10 @@
   "panel.toolbar.overflow": "【MMóorrée áaçcttíióoñnss】",
   "capture.announce.saved": "【CCáappttúurréedd ttóo BBrróoñnzzée.】",
   "composer.add.label": "【ÁAdddd íittéemm】",
+  "composer.placeholder": "【TTyyppée óorr CCáappttúurrée】",
   "composer.add.submit": "【ÁAdddd [·] 】",
   "composer.add.error": "【CCóoúulldd ñnóott áadddd íittéemm】",
+  "panel.empty": "【SSéelléeçctt ttéexxtt áañndd CCáappttúurrée, óorr ttyyppée hhéerrée.】",
   "queue.item.moveUp": "【MMóovvée úupp】",
   "queue.item.moveDown": "【MMóovvée ddóowwñn】",
   "queue.item.complete": "【CCóommpplléettée】",
@@ -87,5 +89,5 @@
   "help.diagnostics.export": "【ÉExxppóorrtt ssúuppppóorrtt bbúuñnddllée】",
   "help.limitations.humanGates": "【HHúummáañn vváallíiddáattíióoñn rréemmáaíiñnss bbáaçckkllóogg: ssttóorríiéess 3.9, 3.10, 5.5, áañndd 9.3.】",
   "help.upload.none": "【BBrróoñnzzée ñnéevvéerr úuppllóoáaddss ddíiáaggñnóossttíiçcss áaúuttóommáattíiçcáallllyy.】",
-  "help.capture.composer": "【SSéelléeçcttíióoñn çcáappttúurrée íiss ñnóott llíivvée; áadddd íittéemmss wwíitthh tthhée çcóommppóosséerr.】"
+  "help.capture.composer": "【ÚUssée CCáappttúurrée íiñn tthhée mméeñnúu bbáarr, óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr.】"
 }

@@ -14,9 +14,9 @@ const en = JSON.parse(
 );
 
 test("copy toolbar uses a named profile and has no synthetic paste", () => {
-  assert.match(html, /id="copy-toolbar"/);
   assert.match(html, /<select\b[^>]*id="output-profile"/);
   assert.match(html, /data-i18n="copy.action.copy"/);
+  assert.match(html, /data-queue-action="copy"/);
   assert.doesNotMatch(html, /synthetic[- ]paste/i);
   assert.equal(en["copy.action.copy"], "Copy");
   assert.equal(en["copy.profile.label"], "Output profile");

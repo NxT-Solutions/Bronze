@@ -13,41 +13,18 @@
           <span class="brand-mark" aria-hidden="true"></span>
           <h1 id="quick-title" data-i18n="panel.quick.title">Bronze</h1>
         </div>
-        <nav data-slot="chrome-nav" aria-labelledby="quick-title">
-          <button
-            type="button"
-            class="btn-ghost"
-            data-open-window="library"
-            data-i18n="library.title"
-          >
-            Library
-          </button>
-          <button
-            type="button"
-            class="btn-ghost"
-            data-open-window="settings"
-            data-i18n="settings.title"
-          >
-            Settings
-          </button>
-          <button
-            type="button"
-            class="btn-ghost"
-            data-open-window="help"
-            data-i18n="help.title"
-          >
-            Help
-          </button>
-        </nav>
       </header>
-      <section id="active-section" aria-labelledby="active-section-title">
-        <h2 id="active-section-title" class="kicker" data-i18n="panel.section.active">
-          Inbox
-        </h2>
-      </section>
       <form id="composer" class="composer-well card" data-slot="composer">
-        <label for="composer-body" data-i18n="composer.add.label">Add item</label>
-        <textarea id="composer-body" name="body" rows="3"></textarea>
+        <label class="visually-hidden" for="composer-body" data-i18n="composer.add.label">
+          Add item
+        </label>
+        <textarea
+          id="composer-body"
+          name="body"
+          rows="3"
+          data-i18n-placeholder="composer.placeholder"
+          placeholder="Type or Capture"
+        ></textarea>
         <button type="submit" class="btn-primary" data-i18n="composer.add.submit">
           Add
         </button>
@@ -55,46 +32,49 @@
           Could not add item
         </p>
       </form>
-      <div id="copy-toolbar" class="copy-dock card" data-slot="copy-toolbar">
-        <div class="profile-row">
-          <label for="output-profile" data-i18n="copy.profile.label">
-            Output profile
-          </label>
-          <select id="output-profile" name="profile">
-            <option value="plain" selected>Plain</option>
-            <option value="markdown">Markdown</option>
-          </select>
-          <button type="button" class="btn-primary" data-i18n="copy.action.copy">
-            Copy
-          </button>
-        </div>
-        <details data-slot="toolbar-overflow">
-          <summary data-i18n="panel.toolbar.overflow">More actions</summary>
-        </details>
-        <output class="preview">
-          <strong data-i18n="copy.preview.label">Preview</strong>
-          <pre>park</pre>
-        </output>
-      </div>
-      <ul id="queue">
+      <p id="queue-empty" class="empty-state" data-i18n="panel.empty">
+        Select text and Capture, or type here.
+      </p>
+      <ul id="queue"></ul>
+      <template id="queue-item-template">
         <li>
           <article lang="und" dir="auto">
-            <p>park</p>
-            <menu>
-              <button type="button" class="btn-toolbar" data-i18n="queue.item.moveUp">Move up</button>
-              <button type="button" class="btn-toolbar" data-i18n="queue.item.moveDown">
-                Move down
+            <p data-slot="body"></p>
+            <div class="row-actions">
+              <button type="button" class="btn-primary" data-queue-action="copy" data-i18n="copy.action.copy">
+                Copy
               </button>
-              <button type="button" class="btn-toolbar" data-i18n="queue.item.complete">
-                Complete
-              </button>
-              <button type="button" class="btn-toolbar" data-i18n="queue.item.skip">Skip</button>
-              <button type="button" class="btn-toolbar" data-i18n="queue.item.trash">Trash</button>
-              <button type="button" class="btn-toolbar" data-i18n="queue.item.edit">Edit</button>
-            </menu>
+              <details data-slot="toolbar-overflow">
+                <summary data-i18n="panel.toolbar.overflow">More actions</summary>
+                <menu>
+                  <button type="button" class="btn-toolbar" data-queue-action="complete" data-i18n="queue.item.complete">
+                    Complete
+                  </button>
+                  <button type="button" class="btn-toolbar" data-queue-action="skip" data-i18n="queue.item.skip">
+                    Skip
+                  </button>
+                  <button type="button" class="btn-toolbar" data-queue-action="trash" data-i18n="queue.item.trash">
+                    Trash
+                  </button>
+                  <button type="button" class="btn-toolbar" data-queue-action="edit" data-i18n="queue.item.edit">
+                    Edit
+                  </button>
+                  <button type="button" class="btn-toolbar" data-queue-action="moveUp" data-i18n="queue.item.moveUp">
+                    Move up
+                  </button>
+                  <button type="button" class="btn-toolbar" data-queue-action="moveDown" data-i18n="queue.item.moveDown">
+                    Move down
+                  </button>
+                </menu>
+              </details>
+            </div>
           </article>
         </li>
-      </ul>
+      </template>
+      <select id="output-profile" class="visually-hidden" name="profile" aria-hidden="true" tabindex="-1">
+        <option value="plain" selected>Plain</option>
+        <option value="markdown">Markdown</option>
+      </select>
     </main>
     <script type="module" src="./apply-locale.mjs"></script>
     <script type="module" src="./queue-live.mjs"></script>

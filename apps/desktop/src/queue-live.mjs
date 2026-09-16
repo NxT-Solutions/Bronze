@@ -1,4 +1,4 @@
-import { showChromeWindow, tauriInvoke } from "./tauri-bridge.mjs";
+import { tauriInvoke } from "./tauri-bridge.mjs";
 
 export const QUE_007_COMPLETE = false;
 
@@ -15,36 +15,27 @@ export function composerShouldSubmit(event) {
   return Boolean(event.metaKey || event.ctrlKey);
 }
 
-export function renderQueueItems(list, items) {
+export function listenQueueChanged(handler) {
+  const listen = globalThis.__TAURI__?.event?.listen;
+  if (typeof listen === "function") {
+    return listen("queue-changed", handler);
+  }
+  return Promise.resolve(null);
+}
+
+export function renderQueueItems(list, items, template) {
   list.replaceChildren();
   for (const item of items) {
-    const li = document.createElement("li");
-    li.dataset.itemId = item.id;
-    const article = document.createElement("article");
+    const node = template.content.firstElementChild.cloneNode(true);
+    node.dataset.itemId = item.id;
+    const article = node.querySelector("article");
     article.lang = item.contentLanguage || "und";
     article.dir = "auto";
-    const body = document.createElement("p");
-    body.textContent = item.body;
-    const menu = document.createElement("menu");
-    for (const [action, label] of [
-      ["moveUp", "Move up"],
-      ["moveDown", "Move down"],
-      ["complete", "Complete"],
-      ["skip", "Skip"],
-      ["trash", "Trash"],
-      ["edit", "Edit"],
-    ]) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "btn-toolbar";
-      button.dataset.queueAction = action;
+    node.querySelector("[data-slot=body]").textContent = item.body;
+    node.querySelectorAll("[data-queue-action]").forEach((button) => {
       button.dataset.itemId = item.id;
-      button.textContent = label;
-      menu.append(button);
-    }
-    article.append(body, menu);
-    li.append(article);
-    list.append(li);
+    });
+    list.append(node);
   }
 }
 
@@ -53,20 +44,18 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   const form = root.querySelector("#composer");
   const textarea = root.querySelector("#composer-body");
   const error = root.querySelector("#composer-error");
-  const preview = root.querySelector("#copy-toolbar pre");
+  const empty = root.querySelector("#queue-empty");
+  const template = root.querySelector("#queue-item-template");
   const profile = root.querySelector("#output-profile");
-  if (!list || !form || !textarea) {
+  if (!list || !form || !textarea || !template) {
     return;
   }
 
   async function refresh() {
-    const items = await invokeFn("list_queue_items", { includeTrashed: false });
-    renderQueueItems(list, items);
-    if (preview && items[0]) {
-      preview.textContent = items[0].body;
-    }
-    if (preview && items.length === 0) {
-      preview.textContent = "";
+    const items = await invokeFn("list_overview_items");
+    renderQueueItems(list, items, template);
+    if (empty) {
+      empty.hidden = items.length > 0;
     }
   }
 
@@ -108,6 +97,13 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (!id || !action) {
       return;
     }
+    if (action === "copy") {
+      await invokeFn("copy_queue_items", {
+        itemIds: [id],
+        profile: profile?.value ?? "plain",
+      });
+      return;
+    }
     if (action === "edit") {
       const next = root.defaultView?.prompt?.("", "") ?? "";
       if (next) {
@@ -120,24 +116,8 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     await refresh();
   });
 
-  const copyButton = root.querySelector("#copy-toolbar .btn-primary");
-  copyButton?.addEventListener("click", async () => {
-    const text = await invokeFn("copy_queue_items", {
-      itemIds: [],
-      profile: profile?.value ?? "plain",
-    });
-    if (preview) {
-      preview.textContent = text;
-    }
-  });
-
-  root.querySelectorAll("[data-open-window]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const kind = button.getAttribute("data-open-window");
-      if (kind) {
-        showChromeWindow(kind, invokeFn);
-      }
-    });
+  listenQueueChanged(() => {
+    refresh();
   });
 
   try {
