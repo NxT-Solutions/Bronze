@@ -126,6 +126,29 @@
   }
 }
 
+/* Native snapshot tokens (story 5.4) — strengthen, never weaken OS media */
+[data-reduce-motion] *,
+[data-reduce-motion] *::before,
+[data-reduce-motion] *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
+
+[data-reduce-transparency] {
+  --card: var(--background);
+}
+
+[data-increase-contrast] {
+  --border: #000000;
+  --input: #000000;
+  --ring: #000000;
+}
+
+[data-differentiate-without-color] [data-status] {
+  text-decoration: underline;
+}
+
 /* Base resets for semantic UI */
 body {
   font-family: var(--font-sans);

@@ -18,5 +18,9 @@ describe("globals.css a11y hooks (A11Y-003)", () => {
     expect(css).toMatch(/animation:\s*none\s*!important/);
     expect(css).toMatch(/scroll-behavior:\s*auto\s*!important/);
     expect(css).toMatch(/border-width:\s*2px\s*!important/);
+    expect(css).toMatch(/\[data-reduce-motion\]/);
+    expect(css).toMatch(/\[data-reduce-transparency\]/);
+    expect(css).toMatch(/\[data-increase-contrast\]/);
+    expect(css).toMatch(/\[data-differentiate-without-color\]/);
   });
 });
