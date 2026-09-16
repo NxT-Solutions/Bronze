@@ -39,6 +39,11 @@ pub use window_edge::{
     clamp_to_work_area, parse_physical_edge, place_on_physical_edge, stored_edge_ignores_direction,
     EdgeError, PanelKind, PhysicalEdge, Rect, TextDirection, FOCUS_TRAP, PANEL_KIND,
 };
+mod catalog;
+pub use catalog::{
+    catalog_dir, load_locale_map, locales_root, require_key, ADVERTISED_LOCALES,
+    INFOPLIST_GLOSSARY, NATIVE_GLOSSARY_KEYS, PANEL_CHROME_KEYS, WEBVIEW_GLOSSARY_KEYS,
+};
 
 #[cfg(test)]
 mod abi_ownership;

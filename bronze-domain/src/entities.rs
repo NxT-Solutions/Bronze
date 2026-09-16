@@ -42,6 +42,11 @@ impl ContentLanguage {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// User-content cards isolate with `dir="auto"` so UI locale never leaks (I18N-003).
+    pub fn card_dir(&self) -> &'static str {
+        "auto"
+    }
 }
 
 impl Default for ContentLanguage {
@@ -178,6 +183,14 @@ impl Item {
         self.revision += 1;
         self.updated_at_ms = now_ms;
     }
+
+    pub fn card_lang(&self) -> &str {
+        self.content_language.as_str()
+    }
+
+    pub fn card_dir(&self) -> &'static str {
+        self.content_language.card_dir()
+    }
 }
 
 impl fmt::Display for Lifecycle {
@@ -230,6 +243,19 @@ mod domain_tests {
         trash.transition(Lifecycle::Trashed, 11).unwrap();
         assert!(trash.transition(Lifecycle::Active, 12).is_err());
         trash.transition(Lifecycle::Queued, 13).expect("restore");
+    }
+
+    #[test]
+    fn item_cards_expose_own_lang_and_auto_dir() {
+        let und = Item::new(1, 1, "hello".into(), None, 1).unwrap();
+        assert_eq!(und.card_lang(), "und");
+        assert_eq!(und.card_dir(), "auto");
+        let ar = Item::new(2, 1, "مرحبا".into(), Some("ar"), 1).unwrap();
+        assert_eq!(ar.card_lang(), "ar");
+        assert_eq!(ar.card_dir(), "auto");
+        let ja = Item::new(3, 1, "こんにちは".into(), Some("ja"), 1).unwrap();
+        assert_eq!(ja.card_lang(), "ja");
+        assert_eq!(ja.card_dir(), "auto");
     }
 
     #[test]
