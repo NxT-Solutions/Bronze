@@ -12,6 +12,7 @@ export * from "./components/shortcut-recorder";
 export * from "./components/text-field";
 export * from "./lib/apply-display-snapshot";
 export * from "./lib/catalog";
+export * from "./lib/contrast";
 export * from "./lib/permission-health";
 export * from "./lib/settings-schema";
 export * from "./lib/shortcut-registry";
