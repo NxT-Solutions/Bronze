@@ -1,0 +1,34 @@
+# Adopted change-order chain for bronze-app. No module axis, no stack
+# migration. Every verify command is a prefix or the whole of root
+# package.json's "verify" script (plus the planning-checks target that
+# script already calls). See .hedgehog/adoption.md.
+id: adopted
+pluralizes: false
+pattern: none
+layers:
+  - id: rust
+    scope: ["bronze-*/**", "apps/desktop/src-tauri/**", "native/**", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml"]
+    verify: "cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace"
+    verify_radius: ["**"]
+    requires: ["cargo"]
+    commit: "feat(rust): implement"
+  - id: ui
+    depends_on: rust
+    scope: ["packages/**", "apps/desktop/src/**", "apps/desktop/package.json", "package.json", "pnpm-workspace.yaml", "pnpm-lock.yaml", "turbo.json", "biome.json"]
+    verify: "pnpm exec biome check . && pnpm exec turbo run typecheck && pnpm exec turbo run test && pnpm exec turbo run validate"
+    verify_radius: ["**"]
+    requires: ["pnpm"]
+    commit: "feat(ui): implement"
+  - id: docs
+    depends_on: ui
+    scope: ["docs/**", "_bmad-output/**", "tooling/planning-checks.py", "README.md"]
+    verify: "python3 tooling/planning-checks.py"
+    requires: ["python3"]
+    commit: "docs: implement"
+  - id: join
+    depends_on: docs
+    scope: ["**"]
+    verify: "pnpm verify"
+    exclusive: true
+    requires: ["pnpm"]
+    commit: "chore: join"

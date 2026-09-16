@@ -24,7 +24,10 @@
       "!!.opencode",
       "!!_bmad",
       "!!_bmad-output",
-      "!!.bmad-loop"
+      "!!.bmad-loop",
+      "!!.hedgehog",
+      "!!.cursor",
+      "!!vendor-skills"
     ]
   },
   "vcs": {

@@ -38,3 +38,7 @@ Cargo.lock.bak
 
 # swiftpm
 **/.build/
+.hedgehog/graph-server.json
+.hedgehog/hedgehog.db
+.hedgehog/hedgehog.db-*
+.hedgehog/commit.lock

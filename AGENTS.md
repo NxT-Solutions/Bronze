@@ -9,7 +9,7 @@ Build Bronze from the approved requirements and architecture. Bronze is a delibe
 ## Operating rules
 
 1. Read `README.md`, `docs/03-prd.md`, relevant subsystem spec, and `docs/18-adrs.md` before changing code.
-2. Do not perform Git operations unless user explicitly asks in current task.
+2. Do not perform Git operations unless the user explicitly asks, except `hedgehog verify` which is allowed to commit a passing task.
 3. Preserve requirement IDs in issues, implementation notes, tests, and release evidence.
 4. Keep macOS capture code native and behind a narrow typed interface. Never put DB, window, or clipboard work in event-tap callback.
 5. Prefer AX selection. Clipboard simulation is bounded fallback, not primary path.
@@ -24,7 +24,7 @@ Build Bronze from the approved requirements and architecture. Bronze is a delibe
 
 ## Required verification before handoff
 
-Run relevant formatter, static analysis, unit tests, integration tests, WebView accessibility tests, and native smoke tests. Report commands and evidence. Do not claim success from compilation alone. Never claim WCAG, VoiceOver, or platform conformance without current built-artifact evidence.
+Run relevant formatter, static analysis, unit tests, integration tests, WebView accessibility tests, and native smoke tests. Report commands and evidence. Do not claim success from compilation alone. Never claim WCAG, VoiceOver, or notarization without current built-artifact evidence.
 
 ## Independent implementation and provenance rule
 
@@ -43,6 +43,7 @@ Local-first macOS selection-to-action queue. Tauri 2, React, Rust, in-process Sw
 - Never accept ADR-002, ADR-009, or ADR-018 silently.
 - Never claim WCAG, VoiceOver, or notarization without `docs/evidence/` artifacts.
 - Never copy Cooper source or Copper trade dress.
+- Execution orchestrator is **Hedgehog** (`hedgehog next` / `hedgehog verify`). Do not resume `bmad-loop` run `6a79` or older runs.
 
 ## Where things are
 
@@ -56,6 +57,7 @@ Local-first macOS selection-to-action queue. Tauri 2, React, Rust, in-process Sw
 
 - Planning pack: `python3 tooling/planning-checks.py`
 - After workspace exists: `pnpm verify`
+- Task loop: `hedgehog status` then `hedgehog next` then `hedgehog verify <task-id>`
 
 ## Known pitfalls
 
@@ -64,3 +66,26 @@ Local-first macOS selection-to-action queue. Tauri 2, React, Rust, in-process Sw
 - Human stories 3.9, 3.10, 5.5, 9.3 are not agent-completable.
 
 <!-- /bmad:context -->
+
+## Hedgehog loop
+
+State for the next build step lives in `.hedgehog/hedgehog.db`. Recover with `hedgehog status`.
+
+```bash
+hedgehog status
+hedgehog next
+hedgehog verify <task-id>
+```
+
+An agent reporting success never moves a task — only a passing `hedgehog verify` does.
+
+Agent files: `.cursor/agents`. Skills: `.cursor/skills`. Project context: `HEDGEHOG.md`.
+
+| Agent | Use when | File |
+| --- | --- | --- |
+| `planner` | New scope / adopt intake | `planner.md` |
+| `tweaker` | Next change on an adopted repo | `tweaker.md` |
+| `reviewer` | Layer/phase review (read-only) | `reviewer.md` |
+| `bootstrap` | Greenfield workspace only — do not run on Bronze | `bootstrap.md` |
+
+Do not run Hedgehog `full-stack-app` / `pwa-app` / `landing-page` cores. Bronze is the **adopted** core: keep Tauri 2, Rust, in-process Swift, and existing ADRs.

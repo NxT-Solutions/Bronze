@@ -1,0 +1,20 @@
+---
+description: Hedgehog build discipline — how to work in this repo
+alwaysApply: true
+---
+
+This project is built with Hedgehog: one small, tested, committed step at
+a time. State lives in the build graph (`.hedgehog/hedgehog.db`), the
+commit log, and the code.
+
+Start every session with `hedgehog status`, then `hedgehog next` for the
+task packet of one ready step. When the work is done, `hedgehog verify
+<task-id>` checks the touched files against the packet's ALLOWED SCOPE,
+runs the verification command, and on a pass writes the commit. A task
+moves only on a passing `hedgehog verify`.
+
+- `HEDGEHOG.md` — this project's own context and its core's build order.
+- `AGENTS.md` — the index of every agent and skill, and when each applies.
+- `.cursor/agents/` — the roles. Read the file and follow it for that
+  task, passing the packet in full.
+- `.cursor/skills/` — procedures to follow when their situation applies.
