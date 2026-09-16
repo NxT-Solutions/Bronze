@@ -23,6 +23,7 @@ export const PANEL_CHROME_KEYS = [
   "panel.empty",
   "composer.add.label",
   "composer.placeholder",
+  "capture.source",
 ] as const;
 
 export function chromeDir(locale: string): "ltr" | "rtl" {

@@ -20,6 +20,7 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /--text-title:\s*1\.25rem/);
   assert.match(chrome, /--text-display:\s*1\.75rem/);
   assert.match(chrome, /--control-h:\s*2rem/);
+  assert.match(chrome, /\[data-slot="source"\]/);
   assert.match(chrome, /appearance:\s*none/);
   assert.match(chrome, /160ms ease/);
   assert.doesNotMatch(

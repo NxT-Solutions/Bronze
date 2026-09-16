@@ -23,6 +23,21 @@ export function listenQueueChanged(handler) {
   return Promise.resolve(null);
 }
 
+export function formatCaptureSource(template, appName) {
+  if (typeof appName !== "string") {
+    return null;
+  }
+  const name = appName.trim();
+  if (
+    name.length === 0 ||
+    typeof template !== "string" ||
+    !template.includes("{appName}")
+  ) {
+    return null;
+  }
+  return template.replaceAll("{appName}", name);
+}
+
 export function renderQueueItems(list, items, template) {
   list.replaceChildren();
   for (const item of items) {
@@ -32,6 +47,16 @@ export function renderQueueItems(list, items, template) {
     article.lang = item.contentLanguage || "und";
     article.dir = "auto";
     node.querySelector("[data-slot=body]").textContent = item.body;
+    const source = node.querySelector("[data-slot=source]");
+    if (source) {
+      const label = formatCaptureSource(source.textContent, item.sourceAppName);
+      if (label) {
+        source.textContent = label;
+        source.hidden = false;
+      } else {
+        source.hidden = true;
+      }
+    }
     node.querySelectorAll("[data-queue-action]").forEach((button) => {
       button.dataset.itemId = item.id;
     });

@@ -27,10 +27,12 @@ test("en en-XA ar-XB cover native menu InfoPlist and WebView keys", () => {
       assert.ok(catalog[key], `${locale} missing ${key}`);
     }
     assert.ok(catalog["composer.add.label"]);
+    assert.ok(catalog["capture.source"]);
     assert.ok(catalog["settings.title"]);
     assert.equal(catalog["app.name"], catalog["app.name"]);
   }
   assert.match(html, /data-i18n="panel.quick.title"/);
+  assert.match(html, /data-i18n="capture.source"/);
   assert.match(html, /data-physical-edge="left"/);
   assert.match(html, /<article lang="und" dir="auto">/);
   assert.match(html, /id="quick-panel"[^>]*dir="ltr"/);
@@ -41,6 +43,7 @@ test("en en-XA ar-XB cover native menu InfoPlist and WebView keys", () => {
   const en = JSON.parse(
     readFileSync(join(localesRoot, "en", "app.json"), "utf8"),
   );
+  assert.equal(en["capture.source"], "From {appName}");
   assert.match(en["settings.permission.inputMonitoring.why"], /\s/);
   assert.equal(
     en["settings.permission.inputMonitoring.why"],

@@ -28,6 +28,8 @@ test("quick panel is activating markup without a focus trap", () => {
   assert.doesNotMatch(html, /data-open-window=/);
   assert.match(html, /data-i18n="panel.empty"/);
   assert.match(html, /data-i18n="copy.action.copy"/);
+  assert.match(html, /data-i18n="capture.source"/);
+  assert.equal(en["capture.source"], "From {appName}");
   assert.doesNotMatch(html.toLowerCase(), /copper|cooper/);
 });
 
