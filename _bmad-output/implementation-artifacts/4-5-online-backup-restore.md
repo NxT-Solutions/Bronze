@@ -1,6 +1,6 @@
 # Story 4.5: Online backup restore
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,12 @@ backup UI
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-storage/src/backup.rs` — online `Backup` API; daily|weekly schedule; restore snapshots first; corrupt source does not swap
+
+### Notes
+
+- UI layer was a no-op. File-copy of live WAL is forbidden. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.

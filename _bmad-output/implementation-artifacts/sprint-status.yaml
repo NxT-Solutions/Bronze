@@ -71,7 +71,7 @@ development_status:
   4-2-schema-v1-and-migrations: done
   4-3-command-receipts-and-revisions: done
   4-4-undo-trash-and-purge: done
-  4-5-online-backup-restore: ready-for-dev
+  4-5-online-backup-restore: done
   4-6-deterministic-export-import: ready-for-dev
   4-7-search-placeholder-pending-adr-018: ready-for-dev
   epic-4-retrospective: optional
