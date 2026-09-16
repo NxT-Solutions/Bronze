@@ -86,5 +86,6 @@
   "help.diagnostics.preview": "【DDíiáaggñnóossttíiçcss pprréevvíiéeww】",
   "help.diagnostics.export": "【ÉExxppóorrtt ssúuppppóorrtt bbúuñnddllée】",
   "help.limitations.humanGates": "【HHúummáañn vváallíiddáattíióoñn rréemmáaíiñnss bbáaçckkllóogg: ssttóorríiéess 3.9, 3.10, 5.5, áañndd 9.3.】",
-  "help.upload.none": "【BBrróoñnzzée ñnéevvéerr úuppllóoáaddss ddíiáaggñnóossttíiçcss áaúuttóommáattíiçcáallllyy.】"
+  "help.upload.none": "【BBrróoñnzzée ñnéevvéerr úuppllóoáaddss ddíiáaggñnóossttíiçcss áaúuttóommáattíiçcáallllyy.】",
+  "help.capture.composer": "【SSéelléeçcttíióoñn çcáappttúurrée íiss ñnóott llíivvée; áadddd íittéemmss wwíitthh tthhée çcóommppóosséerr.】"
 }

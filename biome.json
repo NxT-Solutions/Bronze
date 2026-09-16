@@ -27,7 +27,8 @@
       "!!.bmad-loop",
       "!!.hedgehog",
       "!!.cursor",
-      "!!vendor-skills"
+      "!!vendor-skills",
+      "!!apps/desktop/src-tauri"
     ]
   },
   "vcs": {

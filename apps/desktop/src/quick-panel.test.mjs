@@ -42,9 +42,17 @@ test("tauri conf shows the quick panel on launch", () => {
   const settings = windows.find((window) => window.label === "settings");
   assert.equal(quick.visible, true);
   assert.equal(quick.url, "index.html");
+  assert.equal(quick.width, 400);
+  assert.equal(quick.height, 720);
+  assert.equal(quick.minWidth, 320);
+  assert.equal(quick.minHeight, 560);
   assert.equal(library.visible, false);
+  assert.equal(library.minWidth, 480);
+  assert.equal(library.minHeight, 400);
   assert.equal(library.url, "library.html");
   assert.equal(settings.visible, false);
   assert.equal(settings.url, "settings.html");
+  assert.equal(settings.minWidth, 480);
+  assert.equal(settings.minHeight, 480);
   assert.equal(conf.app.withGlobalTauri, true);
 });

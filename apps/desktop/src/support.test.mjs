@@ -18,6 +18,7 @@ test("local help previews redacted diagnostics and lists human gates", () => {
   assert.match(html, /data-automatic-upload="false"/);
   assert.match(html, /data-diagnostics-preview/);
   assert.match(html, /data-i18n="help.limitations.humanGates"/);
+  assert.match(html, /data-i18n="help.capture.composer"/);
   assert.match(html, /3\.9/);
   assert.match(html, /9\.3/);
   assert.doesNotMatch(html, /fetch\(|xmlhttprequest|https:\/\//i);

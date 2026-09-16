@@ -34,4 +34,20 @@ test("en en-XA ar-XB cover native menu InfoPlist and WebView keys", () => {
   assert.match(html, /data-physical-edge="left"/);
   assert.match(html, /<article lang="und" dir="auto">/);
   assert.match(html, /id="quick-panel"[^>]*dir="ltr"/);
+  assert.match(
+    readFileSync(join(root, "settings.html"), "utf8"),
+    /<html lang="en">/,
+  );
+  const en = JSON.parse(
+    readFileSync(join(localesRoot, "en", "app.json"), "utf8"),
+  );
+  assert.match(en["settings.permission.inputMonitoring.why"], /\s/);
+  assert.equal(
+    en["settings.permission.inputMonitoring.why"],
+    "Needed for the global capture chord",
+  );
+  assert.doesNotMatch(
+    en["settings.permission.inputMonitoring.why"],
+    /Needededfor/,
+  );
 });

@@ -27,4 +27,8 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.equal(en["settings.title"], "Settings");
   assert.equal(en["settings.backup.daily"], "Daily");
   assert.equal(en["settings.backup.weekly"], "Weekly");
+  assert.match(html, /settings-live\.mjs/);
+  assert.match(html, /<html lang="en">/);
+  assert.match(html, /data-open-window="help"/);
+  assert.doesNotMatch(html, /href="help\.html"/);
 });

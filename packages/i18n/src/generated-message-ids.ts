@@ -103,6 +103,7 @@ export const MessageIds = {
   "help.diagnostics.export": "help.diagnostics.export",
   "help.limitations.humanGates": "help.limitations.humanGates",
   "help.upload.none": "help.upload.none",
+  "help.capture.composer": "help.capture.composer",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

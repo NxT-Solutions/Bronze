@@ -4,7 +4,9 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  applyPermissionResult,
   OPEN_SETTINGS_COMMAND,
+  pillStatusForState,
   RETEST_COMMAND,
   retestUsedPermission,
 } from "./permission-health.mjs";
@@ -66,4 +68,21 @@ test("retest uses an injected request hook and never asks for screen recording",
     () => retestUsedPermission("screenRecording", async () => denied),
     /capability_not_used/,
   );
+  assert.equal(pillStatusForState("granted_unverified"), "granted");
+  assert.equal(pillStatusForState("denied"), "denied");
+  const pill = { dataset: {}, textContent: "Denied" };
+  const card = { dataset: {}, querySelector: () => pill };
+  const open = { hidden: true };
+  applyPermissionResult(
+    {
+      querySelector(sel) {
+        if (String(sel).includes("data-capability")) return card;
+        if (String(sel).includes("open-settings")) return open;
+        return pill;
+      },
+    },
+    denied,
+  );
+  assert.equal(card.dataset.status, "denied");
+  assert.equal(open.hidden, false);
 });

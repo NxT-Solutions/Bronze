@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { QUE_007_COMPLETE } from "./library-live.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const library = readFileSync(join(root, "library.html"), "utf8");
@@ -11,6 +12,8 @@ test("search announces count and never puts the query in diagnostics", () => {
   assert.match(library, /id="library-search"/);
   assert.match(library, /id="search-count"[^>]*role="status"/);
   assert.match(library, /data-i18n="queue.count"/);
+  assert.match(library, /library-live\.mjs/);
   assert.doesNotMatch(library, /data-diagnostic[^>]*q=/);
   assert.doesNotMatch(library, /diagnostic.*query/i);
+  assert.equal(QUE_007_COMPLETE, false);
 });

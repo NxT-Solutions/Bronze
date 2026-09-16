@@ -12,10 +12,14 @@ const css = readFileSync(
   "utf8",
 );
 
-test("quick panel uses warm bronze surfaces not competitor dress", () => {
+test("quick panel uses zinc surfaces not competitor dress", () => {
   assert.match(html, /chrome\.css/);
-  assert.match(chrome, /background:\s*#f7f4ef/i);
-  assert.match(chrome, /--foreground:\s*#1c1917/i);
+  assert.match(chrome, /--background:\s*#fafafa/i);
+  assert.match(chrome, /--foreground:\s*#18181b/i);
+  assert.match(chrome, /--muted-foreground:\s*#52525b/i);
+  assert.match(chrome, /--border:\s*#e4e4e7/i);
+  assert.doesNotMatch(chrome, /#f7f4ef|#8c6239|#1c1917/i);
+  assert.doesNotMatch(css, /#f7f4ef|#8c6239|#1c1917/i);
   assert.doesNotMatch(html.toLowerCase(), /copper|cooper/);
   assert.doesNotMatch(chrome.toLowerCase(), /copper|cooper/);
   assert.doesNotMatch(css.toLowerCase(), /copper|cooper/);

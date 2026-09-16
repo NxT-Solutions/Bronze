@@ -35,6 +35,7 @@
       <section class="empty-state" aria-labelledby="library-empty-title">
         <h2 id="library-empty-title" data-i18n="library.state.empty">No items</h2>
       </section>
+      <ul id="library-queue"></ul>
       <div class="surface toolbar">
         <button type="button" data-i18n="library.archive">Archive</button>
         <button type="button" data-i18n="library.paginate">Next page</button>
@@ -54,5 +55,7 @@
         </p>
       </div>
     </main>
+    <script type="module" src="./apply-locale.mjs"></script>
+    <script type="module" src="./library-live.mjs"></script>
   </body>
 </html>

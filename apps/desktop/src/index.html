@@ -30,6 +30,14 @@
           >
             Settings
           </button>
+          <button
+            type="button"
+            class="btn-ghost"
+            data-open-window="help"
+            data-i18n="help.title"
+          >
+            Help
+          </button>
         </nav>
       </header>
       <section id="active-section" aria-labelledby="active-section-title">
@@ -54,6 +62,7 @@
           </label>
           <select id="output-profile" name="profile">
             <option value="plain" selected>Plain</option>
+            <option value="markdown">Markdown</option>
           </select>
           <button type="button" class="btn-primary" data-i18n="copy.action.copy">
             Copy
@@ -87,26 +96,7 @@
         </li>
       </ul>
     </main>
-    <script>
-      function invokeChrome(kind) {
-        const tauri = window.__TAURI__;
-        if (tauri && tauri.core && typeof tauri.core.invoke === "function") {
-          return tauri.core.invoke("show_chrome_window", { kind: kind });
-        }
-        const internals = window.__TAURI_INTERNALS__;
-        if (internals && typeof internals.invoke === "function") {
-          return internals.invoke("show_chrome_window", { kind: kind });
-        }
-        return Promise.reject(new Error("invoke unavailable"));
-      }
-      document.querySelectorAll("[data-open-window]").forEach((button) => {
-        button.addEventListener("click", () => {
-          const kind = button.getAttribute("data-open-window");
-          if (kind) {
-            invokeChrome(kind);
-          }
-        });
-      });
-    </script>
+    <script type="module" src="./apply-locale.mjs"></script>
+    <script type="module" src="./queue-live.mjs"></script>
   </body>
 </html>

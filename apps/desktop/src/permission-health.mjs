@@ -2,11 +2,55 @@ export const RETEST_COMMAND = "retest_used_permissions";
 export const OPEN_SETTINGS_COMMAND = "open_privacy_settings";
 
 export function tauriInvoke(cmd, args) {
-  const invoke = globalThis.__TAURI_INTERNALS__?.invoke;
-  if (typeof invoke !== "function") {
-    return Promise.reject(new Error("invoke_unavailable"));
+  const tauri = globalThis.__TAURI__;
+  if (tauri?.core && typeof tauri.core.invoke === "function") {
+    return tauri.core.invoke(cmd, args);
   }
-  return invoke(cmd, args);
+  const internals = globalThis.__TAURI_INTERNALS__;
+  if (typeof internals?.invoke === "function") {
+    return internals.invoke(cmd, args);
+  }
+  return Promise.reject(new Error("invoke_unavailable"));
+}
+
+export function pillStatusForState(state) {
+  if (state === "granted_unverified" || state === "healthy") {
+    return "granted";
+  }
+  if (state === "notUsed") {
+    return "notUsed";
+  }
+  return "denied";
+}
+
+export function applyPermissionResult(root, result) {
+  const rows = [
+    ["inputMonitoring", result.input_monitoring],
+    ["accessibility", result.accessibility],
+  ];
+  for (const [capability, state] of rows) {
+    const card = root.querySelector(`[data-capability="${capability}"]`);
+    if (!card) {
+      continue;
+    }
+    const status = pillStatusForState(state);
+    card.dataset.status = status;
+    const pill = card.querySelector(".pill");
+    if (pill) {
+      pill.dataset.status = status;
+      if (status === "granted") {
+        pill.textContent = "Granted";
+      } else if (status === "denied") {
+        pill.textContent = "Denied";
+      }
+    }
+    const open = root.querySelector(
+      `[data-permission-open-settings="${capability}"]`,
+    );
+    if (open) {
+      open.hidden = !shouldRevealSystemSettings(capability, result);
+    }
+  }
 }
 
 export function isUsedCapability(capability) {
@@ -39,22 +83,15 @@ export async function retestUsedPermission(capability, invokeFn = tauriInvoke) {
 }
 
 export function bindPermissionHealth(root = document, invokeFn = tauriInvoke) {
+  invokeFn(RETEST_COMMAND)
+    .then((result) => applyPermissionResult(root, result))
+    .catch(() => {});
   for (const button of root.querySelectorAll("[data-permission-retest]")) {
     button.addEventListener("click", async () => {
       const capability = button.getAttribute("data-permission-retest");
       try {
-        const { revealSettings } = await retestUsedPermission(
-          capability,
-          invokeFn,
-        );
-        if (revealSettings) {
-          const open = root.querySelector(
-            `[data-permission-open-settings="${capability}"]`,
-          );
-          if (open) {
-            open.hidden = false;
-          }
-        }
+        const { result } = await retestUsedPermission(capability, invokeFn);
+        applyPermissionResult(root, result);
       } catch {
         // Denial still leaves the manual composer path.
       }

@@ -74,10 +74,20 @@
           </div>
         </fieldset>
         <div class="toolbar">
-          <button type="button" class="btn-ghost" data-i18n="settings.reset.group">
+          <button
+            type="button"
+            class="btn-ghost"
+            data-reset-group="data"
+            data-i18n="settings.reset.group"
+          >
             Reset group
           </button>
-          <button type="button" class="btn-ghost" data-i18n="settings.reset.all">
+          <button
+            type="button"
+            class="btn-ghost"
+            data-reset-all
+            data-i18n="settings.reset.all"
+          >
             Reset all
           </button>
         </div>
@@ -248,8 +258,19 @@
           </p>
         </output>
       </section>
-      <p><a href="help.html" data-i18n="help.title">Help</a></p>
+      <p>
+        <button
+          type="button"
+          class="btn-ghost"
+          data-open-window="help"
+          data-i18n="help.title"
+        >
+          Help
+        </button>
+      </p>
     </main>
+    <script type="module" src="./apply-locale.mjs"></script>
     <script type="module" src="./permission-health.mjs"></script>
+    <script type="module" src="./settings-live.mjs"></script>
   </body>
 </html>

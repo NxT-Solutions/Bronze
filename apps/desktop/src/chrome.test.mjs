@@ -13,7 +13,7 @@ const pages = ["index.html", "library.html", "settings.html", "help.html"].map(
   }),
 );
 
-test("four surfaces share parchment chrome and kill native appearance", () => {
+test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /--text-micro:\s*0\.6875rem/);
   assert.match(chrome, /--text-caption:\s*0\.8125rem/);
   assert.match(chrome, /--text-body:\s*0\.9375rem/);

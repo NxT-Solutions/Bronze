@@ -7,28 +7,28 @@
     sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* Light (from DESIGN.md) */
-  --background: #f7f4ef;
-  --foreground: #1c1917;
+  /* Light (from DESIGN.md, zinc hand-test surfaces) */
+  --background: #fafafa;
+  --foreground: #18181b;
   --card: #ffffff;
-  --card-foreground: #1c1917;
-  --muted: #efe8de;
-  --muted-foreground: #5c564e;
-  --border: #756b60;
-  --input: #756b60;
-  --ring: #8c6239;
-  --primary: #8c6239;
-  --primary-foreground: #ffffff;
-  --accent: #c4a265;
-  --accent-foreground: #1c1917;
+  --card-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --accent: #18181b;
+  --accent-foreground: #fafafa;
   --success: #2f6f4f;
   --success-foreground: #ffffff;
   --warning: #8a4e0e;
   --warning-foreground: #ffffff;
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
-  --secondary: #efe8de;
-  --secondary-foreground: #1c1917;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
   --radius: 0.625rem;
   --text-micro: 0.6875rem;
   --text-caption: 0.8125rem;
@@ -39,27 +39,27 @@
 }
 
 .dark {
-  --background: #1a1714;
-  --foreground: #f7f4ef;
-  --card: #2a2520;
-  --card-foreground: #f7f4ef;
-  --muted: #2a2520;
-  --muted-foreground: #e3d5c3;
-  --border: #a3988a;
-  --input: #a3988a;
-  --ring: #d4b483;
-  --primary: #d4b483;
-  --primary-foreground: #1a1714;
-  --accent: #d4b483;
-  --accent-foreground: #1a1714;
+  --background: #18181b;
+  --foreground: #fafafa;
+  --card: #27272a;
+  --card-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --border: #3f3f46;
+  --input: #3f3f46;
+  --ring: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --accent: #fafafa;
+  --accent-foreground: #18181b;
   --success: #7bc49a;
-  --success-foreground: #1a1714;
+  --success-foreground: #18181b;
   --warning: #e0b070;
-  --warning-foreground: #1a1714;
+  --warning-foreground: #18181b;
   --destructive: #f0a8a0;
-  --destructive-foreground: #1a1714;
-  --secondary: #2a2520;
-  --secondary-foreground: #f7f4ef;
+  --destructive-foreground: #18181b;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
 }
 
 /* shadcn/aria style tokens bridge */
@@ -160,7 +160,7 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-body);
   line-height: 1.45;
-  letter-spacing: -0.011em;
+  letter-spacing: 0;
   background: var(--background);
   color: var(--foreground);
 }
