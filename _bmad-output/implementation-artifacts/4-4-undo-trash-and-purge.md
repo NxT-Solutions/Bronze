@@ -1,6 +1,6 @@
 # Story 4.4: Undo trash and purge
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,13 @@ Empty Trash UI
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-domain/src/purge.rs` — 30-day retention; no live-descendant purge; no forensic-erasure claim
+- `bronze-storage/src/undo.rs` — trash/undo/purge; empty-trash requires confirmation
+
+### Notes
+
+- UI layer was a no-op. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
