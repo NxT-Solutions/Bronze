@@ -3,6 +3,7 @@
 mod ax;
 mod clipboard_manual;
 mod coordinator;
+mod focus_policy;
 mod ingress;
 
 pub use ax::{
@@ -16,6 +17,10 @@ pub use clipboard_manual::{
 pub use coordinator::{
     AlwaysPersist, CaptureCoordinator, CaptureReceipt, DiagnosticEvent, FeedbackHook, NoFeedback,
     PersistError, PersistHook, Terminal,
+};
+pub use focus_policy::{
+    apply_capture_success, escape_restores_prior_focus, hidden_webview_live_region_is_sufficient,
+    Announcer, CaptureMode, FakeAnnouncer, FocusOwner, FocusSnapshot, CAPTURE_ONLY_ANNOUNCE_KEY,
 };
 pub use ingress::{
     CaptureIngressContext, IngressError, IngressSeqlock, INGRESS_ROUTE_CHORD,
