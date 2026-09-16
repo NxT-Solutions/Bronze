@@ -1,0 +1,16 @@
+{
+  "task": "9-1-REPRODUCIBLE-DEBUG-PACKAGING-RUST",
+  "notes": [
+    {
+      "kind": "debt",
+      "note": "tooling/package-debug.sh is join-owned (outside rust/ui/docs scope). Join must write the local checksum/SBOM script; rust only records arm64 and forbids get-task-allow.",
+      "logged_at": "2026-09-16T14:00:12.531Z"
+    },
+    {
+      "kind": "debt-resolve",
+      "resolves": "2026-09-16T14:00:12.531Z",
+      "reason": "9-1 join wrote tooling/package-debug.sh (arm64, checksums, SBOM stub, no get-task-allow).",
+      "logged_at": "2026-09-16T14:03:29.416Z"
+    }
+  ]
+}

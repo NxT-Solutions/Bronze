@@ -1,0 +1,66 @@
+{
+  "id": "4-2-schema-v1-and-migrations",
+  "goal": "Add versioned checksummed migrations and WAL so data survives upgrades (story 4.2, DAT-001, G-03).",
+  "outcome": "Tables match docs/08 including command_receipts and diagnostic_events; backup-before-migration hook exists; WebView has no SQL.",
+  "priority": 42,
+  "requirements": [
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "4-2-SCHEMA-V1-AND-MIGRATIONS-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given entities exist, when schema v1 is applied, then tables match docs/08 and WebView has no SQL."
+    }
+  ],
+  "depends_on": [
+    "4-1-domain-entities-and-lifecycle"
+  ]
+}

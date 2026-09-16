@@ -1,0 +1,10 @@
+{
+  "task": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-RUST",
+  "notes": [
+    {
+      "kind": "debt",
+      "note": "Substring placeholder only; ADR-018 stays Proposed and blocks locale FTS. Do not mark QUE-007 done. Query must never enter diagnostics.",
+      "logged_at": "2026-09-16T13:16:17.991Z"
+    }
+  ]
+}

@@ -70,6 +70,41 @@ pub fn allowed_chrome_window(kind: &str) -> Option<&'static str> {
     }
 }
 
+pub struct ChromeWindowSpec {
+    pub label: &'static str,
+    pub title: &'static str,
+    pub url: &'static str,
+    pub width: f64,
+    pub height: f64,
+}
+
+pub fn chrome_window_spec(kind: &str) -> Option<ChromeWindowSpec> {
+    match allowed_chrome_window(kind)? {
+        "library" => Some(ChromeWindowSpec {
+            label: "library",
+            title: "Bronze Library",
+            url: "library.html",
+            width: 720.0,
+            height: 640.0,
+        }),
+        "settings" => Some(ChromeWindowSpec {
+            label: "settings",
+            title: "Bronze Settings",
+            url: "settings.html",
+            width: 640.0,
+            height: 720.0,
+        }),
+        "help" => Some(ChromeWindowSpec {
+            label: "help",
+            title: "Bronze Help",
+            url: "help.html",
+            width: 640.0,
+            height: 640.0,
+        }),
+        _ => None,
+    }
+}
+
 pub fn quick_panel_frame(work: Rect, dir: TextDirection) -> Rect {
     place_on_physical_edge(
         DEFAULT_PHYSICAL_EDGE,
@@ -237,6 +272,14 @@ mod window_edge_tests {
         assert_eq!(allowed_chrome_window("quick"), None);
         assert_eq!(allowed_chrome_window("onboarding"), None);
         assert_eq!(allowed_chrome_window(""), None);
+        let settings = chrome_window_spec("settings").expect("settings spec");
+        assert_eq!(settings.url, "settings.html");
+        assert_eq!(settings.title, "Bronze Settings");
+        assert_eq!(settings.width, 640.0);
+        assert_eq!(settings.height, 720.0);
+        assert!(chrome_window_spec("quick").is_none());
+        assert!(chrome_window_spec("library").is_some());
+        assert!(chrome_window_spec("help").is_some());
     }
 
     #[test]

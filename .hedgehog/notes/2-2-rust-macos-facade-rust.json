@@ -1,0 +1,21 @@
+{
+  "task": "2-2-RUST-MACOS-FACADE-RUST",
+  "notes": [
+    {
+      "kind": "debt",
+      "note": "Default feature abi-stub supplies C symbols so cargo test/clippy resolve without linking Swift. Story 2.3 must link BronzeNative into the Tauri executable and disable abi-stub to avoid duplicate symbols.",
+      "logged_at": "2026-09-16T12:32:04.148Z"
+    },
+    {
+      "kind": "decision",
+      "note": "2.2 ships a fail-closed NativeRuntime façade over the 2.1 C ABI; real static-lib link is 2.3, not this layer.",
+      "logged_at": "2026-09-16T12:32:04.259Z"
+    },
+    {
+      "kind": "debt-resolve",
+      "resolves": "2026-09-16T12:32:04.148Z",
+      "reason": "bronze-desktop now links libBronzeNative.a and disables abi-stub; façade crate tests still use the stub in isolation.",
+      "logged_at": "2026-09-16T12:37:53.102Z"
+    }
+  ]
+}

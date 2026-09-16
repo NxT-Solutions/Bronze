@@ -1,0 +1,66 @@
+{
+  "id": "3-6-ax-provider-with-fakes",
+  "goal": "Implement AX-first provider against fixtures so secure fields never leak (story 3.6, CAP-005/006/007/009).",
+  "outcome": "Secure/unknown protection fail closed with zero content in ABI/log/store; whitespace preserved; exclusion runs before content query; empty/zero-width is no_selection without trim.",
+  "priority": 36,
+  "requirements": [
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "3-6-AX-PROVIDER-WITH-FAKES-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given the coordinator exists, when the AX provider is implemented against fakes, then secure/unknown protection fail closed with zero content in ABI/log/store."
+    }
+  ],
+  "depends_on": [
+    "3-5-serial-capture-coordinator"
+  ]
+}

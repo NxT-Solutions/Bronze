@@ -1,0 +1,66 @@
+{
+  "id": "7-2-shortcut-recorder-and-registry",
+  "goal": "Bind every ShortcutActionId without losing the old chord on failure (story 7.2, SET-002, CAP-001/002, I18N-004, A11Y-001).",
+  "outcome": "All registry actions persist in the shortcuts table; standardChord is capture.selection view only; cannot disable chord+menu+manual together; IME/VO chords are not swallowed.",
+  "priority": 72,
+  "requirements": [
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "7-2-SHORTCUT-RECORDER-AND-REGISTRY-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given settings exist, when the recorder is implemented, then all registry actions persist and chord+menu+manual cannot all be disabled together."
+    }
+  ],
+  "depends_on": [
+    "7-1-settings-window-schema"
+  ]
+}

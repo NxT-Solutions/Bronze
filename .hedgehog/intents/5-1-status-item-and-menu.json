@@ -1,0 +1,66 @@
+{
+  "id": "5-1-status-item-and-menu",
+  "goal": "Add an accessible status menu with Capture, New Note, Show, Settings, Quit (story 5.1, CAP-003, WIN-004, A11Y-001, I18N-001).",
+  "outcome": "Menu items have localized accessible names; Capture uses last-external-target snapshot contract even if capture is stubbed; menu works when event tap is off.",
+  "priority": 51,
+  "requirements": [
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "5-1-STATUS-ITEM-AND-MENU-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given the empty Tauri app, when the status item is added, then menu items have localized accessible names and the menu works when event tap is off."
+    }
+  ],
+  "depends_on": [
+    "2-3-link-static-library-into-tauri"
+  ]
+}

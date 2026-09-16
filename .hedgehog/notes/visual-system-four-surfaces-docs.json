@@ -1,0 +1,10 @@
+{
+  "task": "VISUAL-SYSTEM-FOUR-SURFACES-DOCS",
+  "notes": [
+    {
+      "kind": "decision",
+      "note": "No docs rewrite: DESIGN.md already locks parchment tokens, type, and no-Cooper chrome. This change applied that system to the four HTML surfaces.",
+      "logged_at": "2026-09-16T16:09:04.382Z"
+    }
+  ]
+}

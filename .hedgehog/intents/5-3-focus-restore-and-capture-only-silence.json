@@ -1,0 +1,67 @@
+{
+  "id": "5-3-focus-restore-and-capture-only-silence",
+  "goal": "Keep source focus on capture-only success so the user is not yanked into Bronze (story 5.3, WIN-003, CAP-004, A11Y-006).",
+  "outcome": "Capture-only does not steal source focus; native announcement API is called for hidden WebView (fake-testable); Escape restores prior focus where safe.",
+  "priority": 53,
+  "requirements": [
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "5-3-FOCUS-RESTORE-AND-CAPTURE-ONLY-SILENCE-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given panel and coordinator exist, when focus policy is implemented, then capture-only does not steal source focus."
+    }
+  ],
+  "depends_on": [
+    "3-5-serial-capture-coordinator",
+    "5-2-quick-panel-window-and-physical-edge"
+  ]
+}

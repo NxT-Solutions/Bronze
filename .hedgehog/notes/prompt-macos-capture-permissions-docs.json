@@ -1,0 +1,10 @@
+{
+  "task": "PROMPT-MACOS-CAPTURE-PERMISSIONS-DOCS",
+  "notes": [
+    {
+      "kind": "debt",
+      "note": "Live capture IPC is not in the WebView yet; first-capture remains rust on_capture_requested. Input Monitoring often prompts once per TCC identity; Retest then reveals System Settings after the request attempt. Settings HTML is a capability plus static file, not a named tauri.conf window.",
+      "logged_at": "2026-09-16T15:58:38.995Z"
+    }
+  ]
+}

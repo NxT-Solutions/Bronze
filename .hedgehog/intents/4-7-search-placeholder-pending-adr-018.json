@@ -1,0 +1,66 @@
+{
+  "id": "4-7-search-placeholder-pending-adr-018",
+  "goal": "Add an FTS hook that does not claim locale semantics so QUE-007 is not falsely completed (story 4.7, G-06, DG-10).",
+  "outcome": "Story documents ADR-018 as blocking complete locale search; raw body unchanged; query never enters diagnostics.",
+  "priority": 47,
+  "requirements": [
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "4-7-SEARCH-PLACEHOLDER-PENDING-ADR-018-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given items persist, when a naive FTS or application filter exists, then ADR-018 remains the blocker for locale search and the query never enters diagnostics."
+    }
+  ],
+  "depends_on": [
+    "4-2-schema-v1-and-migrations"
+  ]
+}

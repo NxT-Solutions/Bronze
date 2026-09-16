@@ -1,0 +1,89 @@
+{
+  "id": "hand-test-queue-and-clean-chrome",
+  "goal": "Make Bronze usable as a local queue in tauri dev: wire dead-but-specified composer, list, copy, settings, permissions, library search, and Rust-owned backup/export/import; replace parchment/bronze-brown tokens with a clean zinc system; default hand-test locale to en with real spaces and no mid-word smash.",
+  "outcome": "In pnpm --filter desktop tauri dev, Library/Settings/Help open real Tauri windows; composer Add persists and the list mutates via existing domain/storage; Copy uses the 6-4 pasteboard path; Settings load/save SettingsV1 and permission Retest/Open System Settings work from the Settings window; library search is substring-only with QUE_007_COMPLETE=false and ADR-018 Proposed; backup/export/import use a Rust picker (no WebView paths); surfaces share a near-white zinc palette with one cool accent and body contrast >=4.5:1; UI locale is en unless explicitly requested; AX capture is not faked; seeded shortcuts stay disabled; human 3.9/3.10/5.5/9.3 stay backlog.",
+  "priority": 110,
+  "requirements": [
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress, name, icons, or pixel-identical chrome."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog; no sentence concatenation."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-6",
+      "kind": "rule",
+      "statement": "Never accept arbitrary filesystem paths from WebView; pickers stay Rust-owned."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-7",
+      "kind": "rule",
+      "statement": "Do not fake a full capture event-tap from JavaScript; composer is the working add path if AX is unfinished."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-8",
+      "kind": "rule",
+      "statement": "Do not invent a new shortcut system; leave seeded registry disabled unless enabling documented 7-2 defaults."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RULE-9",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs; keep QUE_007_COMPLETE=false."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given tauri dev, when the user adds an item from the composer, then it persists and appears in the queue list."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "Given Settings, when locale is default, then strings are English with real spaces and permission cards remain readable at the default window width."
+    },
+    {
+      "id": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "Given the four HTML surfaces, when styled, then they share a zinc/neutral palette without #8c6239 or #f7f4ef brand brown."
+    }
+  ],
+  "depends_on": []
+}

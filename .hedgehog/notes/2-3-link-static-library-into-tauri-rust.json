@@ -1,0 +1,16 @@
+{
+  "task": "2-3-LINK-STATIC-LIBRARY-INTO-TAURI-RUST",
+  "notes": [
+    {
+      "kind": "debt",
+      "note": "bronze-platform-macos default feature abi-stub remains for crate-local tests. The Tauri binary is the linked Swift subject; do not re-enable abi-stub on bronze-desktop.",
+      "logged_at": "2026-09-16T12:37:53.215Z"
+    },
+    {
+      "kind": "debt-resolve",
+      "resolves": "2026-09-16T12:37:53.215Z",
+      "reason": "Resolved by design: bronze-desktop already links libBronzeNative.a with bronze-platform-macos default-features = false. abi-stub stays crate-local for tests. Enforced by bronze-desktop Cargo.toml + lib.rs assertion and abi_stub.rs. Documented in story 2.3 / README. Do not re-enable the stub.",
+      "logged_at": "2026-09-16T14:35:24.431Z"
+    }
+  ]
+}

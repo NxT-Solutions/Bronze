@@ -1,0 +1,84 @@
+{
+  "id": "prompt-macos-capture-permissions",
+  "goal": "Prompt for Accessibility and Input Monitoring on first native need and let permission-health retest re-request those OS prompts (SET-003, SET-004, CAP-003, CAP-010, ADR-005).",
+  "outcome": "Production path calls AXIsProcessTrustedWithOptions with prompt and CGRequestListenEventAccess off the event-tap callback; fakes prove the request hook fires without real TCC dialogs; Screen Recording is never requested and stays Not used; denial still leaves the manual composer.",
+  "priority": 141,
+  "requirements": [
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging. Permission requests run off the tap callback thread."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog. No sentence concatenation."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-RULE-7",
+      "kind": "rule",
+      "statement": "Never call Screen Recording request or preflight APIs. Keep Screen Recording Not used."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-CONSTRAINT-5",
+      "kind": "constraint",
+      "statement": "Do not revert sibling README Corepack removal or fight package.json / packageManager / rust-toolchain. No corepack commands in docs."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "On native runtime start and first capture path, request Accessibility (AXIsProcessTrustedWithOptions prompt) and Input Monitoring (CGRequestListenEventAccess) when not already granted. Never loop-prompt on launch."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "Permission-health retest re-triggers the OS prompt when the OS allows it; if the OS will not re-prompt, System Settings deep-link is fallback after a prompt attempt, not instead of it."
+    },
+    {
+      "id": "PROMPT-MACOS-CAPTURE-PERMISSIONS-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "Tests inject a fake request hook so CI never shows real permission dialogs. Production source requests prompt; it is not preflight-only. Denial leaves the manual composer."
+    }
+  ],
+  "depends_on": []
+}

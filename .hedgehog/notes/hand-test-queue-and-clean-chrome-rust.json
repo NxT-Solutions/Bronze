@@ -1,0 +1,10 @@
+{
+  "task": "HAND-TEST-QUEUE-AND-CLEAN-CHROME-RUST",
+  "notes": [
+    {
+      "kind": "debt",
+      "note": "AX capture is not live (AX_CAPTURE_LIVE=false). Composer add is the working persist path. UI must invoke the new typed commands, default locale to en, and paint the zinc tokens on all four HTML surfaces.",
+      "logged_at": "2026-09-16T16:52:11.285Z"
+    }
+  ]
+}

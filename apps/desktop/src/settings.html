@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bronze Settings</title>
-    <link rel="stylesheet" href="./chrome.css" />
+    <link rel="stylesheet" href="./chrome.css?v=en-hand-3" />
   </head>
   <body class="page">
     <main id="settings" class="page-shell" data-slot="settings">
@@ -219,28 +219,118 @@
           <label for="shortcut-record" data-i18n="settings.shortcuts.record">
             Record shortcut
           </label>
-          <div class="field-row">
-            <input id="shortcut-record" type="text" />
+          <div class="field-row shortcut-record-row">
+            <input
+              id="shortcut-record"
+              type="text"
+              autocomplete="off"
+              spellcheck="false"
+            />
             <button type="button" class="btn-ghost" data-i18n="settings.shortcuts.skipTest">
               Skip test
             </button>
           </div>
         </div>
-        <p data-standard-chord="capture.selection"></p>
+        <p data-standard-chord="capture.selection" hidden></p>
         <ul class="shortcut-list" data-shortcut-registry>
-          <li data-action="app.togglePanel">app.togglePanel</li>
-          <li data-action="capture.selection">capture.selection</li>
-          <li data-action="capture.newNote">capture.newNote</li>
-          <li data-action="queue.copy">queue.copy</li>
-          <li data-action="queue.copyWithProfile">queue.copyWithProfile</li>
-          <li data-action="queue.copyAndAdvance">queue.copyAndAdvance</li>
-          <li data-action="queue.complete">queue.complete</li>
-          <li data-action="queue.edit">queue.edit</li>
-          <li data-action="queue.moveUp">queue.moveUp</li>
-          <li data-action="queue.moveDown">queue.moveDown</li>
-          <li data-action="queue.search">queue.search</li>
-          <li data-action="queue.undo">queue.undo</li>
-          <li data-action="window.settings">window.settings</li>
+          <li data-action="app.togglePanel">
+            <span data-i18n="settings.shortcuts.action.app.togglePanel">
+              Toggle panel
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="capture.selection">
+            <span data-i18n="settings.shortcuts.action.capture.selection">
+              Capture selection
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="capture.newNote">
+            <span data-i18n="settings.shortcuts.action.capture.newNote">
+              New note
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.copy">
+            <span data-i18n="settings.shortcuts.action.queue.copy">Copy</span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.copyWithProfile">
+            <span data-i18n="settings.shortcuts.action.queue.copyWithProfile">
+              Copy with profile
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.copyAndAdvance">
+            <span data-i18n="settings.shortcuts.action.queue.copyAndAdvance">
+              Copy and advance
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.complete">
+            <span data-i18n="settings.shortcuts.action.queue.complete">
+              Complete
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.edit">
+            <span data-i18n="settings.shortcuts.action.queue.edit">Edit</span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.moveUp">
+            <span data-i18n="settings.shortcuts.action.queue.moveUp">
+              Move up
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.moveDown">
+            <span data-i18n="settings.shortcuts.action.queue.moveDown">
+              Move down
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.search">
+            <span data-i18n="settings.shortcuts.action.queue.search">
+              Search
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="queue.undo">
+            <span data-i18n="settings.shortcuts.action.queue.undo">Undo</span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
+          <li data-action="window.settings">
+            <span data-i18n="settings.shortcuts.action.window.settings">
+              Open settings
+            </span>
+            <span class="muted" data-i18n="settings.shortcuts.unassigned">
+              Not assigned
+            </span>
+          </li>
         </ul>
       </section>
       <section class="card" aria-labelledby="settings-export-preview">
@@ -269,8 +359,8 @@
         </button>
       </p>
     </main>
-    <script type="module" src="./apply-locale.mjs"></script>
-    <script type="module" src="./permission-health.mjs"></script>
-    <script type="module" src="./settings-live.mjs"></script>
+    <script type="module" src="./apply-locale.mjs?v=en-hand-3"></script>
+    <script type="module" src="./permission-health.mjs?v=en-hand-3"></script>
+    <script type="module" src="./settings-live.mjs?v=en-hand-3"></script>
   </body>
 </html>

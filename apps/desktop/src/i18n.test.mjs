@@ -50,4 +50,13 @@ test("en en-XA ar-XB cover native menu InfoPlist and WebView keys", () => {
     en["settings.permission.inputMonitoring.why"],
     /Needededfor/,
   );
+  assert.equal(en["settings.shortcuts.action.app.togglePanel"], "Toggle panel");
+  assert.equal(
+    en["settings.shortcuts.action.capture.selection"],
+    "Capture selection",
+  );
+  assert.match(en["settings.shortcuts.unassigned"], /\s/);
+  assert.doesNotMatch(en["settings.shortcuts.title"], /Shortcutts/);
+  assert.doesNotMatch(en["settings.export.preview"], /Exportt/);
+  assert.doesNotMatch(en["help.title"], /Helpp/);
 });

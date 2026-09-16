@@ -1,0 +1,66 @@
+{
+  "id": "5-2-quick-panel-window-and-physical-edge",
+  "goal": "Summon a key-capable panel on a physical left/right/top edge (story 5.2, WIN-001/002/005).",
+  "outcome": "Stored edge is physical not RTL-leading; work area clamping exists; panel is activating; no focus trap.",
+  "priority": 52,
+  "requirements": [
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "5-2-QUICK-PANEL-WINDOW-AND-PHYSICAL-EDGE-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given Tauri windows exist, when the quick panel is implemented, then stored edge is physical not RTL-leading and the panel is activating without a focus trap."
+    }
+  ],
+  "depends_on": [
+    "5-1-status-item-and-menu"
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "id": "3-3-listen-only-event-tap-thread",
+  "goal": "Add a session listenOnly event tap on a dedicated run-loop thread so optional gesture can be enabled later (story 3.3, CAP-002, CAP-004).",
+  "outcome": "Callback does no AX, DB, window, clipboard, or log work; SPSC is single-producer; tap disable resets FSM; Input Monitoring denial degrades without suppressing events.",
+  "priority": 33,
+  "requirements": [
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "3-3-LISTEN-ONLY-EVENT-TAP-THREAD-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given the FSM exists, when the tap thread is implemented, then the callback does no AX/DB/window/clipboard/log work, SPSC is single-producer, and tap disable resets the FSM."
+    }
+  ],
+  "depends_on": [
+    "2-3-link-static-library-into-tauri"
+  ]
+}

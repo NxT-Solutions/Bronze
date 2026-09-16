@@ -1,0 +1,15 @@
+{
+  "task": "VISUAL-SYSTEM-FOUR-SURFACES-RUST",
+  "notes": [
+    {
+      "kind": "debt",
+      "note": "No rust/native change: window labels, sizes, and HTML entry URLs already exist. Visual system lands in the ui layer (chrome.css + four HTML surfaces + tokens).",
+      "logged_at": "2026-09-16T16:04:30.103Z"
+    },
+    {
+      "kind": "decision",
+      "note": "Rust is unused for this intent; Tauri window chrome stays as shipped. Do not invent a window-size or titleBarStyle change here.",
+      "logged_at": "2026-09-16T16:04:30.237Z"
+    }
+  ]
+}

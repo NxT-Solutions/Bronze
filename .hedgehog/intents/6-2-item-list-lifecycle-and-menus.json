@@ -1,0 +1,66 @@
+{
+  "id": "6-2-item-list-lifecycle-and-menus",
+  "goal": "Let users edit, complete, skip, and trash items from buttons/menus without requiring drag (story 6.2, QUE-002/003/006, A11Y-002/004/006).",
+  "outcome": "Cards use semantic list/article and real buttons; Move Up/Down exist; accessible name contains visible label; keyboard operates all actions.",
+  "priority": 62,
+  "requirements": [
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "6-2-ITEM-LIST-LIFECYCLE-AND-MENUS-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given items exist, when cards use semantic list/article and real buttons, then Move Up/Down exist and keyboard operates all actions."
+    }
+  ],
+  "depends_on": [
+    "6-1-composer-add-item"
+  ]
+}

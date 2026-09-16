@@ -27,7 +27,7 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     /copper|cooper|@import|fonts\.google/,
   );
   for (const page of pages) {
-    assert.match(page.html, /href="\.\/chrome\.css"/, page.name);
+    assert.match(page.html, /href="\.\/chrome\.css(?:\?[^"]*)?"/, page.name);
     assert.doesNotMatch(page.html, /#111|#eee/, page.name);
     assert.doesNotMatch(page.html.toLowerCase(), /copper|cooper/);
   }

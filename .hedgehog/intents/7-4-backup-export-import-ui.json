@@ -1,0 +1,68 @@
+{
+  "id": "7-4-backup-export-import-ui",
+  "goal": "Add Back Up Now, restore preview, and export/import flows (story 7.4, DAT-002/003, SET-001, QUE-008).",
+  "outcome": "Native picker is Rust-owned; automatic schedule cannot be off; secret-content warning on queue export.",
+  "priority": 74,
+  "requirements": [
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "7-4-BACKUP-EXPORT-IMPORT-UI-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given storage APIs exist, when library/settings UI calls them, then the native picker is Rust-owned and automatic schedule cannot be off."
+    }
+  ],
+  "depends_on": [
+    "4-5-online-backup-restore",
+    "4-6-deterministic-export-import",
+    "6-3-sections-and-library-window"
+  ]
+}

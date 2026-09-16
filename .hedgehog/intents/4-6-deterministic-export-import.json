@@ -1,0 +1,67 @@
+{
+  "id": "4-6-deterministic-export-import",
+  "goal": "Implement JSON archive plus Markdown with contentLanguage so users can leave (story 4.6, DAT-003, SET-001, I18N-003).",
+  "outcome": "Manifest is locale-neutral and sorted; preview warns that item bodies may contain secrets; path traversal archives fail; settings export excludes diagnostics/paths/tokens.",
+  "priority": 46,
+  "requirements": [
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "4-6-DETERMINISTIC-EXPORT-IMPORT-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given items persist, when export/import run, then the manifest is locale-neutral and sorted and path traversal archives fail."
+    }
+  ],
+  "depends_on": [
+    "4-1-domain-entities-and-lifecycle",
+    "4-2-schema-v1-and-migrations"
+  ]
+}

@@ -31,4 +31,14 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /<html lang="en">/);
   assert.match(html, /data-open-window="help"/);
   assert.doesNotMatch(html, /href="help\.html"/);
+  assert.equal(en["settings.export.preview"], "Export preview");
+  assert.equal(
+    en["settings.export.sensitive"],
+    "User-entered literals may be sensitive",
+  );
+  assert.equal(en["help.title"], "Help");
+  assert.match(html, />\s*Export preview\s*</);
+  assert.match(html, />\s*User-entered literals may be sensitive\s*</);
+  assert.match(html, />\s*Help\s*</);
+  assert.doesNotMatch(html, /Exportt previeww|Helpp|User-enteredd/);
 });

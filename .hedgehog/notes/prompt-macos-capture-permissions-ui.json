@@ -1,0 +1,10 @@
+{
+  "task": "PROMPT-MACOS-CAPTURE-PERMISSIONS-UI",
+  "notes": [
+    {
+      "kind": "debt",
+      "note": "docs/07 still says preflight-on-launch without prompting; update 7-3 notes and capture reliability to match startup/first-capture/retest prompts. Live capture IPC is not in the WebView yet; rust on_capture_requested is the first-capture hook.",
+      "logged_at": "2026-09-16T15:56:42.745Z"
+    }
+  ]
+}

@@ -65,9 +65,17 @@ pub fn run() {
 #[cfg(target_os = "macos")]
 #[tauri::command]
 fn show_chrome_window(app: tauri::AppHandle, kind: String) -> Result<(), String> {
-    use tauri::Manager;
-    let label = window_edge::allowed_chrome_window(&kind).ok_or("unknown_window")?;
-    let window = app.get_webview_window(label).ok_or("missing_window")?;
+    use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+    let spec = window_edge::chrome_window_spec(&kind).ok_or("unknown_window")?;
+    let window = if let Some(existing) = app.get_webview_window(spec.label) {
+        existing
+    } else {
+        WebviewWindowBuilder::new(&app, spec.label, WebviewUrl::App(spec.url.into()))
+            .title(spec.title)
+            .inner_size(spec.width, spec.height)
+            .build()
+            .map_err(|err| err.to_string())?
+    };
     window.show().map_err(|err| err.to_string())?;
     let _ = window.set_focus();
     Ok(())
@@ -341,6 +349,8 @@ mod tests {
         let reveal = include_str!("lib.rs");
         assert!(reveal.contains("LogicalSize"));
         assert!(reveal.contains("physical_rect_to_logical"));
+        assert!(reveal.contains("WebviewWindowBuilder"));
+        assert!(reveal.contains("chrome_window_spec"));
         let library = windows
             .iter()
             .find(|window| window["label"] == "library")

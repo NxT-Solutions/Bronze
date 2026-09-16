@@ -1,0 +1,67 @@
+{
+  "id": "6-1-composer-add-item",
+  "goal": "Add a multiline composer that parks a prompt with Cmd-Enter (story 6.1, QUE-002, CAP-003, I18N-003, A11Y-002).",
+  "outcome": "Cmd-Enter adds; Enter during isComposing does not; failure retains draft; content_language defaults to und; strings from catalog.",
+  "priority": 61,
+  "requirements": [
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-RULE-1",
+      "kind": "rule",
+      "statement": "Never accept ADR-002, ADR-009, or ADR-018 silently; leave them Proposed."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-RULE-2",
+      "kind": "rule",
+      "statement": "Do not copy Cooper source or Copper trade dress."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-RULE-3",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or logging."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-RULE-4",
+      "kind": "rule",
+      "statement": "No network, telemetry, accounts, remote fonts, CDN, hosted AI, or analytics."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-RULE-6",
+      "kind": "rule",
+      "statement": "Preserve requirement IDs in implementation notes, tests, and evidence."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Work only on branch bmad/bronze-autonomous; never push."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "Do not resume bmad-loop run 6a79."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-CONSTRAINT-4",
+      "kind": "constraint",
+      "statement": "Do not invent a Swift verify command; pnpm verify is the repo bar."
+    },
+    {
+      "id": "6-1-COMPOSER-ADD-ITEM-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Given panel and store exist, when the composer is implemented, then Cmd-Enter adds an item and Enter during isComposing does not."
+    }
+  ],
+  "depends_on": [
+    "4-3-command-receipts-and-revisions",
+    "5-2-quick-panel-window-and-physical-edge"
+  ]
+}
