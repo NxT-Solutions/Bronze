@@ -1,8 +1,27 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "macos")]
+    start_native_or_die();
+
     tauri::Builder::default()
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(target_os = "macos")]
+fn start_native_or_die() {
+    match bronze_platform_macos::NativeRuntime::start() {
+        Ok(runtime) => {
+            let version = runtime
+                .abi_version()
+                .expect("BronzeNative version query (CAP-004)");
+            bronze_platform_macos::check_abi_version(version)
+                .expect("BronzeNative ABI mismatch is fail-closed (CAP-004)");
+            // Process-lifetime: dropping would shutdown the in-process static lib.
+            std::mem::forget(runtime);
+        }
+        Err(err) => panic!("BronzeNative init failed; refusing sidecar fallback (ADR-004): {err}"),
+    }
 }
 
 #[cfg(test)]
@@ -102,5 +121,42 @@ mod tests {
             .map(|n| Value::String((*n).into()))
             .collect();
         assert_eq!(capabilities, &expected);
+    }
+
+    #[test]
+    fn release_like_bundle_has_no_helper_executable() {
+        let conf = read_json(&manifest_dir().join("tauri.conf.json"));
+        assert!(
+            conf["bundle"].get("externalBin").is_none(),
+            "bundle.externalBin would be a helper/sidecar (ADR-004)"
+        );
+        let cargo = fs::read_to_string(manifest_dir().join("Cargo.toml")).unwrap();
+        assert!(
+            !cargo.to_ascii_lowercase().contains("sidecar"),
+            "desktop crate must not declare a sidecar"
+        );
+        assert!(
+            !cargo.contains("[[bin]]"),
+            "extra bin target would be a second TCC subject"
+        );
+        assert!(
+            cargo.contains("default-features = false"),
+            "bronze-platform-macos must disable abi-stub when linking BronzeNative"
+        );
+        assert!(
+            !manifest_dir().join("src/helper.rs").exists(),
+            "helper.rs must not exist"
+        );
+    }
+
+    #[cfg(all(target_os = "macos", bronze_native_linked))]
+    #[test]
+    fn startup_abi_version_check_uses_linked_native() {
+        let runtime = bronze_platform_macos::NativeRuntime::start()
+            .expect("linked BronzeNative init (story 2.3)");
+        let version = runtime.abi_version().expect("version");
+        bronze_platform_macos::check_abi_version(version).expect("fail-closed version");
+        assert_eq!(version, bronze_platform_macos::BRONZE_ABI_VERSION);
+        runtime.shutdown().expect("shutdown");
     }
 }
