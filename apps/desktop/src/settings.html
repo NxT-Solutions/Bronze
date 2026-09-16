@@ -67,6 +67,33 @@
         <button type="button" data-i18n="settings.reset.group">Reset group</button>
         <button type="button" data-i18n="settings.reset.all">Reset all</button>
       </form>
+      <section data-slot="shortcut-recorder" aria-labelledby="shortcuts-title">
+        <h2 id="shortcuts-title" data-i18n="settings.shortcuts.title">Shortcuts</h2>
+        <p role="status" data-shortcut-live data-i18n="settings.shortcuts.live">
+          Listening
+        </p>
+        <label for="shortcut-record" data-i18n="settings.shortcuts.record">
+          Record shortcut
+        </label>
+        <input id="shortcut-record" type="text" />
+        <button type="button" data-i18n="settings.shortcuts.skipTest">Skip test</button>
+        <p data-standard-chord="capture.selection"></p>
+        <ul data-shortcut-registry>
+          <li data-action="app.togglePanel">app.togglePanel</li>
+          <li data-action="capture.selection">capture.selection</li>
+          <li data-action="capture.newNote">capture.newNote</li>
+          <li data-action="queue.copy">queue.copy</li>
+          <li data-action="queue.copyWithProfile">queue.copyWithProfile</li>
+          <li data-action="queue.copyAndAdvance">queue.copyAndAdvance</li>
+          <li data-action="queue.complete">queue.complete</li>
+          <li data-action="queue.edit">queue.edit</li>
+          <li data-action="queue.moveUp">queue.moveUp</li>
+          <li data-action="queue.moveDown">queue.moveDown</li>
+          <li data-action="queue.search">queue.search</li>
+          <li data-action="queue.undo">queue.undo</li>
+          <li data-action="window.settings">window.settings</li>
+        </ul>
+      </section>
       <section aria-labelledby="settings-export-preview">
         <h2 id="settings-export-preview" data-i18n="settings.export.preview">
           Export preview

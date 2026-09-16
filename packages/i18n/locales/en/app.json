@@ -51,5 +51,10 @@
   "settings.reset.group": "Reset group",
   "settings.reset.all": "Reset all",
   "settings.export.preview": "Export preview",
-  "settings.export.sensitive": "User-entered literals may be sensitive"
+  "settings.export.sensitive": "User-entered literals may be sensitive",
+  "settings.shortcuts.title": "Shortcuts",
+  "settings.shortcuts.record": "Record shortcut",
+  "settings.shortcuts.skipTest": "Skip test",
+  "settings.shortcuts.alternatives": "Keep a menu or manual path",
+  "settings.shortcuts.live": "Listening"
 }

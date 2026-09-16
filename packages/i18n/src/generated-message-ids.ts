@@ -55,6 +55,11 @@ export const MessageIds = {
   "settings.reset.all": "settings.reset.all",
   "settings.export.preview": "settings.export.preview",
   "settings.export.sensitive": "settings.export.sensitive",
+  "settings.shortcuts.title": "settings.shortcuts.title",
+  "settings.shortcuts.record": "settings.shortcuts.record",
+  "settings.shortcuts.skipTest": "settings.shortcuts.skipTest",
+  "settings.shortcuts.alternatives": "settings.shortcuts.alternatives",
+  "settings.shortcuts.live": "settings.shortcuts.live",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

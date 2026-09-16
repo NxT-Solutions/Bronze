@@ -51,5 +51,10 @@
   "settings.reset.group": "puorg teseR",
   "settings.reset.all": "lla teseR",
   "settings.export.preview": "weiverp tropxE",
-  "settings.export.sensitive": "evitisnes eb yam slaretil deretne-resU"
+  "settings.export.sensitive": "evitisnes eb yam slaretil deretne-resU",
+  "settings.shortcuts.title": "stuctrohS",
+  "settings.shortcuts.record": "tuctrohs droceR",
+  "settings.shortcuts.skipTest": "tset pikS",
+  "settings.shortcuts.alternatives": "htap launam ro unem a peeK",
+  "settings.shortcuts.live": "gninetsiL"
 }

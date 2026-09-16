@@ -51,5 +51,10 @@
   "settings.reset.group": "【RRéesséett ggrróoúupp】",
   "settings.reset.all": "【RRéesséett áallll】",
   "settings.export.preview": "【ÉExxppóorrtt pprréevvíiéeww】",
-  "settings.export.sensitive": "【ÚUsséerr-éeñnttéerréedd llíittéerráallss mmáayy bbée sséeñnssíittíivvée】"
+  "settings.export.sensitive": "【ÚUsséerr-éeñnttéerréedd llíittéerráallss mmáayy bbée sséeñnssíittíivvée】",
+  "settings.shortcuts.title": "【SShhóorrttçcúuttss】",
+  "settings.shortcuts.record": "【RRéeçcóorrdd sshhóorrttçcúutt】",
+  "settings.shortcuts.skipTest": "【SSkkíipp ttéesstt】",
+  "settings.shortcuts.alternatives": "【KKéeéepp áa mméeñnúu óorr mmáañnúuáall ppáatthh】",
+  "settings.shortcuts.live": "【LLíissttéeñníiñngg】"
 }
