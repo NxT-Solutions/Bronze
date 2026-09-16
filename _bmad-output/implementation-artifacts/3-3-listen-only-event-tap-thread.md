@@ -1,6 +1,6 @@
 # Story 3.3: Listen-only event tap thread
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,18 @@ prompting TCC
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `native/macos/BronzeNative/Sources/BronzeNative/EventTapSPSC.swift` — bounded SPSC; single producer thread
+- `native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift` — session listenOnly tap, dedicated run loop, pass-through callback, disable resets FSM
+- `native/macos/BronzeNative/Sources/BronzeNative/EventTapABI.swift` — C ABI start/stop/health/feed/drain
+- `native/macos/BronzeNative/Tests/BronzeNativeTests/EventTapTests.swift` — `--filter EventTap`
+- `bronze-platform-macos/src/{abi,abi_stub,bridge,lib}.rs` — façade; stub degrades without prompt
+- `apps/desktop/src-tauri/src/event_tap.rs` — linked SPSC + disable-reset tests
+- `apps/desktop/src-tauri/src/lib.rs` — startup `event_tap_start()` (degrade on Input Monitoring denial)
+
+### Notes
+
+- UI layer was a no-op. No TCC prompt. No keycodes persisted. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
