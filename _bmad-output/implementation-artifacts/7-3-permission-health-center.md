@@ -1,6 +1,6 @@
 # Story 7.3: Permission health center
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,14 @@ completing Story 3.9
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-settings/src/health.rs` — independent rows, Screen Recording Not used, composer after denial
+- `packages/ui/src/components/permission-health.tsx` — why/retest/alternatives
+- `apps/desktop/src/settings.html` — permission health list
+
+### Notes
+
+- Story 3.9 stays backlog. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
