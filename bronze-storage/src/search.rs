@@ -27,6 +27,15 @@ pub fn claims_locale_search() -> bool {
     false
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SearchAnnouncement {
+    pub count: usize,
+}
+
+pub fn announce_search(hits: &[SearchHit]) -> SearchAnnouncement {
+    SearchAnnouncement { count: hits.len() }
+}
+
 impl Store {
     pub fn search_placeholder(&self, query: &str) -> Result<Vec<SearchHit>, SearchError> {
         self.search(query, SearchKind::PlaceholderSubstring)
@@ -157,5 +166,19 @@ mod search_placeholder_tests {
             )
             .expect("leak");
         assert_eq!(leaked, 0);
+    }
+
+    #[test]
+    fn search_ui_announces_count_without_query_or_que007() {
+        assert!(!QUE_007_COMPLETE);
+        assert_eq!(ADR_018_STATUS, "Proposed");
+        let store = open_store();
+        let query = "secret-query-never-in-announce";
+        let hits = store.search_placeholder("plain").expect("hits");
+        let announced = announce_search(&hits);
+        assert_eq!(announced.count, 1);
+        let rendered = format!("{announced:?}{announced:?}");
+        assert!(!rendered.contains(query));
+        assert!(!rendered.contains("plain"));
     }
 }

@@ -26,6 +26,7 @@ pub use queue::{
 };
 pub use receipts::{Command, CommandError, Receipt, RETRY_WINDOW_MS};
 pub use search::{
-    claims_locale_search, SearchError, SearchHit, SearchKind, ADR_018_STATUS, QUE_007_COMPLETE,
+    announce_search, claims_locale_search, SearchAnnouncement, SearchError, SearchHit, SearchKind,
+    ADR_018_STATUS, QUE_007_COMPLETE,
 };
 pub use undo::UndoError;
