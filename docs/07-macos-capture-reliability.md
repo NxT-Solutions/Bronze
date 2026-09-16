@@ -123,6 +123,8 @@ CAP-003 menu path must retain target even if opening status menu activates Bronz
 - lastExternalPID updates whenever non-Bronze app becomes active.
 - Opening status menu loads/publishes ingress target before any Bronze activation.
 - Capture command consumes that snapshot; it never substitutes whichever app becomes frontmost afterward.
+- Capture persists AX selected text into the same queue store as the composer, then announces a content-free saved result. It does not reveal or focus the Quick Panel (WIN-003 capture-only).
+- Status-item left-click is Show. The status menu is Show, Capture, Settings, and Quit.
 - If target exited, return target_lost and open manual composer.
 
 ### 4.4 Manual routes

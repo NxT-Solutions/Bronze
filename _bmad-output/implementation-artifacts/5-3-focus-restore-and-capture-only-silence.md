@@ -52,3 +52,4 @@ Hedgehog authored loop / layer-eng (cursor-grok).
 ### Notes
 
 - VoiceOver sign-off is a non-goal. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
+- Live AX persist (`on_capture_requested`) does not reveal or focus the Quick Panel. Show is the reveal path. Debug `tauri dev` may show the panel on launch; that is not a capture-only reveal.

@@ -51,4 +51,5 @@ Hedgehog authored loop / layer-eng (cursor-grok).
 
 ### Notes
 
-- Real capture success is a non-goal. VoiceOver remains a human gate. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. Debt #2 is resolved by design: do not re-enable `abi-stub` on bronze-desktop.
+- VoiceOver remains a human gate. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. Do not re-enable `abi-stub` on bronze-desktop.
+- Desktop installs a live `NSStatusItem` (accessible name Bronze). Left-click is Show. Menu: Show, Capture, Settings, Quit. Capture persists AX selection into the same store as the composer.

@@ -55,3 +55,4 @@ Hedgehog authored loop / layer-eng (cursor-grok).
 
 - Story 3.9 stays backlog. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
 - Retest calls `retest_used_permissions` (always request used permissions). If the OS will not re-prompt, `settings.permission.openSystemSettings` is revealed after that attempt. Screen Recording stays Not used and is never requested.
+- AX / Input Monitoring denial still leaves the manual composer. Status-menu Capture uses the same used-permission prompt path.

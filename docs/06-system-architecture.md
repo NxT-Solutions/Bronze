@@ -271,7 +271,7 @@ Rules:
 3. Verify integrity; create backup before pending migration.
 4. Apply transactional migrations.
 5. Load settings and locale.
-6. Create accessible status item and hidden warm quick panel.
+6. Create accessible status item and warm quick panel (debug `tauri dev` shows it on launch; capture-only still does not reveal it).
 7. Register last-known-good standard chord.
 8. Request Accessibility and Input Monitoring when not already granted; never Screen Recording; never loop-prompt.
 9. Start passive event tap only when configured and authorized.

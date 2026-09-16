@@ -45,5 +45,5 @@ Requests run off the event-tap callback. Creating a listen-only tap may also sur
 ### Notes
 
 - Story 3.9 / 3.10 / 5.5 / 9.3 stay backlog.
-- Live capture IPC is not in the WebView yet; the first-capture hook is Rust `on_capture_requested`.
+- First-capture hook is Rust `on_capture_requested` (status/app-menu Capture). It persists AX selection when permitted; the WebView is not the capture trigger.
 - Input Monitoring often prompts once per TCC identity. Accessibility may re-prompt on some OS versions. A `tauri dev` rebuild can receive a new TCC identity.
