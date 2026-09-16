@@ -1,6 +1,6 @@
 # Story 3.4: Atomic ingress snapshot
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,17 @@ real AX focus identity (next stories)
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-capture/src/ingress.rs` — `CaptureIngressContext` + `IngressSeqlock`; inconsistent load is `context_unavailable`
+- `native/macos/BronzeNative/Sources/BronzeNative/IngressSnapshot.swift` — same fields; no titles, URLs, or focused element
+- `native/macos/BronzeNative/Sources/BronzeNative/IngressABI.swift` — scalar C publish/load; torn read → `BRONZE_STATUS_CONTEXT_UNAVAILABLE`
+- `native/macos/BronzeNative/Tests/BronzeNativeTests/IngressTests.swift` — `--filter Ingress`
+- `bronze-platform-macos/src/{abi,abi_stub,bridge,lib}.rs` — façade + stub; `NativeError::ContextUnavailable`
+- `apps/desktop/src-tauri/src/ingress.rs` — linked inconsistent-read test
+
+### Notes
+
+- UI layer was a no-op. Never substitute live frontmost on torn read. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
