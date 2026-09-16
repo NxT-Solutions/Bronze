@@ -1,6 +1,6 @@
 # Story 9.2: Help diagnostics and known limitations
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,14 @@ public ACR
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-diagnostics/src/bundle.rs` — preview-before-export, no upload, human gates
+- `packages/ui/src/components/help.tsx` — local HTML help
+- `apps/desktop/src/help.html` — diagnostics preview
+
+### Notes
+
+- Stories 3.9, 3.10, 5.5, 9.3 stay backlog. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. No public ACR claim.
