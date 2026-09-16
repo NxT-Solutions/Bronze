@@ -1,6 +1,6 @@
 # Story 4.6: Deterministic export import
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,13 @@ file picker UI
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust+ui evidence.
+
 ### File List
+
+- `bronze-storage/src/export.rs` — deterministic JSON+Markdown archive; locale-neutral RFC 3339 UTC; path-traversal reject; settings filter (DAT-003, SET-001, I18N-003)
+- `packages/i18n/locales/*/app.json` — `export.preview.secretBodies` (file picker UI is story 7.4)
+
+### Notes
+
+- File picker UI is a non-goal here. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
