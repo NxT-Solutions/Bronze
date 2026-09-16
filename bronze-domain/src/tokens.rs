@@ -1,4 +1,4 @@
-//! Warm bronze tokens with measured contrast (story 8.1, A11Y-003).
+//! Clean zinc tokens with measured contrast (story 8.1, A11Y-003).
 //! DESIGN.md / concept PNG is inspiration, not a pixel spec.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,35 +34,35 @@ pub struct ThemeTokens {
     pub secondary_foreground: Rgb,
 }
 
-/// Warm parchment + bronze — no competitor trade dress.
+/// Near-white zinc surfaces — no competitor trade dress, no brand brown.
 pub const LIGHT: ThemeTokens = ThemeTokens {
-    background: Rgb::hex(0xF7F4EF),
-    foreground: Rgb::hex(0x1C1917),
+    background: Rgb::hex(0xFAFAFA),
+    foreground: Rgb::hex(0x18181B),
     card: Rgb::hex(0xFFFFFF),
-    card_foreground: Rgb::hex(0x1C1917),
-    muted: Rgb::hex(0xEFE8DE),
-    muted_foreground: Rgb::hex(0x5C564E),
-    primary: Rgb::hex(0x8C6239),
-    primary_foreground: Rgb::hex(0xFFFFFF),
-    accent: Rgb::hex(0xC4A265),
-    accent_foreground: Rgb::hex(0x1C1917),
-    secondary: Rgb::hex(0xEFE8DE),
-    secondary_foreground: Rgb::hex(0x1C1917),
+    card_foreground: Rgb::hex(0x18181B),
+    muted: Rgb::hex(0xF4F4F5),
+    muted_foreground: Rgb::hex(0x52525B),
+    primary: Rgb::hex(0x18181B),
+    primary_foreground: Rgb::hex(0xFAFAFA),
+    accent: Rgb::hex(0x18181B),
+    accent_foreground: Rgb::hex(0xFAFAFA),
+    secondary: Rgb::hex(0xF4F4F5),
+    secondary_foreground: Rgb::hex(0x18181B),
 };
 
 pub const DARK: ThemeTokens = ThemeTokens {
-    background: Rgb::hex(0x1A1714),
-    foreground: Rgb::hex(0xF7F4EF),
-    card: Rgb::hex(0x2A2520),
-    card_foreground: Rgb::hex(0xF7F4EF),
-    muted: Rgb::hex(0x2A2520),
-    muted_foreground: Rgb::hex(0xE3D5C3),
-    primary: Rgb::hex(0xD4B483),
-    primary_foreground: Rgb::hex(0x1A1714),
-    accent: Rgb::hex(0xD4B483),
-    accent_foreground: Rgb::hex(0x1A1714),
-    secondary: Rgb::hex(0x2A2520),
-    secondary_foreground: Rgb::hex(0xF7F4EF),
+    background: Rgb::hex(0x18181B),
+    foreground: Rgb::hex(0xFAFAFA),
+    card: Rgb::hex(0x27272A),
+    card_foreground: Rgb::hex(0xFAFAFA),
+    muted: Rgb::hex(0x27272A),
+    muted_foreground: Rgb::hex(0xA1A1AA),
+    primary: Rgb::hex(0xFAFAFA),
+    primary_foreground: Rgb::hex(0x18181B),
+    accent: Rgb::hex(0xFAFAFA),
+    accent_foreground: Rgb::hex(0x18181B),
+    secondary: Rgb::hex(0x27272A),
+    secondary_foreground: Rgb::hex(0xFAFAFA),
 };
 
 pub const MIN_NORMAL_TEXT_CONTRAST: f64 = 4.5;
@@ -132,5 +132,10 @@ mod token_tests {
         let banned_brand = ["coo", "per"].concat();
         assert!(!src.to_ascii_lowercase().contains(&banned));
         assert!(!src.to_ascii_lowercase().contains(&banned_brand));
+        assert_eq!(LIGHT.background, Rgb::hex(0xFAFAFA));
+        assert_eq!(LIGHT.foreground, Rgb::hex(0x18181B));
+        assert_eq!(LIGHT.primary, Rgb::hex(0x18181B));
+        assert_ne!(LIGHT.background, Rgb::hex(0xF7F4EF));
+        assert_ne!(LIGHT.primary, Rgb::hex(0x8C6239));
     }
 }

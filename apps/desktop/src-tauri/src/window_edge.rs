@@ -36,8 +36,10 @@ pub enum PanelKind {
 
 pub const PANEL_KIND: PanelKind = PanelKind::Activating;
 pub const FOCUS_TRAP: bool = false;
-pub const QUICK_PANEL_WIDTH: u32 = 360;
-pub const QUICK_PANEL_HEIGHT: u32 = 640;
+pub const QUICK_PANEL_WIDTH: u32 = 400;
+pub const QUICK_PANEL_HEIGHT: u32 = 720;
+pub const QUICK_PANEL_MIN_WIDTH: u32 = bronze_domain::REFLOW_WIDTH_CSS_PX;
+pub const QUICK_PANEL_MIN_HEIGHT: u32 = 560;
 pub const DEV_LAUNCH_REVEALS_QUICK: bool = true;
 pub const CAPTURE_ONLY_REVEALS_PANEL: bool = false;
 pub const DEFAULT_PHYSICAL_EDGE: PhysicalEdge = PhysicalEdge::Left;
@@ -45,10 +47,25 @@ pub const DEFAULT_PHYSICAL_EDGE: PhysicalEdge = PhysicalEdge::Left;
 const _: () = assert!(DEV_LAUNCH_REVEALS_QUICK);
 const _: () = assert!(!CAPTURE_ONLY_REVEALS_PANEL);
 
+pub fn physical_rect_to_logical(physical: Rect, scale_factor: f64) -> Rect {
+    let scale = if scale_factor.is_finite() && scale_factor > 0.0 {
+        scale_factor
+    } else {
+        1.0
+    };
+    Rect {
+        x: (f64::from(physical.x) / scale).round() as i32,
+        y: (f64::from(physical.y) / scale).round() as i32,
+        width: (f64::from(physical.width) / scale).round() as u32,
+        height: (f64::from(physical.height) / scale).round() as u32,
+    }
+}
+
 pub fn allowed_chrome_window(kind: &str) -> Option<&'static str> {
     match kind {
         "library" => Some("library"),
         "settings" => Some("settings"),
+        "help" => Some("help"),
         _ => None,
     }
 }
@@ -141,8 +158,8 @@ mod window_edge_tests {
     const PANEL: Rect = Rect {
         x: 0,
         y: 0,
-        width: 360,
-        height: 640,
+        width: QUICK_PANEL_WIDTH,
+        height: QUICK_PANEL_HEIGHT,
     };
 
     #[test]
@@ -163,7 +180,10 @@ mod window_edge_tests {
         assert_eq!(left_ltr, left_rtl);
         assert_eq!(left_ltr.x, WORK.x);
         let right = place_on_physical_edge(PhysicalEdge::Right, PANEL, WORK, TextDirection::Rtl);
-        assert_eq!(right.x, WORK.x + WORK.width as i32 - 360);
+        assert_eq!(
+            right.x,
+            WORK.x + WORK.width as i32 - QUICK_PANEL_WIDTH as i32
+        );
         assert_eq!(
             stored_edge_ignores_direction(PhysicalEdge::Left, TextDirection::Rtl),
             PhysicalEdge::Left
@@ -193,8 +213,8 @@ mod window_edge_tests {
             Rect {
                 x: 100,
                 y: 50,
-                width: 360,
-                height: 640,
+                width: QUICK_PANEL_WIDTH,
+                height: QUICK_PANEL_HEIGHT,
             },
             shrunk,
         );
@@ -213,6 +233,7 @@ mod window_edge_tests {
     fn chrome_window_allow_list_excludes_arbitrary_labels() {
         assert_eq!(allowed_chrome_window("library"), Some("library"));
         assert_eq!(allowed_chrome_window("settings"), Some("settings"));
+        assert_eq!(allowed_chrome_window("help"), Some("help"));
         assert_eq!(allowed_chrome_window("quick"), None);
         assert_eq!(allowed_chrome_window("onboarding"), None);
         assert_eq!(allowed_chrome_window(""), None);
@@ -229,5 +250,50 @@ mod window_edge_tests {
         assert_eq!(frame.width, QUICK_PANEL_WIDTH);
         assert_eq!(frame.height, WORK.height);
         assert_eq!(DEFAULT_PHYSICAL_EDGE, PhysicalEdge::Left);
+    }
+
+    #[test]
+    fn quick_panel_defaults_are_comfortable_above_reflow_floor() {
+        assert_eq!(QUICK_PANEL_MIN_WIDTH, bronze_domain::REFLOW_WIDTH_CSS_PX);
+        assert_eq!(QUICK_PANEL_WIDTH, 400);
+        assert_eq!(QUICK_PANEL_HEIGHT, 720);
+        assert_eq!(QUICK_PANEL_MIN_HEIGHT, 560);
+        assert!(QUICK_PANEL_WIDTH > QUICK_PANEL_MIN_WIDTH);
+        assert!(QUICK_PANEL_HEIGHT > QUICK_PANEL_MIN_HEIGHT);
+    }
+
+    #[test]
+    fn work_area_physical_pixels_convert_to_logical_css_px() {
+        let retina = Rect {
+            x: 0,
+            y: 74,
+            width: 3024,
+            height: 1890,
+        };
+        let logical = physical_rect_to_logical(retina, 2.0);
+        assert_eq!(
+            logical,
+            Rect {
+                x: 0,
+                y: 37,
+                width: 1512,
+                height: 945,
+            }
+        );
+        let frame = quick_panel_frame(logical, TextDirection::Ltr);
+        assert_eq!(frame.width, QUICK_PANEL_WIDTH);
+        assert_eq!(frame.height, logical.height);
+        assert!(frame.width > QUICK_PANEL_MIN_WIDTH);
+        let unscaled_design = physical_rect_to_logical(
+            Rect {
+                x: 0,
+                y: 0,
+                width: QUICK_PANEL_WIDTH,
+                height: QUICK_PANEL_HEIGHT,
+            },
+            2.0,
+        );
+        assert!(unscaled_design.width < QUICK_PANEL_MIN_WIDTH);
+        assert_eq!(physical_rect_to_logical(retina, 0.0).width, retina.width);
     }
 }

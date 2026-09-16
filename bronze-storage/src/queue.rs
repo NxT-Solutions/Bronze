@@ -2,6 +2,7 @@
 
 use crate::migrate::Store;
 use bronze_domain::{can_transition, Lifecycle};
+use rusqlite::OptionalExtension;
 
 pub const QUEUE_MOVE_UP_KEY: &str = "queue.item.moveUp";
 pub const QUEUE_MOVE_DOWN_KEY: &str = "queue.item.moveDown";
@@ -27,6 +28,16 @@ pub enum QueueError {
     Store,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct QueueItemRow {
+    pub id: String,
+    pub section_id: String,
+    pub body: String,
+    pub content_language: String,
+    pub status: String,
+    pub rank: String,
+}
+
 pub fn queue_action_key(action: QueueAction) -> &'static str {
     match action {
         QueueAction::Complete => QUEUE_COMPLETE_KEY,
@@ -38,6 +49,83 @@ pub fn queue_action_key(action: QueueAction) -> &'static str {
 }
 
 impl Store {
+    pub fn ensure_inbox(&self, now_ms: i64) -> Result<String, QueueError> {
+        let existing: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT id FROM sections WHERE id='inbox' AND state='active'",
+                [],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|_| QueueError::Store)?;
+        if let Some(id) = existing {
+            return Ok(id);
+        }
+        self.conn
+            .execute(
+                "INSERT OR IGNORE INTO workspaces (id, name, created_at_ms, updated_at_ms)
+                 VALUES ('default', 'Bronze', ?1, ?1)",
+                [now_ms],
+            )
+            .map_err(|_| QueueError::Store)?;
+        self.conn
+            .execute(
+                "INSERT OR IGNORE INTO sections
+                 (id, workspace_id, title, rank, state, color_token, revision, created_at_ms, updated_at_ms, deleted_at_ms)
+                 VALUES ('inbox', 'default', 'Inbox', '0', 'active', NULL, 1, ?1, ?1, NULL)",
+                [now_ms],
+            )
+            .map_err(|_| QueueError::Store)?;
+        Ok("inbox".into())
+    }
+
+    pub fn list_items(&self, include_trashed: bool) -> Result<Vec<QueueItemRow>, QueueError> {
+        let sql = if include_trashed {
+            "SELECT id, section_id, body, content_language, status, rank FROM items ORDER BY rank, id"
+        } else {
+            "SELECT id, section_id, body, content_language, status, rank FROM items WHERE status != 'trashed' ORDER BY rank, id"
+        };
+        let mut stmt = self.conn.prepare(sql).map_err(|_| QueueError::Store)?;
+        let rows = stmt
+            .query_map([], |row| {
+                Ok(QueueItemRow {
+                    id: row.get(0)?,
+                    section_id: row.get(1)?,
+                    body: row.get(2)?,
+                    content_language: row.get(3)?,
+                    status: row.get(4)?,
+                    rank: row.get(5)?,
+                })
+            })
+            .map_err(|_| QueueError::Store)?;
+        rows.collect::<Result<_, _>>()
+            .map_err(|_| QueueError::Store)
+    }
+
+    pub fn get_item(&self, id: &str) -> Result<QueueItemRow, QueueError> {
+        self.conn
+            .query_row(
+                "SELECT id, section_id, body, content_language, status, rank FROM items WHERE id=?1",
+                [id],
+                |row| {
+                    Ok(QueueItemRow {
+                        id: row.get(0)?,
+                        section_id: row.get(1)?,
+                        body: row.get(2)?,
+                        content_language: row.get(3)?,
+                        status: row.get(4)?,
+                        rank: row.get(5)?,
+                    })
+                },
+            )
+            .map_err(|_| QueueError::NotFound)
+    }
+
+    pub fn mark_copied(&mut self, id: &str, now_ms: i64) -> Result<(), QueueError> {
+        self.set_status(id, "copied", now_ms)
+    }
+
     pub fn apply_queue_action(
         &mut self,
         id: &str,
@@ -235,5 +323,19 @@ mod queue_tests {
                 .unwrap_err(),
             QueueError::InvalidTransition
         );
+    }
+
+    #[test]
+    fn ensure_inbox_lists_and_marks_copied() {
+        let mut store = open_store();
+        assert_eq!(store.ensure_inbox(20).expect("inbox"), "inbox");
+        assert_eq!(store.list_items(false).expect("list").len(), 2);
+        store.mark_copied("b", 21).expect("copied");
+        assert_eq!(store.get_item("b").expect("row").status, "copied");
+        store
+            .apply_queue_action("b", QueueAction::Trash, 22)
+            .expect("trash");
+        assert_eq!(store.list_items(false).expect("active").len(), 1);
+        assert_eq!(store.list_items(true).expect("all").len(), 2);
     }
 }

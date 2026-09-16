@@ -1,0 +1,7 @@
+{
+  "identifier": "help",
+  "description": "Capability for the help window",
+  "local": true,
+  "windows": ["help"],
+  "permissions": ["core:default"]
+}

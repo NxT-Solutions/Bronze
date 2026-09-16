@@ -10,5 +10,42 @@ commands.allow = ["open_privacy_settings"]
 
 [[permission]]
 identifier = "allow-show-chrome-window"
-description = "Show the Library or Settings window from the Quick Panel"
+description = "Show the Library, Settings, or Help window from the Quick Panel"
 commands.allow = ["show_chrome_window"]
+
+[[permission]]
+identifier = "allow-queue-live"
+description = "Composer, queue mutations, and copy for the Quick Panel"
+commands.allow = [
+  "list_queue_items",
+  "add_composer_item",
+  "apply_queue_item_action",
+  "edit_queue_item",
+  "copy_queue_items",
+  "ui_locale",
+]
+
+[[permission]]
+identifier = "allow-library-live"
+description = "Library list, substring search, and Rust-owned backup/export/import"
+commands.allow = [
+  "list_queue_items",
+  "search_library_items",
+  "backup_library_now",
+  "export_library_archive",
+  "import_library_archive",
+  "ui_locale",
+]
+
+[[permission]]
+identifier = "allow-settings-live"
+description = "Load, save, and reset SettingsV1 plus catalog locale"
+commands.allow = [
+  "load_settings_v1",
+  "save_settings_v1",
+  "reset_settings_field",
+  "reset_settings_group",
+  "reset_settings_all",
+  "search_settings_fields",
+  "ui_locale",
+]

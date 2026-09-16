@@ -6,6 +6,7 @@
   "permissions": [
     "core:default",
     "allow-retest-used-permissions",
-    "allow-open-privacy-settings"
+    "allow-open-privacy-settings",
+    "allow-settings-live"
   ]
 }

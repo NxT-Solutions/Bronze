@@ -3,5 +3,5 @@
   "description": "Capability for the quick panel window",
   "local": true,
   "windows": ["quick"],
-  "permissions": ["core:default", "allow-show-chrome-window"]
+  "permissions": ["core:default", "allow-show-chrome-window", "allow-queue-live"]
 }

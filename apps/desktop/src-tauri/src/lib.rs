@@ -1,4 +1,5 @@
 mod capture_permissions;
+mod live_session;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,8 +15,28 @@ pub fn run() {
                 capture_permissions::retest_used_permissions,
                 capture_permissions::open_privacy_settings,
                 show_chrome_window,
+                live_session::list_queue_items,
+                live_session::add_composer_item,
+                live_session::apply_queue_item_action,
+                live_session::edit_queue_item,
+                live_session::copy_queue_items,
+                live_session::search_library_items,
+                live_session::load_settings_v1,
+                live_session::save_settings_v1,
+                live_session::reset_settings_field,
+                live_session::reset_settings_group,
+                live_session::reset_settings_all,
+                live_session::search_settings_fields,
+                live_session::ui_locale,
+                live_session::backup_library_now,
+                live_session::export_library_archive,
+                live_session::import_library_archive,
             ])
             .setup(|app| {
+                use tauri::Manager;
+                let data_dir = app.path().app_data_dir()?;
+                let session = live_session::LiveSession::open(data_dir)?;
+                app.manage(std::sync::Mutex::new(session));
                 install_chrome_menu(app.handle())?;
                 reveal_quick_panel(app.handle())?;
                 Ok(())
@@ -26,6 +47,12 @@ pub fn run() {
                 }
                 "show-settings" => {
                     let _ = show_chrome_window(app.clone(), "settings".into());
+                }
+                "show-help" => {
+                    let _ = show_chrome_window(app.clone(), "help".into());
+                }
+                "capture-selection" => {
+                    on_capture_requested();
                 }
                 _ => {}
             });
@@ -53,16 +80,22 @@ fn install_chrome_menu(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let app_name = require_key(&map, "app.name").unwrap_or_else(|_| "Bronze".into());
     let library = require_key(&map, "library.title").unwrap_or_else(|_| "Library".into());
     let settings = require_key(&map, "settings.title").unwrap_or_else(|_| "Settings".into());
+    let help = require_key(&map, "help.title").unwrap_or_else(|_| "Help".into());
+    let capture = require_key(&map, "menu.status.capture").unwrap_or_else(|_| "Capture".into());
     let quit = require_key(&map, "menu.status.quit").unwrap_or_else(|_| "Quit".into());
     let show_library = MenuItem::with_id(app, "show-library", &library, true, None::<&str>)?;
     let show_settings = MenuItem::with_id(app, "show-settings", &settings, true, None::<&str>)?;
+    let show_help = MenuItem::with_id(app, "show-help", &help, true, None::<&str>)?;
+    let capture_item = MenuItem::with_id(app, "capture-selection", &capture, true, None::<&str>)?;
     let app_menu = Submenu::with_items(
         app,
         &app_name,
         true,
         &[
+            &capture_item,
             &show_library,
             &show_settings,
+            &show_help,
             &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::quit(app, Some(&quit))?,
         ],
@@ -87,8 +120,11 @@ fn install_chrome_menu(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 
 #[cfg(target_os = "macos")]
 fn reveal_quick_panel(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    use tauri::{Manager, PhysicalPosition, PhysicalSize};
-    use window_edge::{quick_panel_frame, Rect, DEV_LAUNCH_REVEALS_QUICK};
+    use tauri::{LogicalPosition, LogicalSize, Manager};
+    use window_edge::{
+        physical_rect_to_logical, quick_panel_frame, Rect, DEV_LAUNCH_REVEALS_QUICK,
+        QUICK_PANEL_MIN_HEIGHT, QUICK_PANEL_MIN_WIDTH,
+    };
     if !DEV_LAUNCH_REVEALS_QUICK {
         return Ok(());
     }
@@ -97,15 +133,25 @@ fn reveal_quick_panel(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::
     };
     if let Some(monitor) = window.current_monitor()? {
         let area = monitor.work_area();
-        let work = Rect {
-            x: area.position.x,
-            y: area.position.y,
-            width: area.size.width,
-            height: area.size.height,
-        };
+        let work = physical_rect_to_logical(
+            Rect {
+                x: area.position.x,
+                y: area.position.y,
+                width: area.size.width,
+                height: area.size.height,
+            },
+            monitor.scale_factor(),
+        );
         let placed = quick_panel_frame(work, catalog_dir("en"));
-        window.set_position(PhysicalPosition::new(placed.x, placed.y))?;
-        window.set_size(PhysicalSize::new(placed.width, placed.height))?;
+        window.set_position(LogicalPosition::new(placed.x as f64, placed.y as f64))?;
+        window.set_size(LogicalSize::new(
+            f64::from(placed.width),
+            f64::from(placed.height),
+        ))?;
+        window.set_min_size(Some(LogicalSize::new(
+            f64::from(QUICK_PANEL_MIN_WIDTH),
+            f64::from(QUICK_PANEL_MIN_HEIGHT),
+        )))?;
     }
     window.show()?;
     Ok(())
@@ -180,7 +226,7 @@ mod tests {
     use std::fs;
     use std::path::Path;
 
-    const CAP_NAMES: [&str; 4] = ["quick", "library", "settings", "onboarding"];
+    const CAP_NAMES: [&str; 5] = ["quick", "library", "settings", "onboarding", "help"];
     const FORBIDDEN: [&str; 4] = ["shell", "fs", "http", "sql"];
 
     fn manifest_dir() -> &'static Path {
@@ -223,6 +269,9 @@ mod tests {
                 assert!(permissions.iter().any(|permission| {
                     permission.as_str() == Some("allow-open-privacy-settings")
                 }));
+                assert!(permissions
+                    .iter()
+                    .any(|permission| permission.as_str() == Some("allow-settings-live")));
             } else if name == "quick" {
                 assert!(permissions
                     .iter()
@@ -230,6 +279,13 @@ mod tests {
                 assert!(permissions
                     .iter()
                     .any(|permission| { permission.as_str() == Some("allow-show-chrome-window") }));
+                assert!(permissions
+                    .iter()
+                    .any(|permission| permission.as_str() == Some("allow-queue-live")));
+            } else if name == "library" {
+                assert!(permissions
+                    .iter()
+                    .any(|permission| permission.as_str() == Some("allow-library-live")));
             } else {
                 assert_eq!(permissions, &vec![Value::String("core:default".into())]);
             }
@@ -266,6 +322,25 @@ mod tests {
             .expect("quick window");
         assert_eq!(quick["visible"], true);
         assert_eq!(quick["url"], "index.html");
+        assert_eq!(
+            quick["width"].as_u64(),
+            Some(u64::from(crate::window_edge::QUICK_PANEL_WIDTH))
+        );
+        assert_eq!(
+            quick["height"].as_u64(),
+            Some(u64::from(crate::window_edge::QUICK_PANEL_HEIGHT))
+        );
+        assert_eq!(
+            quick["minWidth"].as_u64(),
+            Some(u64::from(crate::window_edge::QUICK_PANEL_MIN_WIDTH))
+        );
+        assert_eq!(
+            quick["minHeight"].as_u64(),
+            Some(u64::from(crate::window_edge::QUICK_PANEL_MIN_HEIGHT))
+        );
+        let reveal = include_str!("lib.rs");
+        assert!(reveal.contains("LogicalSize"));
+        assert!(reveal.contains("physical_rect_to_logical"));
         let library = windows
             .iter()
             .find(|window| window["label"] == "library")
@@ -278,6 +353,12 @@ mod tests {
             .expect("settings window");
         assert_eq!(settings["visible"], false);
         assert_eq!(settings["url"], "settings.html");
+        let help = windows
+            .iter()
+            .find(|window| window["label"] == "help")
+            .expect("help window");
+        assert_eq!(help["visible"], false);
+        assert_eq!(help["url"], "help.html");
         assert_eq!(conf["app"]["withGlobalTauri"], true);
         let csp = &conf["app"]["security"]["csp"];
         assert_eq!(csp["frame-src"], "'none'");

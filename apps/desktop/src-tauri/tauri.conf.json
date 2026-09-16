@@ -15,8 +15,10 @@
         "label": "quick",
         "title": "Bronze",
         "url": "index.html",
-        "width": 360,
-        "height": 640,
+        "width": 400,
+        "height": 720,
+        "minWidth": 320,
+        "minHeight": 560,
         "resizable": true,
         "fullscreen": false,
         "visible": true,
@@ -29,6 +31,8 @@
         "url": "library.html",
         "width": 720,
         "height": 640,
+        "minWidth": 480,
+        "minHeight": 400,
         "resizable": true,
         "fullscreen": false,
         "visible": false,
@@ -40,6 +44,21 @@
         "url": "settings.html",
         "width": 640,
         "height": 720,
+        "minWidth": 480,
+        "minHeight": 480,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": false,
+        "devtools": false
+      },
+      {
+        "label": "help",
+        "title": "Bronze Help",
+        "url": "help.html",
+        "width": 640,
+        "height": 640,
+        "minWidth": 480,
+        "minHeight": 400,
         "resizable": true,
         "fullscreen": false,
         "visible": false,
@@ -58,7 +77,7 @@
         "base-uri": "'none'",
         "form-action": "'none'"
       },
-      "capabilities": ["quick", "library", "settings", "onboarding"]
+      "capabilities": ["quick", "library", "settings", "onboarding", "help"]
     }
   },
   "bundle": {
