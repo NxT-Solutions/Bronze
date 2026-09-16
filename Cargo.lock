@@ -192,6 +192,10 @@ dependencies = [
 [[package]]
 name = "bronze-settings"
 version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "bronze-storage"
