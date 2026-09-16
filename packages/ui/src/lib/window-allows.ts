@@ -13,5 +13,11 @@ export function windowAllows(
   if (window === "quick") {
     return false;
   }
-  return command === "paginate" || command === "archive";
+  return (
+    command === "paginate" ||
+    command === "archive" ||
+    command === "import" ||
+    command === "export" ||
+    command === "backup"
+  );
 }

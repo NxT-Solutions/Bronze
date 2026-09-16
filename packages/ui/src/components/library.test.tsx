@@ -11,6 +11,11 @@ const labels = {
   empty: "No items",
   loading: "Loading",
   readOnly: "Read only",
+  backup: "Back Up Now",
+  restore: "Restore preview",
+  exportQueue: "Export",
+  importQueue: "Import",
+  secretWarning: "Item bodies in this export may contain secrets.",
 };
 
 describe("Library (QUE-008, WIN-005)", () => {

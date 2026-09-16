@@ -17,8 +17,13 @@ const en = JSON.parse(
 test("library window paginates and archives; quick cannot import export backup", () => {
   assert.match(quick, /id="active-section"/);
   assert.match(quick, /data-i18n="panel.section.active"/);
-  assert.doesNotMatch(quick, /data-i18n="(import|export|backup|library\.)/);
-  assert.doesNotMatch(library, /data-i18n="(import|export|backup)/);
+  assert.doesNotMatch(
+    quick,
+    /data-i18n="(library\.(backup|export|import)|import|export|backup)/,
+  );
+  assert.match(library, /data-i18n="library.backup.now"/);
+  assert.match(library, /data-i18n="library.export"/);
+  assert.match(library, /data-i18n="library.import"/);
   assert.match(library, /id="library"/);
   assert.match(library, /data-library-state="ready"/);
   assert.match(library, /data-i18n="library.archive"/);

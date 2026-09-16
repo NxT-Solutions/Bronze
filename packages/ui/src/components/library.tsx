@@ -10,6 +10,11 @@ export const LIBRARY_KEYS = {
   empty: "library.state.empty",
   loading: "library.state.loading",
   readOnly: "library.state.readOnly",
+  backup: "library.backup.now",
+  restore: "library.restore.preview",
+  exportQueue: "library.export",
+  importQueue: "library.import",
+  secretWarning: "export.preview.secretBodies",
 } as const;
 
 export function Library({
@@ -42,6 +47,21 @@ export function Library({
         <Button type="button" onPress={onPaginate}>
           {labels.paginate}
         </Button>
+      ) : null}
+      {windowAllows("library", "backup") && state === "ready" ? (
+        <Button type="button">{labels.backup}</Button>
+      ) : null}
+      {windowAllows("library", "export") && state === "ready" ? (
+        <Button type="button">{labels.exportQueue}</Button>
+      ) : null}
+      {windowAllows("library", "import") && state === "ready" ? (
+        <Button type="button">{labels.importQueue}</Button>
+      ) : null}
+      {state === "ready" ? <p data-restore-preview>{labels.restore}</p> : null}
+      {state === "ready" ? (
+        <p role="status" data-export-secret-warning>
+          {labels.secretWarning}
+        </p>
       ) : null}
     </main>
   );
