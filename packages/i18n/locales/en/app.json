@@ -29,5 +29,8 @@
   "library.paginate": "Next page",
   "library.state.empty": "No items",
   "library.state.loading": "Loading",
-  "library.state.readOnly": "Read only"
+  "library.state.readOnly": "Read only",
+  "copy.profile.label": "Output profile",
+  "copy.action.copy": "Copy",
+  "copy.preview.label": "Preview"
 }

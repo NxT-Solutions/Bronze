@@ -1,5 +1,6 @@
 export * from "./components/button";
 export * from "./components/composer";
+export * from "./components/copy-toolbar";
 export * from "./components/dialog";
 export * from "./components/item-list";
 export * from "./components/library";

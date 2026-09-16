@@ -29,5 +29,8 @@
   "library.paginate": "egap txeN",
   "library.state.empty": "smeti oN",
   "library.state.loading": "gnidaoL",
-  "library.state.readOnly": "ylno daeR"
+  "library.state.readOnly": "ylno daeR",
+  "copy.profile.label": "eliforp tuptuO",
+  "copy.action.copy": "ypoC",
+  "copy.preview.label": "weiverP"
 }

@@ -33,6 +33,9 @@ export const MessageIds = {
   "library.state.empty": "library.state.empty",
   "library.state.loading": "library.state.loading",
   "library.state.readOnly": "library.state.readOnly",
+  "copy.profile.label": "copy.profile.label",
+  "copy.action.copy": "copy.action.copy",
+  "copy.preview.label": "copy.preview.label",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

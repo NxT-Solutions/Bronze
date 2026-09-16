@@ -30,6 +30,19 @@
           Could not add item
         </p>
       </form>
+      <div id="copy-toolbar" data-slot="copy-toolbar">
+        <label for="output-profile" data-i18n="copy.profile.label">
+          Output profile
+        </label>
+        <select id="output-profile" name="profile">
+          <option value="plain" selected>Plain</option>
+        </select>
+        <button type="button" data-i18n="copy.action.copy">Copy</button>
+        <output>
+          <strong data-i18n="copy.preview.label">Preview</strong>
+          <pre>park</pre>
+        </output>
+      </div>
       <ul id="queue">
         <li>
           <article>

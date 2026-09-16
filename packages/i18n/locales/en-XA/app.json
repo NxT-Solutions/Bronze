@@ -29,5 +29,8 @@
   "library.paginate": "【NNéexxtt ppáaggée】",
   "library.state.empty": "【NNóo íittéemmss】",
   "library.state.loading": "【LLóoáaddíiñngg】",
-  "library.state.readOnly": "【RRéeáadd óoñnllyy】"
+  "library.state.readOnly": "【RRéeáadd óoñnllyy】",
+  "copy.profile.label": "【ÓOúuttppúutt pprróoffíillée】",
+  "copy.action.copy": "【CCóoppyy】",
+  "copy.preview.label": "【PPrréevvíiéeww】"
 }
