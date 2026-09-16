@@ -4,6 +4,7 @@ mod backup;
 mod composer;
 mod export;
 mod migrate;
+mod queue;
 mod receipts;
 mod search;
 mod undo;
@@ -18,6 +19,10 @@ pub use export::{
 pub use migrate::{
     checksum_sql, locator_avoids_icloud, v1_migration, BackupBeforeMigration, MigrateError,
     Migration, NoopBackup, OpenError, PathLocator, Store, StoreLocator, StoreMode, SCHEMA_V1_SQL,
+};
+pub use queue::{
+    queue_action_key, QueueAction, QueueError, DRAG_REQUIRED, QUEUE_COMPLETE_KEY, QUEUE_EDIT_KEY,
+    QUEUE_MOVE_DOWN_KEY, QUEUE_MOVE_UP_KEY, QUEUE_SKIP_KEY, QUEUE_TRASH_KEY,
 };
 pub use receipts::{Command, CommandError, Receipt, RETRY_WINDOW_MS};
 pub use search::{
