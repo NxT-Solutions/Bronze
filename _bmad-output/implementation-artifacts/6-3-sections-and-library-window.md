@@ -1,6 +1,6 @@
 # Story 6.3: Sections and library window
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,16 @@ import UI (epic 7)
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `apps/desktop/src-tauri/src/capabilities.rs` — quick denies import/export/backup; library paginates and archives
+- `apps/desktop/src-tauri/tauri.conf.json` — hidden `library` window
+- `packages/ui/src/components/library.tsx` — empty/loading/ready/read-only states
+- `apps/desktop/src/library.html` — archive/trash/search surfaces
+- `apps/desktop/src/index.html` — active section in the quick panel
+
+### Notes
+
+- Import UI is a non-goal (epic 7). Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
