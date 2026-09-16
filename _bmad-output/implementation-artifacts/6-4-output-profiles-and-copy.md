@@ -1,6 +1,6 @@
 # Story 6.4: Output profiles and copy
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -44,4 +44,14 @@ auto-paste
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-domain/src/formatters.rs` — profile-owned format + postCopyAction/advancePolicy; default copied+keep
+- `apps/desktop/src-tauri/src/copy.rs` — pasteboard write first; no synthetic paste
+- `packages/ui/src/components/copy-toolbar.tsx` — named profile select, Copy button, preview
+
+### Notes
+
+- Auto-paste is a non-goal. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
