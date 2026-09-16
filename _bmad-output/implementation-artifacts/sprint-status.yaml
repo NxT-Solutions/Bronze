@@ -66,14 +66,14 @@ development_status:
   3-10-signed-ax-source-matrix: backlog
   epic-3-retrospective: optional
 
-  epic-4: in-progress
+  epic-4: done
   4-1-domain-entities-and-lifecycle: done
   4-2-schema-v1-and-migrations: done
   4-3-command-receipts-and-revisions: done
   4-4-undo-trash-and-purge: done
   4-5-online-backup-restore: done
   4-6-deterministic-export-import: done
-  4-7-search-placeholder-pending-adr-018: ready-for-dev
+  4-7-search-placeholder-pending-adr-018: done
   epic-4-retrospective: optional
 
   epic-5: backlog

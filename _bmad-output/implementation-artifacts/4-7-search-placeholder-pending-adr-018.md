@@ -1,6 +1,6 @@
 # Story 4.7: Search placeholder pending ADR-018
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,12 @@ final tokenizer
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-storage/src/search.rs` — substring placeholder; `QUE_007_COMPLETE=false`; locale-aware path errors; query never written to `diagnostic_events`
+
+### Notes
+
+- UI layer was a no-op (local search UI is story 6.5). ADR-018 remains Proposed. Do not mark QUE-007 done.
