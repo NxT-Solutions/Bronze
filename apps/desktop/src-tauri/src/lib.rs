@@ -27,6 +27,11 @@ fn start_native_or_die() {
 
 mod capabilities;
 pub use capabilities::{window_allows, LibraryViewState, WindowCommand, WindowKind};
+mod portability;
+pub use portability::{
+    accept_native_path, parse_backup_schedule, preview_restore, queue_export_warning_key,
+    PathSource, PortabilityError, RestorePreview, PICKER_OWNER_RUST, WEBVIEW_PATHS_ALLOWED,
+};
 mod copy;
 pub use copy::{copy_items, CopyError, FakePasteboard, Pasteboard, SYNTHETIC_PASTE};
 mod window_edge;

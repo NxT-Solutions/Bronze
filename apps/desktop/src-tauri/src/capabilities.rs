@@ -30,8 +30,14 @@ pub fn window_allows(window: WindowKind, command: WindowCommand) -> bool {
             WindowCommand::Import | WindowCommand::Export | WindowCommand::Backup,
         ) => false,
         (WindowKind::Quick, _) => false,
-        (WindowKind::Library, WindowCommand::Paginate | WindowCommand::Archive) => true,
-        (WindowKind::Library, _) => false,
+        (
+            WindowKind::Library,
+            WindowCommand::Paginate
+            | WindowCommand::Archive
+            | WindowCommand::Import
+            | WindowCommand::Export
+            | WindowCommand::Backup,
+        ) => true,
     }
 }
 
@@ -48,7 +54,7 @@ mod capabilities_tests {
         assert!(!window_allows(WindowKind::Quick, WindowCommand::Backup));
         assert!(window_allows(WindowKind::Library, WindowCommand::Paginate));
         assert!(window_allows(WindowKind::Library, WindowCommand::Archive));
-        assert!(!window_allows(WindowKind::Library, WindowCommand::Import));
+        assert!(window_allows(WindowKind::Library, WindowCommand::Import));
         let states = [
             LibraryViewState::Empty,
             LibraryViewState::Loading,
