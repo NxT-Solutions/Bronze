@@ -58,7 +58,7 @@ development_status:
   3-2-double-tap-fsm-tests: done
   3-3-listen-only-event-tap-thread: done
   3-4-atomic-ingress-snapshot: done
-  3-5-serial-capture-coordinator: ready-for-dev
+  3-5-serial-capture-coordinator: done
   3-6-ax-provider-with-fakes: ready-for-dev
   3-7-manual-clipboard-import: ready-for-dev
   3-8-content-free-diagnostic-schema: ready-for-dev

@@ -1,6 +1,6 @@
 # Story 3.5: Serial capture coordinator
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,14 @@ real AX
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-capture/src/coordinator.rs` — serial coordinator; monotonic IDs; one terminal; persist-before-feedback
+- `bronze-capture/src/lib.rs` — exports coordinator types
+- Tests: `cargo test -p bronze-capture coordinator` (20-trigger order, overflow per missing ID, persist-before-feedback)
+
+### Notes
+
+- UI layer was a no-op. AX is a non-goal here. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
