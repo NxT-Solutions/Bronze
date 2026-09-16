@@ -92,8 +92,8 @@ development_status:
   6-5-local-search-ui: done
   epic-6-retrospective: optional
 
-  epic-7: backlog
-  7-1-settings-window-schema: ready-for-dev
+  epic-7: in-progress
+  7-1-settings-window-schema: done
   7-2-shortcut-recorder-and-registry: ready-for-dev
   7-3-permission-health-center: ready-for-dev
   7-4-backup-export-import-ui: ready-for-dev

@@ -1,6 +1,6 @@
 # Story 7.1: Settings window schema
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,15 @@ shortcut recorder (next)
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-settings/src/schema.rs` — SettingsV1, ShortcutActionId, daily|weekly backup, search, per-field reset
+- `bronze-settings/src/export.rs` — export preview flags sensitive literals; excludes credentials/tokens/paths
+- `packages/ui/src/components/settings-form.tsx` — searchable grouped settings
+- `apps/desktop/src/settings.html` — settings window
+
+### Notes
+
+- Shortcut recorder is a non-goal (story 7.2). Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
