@@ -1,6 +1,6 @@
 # Story 5.1: Status item and menu
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,13 @@ real capture success
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-platform-macos/src/status_item.rs` — Capture/New Note/Show/Settings/Quit; missing accessible name fails; Capture loads last-external-target ingress snapshot; menu works with event tap off
+- `packages/i18n/locales/*/app.json` — `menu.status.*` catalog keys (I18N-001)
+
+### Notes
+
+- Real capture success is a non-goal. VoiceOver remains a human gate. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. Do not re-enable `abi-stub` on bronze-desktop (debt #2).

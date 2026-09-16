@@ -76,8 +76,8 @@ development_status:
   4-7-search-placeholder-pending-adr-018: done
   epic-4-retrospective: optional
 
-  epic-5: backlog
-  5-1-status-item-and-menu: ready-for-dev
+  epic-5: in-progress
+  5-1-status-item-and-menu: done
   5-2-quick-panel-window-and-physical-edge: ready-for-dev
   5-3-focus-restore-and-capture-only-silence: ready-for-dev
   5-4-native-display-preference-bridge: ready-for-dev
