@@ -1,6 +1,6 @@
 # Story 4.1: Domain entities and lifecycle
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,13 @@ SQLite yet
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-domain/src/entities.rs` — Section/Item; closed lifecycle; BCP 47 / `und`; no body trim
+- `bronze-domain/src/lib.rs` — exports
+
+### Notes
+
+- UI layer was a no-op. SQLite is story 4.2. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. Also set epic-4 in-progress.

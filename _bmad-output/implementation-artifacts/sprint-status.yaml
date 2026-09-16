@@ -66,8 +66,8 @@ development_status:
   3-10-signed-ax-source-matrix: backlog
   epic-3-retrospective: optional
 
-  epic-4: backlog
-  4-1-domain-entities-and-lifecycle: ready-for-dev
+  epic-4: in-progress
+  4-1-domain-entities-and-lifecycle: done
   4-2-schema-v1-and-migrations: ready-for-dev
   4-3-command-receipts-and-revisions: ready-for-dev
   4-4-undo-trash-and-purge: ready-for-dev
