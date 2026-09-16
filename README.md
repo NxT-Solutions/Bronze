@@ -33,16 +33,20 @@ pnpm --filter desktop tauri dev
 
 Equivalent from `apps/desktop`: `pnpm tauri dev`. That script is the only desktop start command (`apps/desktop/package.json` → `"tauri": "tauri"`). There is no root `dev` script. `beforeDevCommand` is empty; Tauri serves `apps/desktop/src` as `frontendDist`.
 
-**What you will see.** `tauri.conf.json` starts `quick` and `library` **hidden** (warm windows). This build has no live `NSStatusItem` / tray and no Tauri window labeled `settings` or `onboarding` (those are capabilities + HTML only). Seeded shortcuts are **disabled**. To inspect WebView chrome without changing product defaults, open the static files in a browser:
+**What you will see in `tauri dev`.** The Quick Panel (`quick`) is visible on launch. Library, Settings, and Help are real Tauri windows — open them from the app menu or the Quick Panel buttons (`show_chrome_window`). Opening the `*.html` files in a browser has **no** Tauri invoke: composer, copy, permissions, and backup stay dead there.
 
-```bash
-open apps/desktop/src/index.html      # Quick Panel
-open apps/desktop/src/library.html    # Library
-open apps/desktop/src/settings.html   # Settings + permission health
-open apps/desktop/src/help.html       # Help / diagnostics preview
-```
+Hand-test the queue in the app, not the browser:
 
-Optional local-only inspect: set `"visible": true` on the `quick` window in `apps/desktop/src-tauri/tauri.conf.json`, re-run `pnpm --filter desktop tauri dev`, then revert. Do not commit that flip; summon/hidden is the story 5.2 default.
+- Composer **Add** (or Cmd-Enter) persists to the local SQLite store and refreshes the list
+- Complete / trash / skip / move / edit call existing domain actions (QUE-002)
+- **Copy** writes the 6-4 pasteboard path (`pbcopy`); profiles are Plain and Markdown
+- Settings load/save `SettingsV1`; permission **Retest** and **Open System Settings** run from the Settings window
+- Library search is substring-only (`QUE_007_COMPLETE=false`; ADR-018 stays Proposed)
+- Backup / export / import write under the Rust-owned app data dir; WebView paths are rejected
+
+Surfaces share a zinc/neutral palette (`#fafafa` / `#18181b` / `#e4e4e7`) — not parchment `#f7f4ef` or brand brown `#8c6239`. Default UI locale is **en** with real spaces.
+
+**Still stub / backlog in this build.** No live `NSStatusItem`. Seeded shortcuts stay **disabled** (menu + composer remain). AX selection capture is **not live** (`AX_CAPTURE_LIVE=false`); Capture in the menu only prompts used permissions. Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. After a grant or a token change, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
 
 **Permissions (macOS).** On native start, Bronze requests **Accessibility** and **Input Monitoring** when they are not already granted (real OS dialogs). The first capture path requests once more if still ungranted. Settings → permission health **Retest** re-attempts those prompts; if macOS will not show another dialog, use **Open System Settings** after that attempt (not instead of it).
 
@@ -52,7 +56,7 @@ Optional local-only inspect: set `"visible": true` on the `quick` window in `app
 
 See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a grant, quit and relaunch (`requires_relaunch` is a real permission state). Input Monitoring often prompts only once per TCC identity; a later Retest may be silent. A `tauri dev` rebuild can receive a new TCC identity.
 
-**Triggers in this build.** Status-menu *contract* is Capture / New Note / Show / Settings / Quit (`menu.status.*`), but it is not a live menu-bar item. `SettingsV1.capture.standardChord` is only the settings view of `capture.selection`; the seeded registry leaves every `ShortcutActionId` disabled. Manual composer is the Add control on the Quick Panel HTML. Library search is substring-only (`QUE_007_COMPLETE=false`).
+**Triggers in this build.** App-menu contract includes Capture, Library, Settings, Help, and Quit. There is still no live menu-bar `NSStatusItem`. `SettingsV1.capture.standardChord` is only the settings view of `capture.selection`; the seeded registry leaves every `ShortcutActionId` disabled. Manual composer is the working add path. Library search is substring-only (`QUE_007_COMPLETE=false`).
 
 **Stop.** In the `tauri dev` terminal: `Ctrl+C`. Then quit Bronze from the Dock / Force Quit if the process stays resident.
 

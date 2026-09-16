@@ -9,7 +9,7 @@ Standards: [BCP 47 / RFC 5646](https://www.rfc-editor.org/info/rfc5646/), [RFC 4
 ## 2. Locale model
 
 - Store canonical BCP 47 tag, e.g. `en`, `en-GB`, `nl-BE`, `ar`, `ja`; canonicalize and validate through `Intl.getCanonicalLocales`.
-- Default follows macOS preferred languages and locale; user override applies without changing content.
+- Default follows macOS preferred languages and locale; user override applies without changing content. The current `tauri dev` hand-test path maps `system` and unknown tags to **en** (never `en-XA`) so permission labels keep real spaces; `en-XA` / `ar-XB` apply only when requested.
 - Fallback uses RFC 4647-style progressive lookup, preserving script and variant subtags before base language: `zh-Hant-HK` → `zh-Hant` → `zh` → `en` → visible missing-key error in development. Process macOS language priority entries in order; never jump directly from script-specific locale to base language.
 - Language and regional formatting can be separate if user asks; P0 single locale override acceptable if documented.
 - Persist neutral enums/UTC timestamps; never persist localized labels.
