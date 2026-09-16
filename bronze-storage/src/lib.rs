@@ -1,6 +1,7 @@
 //! Rust-owned SQLite store (DAT-001, ADR-008). ADR-009 locator stays an interface.
 
 mod backup;
+mod composer;
 mod export;
 mod migrate;
 mod receipts;
@@ -8,6 +9,7 @@ mod search;
 mod undo;
 
 pub use backup::{BackupError, BackupSchedule};
+pub use composer::{ComposerDraft, ComposerError};
 pub use export::{
     check_entry_path, filter_settings_for_export, ExportError, ExportPreview, ImportError,
     ImportPreview, ImportStrategy, Overwrite, EXPORT_FORMAT, EXPORT_VERSION,

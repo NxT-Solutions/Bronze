@@ -3,9 +3,13 @@
 //! CAP-004: this crate has no macOS imports. Native access is only through
 //! the platform façade crate.
 
+mod composer;
 mod entities;
 mod purge;
 
+pub use composer::{
+    composer_should_add, ComposerChord, COMPOSER_ERROR_KEY, COMPOSER_LABEL_KEY, COMPOSER_SUBMIT_KEY,
+};
 pub use entities::{
     can_transition, ContentLanguage, InvalidTransition, Item, LanguageError, Lifecycle, Section,
 };
