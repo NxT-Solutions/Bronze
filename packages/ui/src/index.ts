@@ -1,4 +1,5 @@
 export * from "./components/button";
+export * from "./components/composer";
 export * from "./components/dialog";
 export * from "./components/text-field";
 export * from "./lib/apply-display-snapshot";

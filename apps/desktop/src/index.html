@@ -19,6 +19,14 @@
   <body>
     <main id="quick-panel" data-physical-edge="left">
       <h1 data-i18n="panel.quick.title">Bronze</h1>
+      <form id="composer" data-slot="composer">
+        <label for="composer-body" data-i18n="composer.add.label">Add item</label>
+        <textarea id="composer-body" name="body" rows="4"></textarea>
+        <button type="submit" data-i18n="composer.add.submit">Add</button>
+        <p id="composer-error" hidden role="alert" data-i18n="composer.add.error">
+          Could not add item
+        </p>
+      </form>
     </main>
   </body>
 </html>

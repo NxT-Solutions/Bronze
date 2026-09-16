@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "tauri": "tauri",
-    "test": "node --test src/quick-panel.test.mjs"
+    "test": "node --test src/*.test.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.11.1"

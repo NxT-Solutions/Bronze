@@ -9,5 +9,8 @@
   "menu.status.settings": "sgnitteS",
   "menu.status.quit": "tiuQ",
   "panel.quick.title": "eznorB",
-  "capture.announce.saved": ".eznorB ot derutpaC"
+  "capture.announce.saved": ".eznorB ot derutpaC",
+  "composer.add.label": "meti ddA",
+  "composer.add.submit": "ddA",
+  "composer.add.error": "meti dda ton dluoC"
 }

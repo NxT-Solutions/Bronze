@@ -13,6 +13,9 @@ export const MessageIds = {
   "menu.status.quit": "menu.status.quit",
   "panel.quick.title": "panel.quick.title",
   "capture.announce.saved": "capture.announce.saved",
+  "composer.add.label": "composer.add.label",
+  "composer.add.submit": "composer.add.submit",
+  "composer.add.error": "composer.add.error",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

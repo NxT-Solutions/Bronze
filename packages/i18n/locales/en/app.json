@@ -9,5 +9,8 @@
   "menu.status.settings": "Settings",
   "menu.status.quit": "Quit",
   "panel.quick.title": "Bronze",
-  "capture.announce.saved": "Captured to Bronze."
+  "capture.announce.saved": "Captured to Bronze.",
+  "composer.add.label": "Add item",
+  "composer.add.submit": "Add",
+  "composer.add.error": "Could not add item"
 }
