@@ -5,14 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bronze Help</title>
     <style>
+      :root {
+        --background: #f7f4ef;
+        --foreground: #1c1917;
+        --card: #ffffff;
+        --border: #756b60;
+        --ring: #8c6239;
+        --primary: #8c6239;
+        --secondary: #efe8de;
+        --secondary-foreground: #1c1917;
+        --radius: 0.625rem;
+        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "SF Pro Text", sans-serif;
+        --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
-        font-family: system-ui;
+        font-family: var(--font-sans);
+        font-size: 0.9375rem;
+        line-height: 1.45;
         margin: 0;
         min-height: 100vh;
         padding-inline: 1rem;
         padding-block: 0.75rem;
         background: #f7f4ef;
         color: #1c1917;
+      }
+      :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-width: 40rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      article,
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+      }
+      pre {
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        min-height: 2.25rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: calc(var(--radius) - 0.125rem);
+        border: 1px solid var(--border);
+        background: var(--secondary);
+        color: var(--secondary-foreground);
       }
     </style>
   </head>

@@ -78,6 +78,7 @@
   "settings.permission.selfTest.why": "Checks the capture pipeline without content",
   "settings.permission.selfTest.alternative": "Retry later from this list",
   "settings.permission.composer.available": "Manual composer remains available",
+  "settings.permission.openSystemSettings": "Open System Settings",
   "help.title": "Help",
   "help.about": "About Bronze",
   "help.diagnostics.preview": "Diagnostics preview",

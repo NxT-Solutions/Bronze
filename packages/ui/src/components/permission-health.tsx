@@ -1,6 +1,7 @@
 import { Button } from "@/components/button";
 import {
   manualComposerAvailable,
+  type PermissionCapability,
   type PermissionHealthRow,
   permissionHealthRows,
   SCREEN_RECORDING_USED,
@@ -11,6 +12,7 @@ export const PERMISSION_KEYS = {
   retest: "settings.permission.retest",
   notUsed: "settings.permission.screenRecording.notUsed",
   composer: "settings.permission.composer.available",
+  openSystemSettings: "settings.permission.openSystemSettings",
 } as const;
 
 export function PermissionHealth({
@@ -22,11 +24,17 @@ export function PermissionHealth({
   }),
   why,
   alternative,
+  revealedSettings = {},
+  onRetest,
+  onOpenSystemSettings,
 }: {
   labels: Record<keyof typeof PERMISSION_KEYS, string>;
   rows?: PermissionHealthRow[];
   why: Record<string, string>;
   alternative: Record<string, string>;
+  revealedSettings?: Partial<Record<PermissionCapability, boolean>>;
+  onRetest?: (capability: PermissionCapability) => void;
+  onOpenSystemSettings?: (capability: PermissionCapability) => void;
 }) {
   return (
     <section data-slot="permission-health">
@@ -45,7 +53,26 @@ export function PermissionHealth({
                 {labels.notUsed}
               </p>
             ) : (
-              <Button type="button">{labels.retest}</Button>
+              <>
+                <Button
+                  type="button"
+                  data-permission-retest={row.capability}
+                  onPress={() => onRetest?.(row.capability)}
+                >
+                  {labels.retest}
+                </Button>
+                {(row.capability === "inputMonitoring" ||
+                  row.capability === "accessibility") &&
+                revealedSettings[row.capability] ? (
+                  <Button
+                    type="button"
+                    data-permission-open-settings={row.capability}
+                    onPress={() => onOpenSystemSettings?.(row.capability)}
+                  >
+                    {labels.openSystemSettings}
+                  </Button>
+                ) : null}
+              </>
             )}
           </li>
         ))}

@@ -5,14 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bronze Library</title>
     <style>
+      :root {
+        --background: #f7f4ef;
+        --foreground: #1c1917;
+        --card: #ffffff;
+        --muted: #efe8de;
+        --muted-foreground: #5c564e;
+        --border: #756b60;
+        --input: #756b60;
+        --ring: #8c6239;
+        --primary: #8c6239;
+        --primary-foreground: #ffffff;
+        --secondary: #efe8de;
+        --secondary-foreground: #1c1917;
+        --radius: 0.625rem;
+        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "SF Pro Text", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
-        font-family: system-ui;
+        font-family: var(--font-sans);
+        font-size: 0.9375rem;
+        line-height: 1.45;
         margin: 0;
         min-height: 100vh;
         padding-inline: 1rem;
         padding-block: 0.75rem;
-        background: #111;
-        color: #eee;
+        background: #f7f4ef;
+        color: #1c1917;
+      }
+      :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-width: 40rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      nav,
+      search,
+      .surface {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+      a {
+        color: var(--primary);
+      }
+      label {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        margin-block-end: 0.35rem;
+      }
+      input {
+        width: 100%;
+        min-height: 2.25rem;
+        font: inherit;
+        background: var(--background);
+        border: 1px solid var(--input);
+        border-radius: calc(var(--radius) - 0.125rem);
+        padding: 0.5rem 0.65rem;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        min-height: 2.25rem;
+        min-width: 2.25rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: calc(var(--radius) - 0.125rem);
+        border: 1px solid var(--border);
+        background: var(--secondary);
+        color: var(--secondary-foreground);
+      }
+      @media (prefers-contrast: more) {
+        :root {
+          --border: #000000;
+          --input: #000000;
+          --ring: #000000;
+        }
+        button,
+        input {
+          border-width: 2px !important;
+        }
       }
     </style>
   </head>
@@ -31,19 +122,21 @@
           0 items
         </p>
       </search>
-      <button type="button" data-i18n="library.archive">Archive</button>
-      <button type="button" data-i18n="library.paginate">Next page</button>
-      <button type="button" data-i18n="library.backup.now">Back Up Now</button>
-      <button type="button" data-i18n="library.export">Export</button>
-      <button type="button" data-i18n="library.import">Import</button>
-      <p data-restore-preview data-i18n="library.restore.preview">Restore preview</p>
-      <p
-        role="status"
-        data-export-secret-warning
-        data-i18n="export.preview.secretBodies"
-      >
-        Item bodies in this export may contain secrets.
-      </p>
+      <div class="surface">
+        <button type="button" data-i18n="library.archive">Archive</button>
+        <button type="button" data-i18n="library.paginate">Next page</button>
+        <button type="button" data-i18n="library.backup.now">Back Up Now</button>
+        <button type="button" data-i18n="library.export">Export</button>
+        <button type="button" data-i18n="library.import">Import</button>
+        <p data-restore-preview data-i18n="library.restore.preview">Restore preview</p>
+        <p
+          role="status"
+          data-export-secret-warning
+          data-i18n="export.preview.secretBodies"
+        >
+          Item bodies in this export may contain secrets.
+        </p>
+      </div>
     </main>
   </body>
 </html>

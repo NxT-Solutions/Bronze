@@ -1,7 +1,7 @@
 {
   "name": "bronze",
   "private": true,
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@12.4.2",
   "scripts": {
     "lint": "turbo run lint",
     "verify": "biome check . && turbo run typecheck && turbo run test && turbo run validate && cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace && python3 tooling/planning-checks.py"
@@ -12,6 +12,6 @@
     "turbo": "2.10.12"
   },
   "engines": {
-    "node": "24.19.0"
+    "node": "24.21.0"
   }
 }

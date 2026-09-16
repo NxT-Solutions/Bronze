@@ -80,3 +80,61 @@ export function permissionHealthRows(states: {
 export function manualComposerAvailable(): boolean {
   return true;
 }
+
+export const USED_PERMISSION_COMMANDS = {
+  retest: "retest_used_permissions",
+  openSettings: "open_privacy_settings",
+} as const;
+
+export type PermissionPromptResult = {
+  input_monitoring: string;
+  accessibility: string;
+  listen_requested: boolean;
+  accessibility_requested: boolean;
+  screen_recording_requested: boolean;
+};
+
+export function isUsedPermission(capability: PermissionCapability): boolean {
+  return capability === "inputMonitoring" || capability === "accessibility";
+}
+
+export function promptStateForCapability(
+  capability: PermissionCapability,
+  result: PermissionPromptResult,
+): string | null {
+  if (capability === "inputMonitoring") {
+    return result.input_monitoring;
+  }
+  if (capability === "accessibility") {
+    return result.accessibility;
+  }
+  return null;
+}
+
+export function shouldRevealSystemSettings(
+  capability: PermissionCapability,
+  result: PermissionPromptResult,
+): boolean {
+  if (!isUsedPermission(capability)) {
+    return false;
+  }
+  if (result.screen_recording_requested) {
+    return false;
+  }
+  const state = promptStateForCapability(capability, result);
+  return state !== "granted_unverified" && state !== "healthy";
+}
+
+export async function retestUsedPermission(
+  capability: PermissionCapability,
+  invokeFn: (cmd: string) => Promise<PermissionPromptResult>,
+): Promise<{ result: PermissionPromptResult; revealSettings: boolean }> {
+  if (!isUsedPermission(capability)) {
+    throw new Error("capability_not_used");
+  }
+  const result = await invokeFn(USED_PERMISSION_COMMANDS.retest);
+  return {
+    result,
+    revealSettings: shouldRevealSystemSettings(capability, result),
+  };
+}

@@ -93,6 +93,8 @@ export const MessageIds = {
     "settings.permission.selfTest.alternative",
   "settings.permission.composer.available":
     "settings.permission.composer.available",
+  "settings.permission.openSystemSettings":
+    "settings.permission.openSystemSettings",
   "help.title": "help.title",
   "help.about": "help.about",
   "help.diagnostics.preview": "help.diagnostics.preview",

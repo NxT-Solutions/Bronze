@@ -8,6 +8,7 @@ const labels = {
   retest: "Retest",
   notUsed: "Not used",
   composer: "Manual composer remains available",
+  openSystemSettings: "Open System Settings",
 };
 
 const why = {
@@ -44,6 +45,31 @@ describe("PermissionHealth (SET-003, CAP-003)", () => {
     expect(
       container.querySelector("[data-screen-recording-used='false']"),
     ).toBeTruthy();
+    expect((await axe.run(container)).violations).toEqual([]);
+  });
+
+  it("retest can reveal the System Settings fallback after a prompt", async () => {
+    const { container } = render(
+      <PermissionHealth
+        labels={labels}
+        why={why}
+        alternative={alternative}
+        revealedSettings={{ inputMonitoring: true }}
+      />,
+    );
+    expect(
+      container.querySelector("[data-permission-retest='inputMonitoring']"),
+    ).toBeTruthy();
+    expect(
+      container.querySelector(
+        "[data-permission-open-settings='inputMonitoring']",
+      ),
+    ).toBeTruthy();
+    expect(
+      container.querySelector(
+        "[data-permission-open-settings='screenRecording']",
+      ),
+    ).toBeNull();
     expect((await axe.run(container)).violations).toEqual([]);
   });
 });

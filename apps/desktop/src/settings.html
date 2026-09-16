@@ -79,7 +79,21 @@
             <p data-i18n="settings.permission.inputMonitoring.alternative">
               Use the menu or composer
             </p>
-            <button type="button" data-i18n="settings.permission.retest">Retest</button>
+            <button
+              type="button"
+              data-permission-retest="inputMonitoring"
+              data-i18n="settings.permission.retest"
+            >
+              Retest
+            </button>
+            <button
+              type="button"
+              hidden
+              data-permission-open-settings="inputMonitoring"
+              data-i18n="settings.permission.openSystemSettings"
+            >
+              Open System Settings
+            </button>
           </li>
           <li data-capability="accessibility" data-usage="required">
             <p data-i18n="settings.permission.accessibility.why">
@@ -88,7 +102,21 @@
             <p data-i18n="settings.permission.accessibility.alternative">
               Paste or type into the composer
             </p>
-            <button type="button" data-i18n="settings.permission.retest">Retest</button>
+            <button
+              type="button"
+              data-permission-retest="accessibility"
+              data-i18n="settings.permission.retest"
+            >
+              Retest
+            </button>
+            <button
+              type="button"
+              hidden
+              data-permission-open-settings="accessibility"
+              data-i18n="settings.permission.openSystemSettings"
+            >
+              Open System Settings
+            </button>
           </li>
           <li data-capability="screenRecording" data-usage="notUsed">
             <p data-i18n="settings.permission.screenRecording.why">
@@ -146,5 +174,6 @@
       </section>
       <p><a href="help.html" data-i18n="help.title">Help</a></p>
     </main>
+    <script type="module" src="./permission-health.mjs"></script>
   </body>
 </html>
