@@ -1,6 +1,6 @@
 # Story 7.5: Native and WebView catalog parity
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,16 @@ shipping advertised human locales without QA
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `apps/desktop/src-tauri/src/catalog.rs` — native/InfoPlist glossary, advertised locales, RTL chrome
+- `bronze-domain/src/entities.rs` — per-item `card_lang` / `card_dir="auto"`
+- `packages/i18n/src/catalog.ts` — same keys for WebView
+- `packages/ui/src/components/item-list.tsx` — per-item lang/dir on cards
+- `packages/ui/src/components/panel-chrome.tsx` — RTL smoke, physical edge
+
+### Notes
+
+- Human linguistic QA remains backlog (stories 3.9, 3.10). Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
