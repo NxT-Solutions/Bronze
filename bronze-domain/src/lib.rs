@@ -3,6 +3,12 @@
 //! CAP-004: this crate has no macOS imports. Native access is only through
 //! the platform façade crate.
 
+mod entities;
+
+pub use entities::{
+    can_transition, ContentLanguage, InvalidTransition, Item, LanguageError, Lifecycle, Section,
+};
+
 #[cfg(test)]
 mod tests {
     #[test]
