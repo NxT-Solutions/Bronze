@@ -1,6 +1,6 @@
 # Story 5.4: Native display preference bridge
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,14 @@ full AT matrix
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-platform-macos/src/display_prefs.rs` — typed snapshot, strengthen-only OR merge, FakeDisplayHost
+- `packages/ui/src/lib/apply-display-snapshot.ts` — live data-* attributes on the WebView root
+- `packages/ui/src/styles/globals.css` — snapshot tokens strengthen Reduce Motion / Transparency / Contrast / Differentiate Without Color without restart
+
+### Notes
+
+- Manual OS toggle remains human. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
