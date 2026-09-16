@@ -1,6 +1,6 @@
 # Story 3.7: Manual clipboard import
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,13 @@ synthetic Cmd-C enablement
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-capture/src/clipboard_manual.rs` — explicit Create from Clipboard; generation recheck; no restore; no files/images
+- Tests: `cargo test -p bronze-capture clipboard_manual`
+
+### Notes
+
+- UI layer was a no-op. Synthetic Cmd-C stays off. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.

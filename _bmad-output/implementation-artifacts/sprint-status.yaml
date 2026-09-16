@@ -60,7 +60,7 @@ development_status:
   3-4-atomic-ingress-snapshot: done
   3-5-serial-capture-coordinator: done
   3-6-ax-provider-with-fakes: done
-  3-7-manual-clipboard-import: ready-for-dev
+  3-7-manual-clipboard-import: done
   3-8-content-free-diagnostic-schema: ready-for-dev
   3-9-tcc-grant-deny-revoke-evidence: backlog
   3-10-signed-ax-source-matrix: backlog
