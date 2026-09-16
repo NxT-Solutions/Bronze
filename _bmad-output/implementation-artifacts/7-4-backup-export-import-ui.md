@@ -1,6 +1,6 @@
 # Story 7.4: Backup export import UI
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,15 @@ cloud backup
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `apps/desktop/src-tauri/src/portability.rs` — Rust-owned picker; reject WebView paths; no off schedule
+- `apps/desktop/src-tauri/src/capabilities.rs` — library allows import/export/backup
+- `packages/ui/src/components/library.tsx` — Back Up Now, restore preview, export/import
+- `apps/desktop/src/library.html` — secret-content warning
+
+### Notes
+
+- Cloud backup is a non-goal. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
