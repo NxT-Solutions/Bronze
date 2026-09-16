@@ -42,7 +42,8 @@ Permissions are independent:
 | Capability | API/preflight | Needed for | Not needed for |
 | --- | --- | --- | --- |
 | Input Monitoring/listen-event access | CGPreflightListenEventAccess and CGRequestListenEventAccess | passive double-modifier event tap | manual composer, status menu, registered chord |
-| Accessibility trust | AXIsProcessTrustedWithOptions | AX selected-text query; synthetic input path where required | manual composer; explicit clipboard import |
+| Accessibility trust | AXIsProcessTrustedWithOptions (prompt option on request) | AX selected-text query; synthetic input path where required | manual composer; explicit clipboard import |
+| Screen Recording | never called (no CGRequestScreenCaptureAccess, CGPreflightScreenCaptureAccess, or NSScreenCapture) | not used (ADR-001) | every Bronze capture and settings path |
 | Global shortcut registration | Tauri global-shortcut result | standard chord | status menu/manual composer |
 | Launch at Login | platform registration API | optional startup | all capture behavior after manual launch |
 
@@ -50,11 +51,14 @@ Permission state is a closed enum, not a single linear path. Valid values:
 
     unknown | not_requested | denied | granted_unverified | healthy | degraded | unavailable | requires_relaunch
 
-“Granted” never implies healthy. Health requires operation-level self-test. Permission service:
+“Granted” never implies healthy. Health requires operation-level self-test. Permission service (SET-003, SET-004, CAP-003, CAP-010, ADR-001, ADR-005):
 
-- Preflights on launch without prompting.
-- Prompts only after user activates clearly labeled Enable action.
-- Explains exact capability and fallback before prompt.
+- On native runtime start, requests Accessibility (`AXIsProcessTrustedWithOptions` with `kAXTrustedCheckOptionPrompt`) and Input Monitoring (`CGRequestListenEventAccess`) when preflight is not already granted. Requests run off the event-tap callback thread.
+- On the first capture path, repeats that request once if still ungranted. Launch is not a prompt loop.
+- Permission-health Retest always calls those request APIs again. macOS may refuse a second Input Monitoring dialog; Accessibility may re-prompt on some OS versions.
+- If the OS will not re-prompt after that attempt, a System Settings deep-link is the fallback — after the request, not instead of it. Bronze never auto-opens Settings and never deep-links Screen Recording.
+- Never requests Screen Recording. Health UI keeps Screen Recording as Not used.
+- Explains why each used capability is needed and what remains if it is denied. Denial leaves the manual composer.
 - Rechecks when app becomes active, settings opens, wake occurs, or provider reports denial.
 - Recreates event tap after newly granted Input Monitoring.
 - Detects revocation through failed operation/preflight and degrades without crash.

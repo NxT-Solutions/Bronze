@@ -273,7 +273,7 @@ Rules:
 5. Load settings and locale.
 6. Create accessible status item and hidden warm quick panel.
 7. Register last-known-good standard chord.
-8. Preflight permissions without prompting.
+8. Request Accessibility and Input Monitoring when not already granted; never Screen Recording; never loop-prompt.
 9. Start passive event tap only when configured and authorized.
 10. Publish local health snapshot to settings/support UI.
 

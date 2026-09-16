@@ -7,6 +7,17 @@ Baseline HEAD: `20691ed1a385392d1b92f05fa6d639a72cbe8636` (`20691ed :chart_with_
 Project root: `/Users/noah/fdev/projects/bronze-app`  
 Authority: Phase 0 of autonomous delivery. This document records detected and selected toolchain versions. It does not accept ADR-002.
 
+## Current operator pins (2026-09-16)
+
+These replace the August 2026 *selected* column for local run. The detection table below stays the bootstrap record.
+
+| Tool | Live pin | Where |
+| --- | --- | --- |
+| Node.js | 24.21.0 (latest 24 LTS; Current is 26.8.2, not pinned) | `package.json` `engines.node` |
+| pnpm | 12.4.2 | `package.json` `packageManager`; `npm install -g pnpm@12.4.2` (never Corepack) |
+| rustc / cargo | 1.98.1 | `rust-toolchain.toml` |
+| Xcode | 26.6 | host (unchanged) |
+
 ## 1. Preflight
 
 | Check | Result |

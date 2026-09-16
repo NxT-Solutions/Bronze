@@ -45,10 +45,13 @@ Hedgehog authored loop / layer-eng (cursor-grok).
 
 ### File List
 
-- `bronze-settings/src/health.rs` — independent rows, Screen Recording Not used, composer after denial
-- `packages/ui/src/components/permission-health.tsx` — why/retest/alternatives
+- `bronze-settings/src/health.rs` — independent rows, Screen Recording Not used, composer after denial; Input Monitoring / Accessibility System Settings URLs only
+- `packages/ui/src/components/permission-health.tsx` — why/retest/alternatives; Open System Settings after a denied retest
+- `packages/ui/src/lib/permission-health.ts` — `retest_used_permissions` then reveal Settings; never Screen Recording
 - `apps/desktop/src/settings.html` — permission health list
+- `apps/desktop/src/permission-health.mjs` — injectable invoke; no auto-open Settings
 
 ### Notes
 
 - Story 3.9 stays backlog. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
+- Retest calls `retest_used_permissions` (always request used permissions). If the OS will not re-prompt, `settings.permission.openSystemSettings` is revealed after that attempt. Screen Recording stays Not used and is never requested.

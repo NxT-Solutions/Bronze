@@ -53,6 +53,6 @@ Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer 
 ### Notes
 
 - One TCC subject: in-process static lib; sidecar/helper is fail-closed.
-- Debt: `bronze-platform-macos` default feature `abi-stub` remains for crate-local tests. Do not re-enable `abi-stub` on `bronze-desktop`.
+- Debt #2 **resolved by design** (keep, not a stub-enable): `bronze-platform-macos` default feature `abi-stub` remains for crate-local tests. `bronze-desktop` links `libBronzeNative.a` with `default-features = false`. Do not re-enable `abi-stub` on `bronze-desktop`. Enforced by `apps/desktop/src-tauri/src/lib.rs` (`default-features = false` assertion) and documented on `bronze-platform-macos/src/abi_stub.rs`.
 - UI layer was a no-op (no WebView surface for linking).
 - Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.

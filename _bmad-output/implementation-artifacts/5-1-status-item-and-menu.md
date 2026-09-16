@@ -51,4 +51,4 @@ Hedgehog authored loop / layer-eng (cursor-grok).
 
 ### Notes
 
-- Real capture success is a non-goal. VoiceOver remains a human gate. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. Do not re-enable `abi-stub` on bronze-desktop (debt #2).
+- Real capture success is a non-goal. VoiceOver remains a human gate. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. Debt #2 is resolved by design: do not re-enable `abi-stub` on bronze-desktop.

@@ -49,4 +49,4 @@ Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer 
 
 ### Notes
 
-- UI layer was a no-op (local search UI is story 6.5). ADR-018 remains Proposed. Do not mark QUE-007 done.
+- UI layer was a no-op at 4.7 (local search UI is story 6.5). **Debt #3 blocked:** ADR-018 remains **Proposed** in `docs/18-adrs.md`. Do not implement locale FTS, do not silently accept ADR-018, and do not mark QUE-007 done (`QUE_007_COMPLETE=false`). Query must never enter diagnostics.

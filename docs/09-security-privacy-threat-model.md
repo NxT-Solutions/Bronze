@@ -123,9 +123,9 @@ Deletion claims apply only to Bronze-controlled primary data/backups. Time Machi
 
 ## 10. Permissions
 
-- Request only after user action and plain-language pre-prompt.
+- Request Accessibility and Input Monitoring on native start and first capture when not already granted (SET-003, SET-004). Health Retest is an explicit user action that re-requests those same APIs.
 - Input Monitoring status separate from Accessibility.
-- Denial does not loop or block manual workflow.
+- Denial does not loop or block the manual composer (CAP-003).
 - Secure Keyboard Entry is respected, never bypassed, and user is not told to disable it.
 - Bronze requests no Screen Recording, microphone, camera, contacts, location, Photos, or broad Automation in P0.
 - Permission health tests actual end-to-end capability without collecting arbitrary keys/content.
