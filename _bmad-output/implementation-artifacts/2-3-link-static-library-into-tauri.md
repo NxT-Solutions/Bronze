@@ -1,6 +1,6 @@
 # Story 2.3: Link static library into Tauri
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,18 @@ notarization, App Group
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `apps/desktop/src-tauri/build.rs` — `swift build` of `BronzeNative`, links `libBronzeNative.a`, sets `bronze_native_linked`
+- `apps/desktop/src-tauri/Cargo.toml` — `bronze-platform-macos` with `default-features = false` (no `abi-stub`)
+- `apps/desktop/src-tauri/src/lib.rs` — startup `NativeRuntime::start()` + `check_abi_version` (CAP-004); tests: no helper/sidecar/`externalBin` (ADR-004, SEC-005 slot); linked ABI check under `bronze_native_linked`
+- `Cargo.lock`
+
+### Notes
+
+- One TCC subject: in-process static lib; sidecar/helper is fail-closed.
+- Debt: `bronze-platform-macos` default feature `abi-stub` remains for crate-local tests. Do not re-enable `abi-stub` on `bronze-desktop`.
+- UI layer was a no-op (no WebView surface for linking).
+- Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
