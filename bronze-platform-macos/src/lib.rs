@@ -7,6 +7,7 @@ mod abi;
 #[cfg(feature = "abi-stub")]
 mod abi_stub;
 mod bridge;
+mod display_prefs;
 mod permission;
 mod status_item;
 
@@ -20,6 +21,10 @@ pub use abi::{
 pub use bridge::{
     check_abi_version, event_tap_enqueue_raw, EventTapHealth, EventTapRecord, NativeError,
     NativeRuntime, OwnedUtf8, ProbeTerminal,
+};
+pub use display_prefs::{
+    strengthen, DisplayPrefBridge, DisplayPrefError, DisplayPrefHost, DisplayPreferenceSnapshot,
+    FakeDisplayHost,
 };
 #[cfg(target_os = "macos")]
 pub use permission::MacosPreflightHost;
