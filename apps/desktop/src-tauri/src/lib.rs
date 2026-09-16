@@ -25,6 +25,12 @@ fn start_native_or_die() {
     }
 }
 
+mod window_edge;
+pub use window_edge::{
+    clamp_to_work_area, parse_physical_edge, place_on_physical_edge, stored_edge_ignores_direction,
+    EdgeError, PanelKind, PhysicalEdge, Rect, TextDirection, FOCUS_TRAP, PANEL_KIND,
+};
+
 #[cfg(test)]
 mod abi_ownership;
 

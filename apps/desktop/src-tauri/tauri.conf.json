@@ -11,12 +11,13 @@
   "app": {
     "windows": [
       {
-        "label": "main",
+        "label": "quick",
         "title": "Bronze",
-        "width": 800,
-        "height": 600,
+        "width": 360,
+        "height": 640,
         "resizable": true,
         "fullscreen": false,
+        "visible": false,
         "devtools": false
       }
     ],
