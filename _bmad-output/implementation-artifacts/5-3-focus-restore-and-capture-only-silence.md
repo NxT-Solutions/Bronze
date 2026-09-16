@@ -1,6 +1,6 @@
 # Story 5.3: Focus restore and capture-only silence
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,13 @@ VoiceOver sign-off
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-capture/src/focus_policy.rs` — capture-only keeps source focus; fake `Announcer` for hidden WebView; Escape restores when safe; live region insufficient
+- `packages/i18n/locales/*/app.json` — `capture.announce.saved`
+
+### Notes
+
+- VoiceOver sign-off is a non-goal. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.

@@ -79,7 +79,7 @@ development_status:
   epic-5: in-progress
   5-1-status-item-and-menu: done
   5-2-quick-panel-window-and-physical-edge: done
-  5-3-focus-restore-and-capture-only-silence: ready-for-dev
+  5-3-focus-restore-and-capture-only-silence: done
   5-4-native-display-preference-bridge: ready-for-dev
   5-5-spaces-and-display-matrix: backlog
   epic-5-retrospective: optional
