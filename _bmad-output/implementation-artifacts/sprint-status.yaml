@@ -84,12 +84,12 @@ development_status:
   5-5-spaces-and-display-matrix: backlog
   epic-5-retrospective: optional
 
-  epic-6: in-progress
+  epic-6: done
   6-1-composer-add-item: done
   6-2-item-list-lifecycle-and-menus: done
   6-3-sections-and-library-window: done
   6-4-output-profiles-and-copy: done
-  6-5-local-search-ui: ready-for-dev
+  6-5-local-search-ui: done
   epic-6-retrospective: optional
 
   epic-7: backlog

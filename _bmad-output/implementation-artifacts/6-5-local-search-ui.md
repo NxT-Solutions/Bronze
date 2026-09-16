@@ -1,6 +1,6 @@
 # Story 6.5: Local search UI
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -40,4 +40,14 @@ final FTS semantics
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-storage/src/search.rs` — `announce_search` count only; `QUE_007_COMPLETE=false`; ADR-018 Proposed
+- `packages/ui/src/components/search-field.tsx` — live-region count, no query in announcement
+- `apps/desktop/src/library.html` — library search status
+
+### Notes
+
+- Final FTS is a non-goal. Do not claim G-06 / QUE-007 complete. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
