@@ -5,6 +5,7 @@
 
 mod composer;
 mod entities;
+mod formatters;
 mod purge;
 
 pub use composer::{
@@ -12,6 +13,10 @@ pub use composer::{
 };
 pub use entities::{
     can_transition, ContentLanguage, InvalidTransition, Item, LanguageError, Lifecycle, Section,
+};
+pub use formatters::{
+    default_output_profile, format_items, lifecycle_after_copy, AdvancePolicy, OutputFormat,
+    OutputProfile, PostCopyAction,
 };
 pub use purge::{
     can_purge_with_descendants, claims_forensic_erasure, empty_trash_requires_confirmation,

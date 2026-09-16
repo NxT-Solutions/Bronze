@@ -27,6 +27,8 @@ fn start_native_or_die() {
 
 mod capabilities;
 pub use capabilities::{window_allows, LibraryViewState, WindowCommand, WindowKind};
+mod copy;
+pub use copy::{copy_items, CopyError, FakePasteboard, Pasteboard, SYNTHETIC_PASTE};
 mod window_edge;
 pub use window_edge::{
     clamp_to_work_area, parse_physical_edge, place_on_physical_edge, stored_edge_ignores_direction,
