@@ -8,5 +8,6 @@
   "menu.status.show": "wohS",
   "menu.status.settings": "sgnitteS",
   "menu.status.quit": "tiuQ",
-  "panel.quick.title": "eznorB"
+  "panel.quick.title": "eznorB",
+  "capture.announce.saved": ".eznorB ot derutpaC"
 }

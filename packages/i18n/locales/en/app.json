@@ -8,5 +8,6 @@
   "menu.status.show": "Show",
   "menu.status.settings": "Settings",
   "menu.status.quit": "Quit",
-  "panel.quick.title": "Bronze"
+  "panel.quick.title": "Bronze",
+  "capture.announce.saved": "Captured to Bronze."
 }
