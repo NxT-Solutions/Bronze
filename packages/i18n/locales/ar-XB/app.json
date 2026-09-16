@@ -77,5 +77,11 @@
   "settings.permission.screenRecording.notUsed": "desu toN",
   "settings.permission.selfTest.why": "tnetnoc tuohtiw enilepip erutpac eht skcehC",
   "settings.permission.selfTest.alternative": "tsil siht morf retal yrteR",
-  "settings.permission.composer.available": "elbaliava sniamer resopmoc launaM"
+  "settings.permission.composer.available": "elbaliava sniamer resopmoc launaM",
+  "help.title": "pleH",
+  "help.about": "eznorB tuobA",
+  "help.diagnostics.preview": "weiverp scitsongaiD",
+  "help.diagnostics.export": "eldnub troppus tropxE",
+  "help.limitations.humanGates": ".3.9 dna ,5.5 ,01.3 ,9.3 seirots :golkcab sniamer noitadilav namuH",
+  "help.upload.none": ".yllacitamotua scitsongaid sdaolpu reven eznorB"
 }

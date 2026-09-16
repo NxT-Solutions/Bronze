@@ -93,6 +93,12 @@ export const MessageIds = {
     "settings.permission.selfTest.alternative",
   "settings.permission.composer.available":
     "settings.permission.composer.available",
+  "help.title": "help.title",
+  "help.about": "help.about",
+  "help.diagnostics.preview": "help.diagnostics.preview",
+  "help.diagnostics.export": "help.diagnostics.export",
+  "help.limitations.humanGates": "help.limitations.humanGates",
+  "help.upload.none": "help.upload.none",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

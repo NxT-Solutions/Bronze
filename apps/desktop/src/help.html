@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bronze Help</title>
+    <style>
+      body {
+        font-family: system-ui;
+        margin: 0;
+        min-height: 100vh;
+        padding-inline: 1rem;
+        padding-block: 0.75rem;
+        background: #f7f4ef;
+        color: #1c1917;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="help" data-slot="help" data-automatic-upload="false">
+      <h1 data-i18n="help.title">Help</h1>
+      <article>
+        <h2 data-i18n="help.about">About Bronze</h2>
+        <p data-i18n="help.upload.none">
+          Bronze never uploads diagnostics automatically.
+        </p>
+        <p data-i18n="help.limitations.humanGates">
+          Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.
+        </p>
+      </article>
+      <section aria-labelledby="diagnostics-preview-title">
+        <h2 id="diagnostics-preview-title" data-i18n="help.diagnostics.preview">
+          Diagnostics preview
+        </h2>
+        <pre data-diagnostics-preview>events=0 limits=3.9,3.10,5.5,9.3</pre>
+        <button type="button" data-i18n="help.diagnostics.export">
+          Export support bundle
+        </button>
+      </section>
+    </main>
+  </body>
+</html>

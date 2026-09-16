@@ -77,5 +77,11 @@
   "settings.permission.screenRecording.notUsed": "Not used",
   "settings.permission.selfTest.why": "Checks the capture pipeline without content",
   "settings.permission.selfTest.alternative": "Retry later from this list",
-  "settings.permission.composer.available": "Manual composer remains available"
+  "settings.permission.composer.available": "Manual composer remains available",
+  "help.title": "Help",
+  "help.about": "About Bronze",
+  "help.diagnostics.preview": "Diagnostics preview",
+  "help.diagnostics.export": "Export support bundle",
+  "help.limitations.humanGates": "Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.",
+  "help.upload.none": "Bronze never uploads diagnostics automatically."
 }
