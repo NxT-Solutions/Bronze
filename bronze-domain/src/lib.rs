@@ -7,6 +7,7 @@ mod composer;
 mod entities;
 mod formatters;
 mod purge;
+mod reflow;
 mod tokens;
 
 pub use composer::{
@@ -22,6 +23,11 @@ pub use formatters::{
 pub use purge::{
     can_purge_with_descendants, claims_forensic_erasure, empty_trash_requires_confirmation,
     TRASH_RETENTION_DAYS,
+};
+pub use reflow::{
+    check_reflow, composer_reachable, overflow_labeled, scaled_min_width, two_axis_scroll,
+    ReflowError, Size, COMPOSER_MUST_BE_REACHABLE, REFLOW_WIDTH_CSS_PX, TEXT_RESIZE_PERCENT,
+    TOOLBAR_OVERFLOW_KEY, TWO_AXIS_SCROLL_ALLOWED,
 };
 pub use tokens::{
     contrast_ratio, normal_text_pairs, relative_luminance, Rgb, ThemeTokens,
