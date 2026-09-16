@@ -68,7 +68,7 @@ development_status:
 
   epic-4: in-progress
   4-1-domain-entities-and-lifecycle: done
-  4-2-schema-v1-and-migrations: ready-for-dev
+  4-2-schema-v1-and-migrations: done
   4-3-command-receipts-and-revisions: ready-for-dev
   4-4-undo-trash-and-purge: ready-for-dev
   4-5-online-backup-restore: ready-for-dev

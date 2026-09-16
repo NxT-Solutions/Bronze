@@ -1,6 +1,6 @@
 # Story 4.2: Schema v1 and migrations
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,14 @@ App Group container decision
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-storage/src/v1.sql` — docs/08 tables including `command_receipts` and `diagnostic_events`
+- `bronze-storage/src/migrate.rs` — checksummed WAL migrations; backup-before-migration hook; locator interface (ADR-009 Proposed)
+- `bronze-storage/Cargo.toml` — rusqlite bundled + sha2
+
+### Notes
+
+- UI layer was a no-op. FTS5 waits for story 4.7 / Proposed ADR-018. App Group path is not chosen. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
