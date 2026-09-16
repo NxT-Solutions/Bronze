@@ -159,3 +159,27 @@ source_spec: `spec-dw-i18n-adapter-and-formatters.md`
 severity: medium
 reason: Tests already invoke createI18n multiple times (en, en-XA, zh-Hant-HK, pt-BR). getI18n() reflects the last init. Pre-existed before this story's adapter wrap.
 status: open
+
+### DW-20: architecture requires "ABI version and feature bitset" but 2.1 delivers only version (bitset not in story ACs)
+origin: spec-deferred ef318b7e2822
+location: docs/06-system-architecture.md:234 + native/macos/BronzeNative/Sources/BronzeNative/include/BronzeNative.h
+source_spec: `2-1-versioned-c-abi-types.md`
+severity: low
+reason: docs/06-system-architecture.md:234 lists feature bitset; header/swift only version + status
+status: open
+
+### DW-21: AGENTS.md rule 13 (update docs/traceability on decision change) only partially followed for UTF-8 validation strategy
+origin: spec-deferred 80dcac8d19b8
+location: native/.../BronzeNative.swift + 2-1-...md design notes (not pushed to 06/18)
+source_spec: `2-1-versioned-c-abi-types.md`
+severity: medium
+reason: lossy+roundtrip, silgen, len-only helper, no NUL design live only in code comments + story spec
+status: open
+
+### DW-22: init/shutdown and double-completion are present but lack exercising tests or shutdown-race coverage
+origin: spec-deferred edaca169e04a
+location: BronzeNative.swift + Tests (no call sites or race cases)
+source_spec: `2-1-versioned-c-abi-types.md`
+severity: low
+reason: symbols + status exist; only constant and presence tested; arch §7.2 + 2.4 story lists races
+status: open

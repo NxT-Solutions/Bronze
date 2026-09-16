@@ -47,7 +47,7 @@ development_status:
   epic-1-retrospective: optional
 
   epic-2: backlog
-  2-1-versioned-c-abi-types: ready-for-dev
+  2-1-versioned-c-abi-types: done
   2-2-rust-macos-façade: ready-for-dev
   2-3-link-static-library-into-tauri: ready-for-dev
   2-4-abi-ownership-tests: ready-for-dev

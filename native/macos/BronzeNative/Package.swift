@@ -7,6 +7,13 @@ let package = Package(
         .library(name: "BronzeNative", type: .static, targets: ["BronzeNative"]),
     ],
     targets: [
-        .target(name: "BronzeNative"),
+        .target(
+            name: "BronzeNative",
+            publicHeadersPath: "include"
+        ),
+        .testTarget(
+            name: "BronzeNativeTests",
+            dependencies: ["BronzeNative"]
+        ),
     ]
 )
