@@ -1,8 +1,10 @@
 import { Button } from "@/components/button";
+import { cardLangDir } from "@/lib/catalog";
 
 export type QueueItem = {
   id: string;
   body: string;
+  contentLanguage?: string;
 };
 
 export const QUEUE_ACTION_KEYS = {
@@ -27,7 +29,7 @@ export function ItemList({
     <ul data-slot="item-list">
       {items.map((item) => (
         <li key={item.id}>
-          <article>
+          <article {...cardLangDir(item.contentLanguage)}>
             <p>{item.body}</p>
             <menu>
               {(

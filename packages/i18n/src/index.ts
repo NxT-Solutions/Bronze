@@ -1,4 +1,12 @@
 export {
+  ADVERTISED_LOCALES,
+  cardLangDir,
+  chromeDir,
+  INFOPLIST_GLOSSARY,
+  NATIVE_GLOSSARY_KEYS,
+  PANEL_CHROME_KEYS,
+} from "./catalog";
+export {
   type BronzeLocalizationAdapter,
   type CreateI18nOptions,
   createI18n,

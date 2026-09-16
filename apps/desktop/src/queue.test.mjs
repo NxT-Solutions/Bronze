@@ -15,7 +15,7 @@ const en = JSON.parse(
 
 test("queue list uses semantic list article and real buttons", () => {
   assert.match(html, /<ul\b[^>]*id="queue"/);
-  assert.match(html, /<article>/);
+  assert.match(html, /<article lang="und" dir="auto">/);
   assert.match(
     html,
     /<button\b[^>]*type="button"[^>]*data-i18n="queue.item.moveUp"/,

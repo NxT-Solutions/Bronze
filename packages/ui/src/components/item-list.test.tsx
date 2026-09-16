@@ -25,7 +25,10 @@ describe("ItemList (QUE-002, A11Y-002)", () => {
       />,
     );
     expect(container.querySelector("ul")).toBeTruthy();
-    expect(container.querySelector("article")).toBeTruthy();
+    const card = container.querySelector("article");
+    expect(card).toBeTruthy();
+    expect(card?.getAttribute("lang")).toBe("und");
+    expect(card?.getAttribute("dir")).toBe("auto");
     expect(container.querySelectorAll('div[role="button"]').length).toBe(0);
     for (const name of Object.values(labels)) {
       const button = screen.getByRole("button", { name });
