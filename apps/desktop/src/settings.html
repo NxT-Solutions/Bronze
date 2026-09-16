@@ -67,6 +67,42 @@
         <button type="button" data-i18n="settings.reset.group">Reset group</button>
         <button type="button" data-i18n="settings.reset.all">Reset all</button>
       </form>
+      <section data-slot="permission-health" aria-labelledby="permission-health-title">
+        <h2 id="permission-health-title" data-i18n="settings.permission.title">
+          Permission health
+        </h2>
+        <ul>
+          <li data-capability="inputMonitoring" data-usage="required">
+            <p data-i18n="settings.permission.inputMonitoring.why">
+              Needed for the global capture chord
+            </p>
+            <p data-i18n="settings.permission.inputMonitoring.alternative">
+              Use the menu or composer
+            </p>
+            <button type="button" data-i18n="settings.permission.retest">Retest</button>
+          </li>
+          <li data-capability="accessibility" data-usage="required">
+            <p data-i18n="settings.permission.accessibility.why">
+              Needed to read the current selection
+            </p>
+            <p data-i18n="settings.permission.accessibility.alternative">
+              Paste or type into the composer
+            </p>
+            <button type="button" data-i18n="settings.permission.retest">Retest</button>
+          </li>
+          <li data-capability="screenRecording" data-usage="notUsed">
+            <p data-i18n="settings.permission.screenRecording.why">
+              Bronze does not record the screen
+            </p>
+            <p data-screen-recording-used="false" data-i18n="settings.permission.screenRecording.notUsed">
+              Not used
+            </p>
+          </li>
+        </ul>
+        <p data-i18n="settings.permission.composer.available">
+          Manual composer remains available
+        </p>
+      </section>
       <section data-slot="shortcut-recorder" aria-labelledby="shortcuts-title">
         <h2 id="shortcuts-title" data-i18n="settings.shortcuts.title">Shortcuts</h2>
         <p role="status" data-shortcut-live data-i18n="settings.shortcuts.live">

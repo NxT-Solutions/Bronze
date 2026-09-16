@@ -56,5 +56,21 @@
   "settings.shortcuts.record": "tuctrohs droceR",
   "settings.shortcuts.skipTest": "tset pikS",
   "settings.shortcuts.alternatives": "htap launam ro unem a peeK",
-  "settings.shortcuts.live": "gninetsiL"
+  "settings.shortcuts.live": "gninetsiL",
+  "settings.permission.title": "htlaeh noissimreP",
+  "settings.permission.retest": "tseteR",
+  "settings.permission.inputMonitoring.why": "drohc erutpac labolg eht rof dedeeN",
+  "settings.permission.inputMonitoring.alternative": "resopmoc ro unem eht esU",
+  "settings.permission.accessibility.why": "noitceles tnerruc eht daer ot dedeeN",
+  "settings.permission.accessibility.alternative": "resopmoc eht otni epyt ro etsaP",
+  "settings.permission.launchAtLogin.why": "nigol ta trats lanoitpO",
+  "settings.permission.launchAtLogin.alternative": "unem eht morf eznorB nepO",
+  "settings.permission.automation.why": "esaeler siht ni deriuqer toN",
+  "settings.permission.automation.alternative": "deriuqer evitanretla oN",
+  "settings.permission.screenRecording.why": "neercs eht drocer ton seod eznorB",
+  "settings.permission.screenRecording.alternative": "detseuqer si noissimrep neercs oN",
+  "settings.permission.screenRecording.notUsed": "desu toN",
+  "settings.permission.selfTest.why": "tnetnoc tuohtiw enilepip erutpac eht skcehC",
+  "settings.permission.selfTest.alternative": "tsil siht morf retal yrteR",
+  "settings.permission.composer.available": "elbaliava sniamer resopmoc launaM"
 }

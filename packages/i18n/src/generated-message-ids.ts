@@ -60,6 +60,34 @@ export const MessageIds = {
   "settings.shortcuts.skipTest": "settings.shortcuts.skipTest",
   "settings.shortcuts.alternatives": "settings.shortcuts.alternatives",
   "settings.shortcuts.live": "settings.shortcuts.live",
+  "settings.permission.title": "settings.permission.title",
+  "settings.permission.retest": "settings.permission.retest",
+  "settings.permission.inputMonitoring.why":
+    "settings.permission.inputMonitoring.why",
+  "settings.permission.inputMonitoring.alternative":
+    "settings.permission.inputMonitoring.alternative",
+  "settings.permission.accessibility.why":
+    "settings.permission.accessibility.why",
+  "settings.permission.accessibility.alternative":
+    "settings.permission.accessibility.alternative",
+  "settings.permission.launchAtLogin.why":
+    "settings.permission.launchAtLogin.why",
+  "settings.permission.launchAtLogin.alternative":
+    "settings.permission.launchAtLogin.alternative",
+  "settings.permission.automation.why": "settings.permission.automation.why",
+  "settings.permission.automation.alternative":
+    "settings.permission.automation.alternative",
+  "settings.permission.screenRecording.why":
+    "settings.permission.screenRecording.why",
+  "settings.permission.screenRecording.alternative":
+    "settings.permission.screenRecording.alternative",
+  "settings.permission.screenRecording.notUsed":
+    "settings.permission.screenRecording.notUsed",
+  "settings.permission.selfTest.why": "settings.permission.selfTest.why",
+  "settings.permission.selfTest.alternative":
+    "settings.permission.selfTest.alternative",
+  "settings.permission.composer.available":
+    "settings.permission.composer.available",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

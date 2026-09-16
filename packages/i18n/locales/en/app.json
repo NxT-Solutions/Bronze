@@ -56,5 +56,21 @@
   "settings.shortcuts.record": "Record shortcut",
   "settings.shortcuts.skipTest": "Skip test",
   "settings.shortcuts.alternatives": "Keep a menu or manual path",
-  "settings.shortcuts.live": "Listening"
+  "settings.shortcuts.live": "Listening",
+  "settings.permission.title": "Permission health",
+  "settings.permission.retest": "Retest",
+  "settings.permission.inputMonitoring.why": "Needed for the global capture chord",
+  "settings.permission.inputMonitoring.alternative": "Use the menu or composer",
+  "settings.permission.accessibility.why": "Needed to read the current selection",
+  "settings.permission.accessibility.alternative": "Paste or type into the composer",
+  "settings.permission.launchAtLogin.why": "Optional start at login",
+  "settings.permission.launchAtLogin.alternative": "Open Bronze from the menu",
+  "settings.permission.automation.why": "Not required in this release",
+  "settings.permission.automation.alternative": "No alternative required",
+  "settings.permission.screenRecording.why": "Bronze does not record the screen",
+  "settings.permission.screenRecording.alternative": "No screen permission is requested",
+  "settings.permission.screenRecording.notUsed": "Not used",
+  "settings.permission.selfTest.why": "Checks the capture pipeline without content",
+  "settings.permission.selfTest.alternative": "Retry later from this list",
+  "settings.permission.composer.available": "Manual composer remains available"
 }

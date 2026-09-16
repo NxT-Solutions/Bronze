@@ -56,5 +56,21 @@
   "settings.shortcuts.record": "【RRéeçcóorrdd sshhóorrttçcúutt】",
   "settings.shortcuts.skipTest": "【SSkkíipp ttéesstt】",
   "settings.shortcuts.alternatives": "【KKéeéepp áa mméeñnúu óorr mmáañnúuáall ppáatthh】",
-  "settings.shortcuts.live": "【LLíissttéeñníiñngg】"
+  "settings.shortcuts.live": "【LLíissttéeñníiñngg】",
+  "settings.permission.title": "【PPéerrmmíissssíióoñn hhéeáalltthh】",
+  "settings.permission.retest": "【RRéettéesstt】",
+  "settings.permission.inputMonitoring.why": "【NNéeéeddéedd ffóorr tthhée ggllóobbáall çcáappttúurrée çchhóorrdd】",
+  "settings.permission.inputMonitoring.alternative": "【ÚUssée tthhée mméeñnúu óorr çcóommppóosséerr】",
+  "settings.permission.accessibility.why": "【NNéeéeddéedd ttóo rréeáadd tthhée çcúurrrréeñntt sséelléeçcttíióoñn】",
+  "settings.permission.accessibility.alternative": "【PPáassttée óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr】",
+  "settings.permission.launchAtLogin.why": "【ÓOppttíióoñnáall ssttáarrtt áatt llóoggíiñn】",
+  "settings.permission.launchAtLogin.alternative": "【ÓOppéeñn BBrróoñnzzée ffrróomm tthhée mméeñnúu】",
+  "settings.permission.automation.why": "【NNóott rréeqqúuíirréedd íiñn tthhíiss rréelléeáassée】",
+  "settings.permission.automation.alternative": "【NNóo áallttéerrñnáattíivvée rréeqqúuíirréedd】",
+  "settings.permission.screenRecording.why": "【BBrróoñnzzée ddóoéess ñnóott rréeçcóorrdd tthhée ssçcrréeéeñn】",
+  "settings.permission.screenRecording.alternative": "【NNóo ssçcrréeéeñn ppéerrmmíissssíióoñn íiss rréeqqúuéessttéedd】",
+  "settings.permission.screenRecording.notUsed": "【NNóott úusséedd】",
+  "settings.permission.selfTest.why": "【CChhéeçckkss tthhée çcáappttúurrée ppíippéellíiñnée wwíitthhóoúutt çcóoñnttéeñntt】",
+  "settings.permission.selfTest.alternative": "【RRéettrryy lláattéerr ffrróomm tthhíiss llíisstt】",
+  "settings.permission.composer.available": "【MMáañnúuáall çcóommppóosséerr rréemmáaíiñnss áavváaíilláabbllée】"
 }
