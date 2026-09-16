@@ -1,0 +1,30 @@
+# Cursor Agent CLI (cursor-agent / agent). Project overlay — not a shipped profile.
+# Chosen over opencode-http (slow HTTP/SSE hop) and grok CLI (interactive TUI,
+# no hook/completion contract). --print runs the full agent loop then exits;
+# generic tmux adapter harvests on window-death (same as Codex's missing SessionEnd).
+# Hooks use the already-registered Claude dialect so this is NOT hookless; Cursor
+# never fires those hooks, so they are inert.
+name = "cursor-agent"
+binary = "cursor-agent"
+adapter = "generic"
+prompt_template = "Follow the skill at .claude/skills/{skill}/SKILL.md exactly, then execute it for: {args}"
+launch_args = [
+  "--print",
+  "--output-format",
+  "text",
+  "--trust",
+  "--sandbox",
+  "disabled",
+  "--approve-mcps",
+  "--force",
+]
+bypass_args = []
+model_flag = "--model"
+usage_parser = "none"
+skill_tree = ".claude/skills"
+first_run_note = "run `cursor-agent login` once; --print/--force/--trust keep sessions unattended"
+
+[hooks]
+dialect = "claude-settings-json"
+config_path = ".claude/settings.json"
+events = { SessionStart = "SessionStart", Stop = "Stop", SessionEnd = "SessionEnd", PreCompact = "PreCompact" }
