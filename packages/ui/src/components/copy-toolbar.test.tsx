@@ -17,6 +17,7 @@ describe("CopyToolbar (QUE-004, QUE-005)", () => {
           profile: "Output profile",
           copy: "Copy",
           preview: "Preview",
+          overflow: "More actions",
         }}
         onSelect={() => undefined}
         onCopy={onCopy}
@@ -24,6 +25,7 @@ describe("CopyToolbar (QUE-004, QUE-005)", () => {
     );
     expect(screen.getByLabelText("Output profile")).toHaveValue("plain");
     expect(screen.getByRole("status")).toHaveTextContent("park");
+    expect(screen.getByText("More actions")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Copy" }));
     expect(onCopy).toHaveBeenCalledTimes(1);
     expect((await axe.run(container)).violations).toEqual([]);

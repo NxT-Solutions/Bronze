@@ -14,6 +14,7 @@ export * from "./lib/apply-display-snapshot";
 export * from "./lib/catalog";
 export * from "./lib/contrast";
 export * from "./lib/permission-health";
+export * from "./lib/reflow";
 export * from "./lib/settings-schema";
 export * from "./lib/shortcut-registry";
 export * from "./lib/window-allows";

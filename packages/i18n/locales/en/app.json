@@ -9,6 +9,7 @@
   "menu.status.settings": "Settings",
   "menu.status.quit": "Quit",
   "panel.quick.title": "Bronze",
+  "panel.toolbar.overflow": "More actions",
   "capture.announce.saved": "Captured to Bronze.",
   "composer.add.label": "Add item",
   "composer.add.submit": "Add",

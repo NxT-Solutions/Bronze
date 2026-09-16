@@ -12,6 +12,7 @@ export const MessageIds = {
   "menu.status.settings": "menu.status.settings",
   "menu.status.quit": "menu.status.quit",
   "panel.quick.title": "panel.quick.title",
+  "panel.toolbar.overflow": "panel.toolbar.overflow",
   "capture.announce.saved": "capture.announce.saved",
   "composer.add.label": "composer.add.label",
   "composer.add.submit": "composer.add.submit",

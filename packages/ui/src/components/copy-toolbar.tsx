@@ -4,6 +4,7 @@ export const COPY_KEYS = {
   profile: "copy.profile.label",
   copy: "copy.action.copy",
   preview: "copy.preview.label",
+  overflow: "panel.toolbar.overflow",
 } as const;
 
 export type OutputProfileOption = {
@@ -27,7 +28,7 @@ export function CopyToolbar({
   onCopy: () => void;
 }) {
   return (
-    <div data-slot="copy-toolbar">
+    <div data-slot="copy-toolbar" data-reflow="wrap">
       <label htmlFor="output-profile">{labels.profile}</label>
       <select
         id="output-profile"
@@ -43,6 +44,9 @@ export function CopyToolbar({
       <Button type="button" onPress={onCopy}>
         {labels.copy}
       </Button>
+      <details data-slot="toolbar-overflow">
+        <summary>{labels.overflow}</summary>
+      </details>
       <output>
         <strong>{labels.preview}</strong>
         <pre>{preview}</pre>

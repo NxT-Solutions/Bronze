@@ -155,3 +155,23 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Reflow: 320 CSS px / 200% text — one axis only (A11Y-003) */
+[data-slot="copy-toolbar"],
+[data-slot="quick-panel"],
+#quick-panel {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+[data-slot="toolbar-overflow"] summary {
+  cursor: pointer;
+}
+
+#composer,
+[data-slot="composer"] {
+  order: 0;
+}
