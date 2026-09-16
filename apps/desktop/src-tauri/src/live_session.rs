@@ -39,12 +39,20 @@ pub trait SelectionHost {
 #[cfg(test)]
 pub struct FakeSelectionHost {
     pub tree: FakeAxTree,
+    pub source_app_name: Option<String>,
 }
 
 #[cfg(test)]
 impl SelectionHost for FakeSelectionHost {
     fn read(&self) -> (AxOutcome, Option<CapturedText>) {
-        ax_capture(&self.tree)
+        let (outcome, text) = ax_capture(&self.tree);
+        (
+            outcome,
+            text.map(|mut captured| {
+                captured.source_app_name = self.source_app_name.clone();
+                captured
+            }),
+        )
     }
 }
 
@@ -52,7 +60,7 @@ pub struct LiveAxHost;
 
 impl SelectionHost for LiveAxHost {
     fn read(&self) -> (AxOutcome, Option<CapturedText>) {
-        let (outcome, text) = bronze_platform_macos::read_focused_selection();
+        let (outcome, text, source_app_name) = bronze_platform_macos::read_focused_selection();
         let mapped = match outcome {
             bronze_platform_macos::LiveAxOutcome::Captured { len } => AxOutcome::Captured { len },
             bronze_platform_macos::LiveAxOutcome::NoSelection => AxOutcome::NoSelection,
@@ -69,19 +77,26 @@ impl SelectionHost for LiveAxHost {
                 AxOutcome::InvalidTextEncoding
             }
         };
-        (mapped, text.map(|body| CapturedText { text: body }))
+        (
+            mapped,
+            text.map(|body| CapturedText {
+                text: body,
+                source_app_name,
+            }),
+        )
     }
 }
 
 struct SessionPersist<'a> {
     session: &'a mut LiveSession,
     body: String,
+    source_app_name: Option<String>,
 }
 
 impl PersistHook for SessionPersist<'_> {
     fn persist(&mut self, _request_id: u64) -> Result<(), PersistError> {
         self.session
-            .add_composer(self.body.clone())
+            .add_captured(self.body.clone(), self.source_app_name.clone())
             .map(|_| ())
             .map_err(|_| PersistError)
     }
@@ -99,6 +114,7 @@ pub struct QueueItemDto {
     pub content_language: String,
     pub status: String,
     pub rank: String,
+    pub source_app_name: Option<String>,
 }
 
 impl From<QueueItemRow> for QueueItemDto {
@@ -110,6 +126,7 @@ impl From<QueueItemRow> for QueueItemDto {
             content_language: row.content_language,
             status: row.status,
             rank: row.rank,
+            source_app_name: row.source_app_name,
         }
     }
 }
@@ -198,6 +215,7 @@ impl LiveSession {
                     SessionPersist {
                         session: self,
                         body,
+                        source_app_name: captured.source_app_name,
                     },
                     bronze_capture::NoFeedback,
                 );
@@ -267,6 +285,38 @@ impl LiveSession {
             .get_item(&id)
             .map(QueueItemDto::from)
             .map_err(|_| "composer_store_failed".into())
+    }
+
+    pub fn add_captured(
+        &mut self,
+        body: String,
+        source_app_name: Option<String>,
+    ) -> Result<QueueItemDto, String> {
+        if body.is_empty() {
+            return Err("composer_empty".into());
+        }
+        let now = now_ms();
+        let section = self
+            .store
+            .ensure_inbox(now)
+            .map_err(|_| "inbox_seed_failed")?;
+        let id = next_item_id(now);
+        self.store
+            .add_from_capture(
+                &ComposerDraft {
+                    body,
+                    content_language: None,
+                },
+                source_app_name.as_deref(),
+                &section,
+                &id,
+                now,
+            )
+            .map_err(|_| "capture_store_failed")?;
+        self.store
+            .get_item(&id)
+            .map(QueueItemDto::from)
+            .map_err(|_| "capture_store_failed".into())
     }
 
     pub fn apply_action(&mut self, id: &str, action: &str) -> Result<Vec<QueueItemDto>, String> {
@@ -757,6 +807,7 @@ mod live_session_tests {
         let added = session.add_composer("  park me  ".into()).expect("add");
         assert_eq!(added.body, "  park me  ");
         assert_eq!(added.content_language, "und");
+        assert_eq!(added.source_app_name, None);
         assert_eq!(session.list_queue(false).expect("list").len(), 1);
         session
             .apply_action(&added.id, "complete")
@@ -838,6 +889,7 @@ mod live_session_tests {
                 excluded: false,
                 accessibility_granted: true,
             },
+            source_app_name: Some("TextEdit".into()),
         };
         let mut announce = FakeAnnouncer::default();
         let terminal = session
@@ -847,6 +899,7 @@ mod live_session_tests {
         let overview = session.list_overview().expect("overview");
         assert_eq!(overview.len(), 1);
         assert_eq!(overview[0].body, "  captured  ");
+        assert_eq!(overview[0].source_app_name.as_deref(), Some("TextEdit"));
         assert_eq!(announce.keys, vec![CAPTURE_ONLY_ANNOUNCE_KEY.to_string()]);
         session
             .apply_action(&overview[0].id, "complete")
@@ -872,6 +925,7 @@ mod live_session_tests {
                 excluded: false,
                 accessibility_granted: true,
             },
+            source_app_name: None,
         };
         let mut announce = FakeAnnouncer::default();
         let terminal = session
@@ -893,6 +947,7 @@ mod live_session_tests {
                 excluded: false,
                 accessibility_granted: true,
             },
+            source_app_name: Some("TextEdit".into()),
         };
         let terminal = session
             .persist_selection(&secret, &mut announce, false)

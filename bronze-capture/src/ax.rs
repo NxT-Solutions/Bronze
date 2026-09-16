@@ -60,6 +60,7 @@ pub enum AxOutcome {
 
 pub struct CapturedText {
     pub text: String,
+    pub source_app_name: Option<String>,
 }
 
 impl fmt::Debug for CapturedText {
@@ -168,7 +169,13 @@ pub fn capture(tree: &FakeAxTree) -> (AxOutcome, Option<CapturedText>) {
                         return (AxOutcome::SelectionTooLarge, None);
                     } else {
                         let len = text.len();
-                        return (AxOutcome::Captured { len }, Some(CapturedText { text }));
+                        return (
+                            AxOutcome::Captured { len },
+                            Some(CapturedText {
+                                text,
+                                source_app_name: None,
+                            }),
+                        );
                     }
                 }
             },

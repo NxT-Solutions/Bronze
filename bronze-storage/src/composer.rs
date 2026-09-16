@@ -49,6 +49,61 @@ impl Store {
             .map_err(|_| ComposerError::Store)?;
         Ok(item_id.into())
     }
+
+    pub fn add_from_capture(
+        &mut self,
+        draft: &ComposerDraft,
+        source_app_name: Option<&str>,
+        section_id: &str,
+        item_id: &str,
+        now_ms: i64,
+    ) -> Result<String, ComposerError> {
+        if self.mode() != StoreMode::Writable {
+            return Err(ComposerError::ReadOnly);
+        }
+        let language = ContentLanguage::parse(draft.content_language.as_deref())
+            .map_err(|_| ComposerError::Language)?;
+        let source_id = sanitize_app_name(source_app_name).and_then(|name| {
+            let source_id = format!("src-{item_id}");
+            self.conn
+                .execute(
+                    "INSERT INTO sources (id, bundle_id, app_name, safe_title, url, captured_at_ms, policy_version)
+                     VALUES (?1, NULL, ?2, NULL, NULL, ?3, 1)",
+                    rusqlite::params![source_id, name, now_ms],
+                )
+                .ok()?;
+            Some(source_id)
+        });
+        self.conn
+            .execute(
+                "INSERT INTO items (id, section_id, kind, body, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
+                 VALUES (?1, ?2, 'snippet', ?3, ?4, 'queued', ?1, ?5, 1, ?6, ?6, NULL, NULL)",
+                rusqlite::params![
+                    item_id,
+                    section_id,
+                    draft.body,
+                    language.as_str(),
+                    source_id,
+                    now_ms
+                ],
+            )
+            .map_err(|_| ComposerError::Store)?;
+        Ok(item_id.into())
+    }
+}
+
+fn sanitize_app_name(name: Option<&str>) -> Option<String> {
+    let name = name?;
+    let cleaned: String = name.chars().filter(|c| !c.is_control()).take(64).collect();
+    let trimmed = cleaned.trim();
+    if trimmed.is_empty()
+        || trimmed.eq_ignore_ascii_case("bronze-desktop")
+        || trimmed.eq_ignore_ascii_case("Bronze")
+    {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
 }
 
 #[cfg(test)]
@@ -150,5 +205,40 @@ mod composer_persist_tests {
             .expect("count");
         assert_eq!(count, 0);
         assert_eq!(draft.body, "ime");
+    }
+
+    #[test]
+    fn capture_persists_app_name_without_url() {
+        let mut store = open_store();
+        let draft = ComposerDraft {
+            body: "selected".into(),
+            content_language: None,
+        };
+        store
+            .add_from_capture(&draft, Some("TextEdit"), "s1", "i-cap", 12)
+            .expect("capture");
+        let (kind, app, url): (String, String, Option<String>) = store
+            .conn
+            .query_row(
+                "SELECT items.kind, sources.app_name, sources.url
+                 FROM items JOIN sources ON sources.id = items.source_id
+                 WHERE items.id='i-cap'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .expect("row");
+        assert_eq!(kind, "snippet");
+        assert_eq!(app, "TextEdit");
+        assert_eq!(url, None);
+        store
+            .add_from_capture(&draft, Some("Bronze"), "s1", "i-self", 13)
+            .expect("self");
+        let source: Option<String> = store
+            .conn
+            .query_row("SELECT source_id FROM items WHERE id='i-self'", [], |row| {
+                row.get(0)
+            })
+            .expect("self source");
+        assert_eq!(source, None);
     }
 }

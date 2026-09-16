@@ -54,6 +54,11 @@ mod sys {
             attribute: CfStringRef,
             value: *mut CfTypeRef,
         ) -> i32;
+        pub fn AXUIElementGetPid(element: AxUiElementRef, pid: *mut i32) -> i32;
+    }
+
+    extern "C" {
+        pub fn proc_name(pid: i32, buffer: *mut c_void, buffersize: u32) -> i32;
     }
 
     pub fn cf_string(name: &str) -> Option<CfStringRef> {
@@ -93,6 +98,27 @@ mod sys {
         }
     }
 
+    pub fn app_name_for_element(element: AxUiElementRef) -> Option<String> {
+        let mut pid: i32 = 0;
+        let status = unsafe { AXUIElementGetPid(element, &mut pid) };
+        if status != AX_SUCCESS || pid <= 0 {
+            return None;
+        }
+        let mut buf = [0u8; 256];
+        let n = unsafe { proc_name(pid, buf.as_mut_ptr().cast(), buf.len() as u32) };
+        if n <= 0 {
+            return None;
+        }
+        let raw = std::str::from_utf8(&buf[..n as usize]).ok()?.trim();
+        if raw.is_empty()
+            || raw.eq_ignore_ascii_case("bronze-desktop")
+            || raw.eq_ignore_ascii_case("Bronze")
+        {
+            return None;
+        }
+        Some(raw.chars().filter(|c| !c.is_control()).take(64).collect())
+    }
+
     pub fn copy_attr(element: AxUiElementRef, name: &str) -> Option<CfTypeRef> {
         let attr = cf_string(name)?;
         let mut out = std::ptr::null();
@@ -107,61 +133,63 @@ mod sys {
 }
 
 #[cfg(target_os = "macos")]
-pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>) {
+pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>, Option<String>) {
     use sys::{
-        cf_string_to_owned, copy_attr, AXIsProcessTrusted, AXUIElementCreateSystemWide, CFRelease,
+        app_name_for_element, cf_string_to_owned, copy_attr, AXIsProcessTrusted,
+        AXUIElementCreateSystemWide, CFRelease,
     };
 
     if unsafe { AXIsProcessTrusted() } == 0 {
-        return (LiveAxOutcome::AccessibilityDenied, None);
+        return (LiveAxOutcome::AccessibilityDenied, None, None);
     }
     let system = unsafe { AXUIElementCreateSystemWide() };
     if system.is_null() {
-        return (LiveAxOutcome::FocusedElementMissing, None);
+        return (LiveAxOutcome::FocusedElementMissing, None, None);
     }
     let focused = copy_attr(system, "AXFocusedUIElement");
     unsafe { CFRelease(system.cast()) };
     let Some(focused) = focused else {
-        return (LiveAxOutcome::FocusedElementMissing, None);
+        return (LiveAxOutcome::FocusedElementMissing, None, None);
     };
     let focused_el = focused.cast_mut();
+    let source_app_name = app_name_for_element(focused_el);
     let role = copy_attr(focused_el, "AXRole")
         .and_then(|role| cf_string_to_owned(role).ok())
         .unwrap_or_default();
     if role == "AXSecureTextField" {
         unsafe { CFRelease(focused) };
-        return (LiveAxOutcome::ProtectedContent, None);
+        return (LiveAxOutcome::ProtectedContent, None, None);
     }
     if role == "AXUnknown" {
         unsafe { CFRelease(focused) };
-        return (LiveAxOutcome::ProtectionUnknown, None);
+        return (LiveAxOutcome::ProtectionUnknown, None, None);
     }
     let selected = copy_attr(focused_el, "AXSelectedText");
     unsafe { CFRelease(focused) };
     let Some(selected) = selected else {
-        return (LiveAxOutcome::NoSelection, None);
+        return (LiveAxOutcome::NoSelection, None, None);
     };
     let text = match cf_string_to_owned(selected) {
         Ok(text) => text,
         Err(()) => {
             unsafe { CFRelease(selected) };
-            return (LiveAxOutcome::InvalidTextEncoding, None);
+            return (LiveAxOutcome::InvalidTextEncoding, None, None);
         }
     };
     unsafe { CFRelease(selected) };
     if text.is_empty() {
-        return (LiveAxOutcome::NoSelection, None);
+        return (LiveAxOutcome::NoSelection, None, None);
     }
     if text.len() > LIVE_AX_MAX_BYTES {
-        return (LiveAxOutcome::SelectionTooLarge, None);
+        return (LiveAxOutcome::SelectionTooLarge, None, None);
     }
     let len = text.len();
-    (LiveAxOutcome::Captured { len }, Some(text))
+    (LiveAxOutcome::Captured { len }, Some(text), source_app_name)
 }
 
 #[cfg(not(target_os = "macos"))]
-pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>) {
-    (LiveAxOutcome::AccessibilityDenied, None)
+pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>, Option<String>) {
+    (LiveAxOutcome::AccessibilityDenied, None, None)
 }
 
 #[cfg(test)]

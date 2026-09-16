@@ -36,6 +36,7 @@ pub struct QueueItemRow {
     pub content_language: String,
     pub status: String,
     pub rank: String,
+    pub source_app_name: Option<String>,
 }
 
 pub fn queue_action_key(action: QueueAction) -> &'static str {
@@ -82,9 +83,9 @@ impl Store {
 
     pub fn list_items(&self, include_trashed: bool) -> Result<Vec<QueueItemRow>, QueueError> {
         let sql = if include_trashed {
-            "SELECT id, section_id, body, content_language, status, rank FROM items ORDER BY rank, id"
+            "SELECT items.id, items.section_id, items.body, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id ORDER BY items.rank, items.id"
         } else {
-            "SELECT id, section_id, body, content_language, status, rank FROM items WHERE status != 'trashed' ORDER BY rank, id"
+            "SELECT items.id, items.section_id, items.body, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status != 'trashed' ORDER BY items.rank, items.id"
         };
         let mut stmt = self.conn.prepare(sql).map_err(|_| QueueError::Store)?;
         let rows = stmt
@@ -96,6 +97,7 @@ impl Store {
                     content_language: row.get(3)?,
                     status: row.get(4)?,
                     rank: row.get(5)?,
+                    source_app_name: row.get(6)?,
                 })
             })
             .map_err(|_| QueueError::Store)?;
@@ -106,7 +108,7 @@ impl Store {
     pub fn get_item(&self, id: &str) -> Result<QueueItemRow, QueueError> {
         self.conn
             .query_row(
-                "SELECT id, section_id, body, content_language, status, rank FROM items WHERE id=?1",
+                "SELECT items.id, items.section_id, items.body, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.id=?1",
                 [id],
                 |row| {
                     Ok(QueueItemRow {
@@ -116,6 +118,7 @@ impl Store {
                         content_language: row.get(3)?,
                         status: row.get(4)?,
                         rank: row.get(5)?,
+                        source_app_name: row.get(6)?,
                     })
                 },
             )
