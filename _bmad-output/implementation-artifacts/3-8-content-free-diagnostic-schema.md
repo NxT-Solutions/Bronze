@@ -1,6 +1,6 @@
 # Story 3.8: Content-free diagnostic schema
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,12 @@ export UI
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-diagnostics/src/lib.rs` — content-free `DiagnosticEvent`; `ContentFreePayload`; save-then-diag
+
+### Notes
+
+- UI layer was a no-op. Human stories 3.9 / 3.10 stay backlog. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
