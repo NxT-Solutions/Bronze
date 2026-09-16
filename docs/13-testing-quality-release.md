@@ -213,3 +213,12 @@ Flaky test is defect. Quarantine requires issue, owner, reason, scope, expiry, a
 - Security patch updates prioritized; minimum macOS/WebKit reviewed each release.
 - Release rings: internal signed → small local beta → release candidate → stable.
 - P0 has no auto-updater/network; publish manual update process. Later updater needs privacy/security ADR.
+
+## 14. Local debug packaging (SEC-005)
+
+Documented command: `tooling/package-debug.sh`.
+
+- Records architecture as `arm64` unless DG-01 / ADR-002 (still Proposed) select Intel/universal2.
+- Writes SHA-256 checksums and an SBOM stub (`cargo metadata` / `pnpm list`, not notarized CycloneDX).
+- Release entitlements must not include `get-task-allow`.
+- Does not notarize, use Apple Developer credentials, or open a network updater.

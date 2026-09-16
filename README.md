@@ -61,3 +61,5 @@ Original visual direction: [Bronze UI concept](assets/bronze-ui-concept.png). It
 ## Scope status
 
 Planning pack is the source of truth. Implementation proceeds on local branch `bmad/bronze-autonomous`. `main` stays at the planning baseline until explicitly merged. The original research task did not create Git state; this repository now exists.
+
+Local debug package (SEC-005): `tooling/package-debug.sh` — arm64 unless DG-01 says otherwise, checksums + SBOM stub, no `get-task-allow`, no notarization.

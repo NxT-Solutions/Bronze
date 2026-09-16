@@ -1,6 +1,6 @@
 # Story 9.1: Reproducible debug packaging
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,4 +42,15 @@ notarization, Developer ID, universal2
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `apps/desktop/src-tauri/src/packaging.rs` — arm64 until DG-01, SBOM stub, no get-task-allow
+- `apps/desktop/src-tauri/entitlements/macos.release.plist` — sandbox false, no get-task-allow
+- `docs/13-testing-quality-release.md` — local package command
+- `tooling/package-debug.sh` — join-owned script
+
+### Notes
+
+- ADR-002 / DG-01 remain Proposed. No notarization. Script path is join-owned.
