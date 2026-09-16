@@ -5,6 +5,11 @@
 
 use std::fmt;
 
+mod bundle;
+pub use bundle::{
+    export_bundle, preview_bundle, BundleError, BundlePreview, AUTOMATIC_UPLOAD, HUMAN_GATES,
+};
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Stage {
     Trigger,
