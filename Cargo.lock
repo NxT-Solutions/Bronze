@@ -198,6 +198,7 @@ version = "0.0.0"
 dependencies = [
  "bronze-domain",
  "rusqlite",
+ "serde_json",
  "sha2",
 ]
 
