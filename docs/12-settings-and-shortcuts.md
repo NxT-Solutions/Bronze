@@ -117,12 +117,12 @@ Accessibility overrides are one-way strengthening. Effective Reduce Motion, Redu
 
 ## 3. Defaults
 
-Proposed defaults requiring usability spike confirmation:
+Shipped defaults:
 
 | Setting | Default | Rationale |
 | --- | --- | --- |
-| standard capture chord | unset during onboarding, recommended conflict-tested candidate | machine conflicts vary |
-| modifier double tap | off | timing-sensitive and needs Input Monitoring |
+| standard capture chord | `capture.selection` Shift double-tap, either side, enabled | menu Capture remains if Input Monitoring is denied |
+| modifier double tap | on (`capture.selection`) | same binding as `SettingsV1.capture.standardChord` |
 | gap | 250 ms | responsive starting point; slider 150–900 ms |
 | max hold | 400 ms | bounded 100–1,500 ms; test motor accessibility |
 | clipboard fallback | manual | synthetic copy mutates shared clipboard; per-app opt-in required |

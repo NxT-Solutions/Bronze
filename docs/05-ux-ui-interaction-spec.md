@@ -10,16 +10,7 @@ Warm bronze tokens from DESIGN.md are inspiration, not a pixel spec (A11Y-003). 
 
 ### Menu-bar menu
 
-Always available, even when global monitoring is unavailable:
-
-1. Capture Selection
-2. New Note
-3. Show Bronze
-4. Recent capture result/status
-5. Permission Health
-6. Settings
-7. Help
-8. Quit
+Always available, even when global monitoring is unavailable. Status-item left-click is Show. The status menu lists the latest five overview items (click copies), then Capture, Help, and Quit. New Note, Settings, Library, and permission health stay on the Bronze app menu and Settings window.
 
 ### Quick panel
 
@@ -79,7 +70,7 @@ Core panel defaults, user-remappable where marked:
 | Action | Default | Notes |
 | --- | --- | --- |
 | Summon/hide | `⌥Space` proposal | register/test before commit; avoid Spotlight conflict |
-| Capture selection | `⌥⇧Space` proposal | global; exact defaults finalized in compatibility spike |
+| Capture selection | Shift double-tap (either side; 250/400 ms) | only enabled seeded `ShortcutActionId`; menu Capture remains |
 | Add composer | `⌘Enter` | never fires during IME composition |
 | Copy selected/focused | `⌘C` | native text selection wins when editor focused |
 | Copy as profile | `⇧⌘C` | only if no global conflict; configurable |

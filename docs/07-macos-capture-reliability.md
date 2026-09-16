@@ -120,14 +120,16 @@ Apple APIs: [CGEvent tap creation](https://developer.apple.com/documentation/cor
 CAP-003 menu path must retain target even if opening status menu activates Bronze:
 
 - Native target tracker observes NSWorkspace application activation.
-- lastExternalPID updates whenever non-Bronze app becomes active.
-- Opening status menu loads/publishes ingress target before any Bronze activation.
-- Capture command consumes that snapshot; it never substitutes whichever app becomes frontmost afterward.
+- lastExternalPID updates whenever a non-Bronze app becomes active (`note_external_focus`; own PID / Bronze / `bronze-desktop` are skipped).
+- Opening the status menu or running Capture consumes that last-external PID. The provider builds `AXUIElementCreateApplication` for that PID and walks ancestors; it does not substitute whichever app is frontmost after Bronze or the menu activates.
+- If last-external read returns no selection or a missing focused element, Capture falls back to system-wide focused AX.
 - Capture persists AX selected text into the same queue store as the composer, then announces a content-free saved result. It does not reveal or focus the Quick Panel (WIN-003 capture-only).
-- Status-item left-click is Show. The status menu is Show, Capture, Settings, and Quit. Seeded shortcuts, including the double-modifier gesture, stay disabled; Capture is the status-menu and Bronze-menu command.
+- Status-item left-click is Show. The status menu lists the latest five overview items (click copies via the Plain profile), then Capture, Help, and Quit. Titles are flattened and capped at 48 characters.
+- The only enabled seeded chord is `capture.selection`: Shift double-tap, either side, gap 250 ms, max hold 400 ms. The other twelve `ShortcutActionId` rows stay disabled. ADR-018 stays Proposed. Clipboard fallback stays `manual`; Capture does not synthesize Cmd+C.
 - Capture stores CAP-008 app-name provenance from the focused process (`proc_name` for the AX element's PID). Bronze / `bronze-desktop` is omitted. URL and window title are not stored. Provenance failure never fails a valid text capture.
-- The inbox shows catalog `capture.source` (`From {appName}`) on captured rows that have a name. Composer rows have no source line.
+- The inbox shows catalog `capture.source` (`From {appName}`) on captured rows that have a name. Composer rows have no source line. CSS keeps `[hidden]` source, empty, and composer-error slots unrendered.
 - If target exited, return target_lost and open manual composer.
+- File and image attachments stay out (ADR-001: separate threat model and ADR).
 
 ### 4.4 Manual routes
 
@@ -329,17 +331,18 @@ macOS AX does not expose immutable selection snapshot tied to trigger timestamp.
 ### 9.1 Algorithm
 
 1. Check Accessibility permission.
-2. Create AX application element for target PID.
-3. Obtain focused UI element.
-4. Read role and subrole only.
-5. Build bounded, cycle-safe chain from focused element through ancestors.
-6. Before any content query at each node, classify role/subrole as protected, allowed text, neutral container, or unknown content-bearing. Fail closed for `kAXSecureTextFieldSubrole`, known password/protected equivalents, or unknown content-bearing state. Unknown protection prohibits both AX content query and synthetic fallback, regardless of app category.
-7. At each allowed node, query `kAXSelectedTextAttribute`. Empty or missing child value is inconclusive; continue to ancestor.
-8. At each node, if direct selection is unavailable/empty, query `kAXSelectedTextRangeAttribute` and `kAXStringForRangeParameterizedAttribute` when supported.
-9. Stop on first allowed non-empty selection. Only full-chain exhaustion returns no selection/unsupported.
-10. Validate result type, UTF-8 conversion, byte/grapheme limit, process/focused-element identity, age, and request generation. Where selected range exists, require same range before/after text read; otherwise re-read selected text once within budget and require stable result.
-11. Query optional provenance only under CAP-008 policy.
-12. Return exact Unicode string content and whitespace supplied by provider plus safe metadata; do not claim original source-encoding bytes.
+2. Resolve target PID as last-external first (`read_capture_selection`), then system-wide focused AX if that PID has no selection or no focused element.
+3. Create AX application element for that PID (`AXUIElementCreateApplication`); skip own PID / Bronze / `bronze-desktop`.
+4. Obtain focused UI element.
+5. Read role and subrole only.
+6. Build a bounded, cycle-safe chain from the focused element through at most 16 ancestors.
+7. Before any content query at each node, classify role/subrole as protected, allowed text, neutral container, or unknown content-bearing. Fail closed for `kAXSecureTextFieldSubrole`, known password/protected equivalents, or unknown content-bearing state. Unknown protection prohibits both AX content query and synthetic fallback, regardless of app category. Empty, neutral, and unknown nodes continue.
+8. At each allowed node, query `kAXSelectedTextAttribute`. Empty or missing child value is inconclusive; continue to ancestor.
+9. At each node, if direct selection is unavailable/empty, query `kAXSelectedTextRangeAttribute` and `kAXStringForRangeParameterizedAttribute` when supported.
+10. Stop on first allowed non-empty selection. Only full-chain exhaustion returns no selection/unsupported.
+11. Validate result type, UTF-8 conversion, byte/grapheme limit, process/focused-element identity, age, and request generation. Where selected range exists, require same range before/after text read; otherwise re-read selected text once within budget and require stable result.
+12. Query optional provenance only under CAP-008 policy.
+13. Return exact Unicode string content and whitespace supplied by provider plus safe metadata; do not claim original source-encoding bytes.
 
 References: [selected text](https://developer.apple.com/documentation/applicationservices/kaxselectedtextattribute), [selected text range](https://developer.apple.com/documentation/applicationservices/kaxselectedtextrangeattribute), [secure text subrole](https://developer.apple.com/documentation/applicationservices/kaxsecuretextfieldsubrole), [AX attributes](https://developer.apple.com/documentation/applicationservices/carbon_accessibility/attributes).
 

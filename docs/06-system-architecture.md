@@ -300,7 +300,7 @@ sequenceDiagram
   W->>W: visible and announced feedback
 ~~~
 
-Menu-bar or Bronze-menu Capture persists AX selection and the focused process name. Seeded shortcuts stay disabled. The inbox renders catalog `capture.source` when that name is present; composer rows stay unlabeled. URL provenance is off.
+Menu-bar Capture, Bronze-menu Capture, and Shift double-tap persist AX selection from the last non-Bronze PID (ancestor walk, then system-wide fallback) plus the focused process name. `capture.selection` is the only enabled seeded chord; the other twelve `ShortcutActionId` rows stay disabled. ADR-018 stays Proposed. The inbox renders catalog `capture.source` when that name is present; composer rows stay unlabeled. URL provenance is off. File and image attachments stay out of P0 until a separate threat model and ADR (ADR-001).
 
 Capture-specific algorithms live in [macOS capture reliability](07-macos-capture-reliability.md).
 

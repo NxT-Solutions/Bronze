@@ -12,7 +12,7 @@ Show the source app on captured inbox rows.
 
 ## Overview
 
-Menu-bar or Bronze-menu Capture persists AX selected text into the same SQLite store as the composer. Seeded shortcuts, including the double-modifier gesture, stay disabled. Capture does not steal source focus and does not force-show the panel.
+Menu-bar or Bronze-menu Capture, and Shift double-tap, persist AX selected text into the same SQLite store as the composer. The other twelve seeded `ShortcutActionId` rows stay disabled. Capture does not steal source focus and does not force-show the panel.
 
 Each captured row stores CAP-008 app name from the focused process (`proc_name` for the AX element's PID). Bronze / `bronze-desktop` is omitted. URL and window title are not stored. The inbox shows catalog `capture.source` (`From {appName}`) when a name is present. Composer **Add** rows stay unlabeled.
 

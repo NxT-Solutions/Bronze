@@ -14,9 +14,9 @@ Quick Panel is a scannable inbox (composer + active items + row Copy). Capture p
 
 The Quick Panel is the inbox: composer, active items (`queued` / `copied` / `active`), and a per-row Copy control. Complete, skip, trash, edit, and move live in overflow. Done and skipped items leave this list.
 
-Menu-bar status item and the Bronze app menu offer Show, Capture, Settings, and Quit (app menu also keeps Library and Help). Capture reads AX selected text and writes the same SQLite store as the composer. Capture does not steal source focus and does not force-show the panel. Show reveals the panel and recreates it if it was closed. Closed Settings / Library / Help windows recreate on the next open.
+Menu-bar status extra left-click is Show. The status menu lists the latest five overview items (click copies), then Capture, Help, and Quit. The Bronze app menu still offers Show, Capture, Settings, Library, Help, and Quit. Capture reads AX selected text from the last non-Bronze PID and writes the same SQLite store as the composer. Capture does not steal source focus and does not force-show the panel. Show reveals the panel and recreates it if it was closed. Closed Settings / Library / Help windows recreate on the next open.
 
-Seeded shortcuts stay disabled. Search stays substring-only (`QUE_007_COMPLETE=false`). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog.
+`capture.selection` ships as Shift double-tap; the other twelve seeded `ShortcutActionId` rows stay disabled. Search stays substring-only (`QUE_007_COMPLETE=false`). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog.
 
 ## File list
 
@@ -31,6 +31,6 @@ Seeded shortcuts stay disabled. Search stays substring-only (`QUE_007_COMPLETE=f
 
 ## Notes
 
-- 5-1: live `NSStatusItem` title Bronze; left-click Show; menu Show, Capture, Settings, Quit.
+- 5-1: live status extra `bronze-status`; left-click Show; menu latest five overview items, Capture, Help, Quit.
 - 5-3: capture-only still does not reveal or focus the Quick Panel.
 - 7-3: Accessibility / Input Monitoring denial still leaves the manual composer.

@@ -40,9 +40,9 @@ Hand-test in the **native** window only:
 - Composer **Add** (or Cmd-Enter) persists to local SQLite
 - **Copy** on a row writes the 6-4 pasteboard path (`pbcopy`); default profile is Plain
 - Complete / skip hide the row from this inbox; trash removes it
-- Menu-bar or app-menu **Capture** reads AX selected text and persists it to the same store. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue. This is the capture trigger in this build — seeded shortcuts, including double-shift, stay disabled
-- Captured rows show catalog `capture.source` (`From {appName}`) using the focused app's process name (CAP-008 app name only; no URL). Composer **Add** rows stay unlabeled
-- Status item: left-click **Show**; menu is Show, Capture, Settings, Quit
+- **Capture** (status menu or Bronze app menu) and **Shift double-tap** (either side) read AX selected text from the last non-Bronze app, then persist it to the same store. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue
+- Captured rows show catalog `capture.source` (`From {appName}`) using the source process name (CAP-008 app name only; no URL). Composer **Add** rows stay unlabeled
+- Status item: left-click **Show**; menu is the latest five overview items (click copies), then Capture, Help, Quit
 - Status or app-menu **Show** recreates the Quick Panel if you closed it
 - Settings / Library / Help recreate if you closed them
 - Settings load/save `SettingsV1`; permission **Retest** and **Open System Settings** run from the Settings window
@@ -51,7 +51,7 @@ Hand-test in the **native** window only:
 
 Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**.
 
-**Still stub / backlog.** Seeded shortcuts stay **disabled**. Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
+**Still stub / backlog.** The other twelve seeded `ShortcutActionId` rows stay **disabled**. File and image attachments are out until a new ADR and threat-model update (ADR-001). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
 
 **Permissions (macOS).** On native start, Bronze requests **Accessibility** and **Input Monitoring** when they are not already granted (real OS dialogs). The first capture path requests once more if still ungranted. Settings → permission health **Retest** re-attempts those prompts; if macOS will not show another dialog, use **Open System Settings** after that attempt (not instead of it).
 
@@ -61,7 +61,7 @@ Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**
 
 See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a grant, quit and relaunch (`requires_relaunch` is a real permission state). Input Monitoring often prompts only once per TCC identity; a later Retest may be silent. A `tauri dev` rebuild can receive a new TCC identity.
 
-**Triggers in this build.** Status item and app menu: Show, Capture, Settings, Library, Help, Quit. `SettingsV1.capture.standardChord` is only the settings view of `capture.selection`; every seeded `ShortcutActionId` stays disabled. Library search is substring-only (`QUE_007_COMPLETE=false`).
+**Triggers in this build.** Status extra: left-click Show; menu is latest five overview items, Capture, Help, Quit. Bronze app menu still offers Show, Capture, Settings, Library, Help, Quit. `SettingsV1.capture.standardChord` is the settings view of `capture.selection` and ships as Shift double-tap (either side, gap 250 ms, max hold 400 ms). The other twelve seeded `ShortcutActionId` rows stay disabled. Library search is substring-only (`QUE_007_COMPLETE=false`).
 
 **Stop.** In the `tauri dev` terminal: `Ctrl+C`. Then quit Bronze from the Dock / Force Quit if the process stays resident.
 
