@@ -300,6 +300,8 @@ sequenceDiagram
   W->>W: visible and announced feedback
 ~~~
 
+Menu-bar or Bronze-menu Capture persists AX selection and the focused process name. Seeded shortcuts stay disabled. The inbox renders catalog `capture.source` when that name is present; composer rows stay unlabeled. URL provenance is off.
+
 Capture-specific algorithms live in [macOS capture reliability](07-macos-capture-reliability.md).
 
 ### 8.3 Queue mutation

@@ -40,7 +40,8 @@ Hand-test in the **native** window only:
 - Composer **Add** (or Cmd-Enter) persists to local SQLite
 - **Copy** on a row writes the 6-4 pasteboard path (`pbcopy`); default profile is Plain
 - Complete / skip hide the row from this inbox; trash removes it
-- Menu-bar or app-menu **Capture** reads AX selected text and persists it to the same store. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue
+- Menu-bar or app-menu **Capture** reads AX selected text and persists it to the same store. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue. This is the capture trigger in this build — seeded shortcuts, including double-shift, stay disabled
+- Captured rows show catalog `capture.source` (`From {appName}`) using the focused app's process name (CAP-008 app name only; no URL). Composer **Add** rows stay unlabeled
 - Status item: left-click **Show**; menu is Show, Capture, Settings, Quit
 - Status or app-menu **Show** recreates the Quick Panel if you closed it
 - Settings / Library / Help recreate if you closed them

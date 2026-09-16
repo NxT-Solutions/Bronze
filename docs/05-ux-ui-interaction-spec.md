@@ -65,7 +65,7 @@ Each item exposes:
 - kind icon plus visible/announced label when kind matters;
 - content preview preserving line breaks;
 - optional user-editable content-language metadata, defaulting to unknown rather than guessed;
-- optional provenance row: source app, safe title, time;
+- optional provenance row: catalog `capture.source` (`From {appName}`) when Capture stored a focused-process name; no URL or title in this build; composer rows omit the row;
 - status text (`Queued`, `Copied`, `Done`, etc.);
 - context action button;
 - drag handle only when pointer reordering enabled, with Move Up/Down menu equivalents.

@@ -124,7 +124,9 @@ CAP-003 menu path must retain target even if opening status menu activates Bronz
 - Opening status menu loads/publishes ingress target before any Bronze activation.
 - Capture command consumes that snapshot; it never substitutes whichever app becomes frontmost afterward.
 - Capture persists AX selected text into the same queue store as the composer, then announces a content-free saved result. It does not reveal or focus the Quick Panel (WIN-003 capture-only).
-- Status-item left-click is Show. The status menu is Show, Capture, Settings, and Quit.
+- Status-item left-click is Show. The status menu is Show, Capture, Settings, and Quit. Seeded shortcuts, including the double-modifier gesture, stay disabled; Capture is the status-menu and Bronze-menu command.
+- Capture stores CAP-008 app-name provenance from the focused process (`proc_name` for the AX element's PID). Bronze / `bronze-desktop` is omitted. URL and window title are not stored. Provenance failure never fails a valid text capture.
+- The inbox shows catalog `capture.source` (`From {appName}`) on captured rows that have a name. Composer rows have no source line.
 - If target exited, return target_lost and open manual composer.
 
 ### 4.4 Manual routes
@@ -364,7 +366,7 @@ Secure-field policy is fail closed:
 
 ### 9.4 Provenance
 
-Default stores capture timestamp only. Every source-identity field is opt-in globally and overridable per bundle policy:
+This build records the focused process name on capture (CAP-008 app name). URL and window title stay off. Remaining source-identity fields stay opt-in globally and overridable per bundle policy:
 
 - bundle ID and localized app name;
 - safe window/document title;
