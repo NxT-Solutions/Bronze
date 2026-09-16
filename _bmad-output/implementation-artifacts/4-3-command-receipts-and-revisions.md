@@ -1,6 +1,6 @@
 # Story 4.3: Command receipts and revisions
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,12 @@ UI conflict dialog
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-storage/src/receipts.rs` — idempotent command IDs; 7-day window; content-free receipts; revision conflict
+
+### Notes
+
+- UI layer was a no-op. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
