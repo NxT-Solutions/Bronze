@@ -9,11 +9,25 @@
     "beforeBuildCommand": ""
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "label": "quick",
         "title": "Bronze",
+        "url": "index.html",
         "width": 360,
+        "height": 640,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": true,
+        "focus": true,
+        "devtools": false
+      },
+      {
+        "label": "library",
+        "title": "Bronze Library",
+        "url": "library.html",
+        "width": 720,
         "height": 640,
         "resizable": true,
         "fullscreen": false,
@@ -21,10 +35,11 @@
         "devtools": false
       },
       {
-        "label": "library",
-        "title": "Bronze Library",
-        "width": 720,
-        "height": 640,
+        "label": "settings",
+        "title": "Bronze Settings",
+        "url": "settings.html",
+        "width": 640,
+        "height": 720,
         "resizable": true,
         "fullscreen": false,
         "visible": false,

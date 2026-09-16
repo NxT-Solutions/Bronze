@@ -36,6 +36,36 @@ pub enum PanelKind {
 
 pub const PANEL_KIND: PanelKind = PanelKind::Activating;
 pub const FOCUS_TRAP: bool = false;
+pub const QUICK_PANEL_WIDTH: u32 = 360;
+pub const QUICK_PANEL_HEIGHT: u32 = 640;
+pub const DEV_LAUNCH_REVEALS_QUICK: bool = true;
+pub const CAPTURE_ONLY_REVEALS_PANEL: bool = false;
+pub const DEFAULT_PHYSICAL_EDGE: PhysicalEdge = PhysicalEdge::Left;
+
+const _: () = assert!(DEV_LAUNCH_REVEALS_QUICK);
+const _: () = assert!(!CAPTURE_ONLY_REVEALS_PANEL);
+
+pub fn allowed_chrome_window(kind: &str) -> Option<&'static str> {
+    match kind {
+        "library" => Some("library"),
+        "settings" => Some("settings"),
+        _ => None,
+    }
+}
+
+pub fn quick_panel_frame(work: Rect, dir: TextDirection) -> Rect {
+    place_on_physical_edge(
+        DEFAULT_PHYSICAL_EDGE,
+        Rect {
+            x: 0,
+            y: 0,
+            width: QUICK_PANEL_WIDTH,
+            height: QUICK_PANEL_HEIGHT,
+        },
+        work,
+        dir,
+    )
+}
 
 pub fn parse_physical_edge(raw: &str) -> Result<PhysicalEdge, EdgeError> {
     match raw {
@@ -177,5 +207,27 @@ mod window_edge_tests {
         assert_eq!(PANEL_KIND, PanelKind::Activating);
         assert_ne!(PANEL_KIND, PanelKind::Nonactivating);
         assert!(!FOCUS_TRAP);
+    }
+
+    #[test]
+    fn chrome_window_allow_list_excludes_arbitrary_labels() {
+        assert_eq!(allowed_chrome_window("library"), Some("library"));
+        assert_eq!(allowed_chrome_window("settings"), Some("settings"));
+        assert_eq!(allowed_chrome_window("quick"), None);
+        assert_eq!(allowed_chrome_window("onboarding"), None);
+        assert_eq!(allowed_chrome_window(""), None);
+    }
+
+    #[test]
+    fn dev_launch_reveals_quick_on_physical_edge_without_capture_steal() {
+        assert!(DEV_LAUNCH_REVEALS_QUICK);
+        assert!(!CAPTURE_ONLY_REVEALS_PANEL);
+        let frame = quick_panel_frame(WORK, TextDirection::Ltr);
+        let rtl = quick_panel_frame(WORK, TextDirection::Rtl);
+        assert_eq!(frame, rtl);
+        assert_eq!(frame.x, WORK.x);
+        assert_eq!(frame.width, QUICK_PANEL_WIDTH);
+        assert_eq!(frame.height, WORK.height);
+        assert_eq!(DEFAULT_PHYSICAL_EDGE, PhysicalEdge::Left);
     }
 }

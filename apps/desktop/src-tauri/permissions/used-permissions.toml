@@ -7,3 +7,8 @@ commands.allow = ["retest_used_permissions"]
 identifier = "allow-open-privacy-settings"
 description = "Open Privacy & Security panes for used permissions after a prompt attempt"
 commands.allow = ["open_privacy_settings"]
+
+[[permission]]
+identifier = "allow-show-chrome-window"
+description = "Show the Library or Settings window from the Quick Panel"
+commands.allow = ["show_chrome_window"]

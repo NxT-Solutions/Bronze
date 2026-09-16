@@ -9,14 +9,106 @@ pub fn run() {
     let mut builder = tauri::Builder::default();
     #[cfg(target_os = "macos")]
     {
-        builder = builder.invoke_handler(tauri::generate_handler![
-            capture_permissions::retest_used_permissions,
-            capture_permissions::open_privacy_settings,
-        ]);
+        builder = builder
+            .invoke_handler(tauri::generate_handler![
+                capture_permissions::retest_used_permissions,
+                capture_permissions::open_privacy_settings,
+                show_chrome_window,
+            ])
+            .setup(|app| {
+                install_chrome_menu(app.handle())?;
+                reveal_quick_panel(app.handle())?;
+                Ok(())
+            })
+            .on_menu_event(|app, event| match event.id().as_ref() {
+                "show-library" => {
+                    let _ = show_chrome_window(app.clone(), "library".into());
+                }
+                "show-settings" => {
+                    let _ = show_chrome_window(app.clone(), "settings".into());
+                }
+                _ => {}
+            });
     }
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn show_chrome_window(app: tauri::AppHandle, kind: String) -> Result<(), String> {
+    use tauri::Manager;
+    let label = window_edge::allowed_chrome_window(&kind).ok_or("unknown_window")?;
+    let window = app.get_webview_window(label).ok_or("missing_window")?;
+    window.show().map_err(|err| err.to_string())?;
+    let _ = window.set_focus();
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn install_chrome_menu(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+    let map = load_locale_map(&locales_root(), "en");
+    let app_name = require_key(&map, "app.name").unwrap_or_else(|_| "Bronze".into());
+    let library = require_key(&map, "library.title").unwrap_or_else(|_| "Library".into());
+    let settings = require_key(&map, "settings.title").unwrap_or_else(|_| "Settings".into());
+    let quit = require_key(&map, "menu.status.quit").unwrap_or_else(|_| "Quit".into());
+    let show_library = MenuItem::with_id(app, "show-library", &library, true, None::<&str>)?;
+    let show_settings = MenuItem::with_id(app, "show-settings", &settings, true, None::<&str>)?;
+    let app_menu = Submenu::with_items(
+        app,
+        &app_name,
+        true,
+        &[
+            &show_library,
+            &show_settings,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::quit(app, Some(&quit))?,
+        ],
+    )?;
+    let edit_menu = Submenu::with_items(
+        app,
+        "Edit",
+        true,
+        &[
+            &PredefinedMenuItem::undo(app, None)?,
+            &PredefinedMenuItem::redo(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::cut(app, None)?,
+            &PredefinedMenuItem::copy(app, None)?,
+            &PredefinedMenuItem::paste(app, None)?,
+            &PredefinedMenuItem::select_all(app, None)?,
+        ],
+    )?;
+    app.set_menu(Menu::with_items(app, &[&app_menu, &edit_menu])?)?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn reveal_quick_panel(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::{Manager, PhysicalPosition, PhysicalSize};
+    use window_edge::{quick_panel_frame, Rect, DEV_LAUNCH_REVEALS_QUICK};
+    if !DEV_LAUNCH_REVEALS_QUICK {
+        return Ok(());
+    }
+    let Some(window) = app.get_webview_window("quick") else {
+        return Ok(());
+    };
+    if let Some(monitor) = window.current_monitor()? {
+        let area = monitor.work_area();
+        let work = Rect {
+            x: area.position.x,
+            y: area.position.y,
+            width: area.size.width,
+            height: area.size.height,
+        };
+        let placed = quick_panel_frame(work, catalog_dir("en"));
+        window.set_position(PhysicalPosition::new(placed.x, placed.y))?;
+        window.set_size(PhysicalSize::new(placed.width, placed.height))?;
+    }
+    window.show()?;
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]
@@ -131,6 +223,13 @@ mod tests {
                 assert!(permissions.iter().any(|permission| {
                     permission.as_str() == Some("allow-open-privacy-settings")
                 }));
+            } else if name == "quick" {
+                assert!(permissions
+                    .iter()
+                    .any(|permission| permission.as_str() == Some("core:default")));
+                assert!(permissions
+                    .iter()
+                    .any(|permission| { permission.as_str() == Some("allow-show-chrome-window") }));
             } else {
                 assert_eq!(permissions, &vec![Value::String("core:default".into())]);
             }
@@ -161,6 +260,25 @@ mod tests {
         for window in windows {
             assert_eq!(window["devtools"], false);
         }
+        let quick = windows
+            .iter()
+            .find(|window| window["label"] == "quick")
+            .expect("quick window");
+        assert_eq!(quick["visible"], true);
+        assert_eq!(quick["url"], "index.html");
+        let library = windows
+            .iter()
+            .find(|window| window["label"] == "library")
+            .expect("library window");
+        assert_eq!(library["visible"], false);
+        assert_eq!(library["url"], "library.html");
+        let settings = windows
+            .iter()
+            .find(|window| window["label"] == "settings")
+            .expect("settings window");
+        assert_eq!(settings["visible"], false);
+        assert_eq!(settings["url"], "settings.html");
+        assert_eq!(conf["app"]["withGlobalTauri"], true);
         let csp = &conf["app"]["security"]["csp"];
         assert_eq!(csp["frame-src"], "'none'");
         assert_eq!(csp["object-src"], "'none'");
