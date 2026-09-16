@@ -5,6 +5,7 @@ export const MessageIds = {
   "app.name": "app.name",
   "queue.count": "queue.count",
   "capture.source": "capture.source",
+  "export.preview.secretBodies": "export.preview.secretBodies",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

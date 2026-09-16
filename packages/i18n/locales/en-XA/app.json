@@ -1,5 +1,6 @@
 {
   "app.name": "【BBrróoñnzzée】",
   "queue.count": "【{count, plural, =0 {0 items} one {1 item} other {# items}} [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·]  [·] 】",
-  "capture.source": "【FFrróomm {appName} [·]  [·] 】"
+  "capture.source": "【FFrróomm {appName} [·]  [·] 】",
+  "export.preview.secretBodies": "【ÍIttéemm bbóoddíiéess íiñn tthhíiss éexxppóorrtt mmáayy çcóoñnttáaíiñn sséeçcrréettss.】"
 }

@@ -1,5 +1,6 @@
 {
   "app.name": "eznorB",
   "queue.count": "{count, plural, =0 {0 items} one {1 item} other {# items}}",
-  "capture.source": " morF⁧{appName}⁩"
+  "capture.source": " morF⁧{appName}⁩",
+  "export.preview.secretBodies": ".sterces niatnoc yam tropxe siht ni seidob metI"
 }
