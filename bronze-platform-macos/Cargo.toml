@@ -3,5 +3,10 @@ name = "bronze-platform-macos"
 version = "0.0.0"
 edition = "2021"
 
+[features]
+default = ["abi-stub"]
+# Stand-in C symbols until story 2.3 links BronzeNative into the Tauri binary.
+abi-stub = []
+
 [dependencies]
 bronze-settings = { path = "../bronze-settings" }
