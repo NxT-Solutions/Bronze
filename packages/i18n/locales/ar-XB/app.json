@@ -2,5 +2,10 @@
   "app.name": "eznorB",
   "queue.count": "{count, plural, =0 {0 items} one {1 item} other {# items}}",
   "capture.source": " morF⁧{appName}⁩",
-  "export.preview.secretBodies": ".sterces niatnoc yam tropxe siht ni seidob metI"
+  "export.preview.secretBodies": ".sterces niatnoc yam tropxe siht ni seidob metI",
+  "menu.status.capture": "erutpaC",
+  "menu.status.newNote": "etoN weN",
+  "menu.status.show": "wohS",
+  "menu.status.settings": "sgnitteS",
+  "menu.status.quit": "tiuQ"
 }

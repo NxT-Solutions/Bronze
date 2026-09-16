@@ -6,6 +6,11 @@ export const MessageIds = {
   "queue.count": "queue.count",
   "capture.source": "capture.source",
   "export.preview.secretBodies": "export.preview.secretBodies",
+  "menu.status.capture": "menu.status.capture",
+  "menu.status.newNote": "menu.status.newNote",
+  "menu.status.show": "menu.status.show",
+  "menu.status.settings": "menu.status.settings",
+  "menu.status.quit": "menu.status.quit",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

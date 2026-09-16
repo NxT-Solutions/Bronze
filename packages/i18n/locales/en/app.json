@@ -2,5 +2,10 @@
   "app.name": "Bronze",
   "queue.count": "{count, plural, =0 {0 items} one {1 item} other {# items}}",
   "capture.source": "From {appName}",
-  "export.preview.secretBodies": "Item bodies in this export may contain secrets."
+  "export.preview.secretBodies": "Item bodies in this export may contain secrets.",
+  "menu.status.capture": "Capture",
+  "menu.status.newNote": "New Note",
+  "menu.status.show": "Show",
+  "menu.status.settings": "Settings",
+  "menu.status.quit": "Quit"
 }
