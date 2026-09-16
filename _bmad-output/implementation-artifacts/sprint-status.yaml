@@ -84,8 +84,8 @@ development_status:
   5-5-spaces-and-display-matrix: backlog
   epic-5-retrospective: optional
 
-  epic-6: backlog
-  6-1-composer-add-item: ready-for-dev
+  epic-6: in-progress
+  6-1-composer-add-item: done
   6-2-item-list-lifecycle-and-menus: ready-for-dev
   6-3-sections-and-library-window: ready-for-dev
   6-4-output-profiles-and-copy: ready-for-dev

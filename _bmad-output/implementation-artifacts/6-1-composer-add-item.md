@@ -1,6 +1,6 @@
 # Story 6.1: Composer add item
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -43,4 +43,15 @@ Markdown preview fetch
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-domain/src/composer.rs` — Cmd-Enter adds; Enter / IME composition does not
+- `bronze-storage/src/composer.rs` — persist prompt as queued; failure retains draft; `content_language` defaults to `und`
+- `packages/ui/src/components/composer.tsx` — labeled textarea, catalog strings, axe empty/error
+- `packages/i18n/locales/*/app.json` — `composer.add.label`, `composer.add.submit`, `composer.add.error`
+
+### Notes
+
+- IME human sign-off is a non-goal. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
