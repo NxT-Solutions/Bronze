@@ -11,6 +11,9 @@ pub const BRONZE_ABI_VERSION: u32 = 1;
 pub const BRONZE_STATUS_OK: u32 = 0;
 pub const BRONZE_STATUS_INVALID_UTF8: u32 = 1;
 pub const BRONZE_STATUS_DOUBLE_COMPLETION: u32 = 2;
+pub const BRONZE_STATUS_CANCELLED: u32 = 3;
+pub const BRONZE_STATUS_NOT_FOUND: u32 = 4;
+pub const BRONZE_STATUS_SHUTTING_DOWN: u32 = 5;
 
 /// Non-owning UTF-8 view. `ptr` may be null only when `len == 0`.
 /// Length-delimited; never NUL-terminated. Embedded 0x00 is valid UTF-8.
@@ -36,4 +39,13 @@ extern "C" {
     pub fn bronze_native_test_view_len(view: BronzeNativeUtf8View) -> u64;
     pub fn bronze_native_init();
     pub fn bronze_native_shutdown();
+    pub fn bronze_native_utf8_owned_copy(
+        src: BronzeNativeUtf8View,
+        out: *mut BronzeNativeUtf8View,
+    ) -> u32;
+    pub fn bronze_native_utf8_free(view: BronzeNativeUtf8View) -> u32;
+    pub fn bronze_native_probe_begin(request_id: u64, view: BronzeNativeUtf8View) -> u32;
+    pub fn bronze_native_probe_complete(request_id: u64) -> u32;
+    pub fn bronze_native_probe_cancel(request_id: u64) -> u32;
+    pub fn bronze_native_probe_outstanding() -> u64;
 }

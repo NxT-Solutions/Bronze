@@ -4,7 +4,9 @@
 //! or the raw `extern "C"` symbols. Panic at the FFI boundary is contained.
 
 use crate::abi::{
-    self, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_STATUS_INVALID_UTF8, BRONZE_STATUS_OK,
+    self, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_STATUS_CANCELLED,
+    BRONZE_STATUS_DOUBLE_COMPLETION, BRONZE_STATUS_INVALID_UTF8, BRONZE_STATUS_NOT_FOUND,
+    BRONZE_STATUS_OK, BRONZE_STATUS_SHUTTING_DOWN,
 };
 use std::fmt;
 use std::panic::{self, AssertUnwindSafe};
@@ -16,6 +18,10 @@ pub enum NativeError {
     FfiPanic,
     InvalidUtf8,
     AlreadyActive,
+    Cancelled,
+    DoubleCompletion,
+    NotFound,
+    ShuttingDown,
 }
 
 impl fmt::Display for NativeError {
@@ -28,7 +34,89 @@ impl fmt::Display for NativeError {
             Self::FfiPanic => write!(f, "panic contained at FFI boundary (ADR-004)"),
             Self::InvalidUtf8 => write!(f, "invalid UTF-8 in length-delimited view"),
             Self::AlreadyActive => write!(f, "native runtime already initialized"),
+            Self::Cancelled => write!(f, "probe cancelled"),
+            Self::DoubleCompletion => write!(f, "double completion forbidden (CAP-004)"),
+            Self::NotFound => write!(f, "probe id not found"),
+            Self::ShuttingDown => write!(f, "native runtime is shutting down"),
         }
+    }
+}
+
+/// Terminal for a one-shot probe. Cancel is a valid outcome, not a drop.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ProbeTerminal {
+    Completed,
+    Cancelled,
+}
+
+/// Native-owned UTF-8 copy. Debug prints length only (SEC-006).
+pub struct OwnedUtf8 {
+    view: BronzeNativeUtf8View,
+    freed: bool,
+}
+
+impl fmt::Debug for OwnedUtf8 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("OwnedUtf8")
+            .field("len", &self.view.len)
+            .finish_non_exhaustive()
+    }
+}
+
+impl OwnedUtf8 {
+    pub fn len(&self) -> u64 {
+        self.view.len
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.view.len == 0
+    }
+
+    pub fn free(mut self) -> Result<(), NativeError> {
+        self.release()
+    }
+
+    fn release(&mut self) -> Result<(), NativeError> {
+        if self.freed {
+            return Err(NativeError::DoubleCompletion);
+        }
+        let status = catch_ffi(|| unsafe { abi::bronze_native_utf8_free(self.view) })?;
+        self.freed = true;
+        self.view.ptr = std::ptr::null();
+        self.view.len = 0;
+        map_status(status)
+    }
+}
+
+impl Drop for OwnedUtf8 {
+    fn drop(&mut self) {
+        if !self.freed {
+            let _ = self.release();
+        }
+    }
+}
+
+fn map_status(status: u32) -> Result<(), NativeError> {
+    match status {
+        BRONZE_STATUS_OK => Ok(()),
+        BRONZE_STATUS_INVALID_UTF8 => Err(NativeError::InvalidUtf8),
+        BRONZE_STATUS_DOUBLE_COMPLETION => Err(NativeError::DoubleCompletion),
+        BRONZE_STATUS_CANCELLED => Err(NativeError::Cancelled),
+        BRONZE_STATUS_NOT_FOUND => Err(NativeError::NotFound),
+        BRONZE_STATUS_SHUTTING_DOWN => Err(NativeError::ShuttingDown),
+        _ => Err(NativeError::InvalidUtf8),
+    }
+}
+
+fn map_complete_status(status: u32) -> Result<ProbeTerminal, NativeError> {
+    match status {
+        BRONZE_STATUS_OK => Ok(ProbeTerminal::Completed),
+        BRONZE_STATUS_CANCELLED => Ok(ProbeTerminal::Cancelled),
+        BRONZE_STATUS_INVALID_UTF8 => Err(NativeError::InvalidUtf8),
+        BRONZE_STATUS_DOUBLE_COMPLETION => Err(NativeError::DoubleCompletion),
+        BRONZE_STATUS_NOT_FOUND => Err(NativeError::NotFound),
+        BRONZE_STATUS_SHUTTING_DOWN => Err(NativeError::ShuttingDown),
+        _ => Err(NativeError::InvalidUtf8),
     }
 }
 
@@ -107,15 +195,68 @@ impl NativeRuntime {
 
     pub fn validate_view(&self, view: BronzeNativeUtf8View) -> Result<(), NativeError> {
         let status = catch_ffi(|| unsafe { abi::bronze_native_validate_utf8(view) })?;
-        match status {
-            BRONZE_STATUS_OK => Ok(()),
-            BRONZE_STATUS_INVALID_UTF8 => Err(NativeError::InvalidUtf8),
-            _ => Err(NativeError::InvalidUtf8),
-        }
+        map_status(status)
     }
 
     pub fn test_view_len(&self, view: BronzeNativeUtf8View) -> Result<u64, NativeError> {
         catch_ffi(|| unsafe { abi::bronze_native_test_view_len(view) })
+    }
+
+    pub fn copy_utf8(&self, bytes: &[u8]) -> Result<OwnedUtf8, NativeError> {
+        let src = BronzeNativeUtf8View {
+            ptr: bytes.as_ptr(),
+            len: bytes.len() as u64,
+        };
+        let mut out = BronzeNativeUtf8View {
+            ptr: std::ptr::null(),
+            len: 0,
+        };
+        let status = catch_ffi(|| unsafe { abi::bronze_native_utf8_owned_copy(src, &mut out) })?;
+        map_status(status)?;
+        Ok(OwnedUtf8 {
+            view: out,
+            freed: false,
+        })
+    }
+
+    pub fn probe_begin(&self, request_id: u64, bytes: &[u8]) -> Result<(), NativeError> {
+        Self::probe_begin_id(request_id, bytes)
+    }
+
+    pub fn probe_complete(&self, request_id: u64) -> Result<ProbeTerminal, NativeError> {
+        Self::probe_complete_id(request_id)
+    }
+
+    pub fn probe_cancel(&self, request_id: u64) -> Result<ProbeTerminal, NativeError> {
+        Self::probe_cancel_id(request_id)
+    }
+
+    pub fn probe_outstanding(&self) -> Result<u64, NativeError> {
+        Self::probe_outstanding_id()
+    }
+
+    /// Process-global probe entry for shutdown-race tests (C ABI is not Sync).
+    pub fn probe_begin_id(request_id: u64, bytes: &[u8]) -> Result<(), NativeError> {
+        let view = BronzeNativeUtf8View {
+            ptr: bytes.as_ptr(),
+            len: bytes.len() as u64,
+        };
+        let status = catch_ffi(|| unsafe { abi::bronze_native_probe_begin(request_id, view) })?;
+        map_status(status)
+    }
+
+    pub fn probe_complete_id(request_id: u64) -> Result<ProbeTerminal, NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_probe_complete(request_id) })?;
+        map_complete_status(status)
+    }
+
+    pub fn probe_cancel_id(request_id: u64) -> Result<ProbeTerminal, NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_probe_cancel(request_id) })?;
+        map_complete_status(status)
+    }
+
+    pub fn probe_outstanding_id() -> Result<u64, NativeError> {
+        catch_ffi(|| unsafe { abi::bronze_native_probe_outstanding() })
     }
 
     pub fn shutdown(self) -> Result<(), NativeError> {
@@ -254,5 +395,114 @@ mod tests {
         };
         assert_eq!(runtime.test_view_len(view).expect("len"), 3);
         runtime.shutdown().expect("shutdown");
+    }
+
+    #[test]
+    fn owned_copy_empty_nul_invalid_large_and_double_free() {
+        let _guard = lock_runtime();
+        let runtime = NativeRuntime::start().expect("start");
+        let empty = runtime.copy_utf8(b"").expect("empty");
+        assert!(empty.is_empty());
+        empty.free().expect("free empty");
+
+        let nul = runtime.copy_utf8(b"a\0b").expect("nul");
+        assert_eq!(nul.len(), 3);
+        let rendered = format!("{nul:?}");
+        assert!(rendered.contains("len"));
+        assert!(
+            !rendered.contains('\0'),
+            "OwnedUtf8 debug must not include bytes (SEC-006): {rendered}"
+        );
+        nul.free().expect("free nul");
+
+        assert_eq!(
+            runtime.copy_utf8(&[0xff]).unwrap_err(),
+            NativeError::InvalidUtf8
+        );
+
+        let large = vec![b'x'; 1024 * 1024];
+        let owned = runtime.copy_utf8(&large).expect("large");
+        assert_eq!(owned.len(), large.len() as u64);
+        owned.free().expect("free large");
+        runtime.shutdown().expect("shutdown");
+    }
+
+    #[test]
+    fn probe_completes_once_or_cancels() {
+        let _guard = lock_runtime();
+        let runtime = NativeRuntime::start().expect("start");
+        runtime.probe_begin(1, b"probe").expect("begin");
+        assert_eq!(runtime.probe_outstanding().expect("count"), 1);
+        assert_eq!(
+            runtime.probe_complete(1).expect("complete"),
+            super::ProbeTerminal::Completed
+        );
+        assert_eq!(runtime.probe_outstanding().expect("count"), 0);
+        assert_eq!(
+            runtime.probe_complete(1).unwrap_err(),
+            NativeError::DoubleCompletion
+        );
+        runtime.probe_begin(2, b"cancel").expect("begin cancel");
+        assert_eq!(
+            runtime.probe_cancel(2).expect("cancel"),
+            super::ProbeTerminal::Cancelled
+        );
+        assert_eq!(
+            runtime.probe_complete(2).unwrap_err(),
+            NativeError::DoubleCompletion
+        );
+        assert_eq!(
+            runtime.probe_complete(99).unwrap_err(),
+            NativeError::NotFound
+        );
+        runtime.shutdown().expect("shutdown");
+    }
+
+    #[test]
+    fn shutdown_cancels_open_probe() {
+        let _guard = lock_runtime();
+        let runtime = NativeRuntime::start().expect("start");
+        runtime.probe_begin(3, b"open").expect("begin");
+        runtime.shutdown().expect("shutdown");
+        assert_eq!(
+            super::NativeRuntime::probe_complete_id(3).unwrap_err(),
+            NativeError::DoubleCompletion
+        );
+        assert_eq!(
+            super::NativeRuntime::probe_begin_id(4, b"").unwrap_err(),
+            NativeError::ShuttingDown
+        );
+        let runtime = NativeRuntime::start().expect("reinit");
+        runtime.probe_begin(4, b"").expect("empty after reinit");
+        runtime.probe_complete(4).expect("complete empty");
+        runtime.shutdown().expect("shutdown");
+    }
+
+    #[test]
+    fn shutdown_race_completes_once_or_cancels() {
+        let _guard = lock_runtime();
+        let runtime = NativeRuntime::start().expect("start");
+        runtime.probe_begin(7, b"race").expect("begin");
+        let handle = std::thread::spawn(|| super::NativeRuntime::probe_complete_id(7));
+        let _ = runtime.shutdown();
+        let complete = handle.join().expect("join");
+        let completed_ok = complete == Ok(super::ProbeTerminal::Completed);
+        let cancelled_or_double = matches!(
+            complete,
+            Ok(super::ProbeTerminal::Cancelled)
+                | Err(NativeError::DoubleCompletion)
+                | Err(NativeError::NotFound)
+                | Err(NativeError::Cancelled)
+        );
+        assert!(
+            completed_ok || cancelled_or_double,
+            "shutdown race must complete once or cancel: {complete:?}"
+        );
+        let second = super::NativeRuntime::probe_complete_id(7);
+        assert_ne!(
+            second,
+            Ok(super::ProbeTerminal::Completed),
+            "second complete after race must not succeed"
+        );
     }
 }

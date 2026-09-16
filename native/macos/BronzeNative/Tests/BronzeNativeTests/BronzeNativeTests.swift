@@ -127,10 +127,87 @@ final class BronzeNativeTests: XCTestCase {
     }
 
     func test_init_shutdown_are_present_and_nonthrowing() {
-        // Explicit per arch §7.2. No-op in 2.1; must not trap or unwind.
         bronze_native_init()
         bronze_native_shutdown()
-        // If they had side effects or double-call rules, 2.4 would assert completion counts.
+        bronze_native_init()
+        XCTAssertEqual(bronze_native_probe_outstanding(), 0)
+    }
+
+    func testOwnedCopyEmptyNulInvalidLargeAndDoubleFree() {
+        bronze_native_init()
+        var emptyOut = bronze_native_utf8_view(ptr: nil, len: 99)
+        let emptySrc = bronze_native_utf8_view(ptr: nil, len: 0)
+        XCTAssertEqual(bronze_native_utf8_owned_copy(emptySrc, &emptyOut), BRONZE_STATUS_OK)
+        XCTAssertEqual(emptyOut.len, 0)
+        XCTAssertEqual(bronze_native_utf8_free(emptyOut), BRONZE_STATUS_OK)
+        XCTAssertEqual(bronze_native_utf8_free(emptyOut), BRONZE_STATUS_DOUBLE_COMPLETION)
+
+        let nul: [UInt8] = [0x61, 0x00, 0x62]
+        nul.withUnsafeBufferPointer { buf in
+            let src = bronze_native_utf8_view(ptr: buf.baseAddress, len: 3)
+            var out = bronze_native_utf8_view(ptr: nil, len: 0)
+            XCTAssertEqual(bronze_native_utf8_owned_copy(src, &out), BRONZE_STATUS_OK)
+            XCTAssertEqual(out.len, 3)
+            XCTAssertEqual(bronze_native_test_view_len(out), 3)
+            XCTAssertEqual(bronze_native_utf8_free(out), BRONZE_STATUS_OK)
+        }
+
+        let bad: [UInt8] = [0xFF]
+        bad.withUnsafeBufferPointer { buf in
+            let src = bronze_native_utf8_view(ptr: buf.baseAddress, len: 1)
+            var out = bronze_native_utf8_view(ptr: nil, len: 0)
+            XCTAssertEqual(bronze_native_utf8_owned_copy(src, &out), BRONZE_STATUS_INVALID_UTF8)
+        }
+
+        let large = Array(repeating: UInt8(ascii: "x"), count: 1024 * 1024)
+        large.withUnsafeBufferPointer { buf in
+            let src = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(large.count))
+            var out = bronze_native_utf8_view(ptr: nil, len: 0)
+            XCTAssertEqual(bronze_native_utf8_owned_copy(src, &out), BRONZE_STATUS_OK)
+            XCTAssertEqual(out.len, UInt64(large.count))
+            XCTAssertEqual(bronze_native_utf8_free(out), BRONZE_STATUS_OK)
+        }
+        bronze_native_shutdown()
+    }
+
+    func testProbeCompletesOnceOrCancels() {
+        bronze_native_init()
+        let bytes: [UInt8] = Array("probe".utf8)
+        bytes.withUnsafeBufferPointer { buf in
+            let view = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(bytes.count))
+            XCTAssertEqual(bronze_native_probe_begin(1, view), BRONZE_STATUS_OK)
+            XCTAssertEqual(bronze_native_probe_outstanding(), 1)
+            XCTAssertEqual(bronze_native_probe_complete(1), BRONZE_STATUS_OK)
+            XCTAssertEqual(bronze_native_probe_outstanding(), 0)
+            XCTAssertEqual(bronze_native_probe_complete(1), BRONZE_STATUS_DOUBLE_COMPLETION)
+            XCTAssertEqual(bronze_native_probe_cancel(1), BRONZE_STATUS_DOUBLE_COMPLETION)
+        }
+        let more: [UInt8] = Array("cancel".utf8)
+        more.withUnsafeBufferPointer { buf in
+            let view = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(more.count))
+            XCTAssertEqual(bronze_native_probe_begin(2, view), BRONZE_STATUS_OK)
+            XCTAssertEqual(bronze_native_probe_cancel(2), BRONZE_STATUS_CANCELLED)
+            XCTAssertEqual(bronze_native_probe_complete(2), BRONZE_STATUS_DOUBLE_COMPLETION)
+        }
+        XCTAssertEqual(bronze_native_probe_complete(99), BRONZE_STATUS_NOT_FOUND)
+        bronze_native_shutdown()
+    }
+
+    func testShutdownCancelsOpenProbe() {
+        bronze_native_init()
+        let bytes: [UInt8] = Array("open".utf8)
+        bytes.withUnsafeBufferPointer { buf in
+            let view = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(bytes.count))
+            XCTAssertEqual(bronze_native_probe_begin(3, view), BRONZE_STATUS_OK)
+        }
+        bronze_native_shutdown()
+        XCTAssertEqual(bronze_native_probe_outstanding(), 0)
+        XCTAssertEqual(bronze_native_probe_complete(3), BRONZE_STATUS_DOUBLE_COMPLETION)
+        XCTAssertEqual(bronze_native_probe_begin(4, bronze_native_utf8_view(ptr: nil, len: 0)), BRONZE_STATUS_SHUTTING_DOWN)
+        bronze_native_init()
+        XCTAssertEqual(bronze_native_probe_begin(4, bronze_native_utf8_view(ptr: nil, len: 0)), BRONZE_STATUS_OK)
+        XCTAssertEqual(bronze_native_probe_complete(4), BRONZE_STATUS_OK)
+        bronze_native_shutdown()
     }
 
     // MARK: - No NUL scan / cString reliance (verified by embedded + len tests above)

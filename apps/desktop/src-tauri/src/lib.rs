@@ -25,6 +25,15 @@ fn start_native_or_die() {
 }
 
 #[cfg(test)]
+mod abi_ownership;
+
+#[cfg(test)]
+pub(crate) fn lock_native_runtime() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+#[cfg(test)]
 mod tests {
     use serde_json::Value;
     use std::fs;
@@ -152,6 +161,7 @@ mod tests {
     #[cfg(all(target_os = "macos", bronze_native_linked))]
     #[test]
     fn startup_abi_version_check_uses_linked_native() {
+        let _guard = crate::lock_native_runtime();
         let runtime = bronze_platform_macos::NativeRuntime::start()
             .expect("linked BronzeNative init (story 2.3)");
         let version = runtime.abi_version().expect("version");

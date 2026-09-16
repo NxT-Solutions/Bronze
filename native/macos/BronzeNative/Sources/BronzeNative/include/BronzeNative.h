@@ -30,6 +30,9 @@ extern "C" {
 #define BRONZE_STATUS_OK                 0u
 #define BRONZE_STATUS_INVALID_UTF8       1u
 #define BRONZE_STATUS_DOUBLE_COMPLETION  2u
+#define BRONZE_STATUS_CANCELLED          3u
+#define BRONZE_STATUS_NOT_FOUND          4u
+#define BRONZE_STATUS_SHUTTING_DOWN      5u
 // Additional codes may be added in future stories; consumers must treat unknown as failure.
 
 // Non-owning UTF-8 view. ptr may be NULL only when len==0.
@@ -55,10 +58,27 @@ uint32_t bronze_native_validate_utf8(bronze_native_utf8_view view);
 // Exists only to exercise ptr+len round-trip in conformance tests without side effects.
 uint64_t bronze_native_test_view_len(bronze_native_utf8_view view);
 
-// Explicit init / shutdown. No-op in v1 but surface required by arch contract.
-// Never unwind across boundary. Documented as must-not-double-complete.
+// Explicit init / shutdown. Init resets ownership tables. Shutdown cancels
+// every open probe exactly once (CAP-004). Never unwind across boundary.
 void bronze_native_init(void);
 void bronze_native_shutdown(void);
+
+// Native-owned copy of a borrowed view. On OK, *out is owned and must be
+// released with bronze_native_utf8_free exactly once (arch §7.2).
+uint32_t bronze_native_utf8_owned_copy(bronze_native_utf8_view src, bronze_native_utf8_view *out);
+
+// Matching free for a view produced by bronze_native_utf8_owned_copy.
+// Double-free returns BRONZE_STATUS_DOUBLE_COMPLETION without a second deallocate.
+uint32_t bronze_native_utf8_free(bronze_native_utf8_view view);
+
+// One-shot probe (story 2.4): copies the view, then complete XOR cancel exactly once.
+// request_id is generated in Rust. Invalid UTF-8 does not create a probe.
+uint32_t bronze_native_probe_begin(uint64_t request_id, bronze_native_utf8_view view);
+uint32_t bronze_native_probe_complete(uint64_t request_id);
+uint32_t bronze_native_probe_cancel(uint64_t request_id);
+
+// Count of probes still open (owned, not yet complete/cancel). Leak detector.
+uint64_t bronze_native_probe_outstanding(void);
 
 #ifdef __cplusplus
 }

@@ -3,19 +3,24 @@
 // No AppKit, ApplicationServices, CGEventTap, AX, or product behavior.
 // All macOS capture stays behind this typed interface (AGENTS.md, ADR-004).
 //
-// CAP-004, SEC-002, ADR-004
+// CAP-004, SEC-002, SEC-006, ADR-004
 // - versioned C ABI, fixed-width, ptr+len UTF-8 views
 // - no NUL-terminated strings or strlen
 // - version check fails closed on mismatch
 // - Rust panic / Swift error never cross FFI boundary
 // - sensitive buffers: no debugDescription containing user content
-// - double completion forbidden (documented, tested)
+// - one-shot complete or cancel; double completion forbidden
+
+import Foundation
 
 // ABI version/status constants — MUST BE KEPT IN SYNC WITH BronzeNative.h defines (single source of truth is the .h for the C contract).
 public let BRONZE_ABI_VERSION: UInt32 = 1
 public let BRONZE_STATUS_OK: UInt32                 = 0
 public let BRONZE_STATUS_INVALID_UTF8: UInt32       = 1
 public let BRONZE_STATUS_DOUBLE_COMPLETION: UInt32  = 2
+public let BRONZE_STATUS_CANCELLED: UInt32          = 3
+public let BRONZE_STATUS_NOT_FOUND: UInt32          = 4
+public let BRONZE_STATUS_SHUTTING_DOWN: UInt32      = 5
 
 // Non-owning borrowed UTF-8 view. Exact layout to match C struct in BronzeNative.h for ABI.
 // (ptr may be null iff len==0). Used for both Swift API and C ABI export.
@@ -73,17 +78,231 @@ public func bronze_native_test_view_len(_ view: bronze_native_utf8_view) -> UInt
     view.len
 }
 
-// Explicit lifecycle stubs required by arch contract §7.2.
-// No-op for this story. Must not unwind. Double call is forbidden (tested via status).
+private enum ProbePhase {
+    case open(bronze_native_utf8_view)
+    case completed
+    case cancelled
+}
+
+private struct OwnedKey: Hashable {
+    let ptr: UInt
+    let len: UInt64
+}
+
+/// Process-global ownership tables. Lock is the only shared mutable state.
+/// Status codes carry no payload bytes (SEC-006).
+private final class NativeOwnership: @unchecked Sendable {
+    static let shared = NativeOwnership()
+    private let lock = NSLock()
+    private var shuttingDown = false
+    private var owned = Set<OwnedKey>()
+    private var emptyOwned = 0
+    private var probes: [UInt64: ProbePhase] = [:]
+
+    func reset() {
+        lock.lock()
+        defer { lock.unlock() }
+        releaseAllOwnedLocked()
+        probes.removeAll()
+        shuttingDown = false
+    }
+
+    func shutdownCancelOpen() {
+        lock.lock()
+        defer { lock.unlock() }
+        shuttingDown = true
+        for (id, phase) in probes {
+            if case let .open(view) = phase {
+                _ = freeLocked(view)
+                probes[id] = .cancelled
+            }
+        }
+    }
+
+    func ownedCopy(_ src: bronze_native_utf8_view, _ out: UnsafeMutablePointer<bronze_native_utf8_view>) -> UInt32 {
+        let status = bronze_native_validate_utf8(src)
+        if status != BRONZE_STATUS_OK {
+            return status
+        }
+        lock.lock()
+        defer { lock.unlock() }
+        if shuttingDown {
+            return BRONZE_STATUS_SHUTTING_DOWN
+        }
+        return ownedCopyLocked(src, out)
+    }
+
+    func free(_ view: bronze_native_utf8_view) -> UInt32 {
+        lock.lock()
+        defer { lock.unlock() }
+        return freeLocked(view)
+    }
+
+    func begin(id: UInt64, view: bronze_native_utf8_view) -> UInt32 {
+        let status = bronze_native_validate_utf8(view)
+        if status != BRONZE_STATUS_OK {
+            return status
+        }
+        lock.lock()
+        defer { lock.unlock() }
+        if shuttingDown {
+            return BRONZE_STATUS_SHUTTING_DOWN
+        }
+        if probes[id] != nil {
+            return BRONZE_STATUS_DOUBLE_COMPLETION
+        }
+        var ownedView = bronze_native_utf8_view(ptr: nil, len: 0)
+        let copyStatus = ownedCopyLocked(view, &ownedView)
+        if copyStatus != BRONZE_STATUS_OK {
+            return copyStatus
+        }
+        probes[id] = .open(ownedView)
+        return BRONZE_STATUS_OK
+    }
+
+    func complete(id: UInt64) -> UInt32 {
+        lock.lock()
+        defer { lock.unlock() }
+        switch probes[id] {
+        case let .open(view):
+            _ = freeLocked(view)
+            probes[id] = .completed
+            return BRONZE_STATUS_OK
+        case .completed, .cancelled:
+            return BRONZE_STATUS_DOUBLE_COMPLETION
+        case nil:
+            return BRONZE_STATUS_NOT_FOUND
+        }
+    }
+
+    func cancel(id: UInt64) -> UInt32 {
+        lock.lock()
+        defer { lock.unlock() }
+        switch probes[id] {
+        case let .open(view):
+            _ = freeLocked(view)
+            probes[id] = .cancelled
+            return BRONZE_STATUS_CANCELLED
+        case .completed, .cancelled:
+            return BRONZE_STATUS_DOUBLE_COMPLETION
+        case nil:
+            return BRONZE_STATUS_NOT_FOUND
+        }
+    }
+
+    func outstanding() -> UInt64 {
+        lock.lock()
+        defer { lock.unlock() }
+        var count: UInt64 = 0
+        for phase in probes.values {
+            if case .open = phase {
+                count += 1
+            }
+        }
+        return count
+    }
+
+    private func ownedCopyLocked(
+        _ src: bronze_native_utf8_view,
+        _ out: UnsafeMutablePointer<bronze_native_utf8_view>
+    ) -> UInt32 {
+        if src.len == 0 {
+            emptyOwned += 1
+            out.pointee = bronze_native_utf8_view(ptr: nil, len: 0)
+            return BRONZE_STATUS_OK
+        }
+        guard let srcPtr = src.ptr else {
+            return BRONZE_STATUS_INVALID_UTF8
+        }
+        let count = Int(src.len)
+        let dest = UnsafeMutablePointer<UInt8>.allocate(capacity: count)
+        dest.initialize(from: srcPtr, count: count)
+        owned.insert(OwnedKey(ptr: UInt(bitPattern: dest), len: src.len))
+        out.pointee = bronze_native_utf8_view(ptr: UnsafePointer(dest), len: src.len)
+        return BRONZE_STATUS_OK
+    }
+
+    private func freeLocked(_ view: bronze_native_utf8_view) -> UInt32 {
+        if view.len == 0 {
+            if view.ptr != nil {
+                return BRONZE_STATUS_NOT_FOUND
+            }
+            if emptyOwned == 0 {
+                return BRONZE_STATUS_DOUBLE_COMPLETION
+            }
+            emptyOwned -= 1
+            return BRONZE_STATUS_OK
+        }
+        guard let ptr = view.ptr else {
+            return BRONZE_STATUS_NOT_FOUND
+        }
+        let key = OwnedKey(ptr: UInt(bitPattern: ptr), len: view.len)
+        guard owned.remove(key) != nil else {
+            return BRONZE_STATUS_DOUBLE_COMPLETION
+        }
+        let raw = UnsafeMutablePointer<UInt8>(mutating: ptr)
+        raw.deinitialize(count: Int(view.len))
+        raw.deallocate()
+        return BRONZE_STATUS_OK
+    }
+
+    private func releaseAllOwnedLocked() {
+        for (id, phase) in probes {
+            if case let .open(view) = phase {
+                _ = freeLocked(view)
+                probes[id] = .cancelled
+            }
+        }
+        for key in owned {
+            if let ptr = UnsafeMutablePointer<UInt8>(bitPattern: key.ptr) {
+                ptr.deinitialize(count: Int(key.len))
+                ptr.deallocate()
+            }
+        }
+        owned.removeAll()
+        emptyOwned = 0
+    }
+}
+
 @_cdecl("bronze_native_init")
 public func bronze_native_init() {
-    // no-op; ownership and resources deferred
+    NativeOwnership.shared.reset()
 }
 
 @_cdecl("bronze_native_shutdown")
 public func bronze_native_shutdown() {
-    // no-op; completion contracts enforced by callers
+    NativeOwnership.shared.shutdownCancelOpen()
 }
 
-// No CustomDebugStringConvertible / description that could leak sensitive content from views.
-// Views are plain public structs; any future print must be length-only.
+@_silgen_name("bronze_native_utf8_owned_copy")
+public func bronze_native_utf8_owned_copy(
+    _ src: bronze_native_utf8_view,
+    _ out: UnsafeMutablePointer<bronze_native_utf8_view>
+) -> UInt32 {
+    NativeOwnership.shared.ownedCopy(src, out)
+}
+
+@_silgen_name("bronze_native_utf8_free")
+public func bronze_native_utf8_free(_ view: bronze_native_utf8_view) -> UInt32 {
+    NativeOwnership.shared.free(view)
+}
+
+@_silgen_name("bronze_native_probe_begin")
+public func bronze_native_probe_begin(_ request_id: UInt64, _ view: bronze_native_utf8_view) -> UInt32 {
+    NativeOwnership.shared.begin(id: request_id, view: view)
+}
+
+@_cdecl("bronze_native_probe_complete")
+public func bronze_native_probe_complete(_ request_id: UInt64) -> UInt32 {
+    NativeOwnership.shared.complete(id: request_id)
+}
+
+@_cdecl("bronze_native_probe_cancel")
+public func bronze_native_probe_cancel(_ request_id: UInt64) -> UInt32 {
+    NativeOwnership.shared.cancel(id: request_id)
+}
+
+@_cdecl("bronze_native_probe_outstanding")
+public func bronze_native_probe_outstanding() -> UInt64 {
+    NativeOwnership.shared.outstanding()
+}
