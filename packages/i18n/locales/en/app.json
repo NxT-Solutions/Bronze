@@ -7,5 +7,6 @@
   "menu.status.newNote": "New Note",
   "menu.status.show": "Show",
   "menu.status.settings": "Settings",
-  "menu.status.quit": "Quit"
+  "menu.status.quit": "Quit",
+  "panel.quick.title": "Bronze"
 }

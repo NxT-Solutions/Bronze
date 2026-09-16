@@ -11,6 +11,7 @@ export const MessageIds = {
   "menu.status.show": "menu.status.show",
   "menu.status.settings": "menu.status.settings",
   "menu.status.quit": "menu.status.quit",
+  "panel.quick.title": "panel.quick.title",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;
