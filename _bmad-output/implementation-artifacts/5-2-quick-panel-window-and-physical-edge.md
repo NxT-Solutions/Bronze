@@ -1,6 +1,6 @@
 # Story 5.2: Quick panel window and physical edge
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -43,4 +43,15 @@ full queue CRUD
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `apps/desktop/src-tauri/src/window_edge.rs` — physical left/right/top; RTL does not mirror; work-area clamp; activating; no focus trap
+- `apps/desktop/src-tauri/tauri.conf.json` — warm hidden `quick` window
+- `apps/desktop/src/index.html` — panel chrome uses logical CSS; not a dialog trap
+- `packages/i18n/locales/*/app.json` — `panel.quick.title`
+
+### Notes
+
+- Full queue CRUD is a non-goal. Multi-display matrix is human (5.5). Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
