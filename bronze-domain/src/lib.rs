@@ -4,9 +4,14 @@
 //! the platform façade crate.
 
 mod entities;
+mod purge;
 
 pub use entities::{
     can_transition, ContentLanguage, InvalidTransition, Item, LanguageError, Lifecycle, Section,
+};
+pub use purge::{
+    can_purge_with_descendants, claims_forensic_erasure, empty_trash_requires_confirmation,
+    TRASH_RETENTION_DAYS,
 };
 
 #[cfg(test)]

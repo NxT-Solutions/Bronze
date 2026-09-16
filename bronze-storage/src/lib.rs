@@ -2,9 +2,11 @@
 
 mod migrate;
 mod receipts;
+mod undo;
 
 pub use migrate::{
     checksum_sql, locator_avoids_icloud, v1_migration, BackupBeforeMigration, MigrateError,
     Migration, NoopBackup, OpenError, PathLocator, Store, StoreLocator, StoreMode, SCHEMA_V1_SQL,
 };
 pub use receipts::{Command, CommandError, Receipt, RETRY_WINDOW_MS};
+pub use undo::UndoError;

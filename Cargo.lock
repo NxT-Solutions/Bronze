@@ -196,6 +196,7 @@ version = "0.0.0"
 name = "bronze-storage"
 version = "0.0.0"
 dependencies = [
+ "bronze-domain",
  "rusqlite",
  "sha2",
 ]
