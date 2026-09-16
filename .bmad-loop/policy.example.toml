@@ -72,8 +72,8 @@ source = "sprint-status"     # sprint-status | stories
 spec_folder = ""
 
 [adapter]
-name = "cursor-agent"        # claude | codex | gemini | copilot | antigravity | opencode-http | cursor-agent (project profile)
-model = "cursor-grok-4.6-xhigh" # Cursor Grok 4.6 Extra High
+name = "grok"                # claude | codex | gemini | copilot | antigravity | opencode-http | cursor-agent | grok (project profile)
+model = "grok-4.6"           # Grok CLI default; reasoning via --reasoning-effort xhigh
 cleanup_session_on_finish = true  # kill the run's tmux session when it finishes (false keeps it for inspection)
 # extra_args replaces the profile's default permission-bypass flags when set:
 # extra_args = ["--permission-mode", "bypassPermissions"]
@@ -89,11 +89,11 @@ cleanup_session_on_finish = true  # kill the run's tmux session when it finishes
 # extra_args are client-specific). Stage tables must come after the [adapter]
 # keys above.
 [adapter.dev]
-model = "cursor-grok-4.6-xhigh"
+model = "grok-4.6"
 [adapter.review]
-model = "cursor-grok-4.6-xhigh"
+model = "grok-4.6"
 [adapter.triage]
-model = "cursor-grok-4.6-xhigh"
+model = "grok-4.6"
 
 [sweep]
 # Deferred-work sweep: triage + execute open deferred-work.md entries.

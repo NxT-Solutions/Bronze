@@ -1,0 +1,34 @@
+# Grok Build CLI. Project overlay — not a shipped profile.
+# Cursor Agent is authed in interactive shells but not in tmux. Grok is authed
+# in tmux. -p / --single runs the agent loop (tools allowed) then exits so the
+# generic tmux adapter can harvest on window-death. --trust covers fresh
+# worktrees that are not yet in ~/.grok/trusted_folders.toml.
+# Hooks reuse the Claude dialect already registered in .claude/settings.json;
+# Grok may not fire those events, so this is not hookless. Window-death is the
+# completion fallback.
+name = "grok"
+binary = "grok"
+adapter = "generic"
+prompt_template = "Follow the skill at .claude/skills/{skill}/SKILL.md exactly, then execute it for: {args}"
+launch_args = [
+  "--trust",
+  "--output-format",
+  "plain",
+  "--always-approve",
+  "--permission-mode",
+  "bypassPermissions",
+  "--reasoning-effort",
+  "xhigh",
+  "--no-alt-screen",
+  "-p",
+]
+bypass_args = []
+model_flag = "--model"
+usage_parser = "none"
+skill_tree = ".claude/skills"
+first_run_note = "run `grok inspect` and confirm Project trusted: yes; --trust covers worktrees"
+
+[hooks]
+dialect = "claude-settings-json"
+config_path = ".claude/settings.json"
+events = { SessionStart = "SessionStart", Stop = "Stop", SessionEnd = "SessionEnd", PreCompact = "PreCompact" }
