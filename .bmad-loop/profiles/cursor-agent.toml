@@ -24,6 +24,12 @@ usage_parser = "none"
 skill_tree = ".claude/skills"
 first_run_note = "run `cursor-agent login` once; --print/--force/--trust keep sessions unattended"
 
+# Isolate from ~/.claude user + GitKraken plugin hooks. Those timeout ~10s per
+# tool and make Extra High Fast look hung. Project .claude/settings.json still
+# registers the bmad-loop relay. Window-death remains the completion fallback.
+[env]
+CLAUDE_CONFIG_DIR = "/Users/noah/fdev/projects/bronze-app/.bmad-loop/claude-empty"
+
 [hooks]
 dialect = "claude-settings-json"
 config_path = ".claude/settings.json"
