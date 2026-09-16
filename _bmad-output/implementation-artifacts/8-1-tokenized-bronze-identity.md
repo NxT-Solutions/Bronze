@@ -1,6 +1,6 @@
 # Story 8.1: Tokenized bronze identity
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,15 @@ marketing site
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-domain/src/tokens.rs` — light/dark pairs, WCAG contrast ≥4.5
+- `packages/ui/src/lib/contrast.ts` — CSS token sampling
+- `packages/ui/src/styles/globals.css` — DESIGN.md-inspired bronze tokens
+- `apps/desktop/src/index.html` — warm parchment surfaces
+
+### Notes
+
+- Concept PNG is inspiration, not a pixel spec. Sampling is not a public AA claim. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.

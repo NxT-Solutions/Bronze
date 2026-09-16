@@ -4,6 +4,8 @@
 
 Bronze should feel like temporary working memory attached to current task: instant to summon, quiet when idle, explicit about state, forgiving when platform capture fails. It must not look or behave like surveillance software.
 
+Warm bronze tokens from DESIGN.md are inspiration, not a pixel spec (A11Y-003). Automated sampling requires normal text ≥4.5:1 in light and dark. That sampling is not a public WCAG AA claim. No Copper trade dress.
+
 ## 2. Information architecture
 
 ### Menu-bar menu
