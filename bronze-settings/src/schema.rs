@@ -648,15 +648,15 @@ pub const SETTINGS_FIELDS: &[SettingsField] = &[
 pub fn default_standard_chord() -> ShortcutBinding {
     ShortcutBinding {
         action: ShortcutActionId::CaptureSelection,
-        trigger: TriggerKind::Disabled,
-        modifiers: Vec::new(),
+        trigger: TriggerKind::ModifierDoubleTap,
+        modifiers: vec![Modifier::Shift],
         key_mode: None,
         physical_code: None,
         logical_key: None,
-        modifier_side: None,
-        gap_ms: None,
-        max_hold_ms: None,
-        enabled: false,
+        modifier_side: Some(ModifierSide::Either),
+        gap_ms: Some(DEFAULT_GAP_MS),
+        max_hold_ms: Some(DEFAULT_MAX_HOLD_MS),
+        enabled: true,
         schema_version: SCHEMA_VERSION,
         revision: 1,
         tested: Some(TestedState::Untested),
@@ -676,7 +676,7 @@ impl SettingsV1 {
             capture: CaptureSettings {
                 standard_chord: default_standard_chord(),
                 modifier_tap: ModifierTap {
-                    enabled: false,
+                    enabled: true,
                     modifier: Modifier::Shift,
                     side: ModifierSide::Either,
                     action: ModifierTapAction::CaptureSelection,

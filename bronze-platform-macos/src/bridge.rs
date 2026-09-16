@@ -308,12 +308,20 @@ impl NativeRuntime {
     }
 
     pub fn event_tap_set_enabled(&self, enabled: bool) -> Result<(), NativeError> {
+        Self::event_tap_set_enabled_shared(enabled)
+    }
+
+    pub fn event_tap_set_enabled_shared(enabled: bool) -> Result<(), NativeError> {
         let status =
             catch_ffi(|| unsafe { abi::bronze_native_event_tap_set_enabled(u32::from(enabled)) })?;
         map_status(status)
     }
 
     pub fn event_tap_drain(&self) -> Result<Option<EventTapRecord>, NativeError> {
+        Self::event_tap_drain_shared()
+    }
+
+    pub fn event_tap_drain_shared() -> Result<Option<EventTapRecord>, NativeError> {
         let mut kind = 0u32;
         let mut sequence = 0u64;
         let status =

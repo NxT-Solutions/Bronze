@@ -60,7 +60,7 @@ pub struct LiveAxHost;
 
 impl SelectionHost for LiveAxHost {
     fn read(&self) -> (AxOutcome, Option<CapturedText>) {
-        let (outcome, text, source_app_name) = bronze_platform_macos::read_focused_selection();
+        let (outcome, text, source_app_name) = bronze_platform_macos::read_capture_selection();
         let mapped = match outcome {
             bronze_platform_macos::LiveAxOutcome::Captured { len } => AxOutcome::Captured { len },
             bronze_platform_macos::LiveAxOutcome::NoSelection => AxOutcome::NoSelection,

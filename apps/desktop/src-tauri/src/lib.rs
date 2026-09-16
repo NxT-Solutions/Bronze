@@ -41,25 +41,33 @@ pub fn run() {
                 install_chrome_menu(app.handle())?;
                 install_status_item(app.handle())?;
                 reveal_quick_panel(app.handle())?;
+                start_capture_pump(app.handle().clone());
                 Ok(())
             })
-            .on_menu_event(|app, event| match event.id().as_ref() {
-                "show-library" => {
-                    let _ = show_chrome_window(app.clone(), "library".into());
+            .on_menu_event(|app, event| {
+                let id = event.id().as_ref();
+                if let Some(item_id) = id.strip_prefix(TRAY_COPY_PREFIX) {
+                    copy_overview_item(app, item_id);
+                    return;
                 }
-                "show-settings" => {
-                    let _ = show_chrome_window(app.clone(), "settings".into());
+                match id {
+                    "show-library" => {
+                        let _ = show_chrome_window(app.clone(), "library".into());
+                    }
+                    "show-settings" => {
+                        let _ = show_chrome_window(app.clone(), "settings".into());
+                    }
+                    "show-help" => {
+                        let _ = show_chrome_window(app.clone(), "help".into());
+                    }
+                    "show-panel" => {
+                        let _ = reveal_quick_panel(app);
+                    }
+                    "capture-selection" => {
+                        on_capture_requested(app);
+                    }
+                    _ => {}
                 }
-                "show-help" => {
-                    let _ = show_chrome_window(app.clone(), "help".into());
-                }
-                "show-panel" => {
-                    let _ = reveal_quick_panel(app);
-                }
-                "capture-selection" => {
-                    on_capture_requested(app);
-                }
-                _ => {}
             });
     }
     builder
@@ -197,6 +205,7 @@ fn start_native_or_die() {
                 .expect("BronzeNative ABI mismatch is fail-closed (CAP-004)");
             let _ = capture_permissions::prompt_on_native_start();
             let _ = runtime.event_tap_start();
+            let _ = runtime.event_tap_set_enabled(true);
             // Process-lifetime: dropping would shutdown the in-process static lib.
             std::mem::forget(runtime);
         }
@@ -205,29 +214,124 @@ fn start_native_or_die() {
 }
 
 #[cfg(target_os = "macos")]
+const TRAY_ID: &str = "bronze-status";
+#[cfg(target_os = "macos")]
+const TRAY_COPY_PREFIX: &str = "tray-copy-";
+#[cfg(target_os = "macos")]
+const TRAY_RECENT_LIMIT: usize = 5;
+
+#[cfg(target_os = "macos")]
+fn tray_item_title(body: &str) -> String {
+    let flat: String = body
+        .chars()
+        .map(|ch| if ch.is_control() { ' ' } else { ch })
+        .collect();
+    let trimmed = flat.trim();
+    if trimmed.is_empty() {
+        return "…".into();
+    }
+    let mut title: String = trimmed.chars().take(48).collect();
+    if trimmed.chars().count() > 48 {
+        title.push('…');
+    }
+    title
+}
+
+#[cfg(target_os = "macos")]
+fn status_tray_menu(
+    app: &tauri::AppHandle,
+) -> Result<tauri::menu::Menu<tauri::Wry>, Box<dyn std::error::Error>> {
+    use tauri::menu::{MenuBuilder, MenuItem};
+    use tauri::Manager;
+    let map = load_locale_map(&locales_root(), "en");
+    let capture = require_key(&map, "menu.status.capture").unwrap_or_else(|_| "Capture".into());
+    let help = require_key(&map, "help.title").unwrap_or_else(|_| "Help".into());
+    let quit = require_key(&map, "menu.status.quit").unwrap_or_else(|_| "Quit".into());
+    let recent = {
+        let session = app.state::<std::sync::Mutex<live_session::LiveSession>>();
+        let session = session
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        session
+            .list_overview()
+            .unwrap_or_default()
+            .into_iter()
+            .take(TRAY_RECENT_LIMIT)
+            .collect::<Vec<_>>()
+    };
+    let mut builder = MenuBuilder::new(app);
+    for item in &recent {
+        let entry = MenuItem::with_id(
+            app,
+            format!("{TRAY_COPY_PREFIX}{}", item.id),
+            tray_item_title(&item.body),
+            true,
+            None::<&str>,
+        )?;
+        builder = builder.item(&entry);
+    }
+    if !recent.is_empty() {
+        builder = builder.separator();
+    }
+    let capture_item = MenuItem::with_id(app, "capture-selection", &capture, true, None::<&str>)?;
+    let help_item = MenuItem::with_id(app, "show-help", &help, true, None::<&str>)?;
+    builder = builder
+        .item(&capture_item)
+        .item(&help_item)
+        .quit_with_text(&quit);
+    Ok(builder.build()?)
+}
+
+#[cfg(target_os = "macos")]
+fn rebuild_status_menu(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let Some(tray) = app.tray_by_id(TRAY_ID) else {
+        return Ok(());
+    };
+    let menu = status_tray_menu(app)?;
+    tray.set_menu(Some(menu))?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn copy_overview_item(app: &tauri::AppHandle, id: &str) {
+    use tauri::Manager;
+    let session = app.state::<std::sync::Mutex<live_session::LiveSession>>();
+    let mut session = session
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let _ = session.copy_items(&[id.to_string()], "plain", &mut live_session::MacPasteboard);
+}
+
+#[cfg(target_os = "macos")]
+fn start_capture_pump(app: tauri::AppHandle) {
+    use bronze_platform_macos::{NativeRuntime, BRONZE_TAP_REC_TRIGGER};
+    std::thread::Builder::new()
+        .name("bronze-capture-pump".into())
+        .spawn(move || loop {
+            bronze_platform_macos::note_external_focus();
+            if let Ok(Some(record)) = NativeRuntime::event_tap_drain_shared() {
+                if record.kind == BRONZE_TAP_REC_TRIGGER {
+                    let handle = app.clone();
+                    let _ = handle.run_on_main_thread({
+                        let handle = handle.clone();
+                        move || {
+                            on_capture_requested(&handle);
+                        }
+                    });
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        })
+        .ok();
+}
+
+#[cfg(target_os = "macos")]
 fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
     let map = load_locale_map(&locales_root(), "en");
     let app_name = require_key(&map, "app.name").unwrap_or_else(|_| "Bronze".into());
-    let show = require_key(&map, "menu.status.show").unwrap_or_else(|_| "Show".into());
-    let capture = require_key(&map, "menu.status.capture").unwrap_or_else(|_| "Capture".into());
-    let settings = require_key(&map, "menu.status.settings").unwrap_or_else(|_| "Settings".into());
-    let quit = require_key(&map, "menu.status.quit").unwrap_or_else(|_| "Quit".into());
-    let show_item = MenuItem::with_id(app, "show-panel", &show, true, None::<&str>)?;
-    let capture_item = MenuItem::with_id(app, "capture-selection", &capture, true, None::<&str>)?;
-    let settings_item = MenuItem::with_id(app, "show-settings", &settings, true, None::<&str>)?;
-    let menu = Menu::with_items(
-        app,
-        &[
-            &show_item,
-            &capture_item,
-            &settings_item,
-            &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::quit(app, Some(&quit))?,
-        ],
-    )?;
-    let mut tray = TrayIconBuilder::new()
+    let menu = status_tray_menu(app)?;
+    let mut tray = TrayIconBuilder::with_id(TRAY_ID)
         .tooltip(&app_name)
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -268,6 +372,7 @@ pub fn on_capture_requested(app: &tauri::AppHandle) {
     if visible && !window_edge::CAPTURE_ONLY_REVEALS_PANEL {
         let _ = app.emit("queue-changed", ());
     }
+    let _ = rebuild_status_menu(app);
 }
 
 mod capabilities;
@@ -524,7 +629,10 @@ mod tests {
         assert!(lib.contains("WebviewWindowBuilder"));
         assert!(lib.contains(r#"WebviewWindowBuilder::new(app, "quick""#));
         assert!(lib.contains("list_overview_items"));
-        assert!(lib.contains("menu.status.show"));
+        assert!(lib.contains("menu.status.capture"));
+        assert!(lib.contains("help.title"));
+        assert!(lib.contains("event_tap_set_enabled"));
+        assert!(lib.contains("event_tap_drain_shared"));
         assert!(lib.contains("queue-changed"));
     }
 

@@ -174,6 +174,9 @@ impl ShortcutRegistry {
 }
 
 fn default_binding(action: ShortcutActionId) -> ShortcutBinding {
+    if action == ShortcutActionId::CaptureSelection {
+        return crate::schema::default_standard_chord();
+    }
     ShortcutBinding {
         action,
         trigger: TriggerKind::Disabled,
@@ -256,7 +259,7 @@ mod shortcuts_tests {
             .unwrap_err();
         assert_eq!(err, RegisterError::NativeRejected);
         assert_eq!(registry.standard_chord(), &old);
-        assert!(!registry.standard_chord().enabled);
+        assert!(registry.standard_chord().enabled);
     }
 
     #[test]

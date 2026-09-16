@@ -19,7 +19,10 @@ pub use abi::{
     BRONZE_STATUS_SHUTTING_DOWN, BRONZE_TAP_FEED_CANCEL, BRONZE_TAP_FEED_DOWN, BRONZE_TAP_FEED_UP,
     BRONZE_TAP_REC_DISABLED, BRONZE_TAP_REC_NONE, BRONZE_TAP_REC_RESET, BRONZE_TAP_REC_TRIGGER,
 };
-pub use ax_live::{read_focused_selection, LiveAxOutcome, LIVE_AX_MAX_BYTES};
+pub use ax_live::{
+    classify_ax_role, is_skipped_process_name, last_external_pid, note_external_focus,
+    read_capture_selection, read_focused_selection, AxProtection, LiveAxOutcome, LIVE_AX_MAX_BYTES,
+};
 pub use bridge::{
     check_abi_version, event_tap_enqueue_raw, EventTapHealth, EventTapRecord, NativeError,
     NativeRuntime, OwnedUtf8, ProbeTerminal,

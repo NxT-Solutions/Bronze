@@ -13,6 +13,42 @@ pub enum LiveAxOutcome {
 }
 
 pub const LIVE_AX_MAX_BYTES: usize = 1 << 20;
+const AX_CHAIN_LIMIT: usize = 16;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AxProtection {
+    Protected,
+    AllowedText,
+    NeutralContainer,
+    UnknownContentBearing,
+}
+
+pub fn classify_ax_role(role: &str, subrole: &str) -> AxProtection {
+    if role == "AXSecureTextField" || subrole == "AXSecureTextField" {
+        return AxProtection::Protected;
+    }
+    match role {
+        "AXTextField" | "AXTextArea" | "AXStaticText" | "AXWebArea" | "AXText" => {
+            AxProtection::AllowedText
+        }
+        "AXApplication" | "AXWindow" | "AXGroup" | "AXScrollArea" | "AXLayoutArea"
+        | "AXToolbar" | "AXMenuBar" | "AXMenu" | "AXSplitter" | "AXTabGroup" => {
+            AxProtection::NeutralContainer
+        }
+        _ => AxProtection::UnknownContentBearing,
+    }
+}
+
+pub fn is_skipped_process_name(name: &str) -> bool {
+    name.eq_ignore_ascii_case("bronze-desktop") || name.eq_ignore_ascii_case("Bronze")
+}
+
+pub fn last_external_pid() -> Option<i32> {
+    let pid = LAST_EXTERNAL_PID.load(std::sync::atomic::Ordering::SeqCst);
+    (pid > 0).then_some(pid)
+}
+
+static LAST_EXTERNAL_PID: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
 
 #[cfg(target_os = "macos")]
 mod sys {
@@ -55,6 +91,7 @@ mod sys {
             value: *mut CfTypeRef,
         ) -> i32;
         pub fn AXUIElementGetPid(element: AxUiElementRef, pid: *mut i32) -> i32;
+        pub fn AXUIElementCreateApplication(pid: i32) -> AxUiElementRef;
     }
 
     extern "C" {
@@ -98,25 +135,133 @@ mod sys {
         }
     }
 
-    pub fn app_name_for_element(element: AxUiElementRef) -> Option<String> {
+    pub fn pid_for_element(element: AxUiElementRef) -> Option<i32> {
         let mut pid: i32 = 0;
         let status = unsafe { AXUIElementGetPid(element, &mut pid) };
         if status != AX_SUCCESS || pid <= 0 {
-            return None;
+            None
+        } else {
+            Some(pid)
         }
+    }
+
+    pub fn process_name(pid: i32) -> Option<String> {
         let mut buf = [0u8; 256];
         let n = unsafe { proc_name(pid, buf.as_mut_ptr().cast(), buf.len() as u32) };
         if n <= 0 {
             return None;
         }
         let raw = std::str::from_utf8(&buf[..n as usize]).ok()?.trim();
-        if raw.is_empty()
-            || raw.eq_ignore_ascii_case("bronze-desktop")
-            || raw.eq_ignore_ascii_case("Bronze")
-        {
+        if raw.is_empty() {
+            None
+        } else {
+            Some(raw.chars().filter(|c| !c.is_control()).take(64).collect())
+        }
+    }
+
+    pub fn app_name_for_element(element: AxUiElementRef) -> Option<String> {
+        let pid = pid_for_element(element)?;
+        let raw = process_name(pid)?;
+        if is_own_pid(pid) || super::is_skipped_process_name(&raw) {
             return None;
         }
-        Some(raw.chars().filter(|c| !c.is_control()).take(64).collect())
+        Some(raw)
+    }
+
+    pub fn is_own_pid(pid: i32) -> bool {
+        pid == std::process::id() as i32
+    }
+
+    pub fn remember_external_pid(pid: i32) {
+        if pid <= 0 || is_own_pid(pid) {
+            return;
+        }
+        if process_name(pid).is_some_and(|name| super::is_skipped_process_name(&name)) {
+            return;
+        }
+        super::LAST_EXTERNAL_PID.store(pid, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    pub fn selected_text(element: AxUiElementRef) -> Result<Option<String>, super::LiveAxOutcome> {
+        let Some(selected) = copy_attr(element, "AXSelectedText") else {
+            return Ok(None);
+        };
+        let text = match cf_string_to_owned(selected) {
+            Ok(text) => text,
+            Err(()) => {
+                unsafe { CFRelease(selected) };
+                return Err(super::LiveAxOutcome::InvalidTextEncoding);
+            }
+        };
+        unsafe { CFRelease(selected) };
+        if text.is_empty() {
+            Ok(None)
+        } else if text.len() > super::LIVE_AX_MAX_BYTES {
+            Err(super::LiveAxOutcome::SelectionTooLarge)
+        } else {
+            Ok(Some(text))
+        }
+    }
+
+    pub fn walk_selection(
+        start: AxUiElementRef,
+    ) -> (super::LiveAxOutcome, Option<String>, Option<String>) {
+        let source_app_name = app_name_for_element(start);
+        let mut current = start;
+        let mut owned: Option<CfTypeRef> = None;
+        for _ in 0..super::AX_CHAIN_LIMIT {
+            let role = copy_attr(current, "AXRole")
+                .and_then(|role| cf_string_to_owned(role).ok())
+                .unwrap_or_default();
+            let subrole = copy_attr(current, "AXSubrole")
+                .and_then(|role| cf_string_to_owned(role).ok())
+                .unwrap_or_default();
+            match super::classify_ax_role(&role, &subrole) {
+                super::AxProtection::Protected => {
+                    if let Some(prev) = owned {
+                        unsafe { CFRelease(prev) };
+                    }
+                    return (super::LiveAxOutcome::ProtectedContent, None, None);
+                }
+                super::AxProtection::AllowedText => match selected_text(current) {
+                    Ok(Some(text)) => {
+                        if let Some(prev) = owned {
+                            unsafe { CFRelease(prev) };
+                        }
+                        let len = text.len();
+                        return (
+                            super::LiveAxOutcome::Captured { len },
+                            Some(text),
+                            source_app_name,
+                        );
+                    }
+                    Err(outcome) => {
+                        if let Some(prev) = owned {
+                            unsafe { CFRelease(prev) };
+                        }
+                        return (outcome, None, None);
+                    }
+                    Ok(None) => {}
+                },
+                super::AxProtection::NeutralContainer
+                | super::AxProtection::UnknownContentBearing => {}
+            }
+            let parent = copy_attr(current, "AXParent");
+            if let Some(prev) = owned {
+                unsafe { CFRelease(prev) };
+            }
+            match parent {
+                Some(next) => {
+                    owned = Some(next);
+                    current = next.cast_mut();
+                }
+                None => break,
+            }
+        }
+        if let Some(prev) = owned {
+            unsafe { CFRelease(prev) };
+        }
+        (super::LiveAxOutcome::NoSelection, None, source_app_name)
     }
 
     pub fn copy_attr(element: AxUiElementRef, name: &str) -> Option<CfTypeRef> {
@@ -133,14 +278,19 @@ mod sys {
 }
 
 #[cfg(target_os = "macos")]
-pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>, Option<String>) {
-    use sys::{
-        app_name_for_element, cf_string_to_owned, copy_attr, AXIsProcessTrusted,
-        AXUIElementCreateSystemWide, CFRelease,
-    };
+fn trusted_or_denied() -> Option<(LiveAxOutcome, Option<String>, Option<String>)> {
+    if unsafe { sys::AXIsProcessTrusted() } == 0 {
+        Some((LiveAxOutcome::AccessibilityDenied, None, None))
+    } else {
+        None
+    }
+}
 
-    if unsafe { AXIsProcessTrusted() } == 0 {
-        return (LiveAxOutcome::AccessibilityDenied, None, None);
+#[cfg(target_os = "macos")]
+fn read_system_focused() -> (LiveAxOutcome, Option<String>, Option<String>) {
+    use sys::{copy_attr, walk_selection, AXUIElementCreateSystemWide, CFRelease};
+    if let Some(denied) = trusted_or_denied() {
+        return denied;
     }
     let system = unsafe { AXUIElementCreateSystemWide() };
     if system.is_null() {
@@ -151,46 +301,98 @@ pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>, Option<String
     let Some(focused) = focused else {
         return (LiveAxOutcome::FocusedElementMissing, None, None);
     };
-    let focused_el = focused.cast_mut();
-    let source_app_name = app_name_for_element(focused_el);
-    let role = copy_attr(focused_el, "AXRole")
-        .and_then(|role| cf_string_to_owned(role).ok())
-        .unwrap_or_default();
-    if role == "AXSecureTextField" {
-        unsafe { CFRelease(focused) };
-        return (LiveAxOutcome::ProtectedContent, None, None);
-    }
-    if role == "AXUnknown" {
-        unsafe { CFRelease(focused) };
-        return (LiveAxOutcome::ProtectionUnknown, None, None);
-    }
-    let selected = copy_attr(focused_el, "AXSelectedText");
+    let result = walk_selection(focused.cast_mut());
     unsafe { CFRelease(focused) };
-    let Some(selected) = selected else {
-        return (LiveAxOutcome::NoSelection, None, None);
+    result
+}
+
+#[cfg(target_os = "macos")]
+pub fn note_external_focus() {
+    use sys::{
+        copy_attr, pid_for_element, remember_external_pid, AXUIElementCreateSystemWide, CFRelease,
     };
-    let text = match cf_string_to_owned(selected) {
-        Ok(text) => text,
-        Err(()) => {
-            unsafe { CFRelease(selected) };
-            return (LiveAxOutcome::InvalidTextEncoding, None, None);
+    if trusted_or_denied().is_some() {
+        return;
+    }
+    let system = unsafe { AXUIElementCreateSystemWide() };
+    if system.is_null() {
+        return;
+    }
+    let focused = copy_attr(system, "AXFocusedUIElement");
+    unsafe { CFRelease(system.cast()) };
+    let Some(focused) = focused else {
+        return;
+    };
+    if let Some(pid) = pid_for_element(focused.cast_mut()) {
+        remember_external_pid(pid);
+    }
+    unsafe { CFRelease(focused) };
+}
+
+#[cfg(target_os = "macos")]
+pub fn read_selection_for_pid(pid: i32) -> (LiveAxOutcome, Option<String>, Option<String>) {
+    use sys::{
+        copy_attr, is_own_pid, process_name, walk_selection, AXUIElementCreateApplication,
+        CFRelease,
+    };
+    if let Some(denied) = trusted_or_denied() {
+        return denied;
+    }
+    if pid <= 0 || is_own_pid(pid) {
+        return (LiveAxOutcome::FocusedElementMissing, None, None);
+    }
+    if process_name(pid).is_some_and(|name| is_skipped_process_name(&name)) {
+        return (LiveAxOutcome::FocusedElementMissing, None, None);
+    }
+    let app = unsafe { AXUIElementCreateApplication(pid) };
+    if app.is_null() {
+        return (LiveAxOutcome::FocusedElementMissing, None, None);
+    }
+    let focused = copy_attr(app, "AXFocusedUIElement");
+    unsafe { CFRelease(app.cast()) };
+    let Some(focused) = focused else {
+        return (LiveAxOutcome::FocusedElementMissing, None, None);
+    };
+    let result = walk_selection(focused.cast_mut());
+    unsafe { CFRelease(focused) };
+    result
+}
+
+#[cfg(target_os = "macos")]
+pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>, Option<String>) {
+    read_system_focused()
+}
+
+#[cfg(target_os = "macos")]
+pub fn read_capture_selection() -> (LiveAxOutcome, Option<String>, Option<String>) {
+    note_external_focus();
+    if let Some(pid) = last_external_pid() {
+        let result = read_selection_for_pid(pid);
+        match result.0 {
+            LiveAxOutcome::Captured { .. }
+            | LiveAxOutcome::ProtectedContent
+            | LiveAxOutcome::ProtectionUnknown
+            | LiveAxOutcome::SelectionTooLarge
+            | LiveAxOutcome::InvalidTextEncoding
+            | LiveAxOutcome::AccessibilityDenied => return result,
+            LiveAxOutcome::NoSelection | LiveAxOutcome::FocusedElementMissing => {}
         }
-    };
-    unsafe { CFRelease(selected) };
-    if text.is_empty() {
-        return (LiveAxOutcome::NoSelection, None, None);
     }
-    if text.len() > LIVE_AX_MAX_BYTES {
-        return (LiveAxOutcome::SelectionTooLarge, None, None);
-    }
-    let len = text.len();
-    (LiveAxOutcome::Captured { len }, Some(text), source_app_name)
+    read_system_focused()
 }
 
 #[cfg(not(target_os = "macos"))]
 pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>, Option<String>) {
     (LiveAxOutcome::AccessibilityDenied, None, None)
 }
+
+#[cfg(not(target_os = "macos"))]
+pub fn read_capture_selection() -> (LiveAxOutcome, Option<String>, Option<String>) {
+    read_focused_selection()
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn note_external_focus() {}
 
 #[cfg(test)]
 mod ax_live_tests {
@@ -201,5 +403,34 @@ mod ax_live_tests {
         let outcome = LiveAxOutcome::Captured { len: 12 };
         assert!(!format!("{outcome:?}").contains("secret"));
         assert_eq!(LIVE_AX_MAX_BYTES, 1 << 20);
+    }
+
+    #[test]
+    fn classify_roles_and_skip_bronze_process_names() {
+        assert_eq!(
+            classify_ax_role("AXTextArea", ""),
+            AxProtection::AllowedText
+        );
+        assert_eq!(classify_ax_role("AXWebArea", ""), AxProtection::AllowedText);
+        assert_eq!(
+            classify_ax_role("AXWindow", ""),
+            AxProtection::NeutralContainer
+        );
+        assert_eq!(
+            classify_ax_role("AXSecureTextField", ""),
+            AxProtection::Protected
+        );
+        assert_eq!(
+            classify_ax_role("AXTextField", "AXSecureTextField"),
+            AxProtection::Protected
+        );
+        assert_eq!(
+            classify_ax_role("AXUnknown", ""),
+            AxProtection::UnknownContentBearing
+        );
+        assert!(is_skipped_process_name("bronze-desktop"));
+        assert!(is_skipped_process_name("Bronze"));
+        assert!(!is_skipped_process_name("TextEdit"));
+        assert_eq!(last_external_pid(), None);
     }
 }
