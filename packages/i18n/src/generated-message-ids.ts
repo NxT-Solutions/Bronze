@@ -16,6 +16,12 @@ export const MessageIds = {
   "composer.add.label": "composer.add.label",
   "composer.add.submit": "composer.add.submit",
   "composer.add.error": "composer.add.error",
+  "queue.item.moveUp": "queue.item.moveUp",
+  "queue.item.moveDown": "queue.item.moveDown",
+  "queue.item.complete": "queue.item.complete",
+  "queue.item.skip": "queue.item.skip",
+  "queue.item.trash": "queue.item.trash",
+  "queue.item.edit": "queue.item.edit",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

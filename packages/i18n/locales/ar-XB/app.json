@@ -12,5 +12,11 @@
   "capture.announce.saved": ".eznorB ot derutpaC",
   "composer.add.label": "meti ddA",
   "composer.add.submit": "ddA",
-  "composer.add.error": "meti dda ton dluoC"
+  "composer.add.error": "meti dda ton dluoC",
+  "queue.item.moveUp": "pu evoM",
+  "queue.item.moveDown": "nwod evoM",
+  "queue.item.complete": "etelpmoC",
+  "queue.item.skip": "pikS",
+  "queue.item.trash": "hsarT",
+  "queue.item.edit": "tidE"
 }

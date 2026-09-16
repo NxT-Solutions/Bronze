@@ -12,5 +12,11 @@
   "capture.announce.saved": "Captured to Bronze.",
   "composer.add.label": "Add item",
   "composer.add.submit": "Add",
-  "composer.add.error": "Could not add item"
+  "composer.add.error": "Could not add item",
+  "queue.item.moveUp": "Move up",
+  "queue.item.moveDown": "Move down",
+  "queue.item.complete": "Complete",
+  "queue.item.skip": "Skip",
+  "queue.item.trash": "Trash",
+  "queue.item.edit": "Edit"
 }

@@ -12,5 +12,11 @@
   "capture.announce.saved": "【CCáappttúurréedd ttóo BBrróoñnzzée.】",
   "composer.add.label": "【ÁAdddd íittéemm】",
   "composer.add.submit": "【ÁAdddd [·] 】",
-  "composer.add.error": "【CCóoúulldd ñnóott áadddd íittéemm】"
+  "composer.add.error": "【CCóoúulldd ñnóott áadddd íittéemm】",
+  "queue.item.moveUp": "【MMóovvée úupp】",
+  "queue.item.moveDown": "【MMóovvée ddóowwñn】",
+  "queue.item.complete": "【CCóommpplléettée】",
+  "queue.item.skip": "【SSkkíipp】",
+  "queue.item.trash": "【TTrráasshh】",
+  "queue.item.edit": "【ÉEddíitt】"
 }
