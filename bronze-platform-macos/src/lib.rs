@@ -6,6 +6,7 @@
 mod abi;
 #[cfg(feature = "abi-stub")]
 mod abi_stub;
+mod ax_live;
 mod bridge;
 mod display_prefs;
 mod permission;
@@ -18,6 +19,7 @@ pub use abi::{
     BRONZE_STATUS_SHUTTING_DOWN, BRONZE_TAP_FEED_CANCEL, BRONZE_TAP_FEED_DOWN, BRONZE_TAP_FEED_UP,
     BRONZE_TAP_REC_DISABLED, BRONZE_TAP_REC_NONE, BRONZE_TAP_REC_RESET, BRONZE_TAP_REC_TRIGGER,
 };
+pub use ax_live::{read_focused_selection, LiveAxOutcome, LIVE_AX_MAX_BYTES};
 pub use bridge::{
     check_abi_version, event_tap_enqueue_raw, EventTapHealth, EventTapRecord, NativeError,
     NativeRuntime, OwnedUtf8, ProbeTerminal,

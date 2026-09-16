@@ -2,6 +2,14 @@
 
 use crate::copy::{copy_items, CopyError, Pasteboard};
 use crate::portability::{accept_native_path, PathSource};
+use crate::window_edge::CAPTURE_ONLY_REVEALS_PANEL;
+use bronze_capture::{
+    apply_capture_success, Announcer, AxOutcome, CaptureCoordinator, CaptureIngressContext,
+    CaptureMode, CapturedText, FocusOwner, FocusSnapshot, PersistError, PersistHook, Terminal,
+    INGRESS_ROUTE_MENU,
+};
+#[cfg(test)]
+use bronze_capture::{ax_capture, FakeAxTree};
 use bronze_domain::{
     default_output_profile, ComposerChord, OutputFormat, OutputProfile, PostCopyAction,
 };
@@ -16,8 +24,69 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const HAND_TEST_UI_LOCALE: &str = "en";
-pub const AX_CAPTURE_LIVE: bool = false;
-const _: () = assert!(!AX_CAPTURE_LIVE);
+pub const AX_CAPTURE_LIVE: bool = true;
+const _: () = assert!(AX_CAPTURE_LIVE);
+const _: () = assert!(!CAPTURE_ONLY_REVEALS_PANEL);
+
+pub fn is_overview_status(status: &str) -> bool {
+    matches!(status, "queued" | "copied" | "active")
+}
+
+pub trait SelectionHost {
+    fn read(&self) -> (AxOutcome, Option<CapturedText>);
+}
+
+#[cfg(test)]
+pub struct FakeSelectionHost {
+    pub tree: FakeAxTree,
+}
+
+#[cfg(test)]
+impl SelectionHost for FakeSelectionHost {
+    fn read(&self) -> (AxOutcome, Option<CapturedText>) {
+        ax_capture(&self.tree)
+    }
+}
+
+pub struct LiveAxHost;
+
+impl SelectionHost for LiveAxHost {
+    fn read(&self) -> (AxOutcome, Option<CapturedText>) {
+        let (outcome, text) = bronze_platform_macos::read_focused_selection();
+        let mapped = match outcome {
+            bronze_platform_macos::LiveAxOutcome::Captured { len } => AxOutcome::Captured { len },
+            bronze_platform_macos::LiveAxOutcome::NoSelection => AxOutcome::NoSelection,
+            bronze_platform_macos::LiveAxOutcome::ProtectedContent => AxOutcome::ProtectedContent,
+            bronze_platform_macos::LiveAxOutcome::ProtectionUnknown => AxOutcome::ProtectionUnknown,
+            bronze_platform_macos::LiveAxOutcome::AccessibilityDenied => {
+                AxOutcome::AccessibilityDenied
+            }
+            bronze_platform_macos::LiveAxOutcome::FocusedElementMissing => {
+                AxOutcome::FocusedElementMissing
+            }
+            bronze_platform_macos::LiveAxOutcome::SelectionTooLarge => AxOutcome::SelectionTooLarge,
+            bronze_platform_macos::LiveAxOutcome::InvalidTextEncoding => {
+                AxOutcome::InvalidTextEncoding
+            }
+        };
+        (mapped, text.map(|body| CapturedText { text: body }))
+    }
+}
+
+struct SessionPersist<'a> {
+    session: &'a mut LiveSession,
+    body: String,
+}
+
+impl PersistHook for SessionPersist<'_> {
+    fn persist(&mut self, _request_id: u64) -> Result<(), PersistError> {
+        self.session
+            .add_composer(self.body.clone())
+            .map(|_| ())
+            .map_err(|_| PersistError)
+    }
+}
+
 const _: () = assert!(!QUE_007_COMPLETE);
 const _: () = assert!(matches!(ADR_018_STATUS.as_bytes(), b"Proposed"));
 
@@ -104,6 +173,71 @@ impl LiveSession {
             .list_items(include_trashed)
             .map(|rows| rows.into_iter().map(QueueItemDto::from).collect())
             .map_err(|_| "queue_list_failed".into())
+    }
+
+    pub fn list_overview(&self) -> Result<Vec<QueueItemDto>, String> {
+        Ok(self
+            .list_queue(false)?
+            .into_iter()
+            .filter(|item| is_overview_status(&item.status))
+            .collect())
+    }
+
+    pub fn persist_selection(
+        &mut self,
+        host: &dyn SelectionHost,
+        announcer: &mut dyn Announcer,
+        webview_visible: bool,
+    ) -> Result<Terminal, String> {
+        let (outcome, text) = host.read();
+        match (outcome, text) {
+            (AxOutcome::Captured { .. }, Some(captured)) => {
+                let body = captured.text;
+                let mut coordinator = CaptureCoordinator::with_hooks(
+                    8,
+                    SessionPersist {
+                        session: self,
+                        body,
+                    },
+                    bronze_capture::NoFeedback,
+                );
+                let mut ingress = CaptureIngressContext::empty();
+                ingress.route = INGRESS_ROUTE_MENU;
+                coordinator.submit(ingress);
+                coordinator.drain();
+                let terminal = coordinator
+                    .receipt(1)
+                    .map(|receipt| receipt.terminal)
+                    .unwrap_or(Terminal::Failed);
+                drop(coordinator);
+                if terminal == Terminal::Saved {
+                    let prior = FocusSnapshot {
+                        owner: FocusOwner::Source,
+                        source_token: 0,
+                    };
+                    let owner = apply_capture_success(
+                        CaptureMode::CaptureOnly,
+                        prior,
+                        announcer,
+                        webview_visible,
+                    );
+                    debug_assert_eq!(owner, FocusOwner::Source);
+                    let _ = CAPTURE_ONLY_REVEALS_PANEL;
+                }
+                Ok(terminal)
+            }
+            (AxOutcome::ProtectedContent | AxOutcome::ProtectionUnknown, _) => {
+                Ok(Terminal::Rejected)
+            }
+            (AxOutcome::NoSelection | AxOutcome::FocusedElementMissing, _) => {
+                Ok(Terminal::Rejected)
+            }
+            (AxOutcome::AccessibilityDenied | AxOutcome::AppExcluded, _) => Ok(Terminal::Rejected),
+            (AxOutcome::SelectionTooLarge | AxOutcome::InvalidTextEncoding, _) => {
+                Ok(Terminal::Failed)
+            }
+            (AxOutcome::Captured { .. }, None) => Ok(Terminal::Failed),
+        }
     }
 
     pub fn add_composer(&mut self, body: String) -> Result<QueueItemDto, String> {
@@ -426,6 +560,14 @@ pub fn list_queue_items(
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
+pub fn list_overview_items(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+) -> Result<Vec<QueueItemDto>, String> {
+    lock_session(&session)?.list_overview()
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
 pub fn add_composer_item(
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     body: String,
@@ -609,7 +751,8 @@ mod live_session_tests {
     #[test]
     fn composer_persists_and_queue_actions_mutate() {
         let mut session = open_session();
-        assert!(!AX_CAPTURE_LIVE);
+        assert!(AX_CAPTURE_LIVE);
+        assert!(!CAPTURE_ONLY_REVEALS_PANEL);
         assert_eq!(session.ui_locale(), "en");
         let added = session.add_composer("  park me  ".into()).expect("add");
         assert_eq!(added.body, "  park me  ");
@@ -619,6 +762,7 @@ mod live_session_tests {
             .apply_action(&added.id, "complete")
             .expect("complete");
         assert_eq!(session.list_queue(false).expect("done")[0].status, "done");
+        assert!(session.list_overview().expect("overview").is_empty());
         assert!(session.add_composer(String::new()).is_err());
     }
 
@@ -674,5 +818,87 @@ mod live_session_tests {
         assert_eq!(effective_ui_locale(Some("system")), "en");
         assert_eq!(effective_ui_locale(Some("en-XA")), "en-XA");
         assert!(!search_settings("backup").is_empty());
+    }
+
+    #[test]
+    fn ax_capture_persists_before_announce_and_hides_done() {
+        use bronze_capture::{
+            AxRole, FakeAnnouncer, FakeAxNode, FakeAxTree, FakeSelection, CAPTURE_ONLY_ANNOUNCE_KEY,
+        };
+        let mut session = open_session();
+        let host = FakeSelectionHost {
+            tree: FakeAxTree {
+                nodes: vec![FakeAxNode::new(
+                    AxRole::TextArea,
+                    None,
+                    FakeSelection::Text("  captured  ".into()),
+                    None,
+                )],
+                focused: Some(0),
+                excluded: false,
+                accessibility_granted: true,
+            },
+        };
+        let mut announce = FakeAnnouncer::default();
+        let terminal = session
+            .persist_selection(&host, &mut announce, false)
+            .expect("persist");
+        assert_eq!(terminal, Terminal::Saved);
+        let overview = session.list_overview().expect("overview");
+        assert_eq!(overview.len(), 1);
+        assert_eq!(overview[0].body, "  captured  ");
+        assert_eq!(announce.keys, vec![CAPTURE_ONLY_ANNOUNCE_KEY.to_string()]);
+        session
+            .apply_action(&overview[0].id, "complete")
+            .expect("complete");
+        assert!(session.list_overview().expect("hidden").is_empty());
+    }
+
+    #[test]
+    fn ax_capture_rejects_empty_and_secure_without_store() {
+        use bronze_capture::{
+            AxRole, AxSubrole, FakeAnnouncer, FakeAxNode, FakeAxTree, FakeSelection,
+        };
+        let mut session = open_session();
+        let empty = FakeSelectionHost {
+            tree: FakeAxTree {
+                nodes: vec![FakeAxNode::new(
+                    AxRole::TextField,
+                    None,
+                    FakeSelection::Empty,
+                    None,
+                )],
+                focused: Some(0),
+                excluded: false,
+                accessibility_granted: true,
+            },
+        };
+        let mut announce = FakeAnnouncer::default();
+        let terminal = session
+            .persist_selection(&empty, &mut announce, false)
+            .expect("empty");
+        assert_eq!(terminal, Terminal::Rejected);
+        assert!(session.list_overview().expect("none").is_empty());
+        assert!(announce.keys.is_empty());
+
+        let secret = FakeSelectionHost {
+            tree: FakeAxTree {
+                nodes: vec![FakeAxNode::new(
+                    AxRole::TextField,
+                    Some(AxSubrole::SecureTextField),
+                    FakeSelection::Text("hunter2-secret".into()),
+                    None,
+                )],
+                focused: Some(0),
+                excluded: false,
+                accessibility_granted: true,
+            },
+        };
+        let terminal = session
+            .persist_selection(&secret, &mut announce, false)
+            .expect("secure");
+        assert_eq!(terminal, Terminal::Rejected);
+        assert!(session.list_overview().expect("still none").is_empty());
+        assert!(!format!("{terminal:?}").contains("hunter2"));
     }
 }

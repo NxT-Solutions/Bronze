@@ -61,11 +61,50 @@ pub fn physical_rect_to_logical(physical: Rect, scale_factor: f64) -> Rect {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ChromeWindowSpec {
+    pub label: &'static str,
+    pub url: &'static str,
+    pub title: &'static str,
+    pub width: f64,
+    pub height: f64,
+    pub min_width: f64,
+    pub min_height: f64,
+}
+
 pub fn allowed_chrome_window(kind: &str) -> Option<&'static str> {
+    chrome_window_spec(kind).map(|spec| spec.label)
+}
+
+pub fn chrome_window_spec(kind: &str) -> Option<ChromeWindowSpec> {
     match kind {
-        "library" => Some("library"),
-        "settings" => Some("settings"),
-        "help" => Some("help"),
+        "library" => Some(ChromeWindowSpec {
+            label: "library",
+            url: "library.html",
+            title: "Bronze Library",
+            width: 720.0,
+            height: 640.0,
+            min_width: 480.0,
+            min_height: 400.0,
+        }),
+        "settings" => Some(ChromeWindowSpec {
+            label: "settings",
+            url: "settings.html",
+            title: "Bronze Settings",
+            width: 640.0,
+            height: 720.0,
+            min_width: 480.0,
+            min_height: 480.0,
+        }),
+        "help" => Some(ChromeWindowSpec {
+            label: "help",
+            url: "help.html",
+            title: "Bronze Help",
+            width: 640.0,
+            height: 640.0,
+            min_width: 480.0,
+            min_height: 400.0,
+        }),
         _ => None,
     }
 }
@@ -237,6 +276,10 @@ mod window_edge_tests {
         assert_eq!(allowed_chrome_window("quick"), None);
         assert_eq!(allowed_chrome_window("onboarding"), None);
         assert_eq!(allowed_chrome_window(""), None);
+        let settings = chrome_window_spec("settings").expect("settings spec");
+        assert_eq!(settings.url, "settings.html");
+        assert_eq!(settings.min_width, 480.0);
+        assert!(chrome_window_spec("quick").is_none());
     }
 
     #[test]

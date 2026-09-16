@@ -16,6 +16,7 @@ pub fn run() {
                 capture_permissions::open_privacy_settings,
                 show_chrome_window,
                 live_session::list_queue_items,
+                live_session::list_overview_items,
                 live_session::add_composer_item,
                 live_session::apply_queue_item_action,
                 live_session::edit_queue_item,
@@ -38,6 +39,7 @@ pub fn run() {
                 let session = live_session::LiveSession::open(data_dir)?;
                 app.manage(std::sync::Mutex::new(session));
                 install_chrome_menu(app.handle())?;
+                install_status_item(app.handle())?;
                 reveal_quick_panel(app.handle())?;
                 Ok(())
             })
@@ -51,8 +53,11 @@ pub fn run() {
                 "show-help" => {
                     let _ = show_chrome_window(app.clone(), "help".into());
                 }
+                "show-panel" => {
+                    let _ = reveal_quick_panel(app);
+                }
                 "capture-selection" => {
-                    on_capture_requested();
+                    on_capture_requested(app);
                 }
                 _ => {}
             });
@@ -65,10 +70,21 @@ pub fn run() {
 #[cfg(target_os = "macos")]
 #[tauri::command]
 fn show_chrome_window(app: tauri::AppHandle, kind: String) -> Result<(), String> {
-    use tauri::Manager;
+    use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
     let label = window_edge::allowed_chrome_window(&kind).ok_or("unknown_window")?;
-    let window = app.get_webview_window(label).ok_or("missing_window")?;
-    window.show().map_err(|err| err.to_string())?;
+    let spec = window_edge::chrome_window_spec(label).ok_or("unknown_window")?;
+    if let Some(window) = app.get_webview_window(spec.label) {
+        window.show().map_err(|err| err.to_string())?;
+        let _ = window.set_focus();
+        return Ok(());
+    }
+    let window = WebviewWindowBuilder::new(&app, spec.label, WebviewUrl::App(spec.url.into()))
+        .title(spec.title)
+        .inner_size(spec.width, spec.height)
+        .min_inner_size(spec.min_width, spec.min_height)
+        .visible(true)
+        .build()
+        .map_err(|err| err.to_string())?;
     let _ = window.set_focus();
     Ok(())
 }
@@ -82,16 +98,19 @@ fn install_chrome_menu(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let settings = require_key(&map, "settings.title").unwrap_or_else(|_| "Settings".into());
     let help = require_key(&map, "help.title").unwrap_or_else(|_| "Help".into());
     let capture = require_key(&map, "menu.status.capture").unwrap_or_else(|_| "Capture".into());
+    let show = require_key(&map, "menu.status.show").unwrap_or_else(|_| "Show".into());
     let quit = require_key(&map, "menu.status.quit").unwrap_or_else(|_| "Quit".into());
     let show_library = MenuItem::with_id(app, "show-library", &library, true, None::<&str>)?;
     let show_settings = MenuItem::with_id(app, "show-settings", &settings, true, None::<&str>)?;
     let show_help = MenuItem::with_id(app, "show-help", &help, true, None::<&str>)?;
+    let show_panel = MenuItem::with_id(app, "show-panel", &show, true, None::<&str>)?;
     let capture_item = MenuItem::with_id(app, "capture-selection", &capture, true, None::<&str>)?;
     let app_menu = Submenu::with_items(
         app,
         &app_name,
         true,
         &[
+            &show_panel,
             &capture_item,
             &show_library,
             &show_settings,
@@ -176,8 +195,69 @@ fn start_native_or_die() {
 }
 
 #[cfg(target_os = "macos")]
-pub fn on_capture_requested() {
+fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+    let map = load_locale_map(&locales_root(), "en");
+    let app_name = require_key(&map, "app.name").unwrap_or_else(|_| "Bronze".into());
+    let show = require_key(&map, "menu.status.show").unwrap_or_else(|_| "Show".into());
+    let capture = require_key(&map, "menu.status.capture").unwrap_or_else(|_| "Capture".into());
+    let settings = require_key(&map, "menu.status.settings").unwrap_or_else(|_| "Settings".into());
+    let quit = require_key(&map, "menu.status.quit").unwrap_or_else(|_| "Quit".into());
+    let show_item = MenuItem::with_id(app, "show-panel", &show, true, None::<&str>)?;
+    let capture_item = MenuItem::with_id(app, "capture-selection", &capture, true, None::<&str>)?;
+    let settings_item = MenuItem::with_id(app, "show-settings", &settings, true, None::<&str>)?;
+    let menu = Menu::with_items(
+        app,
+        &[
+            &show_item,
+            &capture_item,
+            &settings_item,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::quit(app, Some(&quit))?,
+        ],
+    )?;
+    let mut tray = TrayIconBuilder::new()
+        .tooltip(&app_name)
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                let _ = reveal_quick_panel(tray.app_handle());
+            }
+        });
+    if let Some(icon) = app.default_window_icon() {
+        tray = tray.icon(icon.clone());
+    }
+    tray.build(app)?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+pub fn on_capture_requested(app: &tauri::AppHandle) {
+    use bronze_capture::FakeAnnouncer;
+    use live_session::LiveAxHost;
+    use tauri::{Emitter, Manager};
     let _ = capture_permissions::prompt_on_first_capture_path();
+    let visible = app
+        .get_webview_window("quick")
+        .and_then(|window| window.is_visible().ok())
+        .unwrap_or(false);
+    let session_state = app.state::<std::sync::Mutex<live_session::LiveSession>>();
+    let mut session = session_state
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut announce = FakeAnnouncer::default();
+    let _ = session.persist_selection(&LiveAxHost, &mut announce, visible);
+    drop(session);
+    if visible && !window_edge::CAPTURE_ONLY_REVEALS_PANEL {
+        let _ = app.emit("queue-changed", ());
+    }
 }
 
 mod capabilities;
@@ -282,6 +362,10 @@ mod tests {
                 assert!(permissions
                     .iter()
                     .any(|permission| permission.as_str() == Some("allow-queue-live")));
+                let used =
+                    fs::read_to_string(manifest_dir().join("permissions/used-permissions.toml"))
+                        .expect("permissions");
+                assert!(used.contains("list_overview_items"));
             } else if name == "library" {
                 assert!(permissions
                     .iter()
@@ -419,6 +503,18 @@ mod tests {
             !manifest_dir().join("src/helper.rs").exists(),
             "helper.rs must not exist"
         );
+    }
+
+    #[test]
+    fn live_status_item_and_capture_do_not_steal_focus() {
+        assert!(crate::live_session::AX_CAPTURE_LIVE);
+        assert!(!crate::window_edge::CAPTURE_ONLY_REVEALS_PANEL);
+        let lib = include_str!("lib.rs");
+        assert!(lib.contains("TrayIconBuilder"));
+        assert!(lib.contains("WebviewWindowBuilder"));
+        assert!(lib.contains("list_overview_items"));
+        assert!(lib.contains("menu.status.show"));
+        assert!(lib.contains("queue-changed"));
     }
 
     #[cfg(all(target_os = "macos", bronze_native_linked))]
