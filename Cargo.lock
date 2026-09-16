@@ -202,6 +202,7 @@ name = "bronze-storage"
 version = "0.0.0"
 dependencies = [
  "bronze-domain",
+ "bronze-settings",
  "rusqlite",
  "serde_json",
  "sha2",

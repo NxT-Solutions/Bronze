@@ -16,7 +16,7 @@ pub const MAX_HOLD_MS_MIN: u32 = 100;
 pub const MAX_HOLD_MS_MAX: u32 = 1500;
 pub const DEFAULT_DIAGNOSTICS_RETENTION_DAYS: u32 = 7;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum ShortcutActionId {
     #[serde(rename = "app.togglePanel")]
     AppTogglePanel,

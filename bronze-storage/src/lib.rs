@@ -7,6 +7,7 @@ mod migrate;
 mod queue;
 mod receipts;
 mod search;
+mod shortcuts;
 mod undo;
 
 pub use backup::{BackupError, BackupSchedule};
@@ -29,4 +30,5 @@ pub use search::{
     announce_search, claims_locale_search, SearchAnnouncement, SearchError, SearchHit, SearchKind,
     ADR_018_STATUS, QUE_007_COMPLETE,
 };
+pub use shortcuts::ShortcutStoreError;
 pub use undo::UndoError;
