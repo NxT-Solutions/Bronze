@@ -100,9 +100,9 @@ development_status:
   7-5-native-and-webview-catalog-parity: done
   epic-7-retrospective: optional
 
-  epic-8: in-progress
+  epic-8: done
   8-1-tokenized-bronze-identity: done
-  8-2-reflow-two-hundred-and-four-hundred: ready-for-dev
+  8-2-reflow-two-hundred-and-four-hundred: done
   epic-8-retrospective: optional
 
   epic-9: backlog

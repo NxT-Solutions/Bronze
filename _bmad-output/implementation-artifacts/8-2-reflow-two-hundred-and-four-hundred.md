@@ -1,6 +1,6 @@
 # Story 8.2: Reflow two hundred and four hundred
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -41,4 +41,15 @@ WCAG conformance claim
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok).
+
 ### File List
+
+- `bronze-domain/src/reflow.rs` — 320 CSS px / 200% text, no two-axis scroll
+- `packages/ui/src/lib/reflow.ts` — layout helpers
+- `packages/ui/src/components/copy-toolbar.tsx` — labeled overflow
+- `apps/desktop/src/index.html` — overflow-x hidden, composer in flow
+
+### Notes
+
+- Layout tests are not a public WCAG claim. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
