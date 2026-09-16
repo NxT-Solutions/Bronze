@@ -18,5 +18,16 @@
   "queue.item.complete": "Complete",
   "queue.item.skip": "Skip",
   "queue.item.trash": "Trash",
-  "queue.item.edit": "Edit"
+  "queue.item.edit": "Edit",
+  "panel.section.active": "Inbox",
+  "library.title": "Library",
+  "library.nav.archive": "Archive",
+  "library.nav.trash": "Trash",
+  "library.nav.search": "Search",
+  "library.search.label": "Search",
+  "library.archive": "Archive",
+  "library.paginate": "Next page",
+  "library.state.empty": "No items",
+  "library.state.loading": "Loading",
+  "library.state.readOnly": "Read only"
 }

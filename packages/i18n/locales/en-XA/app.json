@@ -18,5 +18,16 @@
   "queue.item.complete": "【CCóommpplléettée】",
   "queue.item.skip": "【SSkkíipp】",
   "queue.item.trash": "【TTrráasshh】",
-  "queue.item.edit": "【ÉEddíitt】"
+  "queue.item.edit": "【ÉEddíitt】",
+  "panel.section.active": "【ÍIñnbbóoxx】",
+  "library.title": "【LLíibbrráarryy】",
+  "library.nav.archive": "【ÁArrçchhíivvée】",
+  "library.nav.trash": "【TTrráasshh】",
+  "library.nav.search": "【SSéeáarrçchh】",
+  "library.search.label": "【SSéeáarrçchh】",
+  "library.archive": "【ÁArrçchhíivvée】",
+  "library.paginate": "【NNéexxtt ppáaggée】",
+  "library.state.empty": "【NNóo íittéemmss】",
+  "library.state.loading": "【LLóoáaddíiñngg】",
+  "library.state.readOnly": "【RRéeáadd óoñnllyy】"
 }

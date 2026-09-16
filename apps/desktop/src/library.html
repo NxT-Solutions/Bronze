@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bronze Library</title>
+    <style>
+      body {
+        font-family: system-ui;
+        margin: 0;
+        min-height: 100vh;
+        padding-inline: 1rem;
+        padding-block: 0.75rem;
+        background: #111;
+        color: #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="library" data-library-state="ready">
+      <h1 data-i18n="library.title">Library</h1>
+      <nav aria-label="Library">
+        <a href="#archive" data-i18n="library.nav.archive">Archive</a>
+        <a href="#trash" data-i18n="library.nav.trash">Trash</a>
+        <a href="#search" data-i18n="library.nav.search">Search</a>
+      </nav>
+      <search id="search">
+        <label for="library-search" data-i18n="library.search.label">Search</label>
+        <input id="library-search" type="search" name="q" />
+      </search>
+      <button type="button" data-i18n="library.archive">Archive</button>
+      <button type="button" data-i18n="library.paginate">Next page</button>
+    </main>
+  </body>
+</html>

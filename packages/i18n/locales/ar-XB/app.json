@@ -18,5 +18,16 @@
   "queue.item.complete": "etelpmoC",
   "queue.item.skip": "pikS",
   "queue.item.trash": "hsarT",
-  "queue.item.edit": "tidE"
+  "queue.item.edit": "tidE",
+  "panel.section.active": "xobnI",
+  "library.title": "yrarbiL",
+  "library.nav.archive": "evihcrA",
+  "library.nav.trash": "hsarT",
+  "library.nav.search": "hcraeS",
+  "library.search.label": "hcraeS",
+  "library.archive": "evihcrA",
+  "library.paginate": "egap txeN",
+  "library.state.empty": "smeti oN",
+  "library.state.loading": "gnidaoL",
+  "library.state.readOnly": "ylno daeR"
 }

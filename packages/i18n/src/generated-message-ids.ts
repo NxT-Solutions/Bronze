@@ -22,6 +22,17 @@ export const MessageIds = {
   "queue.item.skip": "queue.item.skip",
   "queue.item.trash": "queue.item.trash",
   "queue.item.edit": "queue.item.edit",
+  "panel.section.active": "panel.section.active",
+  "library.title": "library.title",
+  "library.nav.archive": "library.nav.archive",
+  "library.nav.trash": "library.nav.trash",
+  "library.nav.search": "library.nav.search",
+  "library.search.label": "library.search.label",
+  "library.archive": "library.archive",
+  "library.paginate": "library.paginate",
+  "library.state.empty": "library.state.empty",
+  "library.state.loading": "library.state.loading",
+  "library.state.readOnly": "library.state.readOnly",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;
