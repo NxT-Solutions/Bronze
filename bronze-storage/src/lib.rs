@@ -4,6 +4,7 @@ mod backup;
 mod export;
 mod migrate;
 mod receipts;
+mod search;
 mod undo;
 
 pub use backup::{BackupError, BackupSchedule};
@@ -17,4 +18,7 @@ pub use migrate::{
     Migration, NoopBackup, OpenError, PathLocator, Store, StoreLocator, StoreMode, SCHEMA_V1_SQL,
 };
 pub use receipts::{Command, CommandError, Receipt, RETRY_WINDOW_MS};
+pub use search::{
+    claims_locale_search, SearchError, SearchHit, SearchKind, ADR_018_STATUS, QUE_007_COMPLETE,
+};
 pub use undo::UndoError;
