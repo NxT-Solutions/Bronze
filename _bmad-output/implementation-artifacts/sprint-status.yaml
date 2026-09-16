@@ -46,9 +46,9 @@ development_status:
   1-8-workspace-verify-aggregate: done
   epic-1-retrospective: optional
 
-  epic-2: backlog
+  epic-2: in-progress
   2-1-versioned-c-abi-types: done
-  2-2-rust-macos-façade: ready-for-dev
+  2-2-rust-macos-facade: done
   2-3-link-static-library-into-tauri: ready-for-dev
   2-4-abi-ownership-tests: ready-for-dev
   epic-2-retrospective: optional
