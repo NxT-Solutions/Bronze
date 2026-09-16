@@ -40,9 +40,14 @@ pub use window_edge::{
     EdgeError, PanelKind, PhysicalEdge, Rect, TextDirection, FOCUS_TRAP, PANEL_KIND,
 };
 mod catalog;
+mod packaging;
 pub use catalog::{
     catalog_dir, load_locale_map, locales_root, require_key, ADVERTISED_LOCALES,
     INFOPLIST_GLOSSARY, NATIVE_GLOSSARY_KEYS, PANEL_CHROME_KEYS, WEBVIEW_GLOSSARY_KEYS,
+};
+pub use packaging::{
+    forbids_get_task_allow, recorded_arch, sbom_stub, DG01_INTEL_SUPPORT, GET_TASK_ALLOW_FORBIDDEN,
+    PACKAGE_ARCH, PACKAGE_SCRIPT,
 };
 
 #[cfg(test)]
