@@ -63,7 +63,7 @@
   "settings.shortcuts.record": "Record shortcut",
   "settings.shortcuts.skipTest": "Skip test",
   "settings.shortcuts.alternatives": "Keep a menu or manual path",
-  "settings.shortcuts.live": "Listening",
+  "settings.shortcuts.live": "Only Shift double-tap is live among seeded shortcuts.",
   "settings.permission.title": "Permission health",
   "settings.permission.retest": "Retest",
   "settings.permission.status.granted": "Granted",
@@ -89,5 +89,5 @@
   "help.diagnostics.export": "Export support bundle",
   "help.limitations.humanGates": "Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.",
   "help.upload.none": "Bronze never uploads diagnostics automatically.",
-  "help.capture.composer": "Use Capture in the menu bar, or type into the composer."
+  "help.capture.composer": "Select text, then Capture from the menu bar, double-tap Shift, or type into the composer when capture is unavailable."
 }

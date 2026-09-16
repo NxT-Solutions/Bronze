@@ -484,6 +484,12 @@ article [data-slot="source"] {
   white-space: nowrap;
 }
 
+article [data-slot="source"][hidden],
+.empty-state[hidden],
+#composer-error[hidden] {
+  display: none;
+}
+
 .row-actions {
   display: flex;
   flex-wrap: wrap;

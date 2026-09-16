@@ -9,6 +9,10 @@ import {
 } from "./settings-schema";
 
 describe("settings schema (SET-001)", () => {
+  it("defaults the standard chord to enabled", () => {
+    expect(defaultSettingsDraft().standardChordEnabled).toBe(true);
+  });
+
   it("search finds backup and rejects off schedule", () => {
     const hits = searchSettingsFields("backup");
     expect(hits.some((field) => field.id === "data.backupSchedule")).toBe(true);

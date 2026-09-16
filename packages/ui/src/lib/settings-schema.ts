@@ -63,7 +63,7 @@ export function defaultSettingsDraft(): SettingsDraft {
     backupSchedule: "daily",
     excludedBundleIds: "",
     appPolicies: "",
-    standardChordEnabled: false,
+    standardChordEnabled: true,
   };
 }
 

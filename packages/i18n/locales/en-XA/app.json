@@ -63,7 +63,7 @@
   "settings.shortcuts.record": "【RRéeçcóorrdd sshhóorrttçcúutt】",
   "settings.shortcuts.skipTest": "【SSkkíipp ttéesstt】",
   "settings.shortcuts.alternatives": "【KKéeéepp áa mméeñnúu óorr mmáañnúuáall ppáatthh】",
-  "settings.shortcuts.live": "【LLíissttéeñníiñngg】",
+  "settings.shortcuts.live": "【ÓOñnllyy SShhíifftt ddóoúubbllée-ttáapp íiss llíivvée áammóoñngg sséeéeddéedd sshhóorrttçcúuttss.】",
   "settings.permission.title": "【PPéerrmmíissssíióoñn hhéeáalltthh】",
   "settings.permission.retest": "【RRéettéesstt】",
   "settings.permission.status.granted": "【GGrráañnttéedd】",
@@ -89,5 +89,5 @@
   "help.diagnostics.export": "【ÉExxppóorrtt ssúuppppóorrtt bbúuñnddllée】",
   "help.limitations.humanGates": "【HHúummáañn vváallíiddáattíióoñn rréemmáaíiñnss bbáaçckkllóogg: ssttóorríiéess 3.9, 3.10, 5.5, áañndd 9.3.】",
   "help.upload.none": "【BBrróoñnzzée ñnéevvéerr úuppllóoáaddss ddíiáaggñnóossttíiçcss áaúuttóommáattíiçcáallllyy.】",
-  "help.capture.composer": "【ÚUssée CCáappttúurrée íiñn tthhée mméeñnúu bbáarr, óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr.】"
+  "help.capture.composer": "【SSéelléeçctt ttéexxtt, tthhéeñn CCáappttúurrée ffrróomm tthhée mméeñnúu bbáarr, ddóoúubbllée-ttáapp SShhíifftt, óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr wwhhéeñn çcáappttúurrée íiss úuñnáavváaíilláabbllée.】"
 }
