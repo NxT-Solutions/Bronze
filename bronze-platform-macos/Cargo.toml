@@ -2,3 +2,6 @@
 name = "bronze-platform-macos"
 version = "0.0.0"
 edition = "2021"
+
+[dependencies]
+bronze-settings = { path = "../bronze-settings" }

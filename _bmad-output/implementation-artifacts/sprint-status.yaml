@@ -54,7 +54,7 @@ development_status:
   epic-2-retrospective: optional
 
   epic-3: backlog
-  3-1-permission-snapshot-enum: ready-for-dev
+  3-1-permission-snapshot-enum: done
   3-2-double-tap-fsm-tests: ready-for-dev
   3-3-listen-only-event-tap-thread: ready-for-dev
   3-4-atomic-ingress-snapshot: ready-for-dev
