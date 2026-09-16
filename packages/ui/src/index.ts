@@ -5,6 +5,8 @@ export * from "./components/dialog";
 export * from "./components/item-list";
 export * from "./components/library";
 export * from "./components/search-field";
+export * from "./components/settings-form";
 export * from "./components/text-field";
 export * from "./lib/apply-display-snapshot";
+export * from "./lib/settings-schema";
 export * from "./lib/window-allows";

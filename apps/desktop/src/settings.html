@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bronze Settings</title>
+    <style>
+      body {
+        font-family: system-ui;
+        margin: 0;
+        min-height: 100vh;
+        padding-inline: 1rem;
+        padding-block: 0.75rem;
+        background: #111;
+        color: #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="settings" data-slot="settings">
+      <h1 data-i18n="settings.title">Settings</h1>
+      <search>
+        <label for="settings-search" data-i18n="settings.search.label">
+          Search settings
+        </label>
+        <input id="settings-search" type="search" name="q" />
+      </search>
+      <form>
+        <fieldset data-settings-group="data">
+          <legend data-i18n="settings.group.data">Data</legend>
+          <label for="backup-schedule" data-i18n="settings.field.backupSchedule">
+            Backup schedule
+          </label>
+          <select id="backup-schedule" name="backupSchedule">
+            <option value="daily" selected data-i18n="settings.backup.daily">
+              Daily
+            </option>
+            <option value="weekly" data-i18n="settings.backup.weekly">
+              Weekly
+            </option>
+          </select>
+          <button
+            type="button"
+            data-reset-field="data.backupSchedule"
+            data-i18n="settings.reset.field"
+          >
+            Reset field
+          </button>
+        </fieldset>
+        <fieldset data-settings-group="privacy">
+          <legend data-i18n="settings.group.privacy">Privacy</legend>
+          <label
+            for="excluded-bundle-ids"
+            data-i18n="settings.field.excludedBundleIds"
+          >
+            Excluded apps
+          </label>
+          <input id="excluded-bundle-ids" type="text" name="excludedBundleIds" />
+          <button
+            type="button"
+            data-reset-field="privacy.excludedBundleIds"
+            data-i18n="settings.reset.field"
+          >
+            Reset field
+          </button>
+        </fieldset>
+        <button type="button" data-i18n="settings.reset.group">Reset group</button>
+        <button type="button" data-i18n="settings.reset.all">Reset all</button>
+      </form>
+      <section aria-labelledby="settings-export-preview">
+        <h2 id="settings-export-preview" data-i18n="settings.export.preview">
+          Export preview
+        </h2>
+        <output data-export-preview>
+          <p
+            role="status"
+            data-export-sensitive
+            data-i18n="settings.export.sensitive"
+          >
+            User-entered literals may be sensitive
+          </p>
+        </output>
+      </section>
+    </main>
+  </body>
+</html>
