@@ -139,16 +139,26 @@ fn install_chrome_menu(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 
 #[cfg(target_os = "macos")]
 fn reveal_quick_panel(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    use tauri::{LogicalPosition, LogicalSize, Manager};
+    use tauri::{LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder};
     use window_edge::{
         physical_rect_to_logical, quick_panel_frame, Rect, DEV_LAUNCH_REVEALS_QUICK,
-        QUICK_PANEL_MIN_HEIGHT, QUICK_PANEL_MIN_WIDTH,
+        QUICK_PANEL_HEIGHT, QUICK_PANEL_MIN_HEIGHT, QUICK_PANEL_MIN_WIDTH, QUICK_PANEL_WIDTH,
     };
     if !DEV_LAUNCH_REVEALS_QUICK {
         return Ok(());
     }
-    let Some(window) = app.get_webview_window("quick") else {
-        return Ok(());
+    let window = if let Some(window) = app.get_webview_window("quick") {
+        window
+    } else {
+        WebviewWindowBuilder::new(app, "quick", WebviewUrl::App("index.html".into()))
+            .title("Bronze")
+            .inner_size(f64::from(QUICK_PANEL_WIDTH), f64::from(QUICK_PANEL_HEIGHT))
+            .min_inner_size(
+                f64::from(QUICK_PANEL_MIN_WIDTH),
+                f64::from(QUICK_PANEL_MIN_HEIGHT),
+            )
+            .visible(true)
+            .build()?
     };
     if let Some(monitor) = window.current_monitor()? {
         let area = monitor.work_area();
@@ -512,6 +522,7 @@ mod tests {
         let lib = include_str!("lib.rs");
         assert!(lib.contains("TrayIconBuilder"));
         assert!(lib.contains("WebviewWindowBuilder"));
+        assert!(lib.contains(r#"WebviewWindowBuilder::new(app, "quick""#));
         assert!(lib.contains("list_overview_items"));
         assert!(lib.contains("menu.status.show"));
         assert!(lib.contains("queue-changed"));
