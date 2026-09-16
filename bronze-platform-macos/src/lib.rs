@@ -8,6 +8,7 @@ mod abi;
 mod abi_stub;
 mod bridge;
 mod permission;
+mod status_item;
 
 pub use abi::{
     BronzeIngressSnapshot, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_STATUS_CANCELLED,
@@ -23,3 +24,13 @@ pub use bridge::{
 #[cfg(target_os = "macos")]
 pub use permission::MacosPreflightHost;
 pub use permission::{snapshot_from_preflight, PreflightError, PreflightHost};
+pub use status_item::{
+    build_status_menu, StatusAction, StatusMenuError, StatusMenuItem, StringCatalog,
+    STATUS_MENU_KEYS,
+};
+
+#[cfg(test)]
+pub(crate) fn lock_native_runtime() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}

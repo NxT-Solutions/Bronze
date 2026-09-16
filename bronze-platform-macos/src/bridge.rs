@@ -449,15 +449,7 @@ impl Drop for NativeRuntime {
 mod tests {
     use super::{check_abi_version, NativeError, NativeRuntime, BRONZE_ABI_VERSION};
     use crate::abi::BronzeNativeUtf8View;
-    use std::sync::{Mutex, MutexGuard};
-
-    static TEST_LOCK: Mutex<()> = Mutex::new(());
-
-    fn lock_runtime() -> MutexGuard<'static, ()> {
-        TEST_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
+    use crate::lock_native_runtime as lock_runtime;
 
     #[test]
     fn version_query_matches_header() {
