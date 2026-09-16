@@ -11,9 +11,10 @@ pub use export::{
     value_looks_like_machine_path, SettingsExportPreview,
 };
 pub use health::{
-    capabilities_independent, health_rows, manual_composer_available, run_content_free_self_test,
-    screen_recording_row, HealthError, PermissionCapability, PermissionHealthRow, PermissionUsage,
-    LAUNCH_LOOP_PROMPTING, SCREEN_RECORDING_USED, SELF_TEST_CAPTURES_CONTENT,
+    capabilities_independent, health_rows, manual_composer_available, privacy_settings_url,
+    run_content_free_self_test, screen_recording_row, HealthError, PermissionCapability,
+    PermissionHealthRow, PermissionUsage, LAUNCH_LOOP_PROMPTING, SCREEN_RECORDING_USED,
+    SELF_TEST_CAPTURES_CONTENT,
 };
 pub use permission::{PermissionSnapshot, PermissionState};
 pub use schema::{

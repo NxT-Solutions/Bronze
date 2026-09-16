@@ -1,9 +1,20 @@
+mod capture_permissions;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "macos")]
     start_native_or_die();
 
-    tauri::Builder::default()
+    #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
+    let mut builder = tauri::Builder::default();
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.invoke_handler(tauri::generate_handler![
+            capture_permissions::retest_used_permissions,
+            capture_permissions::open_privacy_settings,
+        ]);
+    }
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -17,12 +28,18 @@ fn start_native_or_die() {
                 .expect("BronzeNative version query (CAP-004)");
             bronze_platform_macos::check_abi_version(version)
                 .expect("BronzeNative ABI mismatch is fail-closed (CAP-004)");
+            let _ = capture_permissions::prompt_on_native_start();
             let _ = runtime.event_tap_start();
             // Process-lifetime: dropping would shutdown the in-process static lib.
             std::mem::forget(runtime);
         }
         Err(err) => panic!("BronzeNative init failed; refusing sidecar fallback (ADR-004): {err}"),
     }
+}
+
+#[cfg(target_os = "macos")]
+pub fn on_capture_requested() {
+    let _ = capture_permissions::prompt_on_first_capture_path();
 }
 
 mod capabilities;
@@ -101,7 +118,22 @@ mod tests {
             let windows = cap["windows"].as_array().expect("windows array");
             assert_eq!(windows, &vec![Value::String(name.to_string())]);
             let permissions = cap["permissions"].as_array().expect("permissions array");
-            assert_eq!(permissions, &vec![Value::String("core:default".into())]);
+            assert!(
+                permissions
+                    .iter()
+                    .any(|permission| permission.as_str() == Some("core:default")),
+                "{name} must include core:default"
+            );
+            if name == "settings" {
+                assert!(permissions.iter().any(|permission| {
+                    permission.as_str() == Some("allow-retest-used-permissions")
+                }));
+                assert!(permissions.iter().any(|permission| {
+                    permission.as_str() == Some("allow-open-privacy-settings")
+                }));
+            } else {
+                assert_eq!(permissions, &vec![Value::String("core:default".into())]);
+            }
             for permission in permissions {
                 let permission = permission.as_str().expect("permission string");
                 for needle in FORBIDDEN {

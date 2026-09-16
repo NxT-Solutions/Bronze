@@ -110,6 +110,22 @@ pub fn manual_composer_available(_snapshot: &PermissionSnapshot) -> bool {
     true
 }
 
+/// TCC Privacy pane URL after a prompt attempt. Screen Recording has none.
+pub fn privacy_settings_url(capability: PermissionCapability) -> Option<&'static str> {
+    match capability {
+        PermissionCapability::InputMonitoring => {
+            Some("x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")
+        }
+        PermissionCapability::Accessibility => {
+            Some("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+        }
+        PermissionCapability::LaunchAtLogin
+        | PermissionCapability::Automation
+        | PermissionCapability::ScreenRecording
+        | PermissionCapability::CapturePipelineSelfTest => None,
+    }
+}
+
 pub fn run_content_free_self_test(body: Option<&str>) -> Result<PermissionState, HealthError> {
     if LAUNCH_LOOP_PROMPTING {
         return Err(HealthError::LaunchLoopPromptForbidden);
@@ -180,5 +196,16 @@ mod health_tests {
             run_content_free_self_test(None).expect("empty"),
             PermissionState::Healthy
         );
+    }
+
+    #[test]
+    fn privacy_settings_url_skips_screen_recording() {
+        assert!(privacy_settings_url(PermissionCapability::InputMonitoring).is_some());
+        assert!(privacy_settings_url(PermissionCapability::Accessibility).is_some());
+        assert_eq!(
+            privacy_settings_url(PermissionCapability::ScreenRecording),
+            None
+        );
+        assert!(!SCREEN_RECORDING_USED);
     }
 }

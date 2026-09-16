@@ -37,13 +37,25 @@ impl PermissionState {
 
     /// Map a listen-event or AX trusted preflight bit.
     ///
-    /// `true` is `granted_unverified`, never `healthy`. This story never prompts, so
+    /// `true` is `granted_unverified`, never `healthy`. A no-prompt preflight
     /// `false` is `not_requested`, not `denied`.
     pub const fn from_preflight_granted(granted: bool) -> Self {
         if granted {
             Self::GrantedUnverified
         } else {
             Self::NotRequested
+        }
+    }
+
+    /// Map a listen-event or AX request that may have shown an OS prompt.
+    ///
+    /// `true` is `granted_unverified`, never `healthy`. `false` after a request
+    /// is `denied` (SET-003).
+    pub const fn from_request_granted(granted: bool) -> Self {
+        if granted {
+            Self::GrantedUnverified
+        } else {
+            Self::Denied
         }
     }
 
@@ -116,6 +128,15 @@ mod tests {
             PermissionState::from_preflight_granted(false),
             PermissionState::NotRequested
         );
+        assert_eq!(
+            PermissionState::from_request_granted(true),
+            PermissionState::GrantedUnverified
+        );
+        assert_eq!(
+            PermissionState::from_request_granted(false),
+            PermissionState::Denied
+        );
+        assert!(!PermissionState::from_request_granted(false).is_healthy());
     }
 
     #[test]

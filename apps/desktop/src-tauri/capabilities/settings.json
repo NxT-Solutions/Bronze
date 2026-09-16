@@ -3,5 +3,9 @@
   "description": "Capability for the settings window",
   "local": true,
   "windows": ["settings"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "allow-retest-used-permissions",
+    "allow-open-privacy-settings"
+  ]
 }

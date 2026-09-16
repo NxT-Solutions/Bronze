@@ -28,7 +28,10 @@ pub use display_prefs::{
 };
 #[cfg(target_os = "macos")]
 pub use permission::MacosPreflightHost;
-pub use permission::{snapshot_from_preflight, PreflightError, PreflightHost};
+pub use permission::{
+    prompt_used_permissions, snapshot_from_preflight, PermissionRequestHost, PreflightError,
+    PreflightHost, PromptAttempt, PromptReason,
+};
 pub use status_item::{
     build_status_menu, StatusAction, StatusMenuError, StatusMenuItem, StringCatalog,
     STATUS_MENU_KEYS,

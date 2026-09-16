@@ -164,6 +164,7 @@ version = "0.1.0"
 dependencies = [
  "bronze-domain",
  "bronze-platform-macos",
+ "bronze-settings",
  "bronze-storage",
  "serde",
  "serde_json",

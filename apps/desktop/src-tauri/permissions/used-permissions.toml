@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-retest-used-permissions"
+description = "Request Accessibility and Input Monitoring OS prompts (SET-003, SET-004)"
+commands.allow = ["retest_used_permissions"]
+
+[[permission]]
+identifier = "allow-open-privacy-settings"
+description = "Open Privacy & Security panes for used permissions after a prompt attempt"
+commands.allow = ["open_privacy_settings"]

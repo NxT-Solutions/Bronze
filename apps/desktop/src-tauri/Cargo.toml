@@ -24,3 +24,4 @@ tauri = { version = "2.11.3", features = [] }
 bronze-platform-macos = { path = "../../../bronze-platform-macos", default-features = false }
 bronze-domain = { path = "../../../bronze-domain" }
 bronze-storage = { path = "../../../bronze-storage" }
+bronze-settings = { path = "../../../bronze-settings" }
