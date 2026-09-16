@@ -15,6 +15,7 @@ pub const BRONZE_STATUS_CANCELLED: u32 = 3;
 pub const BRONZE_STATUS_NOT_FOUND: u32 = 4;
 pub const BRONZE_STATUS_SHUTTING_DOWN: u32 = 5;
 pub const BRONZE_STATUS_DEGRADED: u32 = 6;
+pub const BRONZE_STATUS_CONTEXT_UNAVAILABLE: u32 = 7;
 
 pub const BRONZE_EVENT_TAP_IDLE: u32 = 0;
 pub const BRONZE_EVENT_TAP_LISTENING: u32 = 1;
@@ -47,6 +48,21 @@ impl fmt::Debug for BronzeNativeUtf8View {
     }
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BronzeIngressSnapshot {
+    pub target_pid: i32,
+    pub bundle_token: u64,
+    pub activation_generation: u64,
+    pub destination_uuid: [u8; 16],
+    pub accept_capture_generation: u64,
+    pub policy_revision: u64,
+    pub settings_revision: u64,
+    pub context_generation: u64,
+    pub route: u32,
+    pub monotonic_time_ns: u64,
+}
+
 extern "C" {
     pub fn bronze_native_abi_version() -> u32;
     pub fn bronze_native_validate_utf8(view: BronzeNativeUtf8View) -> u32;
@@ -72,4 +88,30 @@ extern "C" {
     pub fn bronze_native_event_tap_test_feed(kind: u32, carbon_key: i32, time_ns: u64) -> u32;
     pub fn bronze_native_event_tap_test_disable() -> u32;
     pub fn bronze_native_event_tap_test_enqueue_from_caller(kind: u32) -> u32;
+    pub fn bronze_native_ingress_publish(
+        target_pid: i32,
+        bundle_token: u64,
+        activation_generation: u64,
+        destination_uuid: *const u8,
+        accept_capture_generation: u64,
+        policy_revision: u64,
+        settings_revision: u64,
+        context_generation: u64,
+        route: u32,
+        monotonic_time_ns: u64,
+    ) -> u32;
+    pub fn bronze_native_ingress_load(
+        target_pid: *mut i32,
+        bundle_token: *mut u64,
+        activation_generation: *mut u64,
+        destination_uuid: *mut u8,
+        accept_capture_generation: *mut u64,
+        policy_revision: *mut u64,
+        settings_revision: *mut u64,
+        context_generation: *mut u64,
+        route: *mut u32,
+        monotonic_time_ns: *mut u64,
+    ) -> u32;
+    pub fn bronze_native_ingress_test_begin_inconsistent() -> u32;
+    pub fn bronze_native_ingress_test_end_inconsistent() -> u32;
 }

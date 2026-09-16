@@ -6,8 +6,9 @@
 use crate::abi::{
     self, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_EVENT_TAP_DEGRADED,
     BRONZE_EVENT_TAP_IDLE, BRONZE_EVENT_TAP_LISTENING, BRONZE_STATUS_CANCELLED,
-    BRONZE_STATUS_DEGRADED, BRONZE_STATUS_DOUBLE_COMPLETION, BRONZE_STATUS_INVALID_UTF8,
-    BRONZE_STATUS_NOT_FOUND, BRONZE_STATUS_OK, BRONZE_STATUS_SHUTTING_DOWN,
+    BRONZE_STATUS_CONTEXT_UNAVAILABLE, BRONZE_STATUS_DEGRADED, BRONZE_STATUS_DOUBLE_COMPLETION,
+    BRONZE_STATUS_INVALID_UTF8, BRONZE_STATUS_NOT_FOUND, BRONZE_STATUS_OK,
+    BRONZE_STATUS_SHUTTING_DOWN,
 };
 use std::fmt;
 use std::panic::{self, AssertUnwindSafe};
@@ -24,6 +25,7 @@ pub enum NativeError {
     NotFound,
     ShuttingDown,
     Degraded,
+    ContextUnavailable,
 }
 
 impl fmt::Display for NativeError {
@@ -44,6 +46,7 @@ impl fmt::Display for NativeError {
                 f,
                 "event tap degraded; chord/menu remain (CAP-002, no event suppression)"
             ),
+            Self::ContextUnavailable => write!(f, "ingress context_unavailable (CAP-004)"),
         }
     }
 }
@@ -124,6 +127,7 @@ fn map_status(status: u32) -> Result<(), NativeError> {
         BRONZE_STATUS_NOT_FOUND => Err(NativeError::NotFound),
         BRONZE_STATUS_SHUTTING_DOWN => Err(NativeError::ShuttingDown),
         BRONZE_STATUS_DEGRADED => Err(NativeError::Degraded),
+        BRONZE_STATUS_CONTEXT_UNAVAILABLE => Err(NativeError::ContextUnavailable),
         _ => Err(NativeError::InvalidUtf8),
     }
 }
@@ -350,6 +354,68 @@ impl NativeRuntime {
 
     pub fn event_tap_test_enqueue_from_caller(&self, kind: u32) -> Result<(), NativeError> {
         map_status(event_tap_enqueue_raw(kind))
+    }
+
+    pub fn ingress_publish(
+        &self,
+        snap: crate::abi::BronzeIngressSnapshot,
+    ) -> Result<(), NativeError> {
+        let status = catch_ffi(|| unsafe {
+            abi::bronze_native_ingress_publish(
+                snap.target_pid,
+                snap.bundle_token,
+                snap.activation_generation,
+                snap.destination_uuid.as_ptr(),
+                snap.accept_capture_generation,
+                snap.policy_revision,
+                snap.settings_revision,
+                snap.context_generation,
+                snap.route,
+                snap.monotonic_time_ns,
+            )
+        })?;
+        map_status(status)
+    }
+
+    pub fn ingress_load(&self) -> Result<crate::abi::BronzeIngressSnapshot, NativeError> {
+        let mut snap = crate::abi::BronzeIngressSnapshot {
+            target_pid: 0,
+            bundle_token: 0,
+            activation_generation: 0,
+            destination_uuid: [0; 16],
+            accept_capture_generation: 0,
+            policy_revision: 0,
+            settings_revision: 0,
+            context_generation: 0,
+            route: 0,
+            monotonic_time_ns: 0,
+        };
+        let status = catch_ffi(|| unsafe {
+            abi::bronze_native_ingress_load(
+                &mut snap.target_pid,
+                &mut snap.bundle_token,
+                &mut snap.activation_generation,
+                snap.destination_uuid.as_mut_ptr(),
+                &mut snap.accept_capture_generation,
+                &mut snap.policy_revision,
+                &mut snap.settings_revision,
+                &mut snap.context_generation,
+                &mut snap.route,
+                &mut snap.monotonic_time_ns,
+            )
+        })?;
+        map_status(status)?;
+        Ok(snap)
+    }
+
+    pub fn ingress_test_begin_inconsistent(&self) -> Result<(), NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_ingress_test_begin_inconsistent() })?;
+        map_status(status)
+    }
+
+    pub fn ingress_test_end_inconsistent(&self) -> Result<(), NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_ingress_test_end_inconsistent() })?;
+        map_status(status)
     }
 
     pub fn shutdown(self) -> Result<(), NativeError> {
@@ -663,6 +729,35 @@ mod tests {
             crate::abi::BRONZE_STATUS_NOT_FOUND
         );
         runtime.event_tap_stop().expect("stop");
+        runtime.shutdown().expect("shutdown");
+    }
+
+    #[test]
+    fn ingress_native_slot_unavailable_on_inconsistent_read() {
+        let _guard = lock_runtime();
+        let runtime = NativeRuntime::start().expect("start");
+        let snap = crate::abi::BronzeIngressSnapshot {
+            target_pid: 9,
+            bundle_token: 1,
+            activation_generation: 1,
+            destination_uuid: [3; 16],
+            accept_capture_generation: 1,
+            policy_revision: 1,
+            settings_revision: 1,
+            context_generation: 1,
+            route: 2,
+            monotonic_time_ns: 4,
+        };
+        runtime.ingress_publish(snap).expect("publish");
+        assert_eq!(runtime.ingress_load().expect("load").target_pid, 9);
+        runtime
+            .ingress_test_begin_inconsistent()
+            .expect("begin torn");
+        assert_eq!(
+            runtime.ingress_load().unwrap_err(),
+            NativeError::ContextUnavailable
+        );
+        runtime.ingress_test_end_inconsistent().expect("end torn");
         runtime.shutdown().expect("shutdown");
     }
 }

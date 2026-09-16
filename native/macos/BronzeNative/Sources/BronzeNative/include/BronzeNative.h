@@ -34,6 +34,7 @@ extern "C" {
 #define BRONZE_STATUS_NOT_FOUND          4u
 #define BRONZE_STATUS_SHUTTING_DOWN      5u
 #define BRONZE_STATUS_DEGRADED           6u
+#define BRONZE_STATUS_CONTEXT_UNAVAILABLE 7u
 // Additional codes may be added in future stories; consumers must treat unknown as failure.
 
 #define BRONZE_EVENT_TAP_IDLE            0u
@@ -108,6 +109,31 @@ uint32_t bronze_native_event_tap_test_attach(void);
 uint32_t bronze_native_event_tap_test_feed(uint32_t kind, int32_t carbon_key, uint64_t time_ns);
 uint32_t bronze_native_event_tap_test_disable(void);
 uint32_t bronze_native_event_tap_test_enqueue_from_caller(uint32_t kind);
+
+uint32_t bronze_native_ingress_publish(
+    int32_t target_pid,
+    uint64_t bundle_token,
+    uint64_t activation_generation,
+    const uint8_t *destination_uuid,
+    uint64_t accept_capture_generation,
+    uint64_t policy_revision,
+    uint64_t settings_revision,
+    uint64_t context_generation,
+    uint32_t route,
+    uint64_t monotonic_time_ns);
+uint32_t bronze_native_ingress_load(
+    int32_t *target_pid,
+    uint64_t *bundle_token,
+    uint64_t *activation_generation,
+    uint8_t *destination_uuid,
+    uint64_t *accept_capture_generation,
+    uint64_t *policy_revision,
+    uint64_t *settings_revision,
+    uint64_t *context_generation,
+    uint32_t *route,
+    uint64_t *monotonic_time_ns);
+uint32_t bronze_native_ingress_test_begin_inconsistent(void);
+uint32_t bronze_native_ingress_test_end_inconsistent(void);
 
 #ifdef __cplusplus
 }

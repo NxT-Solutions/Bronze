@@ -32,6 +32,9 @@ mod abi_ownership;
 mod event_tap;
 
 #[cfg(test)]
+mod ingress;
+
+#[cfg(test)]
 pub(crate) fn lock_native_runtime() -> std::sync::MutexGuard<'static, ()> {
     static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
     LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())

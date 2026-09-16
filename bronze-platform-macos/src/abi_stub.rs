@@ -4,11 +4,11 @@
 //! `abi-stub` there.
 
 use crate::abi::{
-    BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_EVENT_TAP_DEGRADED, BRONZE_EVENT_TAP_IDLE,
-    BRONZE_STATUS_CANCELLED, BRONZE_STATUS_DEGRADED, BRONZE_STATUS_DOUBLE_COMPLETION,
-    BRONZE_STATUS_INVALID_UTF8, BRONZE_STATUS_NOT_FOUND, BRONZE_STATUS_OK,
-    BRONZE_STATUS_SHUTTING_DOWN, BRONZE_TAP_FEED_CANCEL, BRONZE_TAP_FEED_DOWN, BRONZE_TAP_FEED_UP,
-    BRONZE_TAP_REC_DISABLED, BRONZE_TAP_REC_TRIGGER,
+    BronzeIngressSnapshot, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_EVENT_TAP_DEGRADED,
+    BRONZE_EVENT_TAP_IDLE, BRONZE_STATUS_CANCELLED, BRONZE_STATUS_CONTEXT_UNAVAILABLE,
+    BRONZE_STATUS_DEGRADED, BRONZE_STATUS_DOUBLE_COMPLETION, BRONZE_STATUS_INVALID_UTF8,
+    BRONZE_STATUS_NOT_FOUND, BRONZE_STATUS_OK, BRONZE_STATUS_SHUTTING_DOWN, BRONZE_TAP_FEED_CANCEL,
+    BRONZE_TAP_FEED_DOWN, BRONZE_TAP_FEED_UP, BRONZE_TAP_REC_DISABLED, BRONZE_TAP_REC_TRIGGER,
 };
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Mutex;
@@ -456,4 +456,132 @@ pub extern "C" fn bronze_native_event_tap_test_enqueue_from_caller(kind: u32) ->
     } else {
         BRONZE_STATUS_NOT_FOUND
     }
+}
+
+struct IngressStub {
+    snap: BronzeIngressSnapshot,
+    inconsistent: bool,
+}
+
+fn lock_ingress() -> std::sync::MutexGuard<'static, IngressStub> {
+    static INGRESS: std::sync::OnceLock<Mutex<IngressStub>> = std::sync::OnceLock::new();
+    INGRESS
+        .get_or_init(|| {
+            Mutex::new(IngressStub {
+                snap: BronzeIngressSnapshot {
+                    target_pid: 0,
+                    bundle_token: 0,
+                    activation_generation: 0,
+                    destination_uuid: [0; 16],
+                    accept_capture_generation: 0,
+                    policy_revision: 0,
+                    settings_revision: 0,
+                    context_generation: 0,
+                    route: 0,
+                    monotonic_time_ns: 0,
+                },
+                inconsistent: false,
+            })
+        })
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_ingress_publish(
+    target_pid: i32,
+    bundle_token: u64,
+    activation_generation: u64,
+    destination_uuid: *const u8,
+    accept_capture_generation: u64,
+    policy_revision: u64,
+    settings_revision: u64,
+    context_generation: u64,
+    route: u32,
+    monotonic_time_ns: u64,
+) -> u32 {
+    let mut uuid = [0u8; 16];
+    if !destination_uuid.is_null() {
+        unsafe {
+            std::ptr::copy_nonoverlapping(destination_uuid, uuid.as_mut_ptr(), 16);
+        }
+    }
+    lock_ingress().snap = BronzeIngressSnapshot {
+        target_pid,
+        bundle_token,
+        activation_generation,
+        destination_uuid: uuid,
+        accept_capture_generation,
+        policy_revision,
+        settings_revision,
+        context_generation,
+        route,
+        monotonic_time_ns,
+    };
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_ingress_load(
+    target_pid: *mut i32,
+    bundle_token: *mut u64,
+    activation_generation: *mut u64,
+    destination_uuid: *mut u8,
+    accept_capture_generation: *mut u64,
+    policy_revision: *mut u64,
+    settings_revision: *mut u64,
+    context_generation: *mut u64,
+    route: *mut u32,
+    monotonic_time_ns: *mut u64,
+) -> u32 {
+    let ingress = lock_ingress();
+    if ingress.inconsistent {
+        return BRONZE_STATUS_CONTEXT_UNAVAILABLE;
+    }
+    let snap = ingress.snap;
+    unsafe {
+        if !target_pid.is_null() {
+            *target_pid = snap.target_pid;
+        }
+        if !bundle_token.is_null() {
+            *bundle_token = snap.bundle_token;
+        }
+        if !activation_generation.is_null() {
+            *activation_generation = snap.activation_generation;
+        }
+        if !destination_uuid.is_null() {
+            std::ptr::copy_nonoverlapping(snap.destination_uuid.as_ptr(), destination_uuid, 16);
+        }
+        if !accept_capture_generation.is_null() {
+            *accept_capture_generation = snap.accept_capture_generation;
+        }
+        if !policy_revision.is_null() {
+            *policy_revision = snap.policy_revision;
+        }
+        if !settings_revision.is_null() {
+            *settings_revision = snap.settings_revision;
+        }
+        if !context_generation.is_null() {
+            *context_generation = snap.context_generation;
+        }
+        if !route.is_null() {
+            *route = snap.route;
+        }
+        if !monotonic_time_ns.is_null() {
+            *monotonic_time_ns = snap.monotonic_time_ns;
+        }
+    }
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_ingress_test_begin_inconsistent() -> u32 {
+    lock_ingress().inconsistent = true;
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_ingress_test_end_inconsistent() -> u32 {
+    lock_ingress().inconsistent = false;
+    BRONZE_STATUS_OK
 }
