@@ -1,6 +1,6 @@
 # Story 3.6: AX provider with fakes
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -43,4 +43,14 @@ synthetic Cmd-C
 
 ### Agent Model Used
 
+Hedgehog authored loop / layer-eng (cursor-grok). Docs layer records rust-layer evidence only.
+
 ### File List
+
+- `bronze-capture/src/ax.rs` — fixture AX walk; classify before query; exclusion first
+- `native/macos/BronzeNative/Sources/BronzeNative/AXFake.swift` — same algorithm
+- `native/macos/BronzeNative/Tests/BronzeNativeTests/AXTests.swift` — `--filter AX`
+
+### Notes
+
+- UI layer was a no-op. Live AX / Safari matrix is a non-goal. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved.
