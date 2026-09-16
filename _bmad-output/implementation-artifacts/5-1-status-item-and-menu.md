@@ -52,4 +52,4 @@ Hedgehog authored loop / layer-eng (cursor-grok).
 ### Notes
 
 - VoiceOver remains a human gate. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. Do not re-enable `abi-stub` on bronze-desktop.
-- Desktop installs a live `NSStatusItem` (accessible name Bronze). Left-click is Show. Menu: Show, Capture, Settings, Quit. Capture persists AX selection into the same store as the composer.
+- Desktop installs a live `NSStatusItem` (accessible name Bronze). Left-click is Show. Menu: Show, Capture, Settings, Quit. Capture persists AX selection into the same store as the composer. Show recreates the Quick Panel if it was closed.

@@ -42,6 +42,7 @@ Hand-test in the **native** window only:
 - Complete / skip hide the row from this inbox; trash removes it
 - Menu-bar or app-menu **Capture** reads AX selected text and persists it to the same store. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue
 - Status item: left-click **Show**; menu is Show, Capture, Settings, Quit
+- Status or app-menu **Show** recreates the Quick Panel if you closed it
 - Settings / Library / Help recreate if you closed them
 - Settings load/save `SettingsV1`; permission **Retest** and **Open System Settings** run from the Settings window
 - Library search is substring-only (`QUE_007_COMPLETE=false`; ADR-018 stays Proposed)

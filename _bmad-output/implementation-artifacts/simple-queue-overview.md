@@ -14,7 +14,7 @@ Quick Panel is a scannable inbox (composer + active items + row Copy). Capture p
 
 The Quick Panel is the inbox: composer, active items (`queued` / `copied` / `active`), and a per-row Copy control. Complete, skip, trash, edit, and move live in overflow. Done and skipped items leave this list.
 
-Menu-bar status item and the Bronze app menu offer Show, Capture, Settings, and Quit (app menu also keeps Library and Help). Capture reads AX selected text and writes the same SQLite store as the composer. Capture does not steal source focus and does not force-show the panel. Show reveals the panel. Closed Settings / Library / Help windows recreate on the next open.
+Menu-bar status item and the Bronze app menu offer Show, Capture, Settings, and Quit (app menu also keeps Library and Help). Capture reads AX selected text and writes the same SQLite store as the composer. Capture does not steal source focus and does not force-show the panel. Show reveals the panel and recreates it if it was closed. Closed Settings / Library / Help windows recreate on the next open.
 
 Seeded shortcuts stay disabled. Search stays substring-only (`QUE_007_COMPLETE=false`). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog.
 
