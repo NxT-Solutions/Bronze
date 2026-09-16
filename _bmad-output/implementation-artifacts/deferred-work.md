@@ -183,3 +183,11 @@ source_spec: `2-1-versioned-c-abi-types.md`
 severity: low
 reason: symbols + status exist; only constant and presence tested; arch §7.2 + 2.4 story lists races
 status: open
+
+### DW-23: Follow-up review still recommended for 3-2-double-tap-fsm-tests after the damping cap was spent
+origin: review-budget-followup
+location: n/a
+source_spec: `spec-3-2-double-tap-fsm-tests.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260916-093948-6a79; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
