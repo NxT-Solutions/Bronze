@@ -1,4 +1,4 @@
-import { applyActionStatus, runBusy } from "./control.mjs";
+import { applyActionStatus, bindOverflowDismiss, runBusy } from "./control.mjs";
 import {
   applySourceRow,
   fillItemChrome,
@@ -110,6 +110,8 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     return;
   }
 
+  bindOverflowDismiss(root);
+
   async function refresh() {
     const items = await invokeFn("list_overview_items");
     renderQueueItems(list, items, template);
@@ -165,9 +167,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
             itemIds: [id],
             profile: profile?.value ?? "plain",
           });
-          applyActionStatus(root, "copy.announce.copied");
+          applyActionStatus(root, "copy.announce.copied", button);
         } catch {
-          applyActionStatus(root, "copy.announce.failed");
+          applyActionStatus(root, "copy.announce.failed", button);
         }
         return;
       }

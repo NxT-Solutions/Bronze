@@ -73,6 +73,10 @@ test("composer submit is Cmd-Enter or the form and live queue is wired", () => {
   assert.match(html, /id="action-status"/);
   assert.match(live, /runBusy/);
   assert.match(live, /applyActionStatus/);
+  assert.match(live, /bindOverflowDismiss/);
+  assert.match(live, /copy\.announce\.copied", button/);
+  assert.match(html, /data-slot="action-tip"/);
+  assert.match(html, /id="action-status"[^>]*visually-hidden/);
   assert.match(chrome, /#capture-status\[hidden\]/);
   assert.match(chrome, /\[data-capture-message\]\[hidden\]/);
   assert.match(html, /data-i18n="panel.empty"/);

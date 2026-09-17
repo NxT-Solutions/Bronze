@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { applyActionStatus, runBusy } from "./control.mjs";
+import {
+  applyActionStatus,
+  applyActionTip,
+  bindOverflowDismiss,
+  closeOverflowMenus,
+  runBusy,
+} from "./control.mjs";
 
 test("runBusy sets aria-busy and restores the control", async () => {
   const el = { disabled: false, attrs: {} };
@@ -40,4 +46,67 @@ test("action status copies catalog text and hides when missing", () => {
   applyActionStatus(root, "missing");
   assert.equal(status.textContent, "");
   assert.equal(status.hidden, true);
+});
+
+test("action tip writes catalog text on the row and overflow closes away", () => {
+  const tip = { textContent: "", hidden: true, dataset: {} };
+  const host = {
+    querySelector(sel) {
+      return sel.includes("action-tip") ? tip : null;
+    },
+  };
+  const button = {
+    closest(sel) {
+      return sel === ".row-actions" ? host : null;
+    },
+    ownerDocument: { defaultView: null },
+  };
+  applyActionTip(button, "Copied to the clipboard.");
+  assert.equal(tip.textContent, "Copied to the clipboard.");
+  assert.equal(tip.hidden, false);
+  applyActionStatus(
+    {
+      querySelector(sel) {
+        if (sel === "#action-status") {
+          return { textContent: "", hidden: true };
+        }
+        if (sel.includes("copy.announce.failed")) {
+          return { textContent: "Copy did not write to the clipboard." };
+        }
+        return null;
+      },
+    },
+    "copy.announce.failed",
+    button,
+  );
+  assert.equal(tip.dataset.tone, "failed");
+
+  const kept = { open: true };
+  const other = { open: true };
+  closeOverflowMenus(
+    {
+      querySelectorAll() {
+        return [kept, other];
+      },
+    },
+    kept,
+  );
+  assert.equal(kept.open, true);
+  assert.equal(other.open, false);
+
+  const listeners = [];
+  const first = { open: true };
+  const doc = {
+    addEventListener(type, fn) {
+      listeners.push({ type, fn });
+    },
+    querySelectorAll() {
+      return [first];
+    },
+  };
+  bindOverflowDismiss(doc);
+  listeners
+    .find((row) => row.type === "pointerdown")
+    .fn({ target: { closest: () => null } });
+  assert.equal(first.open, false);
 });

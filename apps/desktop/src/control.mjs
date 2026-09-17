@@ -1,16 +1,78 @@
+const TIP_MS = 2200;
+
 export function readStatusText(root, key, slot = "action-message") {
   const source = root?.querySelector(`[data-${slot}][data-i18n="${key}"]`);
   return source?.textContent?.trim() ?? "";
 }
 
-export function applyActionStatus(root, key) {
-  const status = root?.querySelector("#action-status");
-  if (!status) {
+export function applyActionTip(anchor, text, tone = "ok") {
+  const host = anchor?.closest?.(".row-actions");
+  const tip = host?.querySelector?.("[data-slot=action-tip]");
+  if (!tip) {
     return;
   }
+  const view = anchor.ownerDocument?.defaultView;
+  if (view && tip.dataset.tipTimer) {
+    view.clearTimeout(Number(tip.dataset.tipTimer));
+    delete tip.dataset.tipTimer;
+  }
+  tip.textContent = text;
+  tip.hidden = text.length === 0;
+  if (tone === "failed") {
+    tip.dataset.tone = "failed";
+  } else {
+    delete tip.dataset.tone;
+  }
+  if (text && typeof view?.setTimeout === "function") {
+    tip.dataset.tipTimer = String(
+      view.setTimeout(() => {
+        tip.textContent = "";
+        tip.hidden = true;
+        delete tip.dataset.tone;
+        delete tip.dataset.tipTimer;
+      }, TIP_MS),
+    );
+  }
+}
+
+export function applyActionStatus(root, key, anchor) {
+  const status = root?.querySelector("#action-status");
   const text = readStatusText(root, key);
-  status.textContent = text;
-  status.hidden = text.length === 0;
+  if (status) {
+    status.textContent = text;
+    status.hidden = text.length === 0;
+  }
+  if (anchor) {
+    applyActionTip(anchor, text, key.endsWith("failed") ? "failed" : "ok");
+  }
+}
+
+export function closeOverflowMenus(root, keep = null) {
+  const nodes = root?.querySelectorAll?.("[data-slot=toolbar-overflow]");
+  if (!nodes) {
+    return;
+  }
+  for (const el of nodes) {
+    if (el !== keep && "open" in el) {
+      el.open = false;
+    }
+  }
+}
+
+export function bindOverflowDismiss(root) {
+  if (!root?.addEventListener) {
+    return;
+  }
+  root.addEventListener("pointerdown", (event) => {
+    const keep =
+      event.target?.closest?.("[data-slot=toolbar-overflow]") ?? null;
+    closeOverflowMenus(root, keep);
+  });
+  root.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeOverflowMenus(root);
+    }
+  });
 }
 
 export async function runBusy(el, work) {

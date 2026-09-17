@@ -47,7 +47,7 @@
         <p hidden data-capture-message="failed" data-i18n="capture.announce.failed">
           Capture did not save.
         </p>
-        <p id="action-status" hidden role="status"></p>
+        <p id="action-status" class="visually-hidden" hidden role="status"></p>
         <p hidden data-action-message data-i18n="copy.announce.copied">
           Copied to the clipboard.
         </p>
@@ -77,6 +77,7 @@
               <button type="button" class="btn-primary" data-queue-action="copy" data-i18n="copy.action.copy">
                 Copy
               </button>
+              <span class="action-tip" data-slot="action-tip" hidden></span>
               <details data-slot="toolbar-overflow">
                 <summary data-i18n="panel.toolbar.overflow">More actions</summary>
                 <menu>

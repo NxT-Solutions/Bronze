@@ -43,6 +43,9 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /#composer-error\[hidden\]/);
   assert.match(chrome, /#capture-status\[hidden\]/);
   assert.match(chrome, /#action-status\[hidden\]/);
+  assert.match(chrome, /\.action-tip\[hidden\]/);
+  assert.match(chrome, /\.action-tip[\s\S]*position:\s*absolute/);
+  assert.match(chrome, /\.action-tip\[data-tone="failed"\]/);
   assert.match(chrome, /\[data-capture-message\]\[hidden\]/);
   assert.match(chrome, /cursor:\s*pointer/);
   assert.match(chrome, /\[aria-busy="true"\]/);

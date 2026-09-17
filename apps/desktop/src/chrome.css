@@ -603,17 +603,42 @@ article [data-slot="show-less"][hidden],
 #capture-status[hidden],
 #action-status[hidden],
 [data-capture-message][hidden],
-[data-action-message][hidden] {
+[data-action-message][hidden],
+.action-tip[hidden] {
   display: none;
 }
 
 .row-actions {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   margin-block-start: var(--space-2);
   min-width: 0;
+}
+
+.action-tip {
+  position: absolute;
+  z-index: 4;
+  inset-inline-start: 0;
+  bottom: calc(100% + 6px);
+  max-width: min(16rem, 80vw);
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+}
+
+.action-tip[data-tone="failed"] {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
 }
 
 .row-actions details {
