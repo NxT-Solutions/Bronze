@@ -108,9 +108,15 @@ export function bindOverflowDismiss(root) {
     closeOverflowMenus(root, keep);
   });
   root.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeOverflowMenus(root);
+    if (event.key !== "Escape") {
+      return;
     }
+    const open =
+      event.target?.closest?.("[data-slot=toolbar-overflow][open]") ??
+      root.querySelector?.("[data-slot=toolbar-overflow][open]") ??
+      null;
+    closeOverflowMenus(root);
+    open?.querySelector?.("summary")?.focus?.();
   });
 }
 

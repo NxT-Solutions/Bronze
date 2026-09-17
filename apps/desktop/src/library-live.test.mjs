@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 import {
   ADR_018_STATUS,
   announceCount,
+  librarySection,
   QUE_007_COMPLETE,
+  syncLibraryNav,
 } from "./library-live.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -35,4 +37,60 @@ test("library items sanitize markdown and keep a title plus expand reader", () =
   assert.match(live, /sourceAppIcon/);
   assert.match(live, /runBusy/);
   assert.match(live, /is-entering/);
+  assert.match(live, /hashchange/);
+  assert.match(live, /section === "search" && query/);
+  assert.match(html, /aria-current="page"/);
+});
+
+test("library segment follows the hash and marks the current page", () => {
+  assert.equal(librarySection(""), "archive");
+  assert.equal(librarySection("#archive"), "archive");
+  assert.equal(librarySection("#trash"), "trash");
+  assert.equal(librarySection("#search"), "search");
+  const archive = {
+    href: "#archive",
+    current: null,
+    getAttribute(name) {
+      return name === "href" ? "#archive" : this.current;
+    },
+    setAttribute(name, value) {
+      if (name === "aria-current") {
+        this.current = value;
+      }
+    },
+    removeAttribute(name) {
+      if (name === "aria-current") {
+        this.current = null;
+      }
+    },
+  };
+  const trash = {
+    href: "#trash",
+    current: "page",
+    getAttribute(name) {
+      return name === "href" ? "#trash" : this.current;
+    },
+    setAttribute(name, value) {
+      if (name === "aria-current") {
+        this.current = value;
+      }
+    },
+    removeAttribute(name) {
+      if (name === "aria-current") {
+        this.current = null;
+      }
+    },
+  };
+  const section = syncLibraryNav(
+    {
+      location: { hash: "#archive" },
+      querySelectorAll() {
+        return [archive, trash];
+      },
+    },
+    "#archive",
+  );
+  assert.equal(section, "archive");
+  assert.equal(archive.current, "page");
+  assert.equal(trash.current, null);
 });

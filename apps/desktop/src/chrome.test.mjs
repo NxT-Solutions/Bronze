@@ -63,6 +63,20 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   );
   assert.match(chrome, /\.row-actions menu[\s\S]*position:\s*absolute/);
   assert.match(chrome, /\.row-actions menu[\s\S]*flex-direction:\s*column/);
+  assert.match(chrome, /#queue[\s\S]*isolation:\s*isolate/);
+  assert.match(chrome, /\.queue-item[\s\S]*z-index:\s*0/);
+  assert.match(
+    chrome,
+    /\.queue-item:has\(details\[open\]\)[\s\S]*z-index:\s*3/,
+  );
+  assert.match(chrome, /\.row-actions details\[open\][\s\S]*z-index:\s*5/);
+  assert.match(chrome, /\.row-actions menu[\s\S]*z-index:\s*6/);
+  assert.match(
+    chrome,
+    /\.row-actions menu \[data-queue-action="trash"\][\s\S]*--destructive/,
+  );
+  assert.match(chrome, /\.segment a\[aria-current="page"\]/);
+  assert.match(chrome, /\.help-launch[\s\S]*justify-content:\s*flex-end/);
   assert.match(chrome, /summary::-webkit-details-marker/);
   assert.match(chrome, /article \[data-slot="body"\] p/);
   assert.match(chrome, /article \[data-slot="body"\] ul/);
@@ -117,4 +131,7 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   }
   assert.match(pages[2].html, /settings\.permission\.status\.denied/);
   assert.match(pages[2].html, /data-status="notUsed"/);
+  assert.match(pages[0].html, /class="queue-item"/);
+  assert.match(pages[1].html, /class="queue-item"/);
+  assert.match(pages[2].html, /class="help-launch"/);
 });

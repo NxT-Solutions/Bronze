@@ -61,7 +61,7 @@
       </p>
       <ul id="queue"></ul>
       <template id="queue-item-template">
-        <li>
+        <li class="queue-item">
           <article lang="und" dir="auto">
             <h3 data-slot="title" hidden data-i18n="queue.item.title">Item</h3>
             <div data-slot="body"></div>
@@ -87,9 +87,6 @@
                   <button type="button" class="btn-toolbar" data-queue-action="skip" data-i18n="queue.item.skip">
                     Skip
                   </button>
-                  <button type="button" class="btn-toolbar" data-queue-action="trash" data-i18n="queue.item.trash">
-                    Trash
-                  </button>
                   <button type="button" class="btn-toolbar" data-queue-action="edit" data-i18n="queue.item.edit">
                     Edit
                   </button>
@@ -98,6 +95,10 @@
                   </button>
                   <button type="button" class="btn-toolbar" data-queue-action="moveDown" data-i18n="queue.item.moveDown">
                     Move down
+                  </button>
+                  <hr />
+                  <button type="button" class="btn-toolbar" data-queue-action="trash" data-i18n="queue.item.trash">
+                    Trash
                   </button>
                 </menu>
               </details>

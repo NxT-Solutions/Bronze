@@ -15,7 +15,7 @@
         </div>
       </header>
       <nav class="segment" aria-label="Library">
-        <a href="#archive" data-i18n="library.nav.archive">Archive</a>
+        <a href="#archive" aria-current="page" data-i18n="library.nav.archive">Archive</a>
         <a href="#trash" data-i18n="library.nav.trash">Trash</a>
         <a href="#search" data-i18n="library.nav.search">Search</a>
       </nav>
@@ -37,7 +37,7 @@
       </section>
       <ul id="library-queue"></ul>
       <template id="library-item-template">
-        <li>
+        <li class="queue-item">
           <article lang="und" dir="auto">
             <h3 data-slot="title" hidden data-i18n="queue.item.title">Item</h3>
             <div data-slot="body"></div>

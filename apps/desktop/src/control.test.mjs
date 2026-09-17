@@ -112,6 +112,36 @@ test("action tip writes catalog text on the row and overflow closes away", () =>
     .find((row) => row.type === "pointerdown")
     .fn({ target: { closest: () => null } });
   assert.equal(first.open, false);
+
+  const focused = [];
+  const summary = { focus: () => focused.push("summary") };
+  const openMenu = {
+    open: true,
+    querySelector() {
+      return summary;
+    },
+  };
+  const escapeRoot = {
+    listeners: [],
+    addEventListener(type, fn) {
+      this.listeners.push({ type, fn });
+    },
+    querySelector() {
+      return openMenu;
+    },
+    querySelectorAll() {
+      return [openMenu];
+    },
+  };
+  bindOverflowDismiss(escapeRoot);
+  escapeRoot.listeners
+    .find((row) => row.type === "keydown")
+    .fn({
+      key: "Escape",
+      target: { closest: () => openMenu },
+    });
+  assert.equal(openMenu.open, false);
+  assert.deepEqual(focused, ["summary"]);
 });
 
 test("motion helper stays local and yields under reduce-motion", () => {

@@ -237,6 +237,12 @@ a {
   background: color-mix(in srgb, var(--card) 70%, transparent);
 }
 
+.segment a[aria-current="page"] {
+  background: var(--card);
+  color: var(--foreground);
+  font-weight: 600;
+}
+
 .kicker {
   display: inline-flex;
   align-items: center;
@@ -551,6 +557,19 @@ pre {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  isolation: isolate;
+  overflow: visible;
+}
+
+.queue-item {
+  position: relative;
+  z-index: 0;
+  overflow: visible;
+}
+
+.queue-item:has(details[open]),
+.queue-item:has(.action-tip:not([hidden])) {
+  z-index: 3;
 }
 
 li.is-entering {
@@ -565,6 +584,7 @@ article {
   border-radius: var(--radius-card);
   box-shadow: none;
   padding: var(--space-4);
+  overflow: visible;
 }
 
 article p {
@@ -682,12 +702,19 @@ article [data-slot="show-less"][hidden],
 
 .row-actions {
   position: relative;
+  z-index: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   margin-block-start: var(--space-2);
   min-width: 0;
+  overflow: visible;
+}
+
+.row-actions:has(details[open]),
+.row-actions:has(.action-tip:not([hidden])) {
+  z-index: 2;
 }
 
 .action-tip {
@@ -720,6 +747,10 @@ article [data-slot="show-less"][hidden],
 
 .row-actions details {
   position: relative;
+}
+
+.row-actions details[open] {
+  z-index: 5;
 }
 
 .row-actions summary {
@@ -757,7 +788,7 @@ menu {
 
 .row-actions menu {
   position: absolute;
-  z-index: 3;
+  z-index: 6;
   inset-inline-start: 0;
   top: calc(100% + 6px);
   display: flex;
@@ -773,8 +804,30 @@ menu {
   border: 1px solid var(--stroke);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow);
+  overflow: visible;
   transform-origin: top left;
   animation: bronze-pop var(--ease) both;
+}
+
+[dir="rtl"] .row-actions menu {
+  transform-origin: top right;
+}
+
+.row-actions menu hr {
+  width: 100%;
+  height: 0;
+  margin-block: 0.2rem;
+  border: 0;
+  border-block-start: 1px solid var(--stroke);
+}
+
+.row-actions menu [data-queue-action="trash"] {
+  color: var(--destructive);
+}
+
+.row-actions menu [data-queue-action="trash"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--destructive) 10%, var(--card));
+  color: var(--destructive);
 }
 
 .row-actions menu button {
@@ -1031,6 +1084,11 @@ legend {
   font-weight: 400;
 }
 
+.help-launch {
+  display: flex;
+  justify-content: flex-end;
+}
+
 #composer,
 [data-slot="composer"] {
   order: 0;
@@ -1064,7 +1122,8 @@ legend {
   .surface,
   article,
   fieldset,
-  .health-card {
+  .health-card,
+  menu {
     border-width: 2px !important;
     border-color: var(--border) !important;
   }

@@ -15,6 +15,35 @@ export function announceCount(count) {
   return `${count} items`;
 }
 
+export function librarySection(hash) {
+  if (hash === "#trash") {
+    return "trash";
+  }
+  if (hash === "#search") {
+    return "search";
+  }
+  return "archive";
+}
+
+export function syncLibraryNav(root, hash) {
+  const current = librarySection(hash ?? root.location?.hash);
+  const href =
+    current === "trash"
+      ? "#trash"
+      : current === "search"
+        ? "#search"
+        : "#archive";
+  const links = root.querySelectorAll?.(".segment a") ?? [];
+  for (const link of links) {
+    if (link.getAttribute("href") === href) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  }
+  return current;
+}
+
 export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
   const search = root.querySelector("#library-search");
   const count = root.querySelector("[data-search-count]");
@@ -24,9 +53,10 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
   const template = root.querySelector("#library-item-template");
 
   async function refresh(query) {
-    const includeTrash = root.location?.hash === "#trash";
+    const section = syncLibraryNav(root);
+    const includeTrash = section === "trash";
     let items;
-    if (query) {
+    if (section === "search" && query) {
       items = await invokeFn("search_library_items", { query });
     } else {
       items = await invokeFn("list_queue_items", {
@@ -64,7 +94,29 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
   }
 
   search?.addEventListener("input", () => {
+    if (
+      search.value &&
+      root.location &&
+      librarySection(root.location.hash) !== "search"
+    ) {
+      root.location.hash = "#search";
+      return;
+    }
     refresh(search.value).catch(() => {
+      if (count) {
+        count.textContent = announceCount(0);
+      }
+    });
+  });
+
+  root.defaultView?.addEventListener("hashchange", () => {
+    const section = syncLibraryNav(root);
+    if (section === "search") {
+      search?.focus();
+    } else if (search) {
+      search.value = "";
+    }
+    refresh(section === "search" ? (search?.value ?? "") : "").catch(() => {
       if (count) {
         count.textContent = announceCount(0);
       }
