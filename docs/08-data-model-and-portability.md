@@ -168,7 +168,7 @@ Mutation transaction writes content-free command receipt plus ordered entity/rev
 - Count limits by UTF-8 bytes plus grapheme-aware UI feedback.
 - Proposed P0 item cap: 1 MiB, configurable only internally. Larger selection requires explicit cancel/copy-to-file path; never truncate.
 - `items.title` is nullable TEXT (migration `items_title`). Persist writes `compact_title`; a later on-device refine may replace it (ADR-019 Proposed).
-- Capture may store constrained markdown in `items.body` (bold/italic plus exact whitespace). Inbox render is sanitized: createElement/createTextNode only; raw HTML and remote images disabled. Composer text is stored as authored.
+- Capture may store constrained markdown in `items.body` (bold/italic plus exact whitespace). Inbox render is sanitized: createElement/createTextNode only, including line-start `ul`/`ol`/`li`; raw HTML and remote images disabled. Copy writes that same dialect as escaped HTML on the pasteboard. Composer text is stored as authored.
 - Source URL is optional, allowlisted by scheme, and excluded by default from output.
 - `content_language` is canonical BCP 47 or `und`; application validation rejects invalid tags. New captures/manual notes default to `und` unless user assigns language. Bronze never silently detects language.
 - Render item text with its own `lang` value and `dir=auto`; do not let UI-locale `lang` incorrectly label unknown or different-language content.

@@ -300,7 +300,7 @@ sequenceDiagram
   W->>W: visible and announced feedback
 ~~~
 
-Menu-bar Capture, Bronze-menu Capture, and Shift double-tap snapshot `NSWorkspace` frontmost PID before any first-capture permission prompt, then persist AX selection from that last non-Bronze PID only (`AXSelectedText`, or `AXSelectedTextRange` plus `AXStringForRange`; focused element, then that app’s windows and a bounded child search). The persist read does not resample frontmost. System-wide focused AX is used only when no last-external PID exists and never reads Bronze. Every persist outcome emits `capture-result`; Saved also emits `queue-changed`. `capture.selection` is the only enabled seeded chord; the other twelve `ShortcutActionId` rows stay disabled. ADR-018 stays Proposed. The inbox renders catalog `capture.source` when that name is present and `#capture-status` for `capture.announce.*`; composer rows stay unlabeled. URL provenance is off. File and image attachments stay out of P0 until a separate threat model and ADR (ADR-001).
+Menu-bar Capture, Bronze-menu Capture, and Shift double-tap snapshot `NSWorkspace` frontmost PID before any first-capture permission prompt, then persist AX selection from that last non-Bronze PID only (`AXSelectedText`, or `AXSelectedTextRange` plus `AXAttributedStringForRange` / `AXStringForRange`; focused element, then that app’s windows and a bounded child search). Allowed text roles include `AXWebArea`, `AXBrowser`, and `AXDocument`. Neutral containers are queried for selected text when the focused Electron/Chromium control exposes it there. The persist read does not resample frontmost. System-wide focused AX is used only when no last-external PID exists and never reads Bronze. Every persist outcome emits `capture-result`; Saved also emits `queue-changed`. `capture.selection` is the only enabled seeded chord; the other twelve `ShortcutActionId` rows stay disabled. ADR-018 stays Proposed. The inbox renders catalog `capture.source` plus a list-time 16px official app icon (`sourceAppIcon` data PNG from NSWorkspace / the installed `.app`) when the name is present, and `#capture-status` for `capture.announce.*`; composer rows stay unlabeled. URL provenance is off. File and image attachments stay out of P0 until a separate threat model and ADR (ADR-001).
 
 Capture-specific algorithms live in [macOS capture reliability](07-macos-capture-reliability.md).
 
@@ -316,7 +316,7 @@ Repository transaction writes entity change, undo record, and content-free comma
 
 1. UI sends ordered item IDs plus output-profile ID.
 2. Rust reloads items, verifies section/order/state, and builds immutable output.
-3. Rust calls native pasteboard write.
+3. Rust calls native pasteboard write with plain text plus sanitized constrained-markdown HTML (`ul`/`ol`/`li`/`strong`/`em`/`br` only). Plain succeeds even when the HTML type cannot be written.
 4. Only successful write applies profile lifecycle: unchanged, copied, active, or done.
 5. Failure leaves lifecycle unchanged.
 6. UI announces localized confirmation once.

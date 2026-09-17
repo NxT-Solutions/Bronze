@@ -55,9 +55,9 @@ Each item exposes:
 - heading from stored `items.title` (`h3`); hidden when the title is absent or blank; the UI does not invent a title;
 - lifecycle control with item-specific accessible label;
 - kind icon plus visible/announced label when kind matters;
-- content preview: constrained markdown rendered as `strong`/`em`/text with line breaks (`white-space: pre-wrap`); collapsed to three lines; catalog `queue.item.showMore` / `queue.item.showLess` expands the full body on a real `button` (`aria-expanded`);
+- content preview: constrained markdown rendered as `strong`/`em`/text plus line-start `ul`/`ol`/`li` (createElement only); body uses `white-space: pre-wrap` and collapses with `max-height` (not `-webkit-box`); catalog `queue.item.showMore` / `queue.item.showLess` expands the full body on a real `button` (`aria-expanded`);
 - optional user-editable content-language metadata, defaulting to unknown rather than guessed;
-- optional provenance row: catalog `capture.source` (`From {appName}`) when Capture stored a focused-process name; no URL or window title in this build; composer rows omit the row;
+- optional provenance row: catalog `capture.source` (`From {appName}`) when Capture stored a focused-process name; a 16px official app icon from the list DTO `sourceAppIcon` (`data:image/png;base64,…` only) sits beside the name when Rust can resolve the `.app` via NSWorkspace; the name stays if the icon is unavailable; no URL or window title in this build; composer rows omit the row;
 - status text (`Queued`, `Copied`, `Done`, etc.);
 - context action button;
 - drag handle only when pointer reordering enabled, with Move Up/Down menu equivalents.
@@ -106,6 +106,7 @@ Stage feedback must be immediate but not noisy:
 - Secure field: catalog `capture.announce.protected` (“That field is protected and was not captured.”). No source/content details.
 - Busy: queued position or progress, never silent drop.
 - Failure: catalog `capture.announce.failed` (“Capture did not save.”). Raw details stay in redacted diagnostics.
+- Copy and other queue actions set `aria-busy` with a visible spinner on the control, pointer/hover/active states on every clickable control, and `#action-status` catalog `copy.announce.copied` / `copy.announce.failed` after pasteboard write.
 
 Toasts do not contain sole copy of critical recovery action; persistent status center keeps last result.
 
