@@ -121,8 +121,8 @@ CAP-003 menu path must retain target even if opening status menu activates Bronz
 
 - Native target tracker records `NSWorkspace.shared.frontmostApplication` through `bronze_native_frontmost_pid`. `note_external_focus` is that PID only; it does not read AX focus.
 - lastExternalPID updates whenever a non-Bronze app is frontmost (`note_external_focus`; own PID / Bronze / `bronze-desktop` are skipped). The capture pump samples this every 20 ms.
-- Opening the status menu or running Capture snapshots that last-external PID before any first-capture permission prompt, then consumes it. The provider builds `AXUIElementCreateApplication` for that PID and walks ancestors; it does not substitute whichever app is frontmost after Bronze or the menu activates.
-- If last-external read returns no selection or a missing focused element, Capture falls back to system-wide focused AX.
+- Opening the status menu or running Capture snapshots that last-external PID before any first-capture permission prompt, then consumes it. The persist read does not resample frontmost. The provider builds `AXUIElementCreateApplication` for that PID and walks the focused element, then that app’s main window and windows, including a bounded child search for allowed text roles. It does not substitute whichever app is frontmost after Bronze or a permission dialog activates.
+- System-wide focused AX is used only when no last-external PID exists. That fallback never reads Bronze / `bronze-desktop` / own PID.
 - Capture persists AX selected text (`AXSelectedText`, or `AXSelectedTextRange` plus `AXStringForRange`) into the same queue store as the composer. It emits `capture-result` `{ terminal, reason }` for every persist outcome (`saved`/`rejected`/`failed`/`cancelled`) and `queue-changed` only on Saved. It does not reveal or focus the Quick Panel (WIN-003 capture-only).
 - Status-item left-click is Show. The status menu lists the latest five overview items (click copies via the Plain profile), then Capture, Help, and Quit. Titles are flattened and capped at 48 characters.
 - The only enabled seeded chord is `capture.selection`: Shift double-tap, either side, gap 250 ms, max hold 400 ms. The other twelve `ShortcutActionId` rows stay disabled. ADR-018 stays Proposed. Clipboard fallback stays `manual`; Capture does not synthesize Cmd+C.
@@ -333,15 +333,15 @@ macOS AX does not expose immutable selection snapshot tied to trigger timestamp.
 ### 9.1 Algorithm
 
 1. Check Accessibility permission.
-2. Resolve target PID as last-external first (`read_capture_selection`), then system-wide focused AX if that PID has no selection or no focused element.
+2. Resolve target PID as last-external (`read_capture_selection`). System-wide focused AX runs only when that PID is missing, and never when the focused process is Bronze.
 3. Create AX application element for that PID (`AXUIElementCreateApplication`); skip own PID / Bronze / `bronze-desktop`.
-4. Obtain focused UI element.
+4. Obtain focused UI element. If it is missing or empty, walk `AXMainWindow` and `AXWindows` (at most 8) on the same PID.
 5. Read role and subrole only.
-6. Build a bounded, cycle-safe chain from the focused element through at most 16 ancestors.
+6. Build a bounded, cycle-safe chain from the start element through at most 16 ancestors. At each empty allowed or container node, search at most 24 children for allowed text roles. Unknown nodes are not content-queried.
 7. Before any content query at each node, classify role/subrole as protected, allowed text, neutral container, or unknown content-bearing. Fail closed for `kAXSecureTextFieldSubrole`, known password/protected equivalents, or unknown content-bearing state. Unknown protection prohibits both AX content query and synthetic fallback, regardless of app category. Empty, neutral, and unknown nodes continue.
-8. At each allowed node (`AXTextField`, `AXTextArea`, `AXStaticText`, `AXWebArea`, `AXText`, `AXComboBox`), query `kAXSelectedTextAttribute`. Empty or missing child value is inconclusive; continue to ancestor.
+8. At each allowed node (`AXTextField`, `AXTextArea`, `AXStaticText`, `AXWebArea`, `AXText`, `AXComboBox`), query `kAXSelectedTextAttribute`. Empty or missing child value is inconclusive; continue to children, then ancestor.
 9. At each allowed node, if direct selection is unavailable/empty, query `kAXSelectedTextRangeAttribute` and `kAXStringForRangeParameterizedAttribute` when supported.
-10. Stop on first allowed non-empty selection. Only full-chain exhaustion returns no selection/unsupported.
+10. Stop on first allowed non-empty selection. Only full-chain exhaustion on that PID returns no selection/unsupported.
 11. Validate result type, UTF-8 conversion, byte/grapheme limit, process/focused-element identity, age, and request generation. Where selected range exists, require same range before/after text read; otherwise re-read selected text once within budget and require stable result.
 12. Query optional provenance only under CAP-008 policy.
 13. Return exact Unicode string content and whitespace supplied by provider plus safe metadata; do not claim original source-encoding bytes.
