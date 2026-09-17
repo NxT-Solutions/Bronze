@@ -258,8 +258,8 @@ mod sys {
         }
     }
 
-    fn release_cf(value: Option<CfTypeRef>) {
-        if let Some(value) = value {
+    fn take_owned(owned: &mut Option<CfTypeRef>) {
+        if let Some(value) = owned.take() {
             unsafe { CFRelease(value) };
         }
     }
@@ -382,22 +382,22 @@ mod sys {
         for _ in 0..super::AX_CHAIN_LIMIT {
             match inspect_node(current, source_app_name.clone()) {
                 Ok(Some(hit)) => {
-                    release_cf(owned);
+                    take_owned(&mut owned);
                     return hit;
                 }
                 Err(outcome) => {
-                    release_cf(owned);
+                    take_owned(&mut owned);
                     return (outcome, None, None);
                 }
                 Ok(None) => {
                     if let Some(hit) = search_children(current, source_app_name.clone()) {
-                        release_cf(owned);
+                        take_owned(&mut owned);
                         return hit;
                     }
                 }
             }
             let parent = copy_attr(current, "AXParent");
-            release_cf(owned);
+            take_owned(&mut owned);
             match parent {
                 Some(next) => {
                     owned = Some(next);
@@ -406,7 +406,7 @@ mod sys {
                 None => break,
             }
         }
-        release_cf(owned);
+        take_owned(&mut owned);
         (super::LiveAxOutcome::NoSelection, None, source_app_name)
     }
 
@@ -634,5 +634,12 @@ mod ax_live_tests {
             !chunk[..end].contains("note_external_focus"),
             "persist read must keep the snapshotted last-external PID"
         );
+        let take = src.find("fn take_owned").expect("take_owned");
+        let take_fn = &src[take..src[take..].find("fn attr_string").expect("attr_string") + take];
+        assert!(take_fn.contains("owned.take()"));
+        let walk = src.find("pub fn walk_selection").expect("walk_selection");
+        let walk_src = &src[walk..src.find("fn prefer_terminal").expect("prefer_terminal")];
+        assert!(walk_src.contains("take_owned(&mut owned)"));
+        assert!(walk_src.contains("None => break"));
     }
 }
