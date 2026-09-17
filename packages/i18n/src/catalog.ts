@@ -21,12 +21,14 @@ export const PANEL_CHROME_KEYS = [
   "panel.quick.title",
   "panel.section.active",
   "panel.empty",
+  "chrome.skip.toContent",
   "composer.add.label",
   "composer.placeholder",
   "capture.source",
   "queue.item.showMore",
   "queue.item.showLess",
   "queue.item.title",
+  "library.heading.items",
 ] as const;
 
 export function chromeDir(locale: string): "ltr" | "rtl" {

@@ -7,14 +7,15 @@
     <link rel="stylesheet" href="./chrome.css" />
   </head>
   <body class="page">
+    <a class="skip-link" href="#library-nav" data-i18n="chrome.skip.toContent">Skip to content</a>
     <main id="library" class="page-shell" data-library-state="ready">
       <header class="chrome-header">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true"></span>
-          <h1 data-i18n="library.title">Library</h1>
+          <h1 id="library-title" data-i18n="library.title">Library</h1>
         </div>
       </header>
-      <nav class="segment" aria-label="Library">
+      <nav id="library-nav" class="segment" tabindex="-1" aria-labelledby="library-title">
         <a href="#archive" aria-current="page" data-i18n="library.nav.archive">Archive</a>
         <a href="#trash" data-i18n="library.nav.trash">Trash</a>
         <a href="#search" data-i18n="library.nav.search">Search</a>
@@ -46,6 +47,7 @@
       <p hidden data-empty-message data-i18n="library.state.emptySearch">
         Try a different search.
       </p>
+      <h2 class="visually-hidden" data-i18n="library.heading.items">Items</h2>
       <ul id="library-queue"></ul>
       <template id="library-item-template">
         <li class="queue-item">

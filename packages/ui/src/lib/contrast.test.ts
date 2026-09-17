@@ -7,7 +7,11 @@ import {
   blockVars,
   CONCEPT_PNG_IS_PIXEL_SPEC,
   contrastRatio,
+  MIN_ENHANCED_TEXT_CONTRAST,
+  MIN_NON_TEXT_CONTRAST,
   MIN_NORMAL_TEXT_CONTRAST,
+  NON_TEXT_PAIRS,
+  PILL_PAIRS,
   TEXT_PAIRS,
 } from "@/lib/contrast";
 
@@ -36,8 +40,23 @@ describe("bronze tokens contrast (A11Y-003)", () => {
     for (const [fg, bg] of TEXT_PAIRS) {
       expect(
         contrastRatio(parchment[fg], parchment[bg]),
-      ).toBeGreaterThanOrEqual(MIN_NORMAL_TEXT_CONTRAST);
+      ).toBeGreaterThanOrEqual(MIN_ENHANCED_TEXT_CONTRAST);
+    }
+    for (const theme of [light, dark, parchment]) {
+      for (const [fg, bg] of PILL_PAIRS) {
+        expect(contrastRatio(theme[fg], theme[bg])).toBeGreaterThanOrEqual(
+          MIN_ENHANCED_TEXT_CONTRAST,
+        );
+      }
+      for (const [fg, bg] of NON_TEXT_PAIRS) {
+        expect(contrastRatio(theme[fg], theme[bg])).toBeGreaterThanOrEqual(
+          MIN_NON_TEXT_CONTRAST,
+        );
+      }
     }
     expect(chrome.toLowerCase()).not.toMatch(/copper|cooper/);
+    expect(parchment.border).toBe("#8a8a90");
+    expect(parchment.success).toBe("#245a40");
+    expect(MIN_NORMAL_TEXT_CONTRAST).toBe(4.5);
   });
 });

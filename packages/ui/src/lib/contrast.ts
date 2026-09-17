@@ -1,6 +1,8 @@
 /** WCAG 2 relative-luminance contrast (A11Y-003). Not a public AA claim. */
 
 export const MIN_NORMAL_TEXT_CONTRAST = 4.5;
+export const MIN_ENHANCED_TEXT_CONTRAST = 7;
+export const MIN_NON_TEXT_CONTRAST = 3;
 export const CONCEPT_PNG_IS_PIXEL_SPEC = false;
 
 export type Rgb = { r: number; g: number; b: number };
@@ -63,4 +65,16 @@ export const TEXT_PAIRS = [
   ["primary-foreground", "primary"],
   ["accent-foreground", "accent"],
   ["secondary-foreground", "secondary"],
+] as const;
+
+export const PILL_PAIRS = [
+  ["success-foreground", "success"],
+  ["warning-foreground", "warning"],
+  ["destructive-foreground", "destructive"],
+] as const;
+
+export const NON_TEXT_PAIRS = [
+  ["border", "background"],
+  ["border", "card"],
+  ["input", "background"],
 ] as const;

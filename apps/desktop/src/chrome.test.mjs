@@ -106,6 +106,9 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   );
   assert.match(chrome, /article\.prose/);
   assert.match(chrome, /word-spacing:\s*0\.02em/);
+  assert.match(chrome, /line-height:\s*1\.5/);
+  assert.match(chrome, /\.skip-link/);
+  assert.match(chrome, /max-width:\s*80ch/);
   assert.match(chrome, /#library-queue/);
   assert.match(chrome, /\.page-shell \.card[\s\S]*gap:\s*var\(--space-4\)/);
   assert.match(chrome, /\.library-dock/);
