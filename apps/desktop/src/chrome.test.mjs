@@ -22,6 +22,10 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /--control-h:\s*2rem/);
   assert.match(chrome, /\[data-slot="source"\]/);
   assert.match(chrome, /\[data-slot="source"\]\[hidden\]/);
+  assert.match(chrome, /article:not\(\.is-expanded\)\s*\[data-slot="body"\]/);
+  assert.match(chrome, /\[data-slot="body"\][\s\S]*white-space:\s*pre-wrap/);
+  assert.match(chrome, /-webkit-line-clamp:\s*3/);
+  assert.doesNotMatch(chrome, /article p\s*\{[^}]*-webkit-line-clamp/);
   assert.match(chrome, /\.empty-state\[hidden\]/);
   assert.match(chrome, /#composer-error\[hidden\]/);
   assert.match(chrome, /#capture-status\[hidden\]/);

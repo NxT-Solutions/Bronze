@@ -15,6 +15,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
 const chrome = readFileSync(join(root, "chrome.css"), "utf8");
 const live = readFileSync(join(root, "queue-live.mjs"), "utf8");
+const itemView = readFileSync(join(root, "item-view.mjs"), "utf8");
 
 const FEEDBACK = {
   "capture.announce.saved": "Captured to Bronze.",
@@ -72,7 +73,17 @@ test("composer submit is Cmd-Enter or the form and live queue is wired", () => {
   assert.match(html, /data-i18n="panel.empty"/);
   assert.match(html, /data-i18n="capture.source"/);
   assert.match(html, /data-slot="source"/);
+  assert.match(html, /data-slot="title"/);
+  assert.match(html, /data-slot="expand"/);
+  assert.match(html, /data-i18n="queue.item.showMore"/);
+  assert.match(html, /data-i18n="queue.item.showLess"/);
   assert.match(live, /sourceAppName/);
+  assert.match(live, /fillItemChrome/);
+  assert.match(itemView, /renderMarkdownBody/);
+  assert.match(itemView, /is-expanded/);
+  assert.doesNotMatch(live, /data-slot=body"\]\.textContent = item\.body/);
+  assert.doesNotMatch(live, /innerHTML = item\.body/);
+  assert.doesNotMatch(itemView, /innerHTML = item\.body/);
   assert.doesNotMatch(html, /data-open-window=/);
 });
 

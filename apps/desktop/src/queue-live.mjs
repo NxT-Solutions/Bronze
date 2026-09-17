@@ -1,3 +1,8 @@
+import {
+  fillItemChrome,
+  readExpandLabels,
+  syncExpandVisibility,
+} from "./item-view.mjs";
 import { tauriInvoke } from "./tauri-bridge.mjs";
 
 export const QUE_007_COMPLETE = false;
@@ -80,14 +85,13 @@ export function formatCaptureSource(template, appName) {
 }
 
 export function renderQueueItems(list, items, template) {
+  const labels = readExpandLabels(template.content);
   list.replaceChildren();
   for (const item of items) {
     const node = template.content.firstElementChild.cloneNode(true);
     node.dataset.itemId = item.id;
     const article = node.querySelector("article");
-    article.lang = item.contentLanguage || "und";
-    article.dir = "auto";
-    node.querySelector("[data-slot=body]").textContent = item.body;
+    fillItemChrome(article, item, labels);
     const source = node.querySelector("[data-slot=source]");
     if (source) {
       const label = formatCaptureSource(source.textContent, item.sourceAppName);
@@ -102,6 +106,7 @@ export function renderQueueItems(list, items, template) {
       button.dataset.itemId = item.id;
     });
     list.append(node);
+    syncExpandVisibility(article);
   }
 }
 

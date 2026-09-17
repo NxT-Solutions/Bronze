@@ -1,3 +1,8 @@
+import {
+  fillItemChrome,
+  readExpandLabels,
+  syncExpandVisibility,
+} from "./item-view.mjs";
 import { tauriInvoke } from "./tauri-bridge.mjs";
 
 export const QUE_007_COMPLETE = false;
@@ -13,6 +18,7 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
   const empty = root.querySelector(".empty-state");
   const status = root.querySelector("[data-restore-preview]");
   const list = root.querySelector("#library-queue");
+  const template = root.querySelector("#library-item-template");
 
   async function refresh(query) {
     const includeTrash = root.location?.hash === "#trash";
@@ -30,18 +36,15 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
     if (empty) {
       empty.hidden = items.length > 0;
     }
-    if (list) {
+    if (list && template) {
+      const labels = readExpandLabels(template.content);
       list.replaceChildren();
       for (const item of items) {
-        const li = document.createElement("li");
-        const article = document.createElement("article");
-        article.lang = item.contentLanguage || "und";
-        article.dir = "auto";
-        const body = document.createElement("p");
-        body.textContent = item.body;
-        article.append(body);
-        li.append(article);
-        list.append(li);
+        const node = template.content.firstElementChild.cloneNode(true);
+        const article = node.querySelector("article");
+        fillItemChrome(article, item, labels);
+        list.append(node);
+        syncExpandVisibility(article);
       }
     }
     return items;

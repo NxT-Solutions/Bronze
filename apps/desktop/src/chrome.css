@@ -465,10 +465,32 @@ article {
 article p {
   margin: 0;
   font-size: var(--text-body);
+}
+
+article [data-slot="title"] {
+  margin-block-end: var(--space-1);
+}
+
+article [data-slot="body"] {
+  margin: 0;
+  font-size: var(--text-body);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+article:not(.is-expanded) [data-slot="body"] {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+article.is-expanded [data-slot="body"] {
+  overflow: visible;
+}
+
+article [data-slot="expand"] {
+  margin-block-start: var(--space-1);
 }
 
 article [data-slot="source"] {
@@ -476,15 +498,15 @@ article [data-slot="source"] {
   font-size: var(--text-caption);
   line-height: 1.35;
   color: var(--muted-foreground);
-  display: block;
-  -webkit-line-clamp: unset;
-  -webkit-box-orient: unset;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 article [data-slot="source"][hidden],
+article [data-slot="title"][hidden],
+article [data-slot="expand"][hidden],
+article [data-slot="show-less"][hidden],
 .empty-state[hidden],
 #composer-error[hidden],
 #capture-status[hidden],

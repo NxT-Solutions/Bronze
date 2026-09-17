@@ -24,6 +24,9 @@ export const PANEL_CHROME_KEYS = [
   "composer.add.label",
   "composer.placeholder",
   "capture.source",
+  "queue.item.showMore",
+  "queue.item.showLess",
+  "queue.item.title",
 ] as const;
 
 export function chromeDir(locale: string): "ltr" | "rtl" {

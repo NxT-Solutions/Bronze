@@ -14,4 +14,7 @@ test("queue action accessible names contain visible labels", () => {
   assert.match(html, /data-i18n="queue.item.skip">\s*Skip\s*</);
   assert.match(html, /data-i18n="queue.item.trash">\s*Trash\s*</);
   assert.match(html, /data-i18n="queue.item.edit">\s*Edit\s*</);
+  assert.match(html, /data-i18n="queue.item.showMore">\s*Show more\s*</);
+  assert.match(html, /data-i18n="queue.item.showLess">\s*Show less\s*</);
+  assert.match(html, /data-i18n="queue.item.title">\s*Item\s*</);
 });

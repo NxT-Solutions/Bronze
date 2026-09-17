@@ -28,6 +28,9 @@ test("en en-XA ar-XB cover native menu InfoPlist and WebView keys", () => {
     }
     assert.ok(catalog["composer.add.label"]);
     assert.ok(catalog["capture.source"]);
+    assert.ok(catalog["queue.item.showMore"]);
+    assert.ok(catalog["queue.item.showLess"]);
+    assert.ok(catalog["queue.item.title"]);
     assert.ok(catalog["settings.title"]);
     assert.equal(catalog["app.name"], catalog["app.name"]);
   }
