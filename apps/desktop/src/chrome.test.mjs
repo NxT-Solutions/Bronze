@@ -92,6 +92,10 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   );
   assert.match(chrome, /article\.prose/);
   assert.match(chrome, /word-spacing:\s*0\.02em/);
+  assert.match(chrome, /#library-queue/);
+  assert.match(chrome, /\.page-shell \.card[\s\S]*gap:\s*var\(--space-4\)/);
+  assert.match(chrome, /\.library-dock/);
+  assert.match(chrome, /\[data-standard-chord\]:empty/);
   assert.doesNotMatch(
     chrome.toLowerCase(),
     /copper|cooper|@import|fonts\.google/,
