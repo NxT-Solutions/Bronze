@@ -475,7 +475,9 @@ fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
         .on_tray_icon_event(|tray, event| {
             handle_status_item_event(tray.app_handle(), &event);
         });
-    if let Some(icon) = app.default_window_icon() {
+    if let Ok(icon) = tauri::image::Image::from_bytes(include_bytes!("../icons/32x32.png")) {
+        tray = tray.icon(icon).icon_as_template(true);
+    } else if let Some(icon) = app.default_window_icon() {
         tray = tray.icon(icon.clone()).icon_as_template(true);
     }
     remember_status_app(app);
