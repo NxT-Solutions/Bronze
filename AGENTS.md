@@ -79,7 +79,7 @@ hedgehog verify <task-id>
 
 An agent reporting success never moves a task — only a passing `hedgehog verify` does.
 
-Agent files: `.cursor/agents`. Skills: `.cursor/skills`. Project context: `HEDGEHOG.md`.
+Agent files: `.cursor/agents`. Skills: `.cursor/skills` and `.claude/skills`. Project context: `HEDGEHOG.md`. Design authority for chrome: `hig/`.
 
 | Agent | Use when | File |
 | --- | --- | --- |
@@ -87,5 +87,20 @@ Agent files: `.cursor/agents`. Skills: `.cursor/skills`. Project context: `HEDGE
 | `tweaker` | Next change on an adopted repo | `tweaker.md` |
 | `reviewer` | Layer/phase review (read-only) | `reviewer.md` |
 | `bootstrap` | Greenfield workspace only — do not run on Bronze | `bootstrap.md` |
+
+## Apple HIG (all agents)
+
+Cursor, Claude Code, Codex, Grok, and any future OSS agent use the same
+library. Do not keep a second copy of these rules in a vendor folder.
+
+- Start: `hig/SKILL.md`
+- Principles, macOS, tokens, surfaces: `hig/principles.md`, `hig/macos.md`, `hig/bronze.md`, `hig/screens.md`
+- Adapter map: `hig/README.md`
+- Cursor rule: `.cursor/rules/apple-hig.mdc` (chrome globs)
+- Cursor / Claude skills: `.cursor/skills/apple-hig/`, `.claude/skills/apple-hig/` (pointers only)
+- Claude Code entry: `CLAUDE.md`
+
+Applies on any Settings, Library, Help, queue, CSS, typography, motion,
+or “Apple-like” change.
 
 Do not run Hedgehog `full-stack-app` / `pwa-app` / `landing-page` cores. Bronze is the **adopted** core: keep Tauri 2, Rust, in-process Swift, and existing ADRs.

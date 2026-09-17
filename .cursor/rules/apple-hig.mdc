@@ -1,0 +1,20 @@
+---
+description: Apple HIG for Bronze chrome — read hig/ before UI work
+globs: apps/desktop/src/**/*.{html,css,mjs},packages/ui/**/*.{css,tsx,ts}
+alwaysApply: false
+---
+
+# Apple HIG
+
+Before changing chrome or UX, read `hig/SKILL.md` and the surface in
+`hig/screens.md`.
+
+- One filled primary per view; secondary is ghost
+- System SF, no extra body tracking, no remote fonts
+- Live zinc tokens only; no DESIGN.md brown in chrome
+- Hairline grouping; shadows only on floating menus/tips
+- Motion ≤200ms and off under Reduce Motion
+- Semantic controls; catalog strings; no raw shortcut IDs as labels
+- No fake Liquid Glass; no Cooper/Copper copy
+
+Canonical files: `hig/`. Adapters must not diverge.

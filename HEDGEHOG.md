@@ -4,7 +4,7 @@ Bronze is a local-first macOS selection-to-action work queue. The operator selec
 
 Stack is already decided: Tauri 2, React, Rust, in-process Swift. Planning authority is `docs/03-prd.md` and `docs/18-adrs.md`. This repo is a Hedgehog **adopted** project — do not scaffold a new workspace or switch to a shipped web core.
 
-This project is built with **Hedgehog**: one gated step at a time. Follow `AGENTS.md` for Bronze product rules, then the Hedgehog loop for execution.
+This project is built with **Hedgehog**: one gated step at a time. Follow `AGENTS.md` for Bronze product rules, then the Hedgehog loop for execution. Chrome and UX follow `hig/SKILL.md` (Apple HIG) on every agent.
 
 ## How to work here
 
