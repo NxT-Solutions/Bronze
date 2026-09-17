@@ -21,7 +21,8 @@ pub use abi::{
 };
 pub use ax_live::{
     classify_ax_role, is_skipped_process_name, last_external_pid, note_external_focus,
-    read_capture_selection, read_focused_selection, AxProtection, LiveAxOutcome, LIVE_AX_MAX_BYTES,
+    read_capture_selection, read_focused_selection, reject_own_system_focus,
+    use_system_focused_fallback, AxProtection, LiveAxOutcome, LIVE_AX_MAX_BYTES,
 };
 pub use bridge::{
     check_abi_version, event_tap_enqueue_raw, EventTapHealth, EventTapRecord, NativeError,

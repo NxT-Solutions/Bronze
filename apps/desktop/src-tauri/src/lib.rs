@@ -653,6 +653,7 @@ mod tests {
     fn live_status_item_and_capture_do_not_steal_focus() {
         assert!(crate::live_session::AX_CAPTURE_LIVE);
         assert!(!crate::window_edge::CAPTURE_ONLY_REVEALS_PANEL);
+        use bronze_platform_macos::use_system_focused_fallback;
         let lib = include_str!("lib.rs");
         assert!(lib.contains("TrayIconBuilder"));
         assert!(lib.contains("WebviewWindowBuilder"));
@@ -679,6 +680,8 @@ mod tests {
             snapshot_at < prompt_at,
             "frontmost PID must be snapshotted before a permission prompt"
         );
+        assert!(!use_system_focused_fallback(Some(42)));
+        assert!(use_system_focused_fallback(None));
     }
 
     #[cfg(all(target_os = "macos", bronze_native_linked))]
