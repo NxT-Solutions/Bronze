@@ -19,6 +19,7 @@
   "composer.add.label": "Element hinzufügen",
   "composer.placeholder": "Tippen oder Erfassen",
   "composer.add.submit": "Hinzufügen",
+  "composer.add.submit.chord": "Hinzufügen ⇧↩",
   "composer.add.error": "Element konnte nicht hinzugefügt werden",
   "composer.format.toolbar": "Formatierung",
   "composer.format.bold": "Fett",

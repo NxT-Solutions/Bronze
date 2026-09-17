@@ -19,6 +19,7 @@
   "composer.add.label": "Item toevoegen",
   "composer.placeholder": "Typ of Vastleggen",
   "composer.add.submit": "Toevoegen",
+  "composer.add.submit.chord": "Toevoegen ⇧↩",
   "composer.add.error": "Item kon niet worden toegevoegd",
   "composer.format.toolbar": "Opmaak",
   "composer.format.bold": "Vet",

@@ -22,6 +22,7 @@ export const MessageIds = {
   "composer.add.label": "composer.add.label",
   "composer.placeholder": "composer.placeholder",
   "composer.add.submit": "composer.add.submit",
+  "composer.add.submit.chord": "composer.add.submit.chord",
   "composer.add.error": "composer.add.error",
   "composer.format.toolbar": "composer.format.toolbar",
   "composer.format.bold": "composer.format.bold",

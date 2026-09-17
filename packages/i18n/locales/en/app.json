@@ -19,6 +19,7 @@
   "composer.add.label": "Add item",
   "composer.placeholder": "Type or Capture",
   "composer.add.submit": "Add",
+  "composer.add.submit.chord": "Add ⇧↩",
   "composer.add.error": "Could not add item",
   "composer.format.toolbar": "Formatting",
   "composer.format.bold": "Bold",

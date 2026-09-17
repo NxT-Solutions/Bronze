@@ -19,6 +19,7 @@
   "composer.add.label": "Aggiungi elemento",
   "composer.placeholder": "Digita o Cattura",
   "composer.add.submit": "Aggiungi",
+  "composer.add.submit.chord": "Aggiungi ⇧↩",
   "composer.add.error": "Impossibile aggiungere l’elemento",
   "composer.format.toolbar": "Formattazione",
   "composer.format.bold": "Grassetto",

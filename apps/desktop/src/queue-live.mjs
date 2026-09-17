@@ -1,4 +1,4 @@
-import { LOCALE_APPLIED_EVENT } from "./apply-locale.mjs";
+import { catalogMessage, LOCALE_APPLIED_EVENT } from "./apply-locale.mjs";
 import {
   applyActionStatus,
   bindOverflowDismiss,
@@ -375,6 +375,28 @@ function syncFormatPressed(root, editor) {
 
 export const QUE_007_COMPLETE = false;
 
+export function composerIsMultiline(body) {
+  return String(body ?? "").includes("\n");
+}
+
+export function composerSubmitLabelKey(body) {
+  return composerIsMultiline(body)
+    ? "composer.add.submit.chord"
+    : "composer.add.submit";
+}
+
+export function applyComposerSubmitLabel(button, body) {
+  if (!button) {
+    return;
+  }
+  const key = composerSubmitLabelKey(body);
+  button.setAttribute("data-i18n", key);
+  const label = catalogMessage(key);
+  if (label) {
+    button.textContent = label;
+  }
+}
+
 export function composerShouldSubmit(event) {
   if (event.type === "submit") {
     return true;
@@ -385,7 +407,9 @@ export function composerShouldSubmit(event) {
   if (event.isComposing) {
     return false;
   }
-  return Boolean(event.metaKey || event.ctrlKey);
+  return Boolean(
+    event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey,
+  );
 }
 
 export function listenQueueChanged(handler) {
@@ -478,6 +502,11 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   bindOverflowDismiss(root);
   syncComposerEmpty(editor);
+  const submit = form.querySelector("[type=submit]");
+  function syncSubmitLabel() {
+    applyComposerSubmitLabel(submit, serializeComposerDom(editor));
+  }
+  syncSubmitLabel();
 
   async function refresh() {
     const items = await invokeFn("list_overview_items");
@@ -494,6 +523,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       });
       editor.replaceChildren();
       syncComposerEmpty(editor);
+      syncSubmitLabel();
       if (error) {
         error.hidden = true;
       }
@@ -525,6 +555,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     const tag = button.getAttribute("data-composer-format");
     applyComposerCommand(editor, tag);
     syncComposerEmpty(editor);
+    syncSubmitLabel();
     syncFormatPressed(root, editor);
   });
   form.addEventListener("keydown", (event) => {
@@ -544,6 +575,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       event.preventDefault();
       applyComposerCommand(editor, action);
       syncComposerEmpty(editor);
+      syncSubmitLabel();
       syncFormatPressed(root, editor);
       return;
     }
@@ -559,12 +591,14 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
           placeCaretIn(sel, editor.ownerDocument, block.firstChild ?? block);
         }
         syncComposerEmpty(editor);
+        syncSubmitLabel();
         syncFormatPressed(root, editor);
       }
     }
   });
   editor.addEventListener("input", () => {
     syncComposerEmpty(editor);
+    syncSubmitLabel();
   });
   editor.addEventListener("paste", (event) => {
     event.preventDefault();
@@ -583,6 +617,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     sel.removeAllRanges();
     sel.addRange(range);
     syncComposerEmpty(editor);
+    syncSubmitLabel();
   });
   editor.ownerDocument?.addEventListener("selectionchange", () => {
     syncFormatPressed(root, editor);
@@ -637,6 +672,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   });
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
     refresh();
+    syncSubmitLabel();
   });
 
   try {

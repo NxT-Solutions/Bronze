@@ -8,7 +8,9 @@ import {
   captureFeedbackKey,
   composerFormatAction,
   composerHotkey,
+  composerIsMultiline,
   composerShouldSubmit,
+  composerSubmitLabelKey,
   formatCaptureSource,
   QUE_007_COMPLETE,
 } from "./queue-live.mjs";
@@ -45,20 +47,28 @@ function captureStatusRoot(messages = FEEDBACK) {
   };
 }
 
-test("composer submit is Cmd-Enter or the form and live queue is wired", () => {
+test("composer submit is Shift-Enter or the form and live queue is wired", () => {
   assert.equal(composerShouldSubmit({ type: "submit" }), true);
   assert.equal(
-    composerShouldSubmit({ type: "keydown", key: "Enter", metaKey: true }),
+    composerShouldSubmit({ type: "keydown", key: "Enter", shiftKey: true }),
     true,
+  );
+  assert.equal(
+    composerShouldSubmit({ type: "keydown", key: "Enter", metaKey: true }),
+    false,
   );
   assert.equal(
     composerShouldSubmit({ type: "keydown", key: "Enter", ctrlKey: true }),
-    true,
-  );
-  assert.equal(
-    composerShouldSubmit({ type: "keydown", key: "Enter", metaKey: false }),
     false,
   );
+  assert.equal(
+    composerShouldSubmit({ type: "keydown", key: "Enter", shiftKey: false }),
+    false,
+  );
+  assert.equal(composerIsMultiline("one"), false);
+  assert.equal(composerIsMultiline("one\ntwo"), true);
+  assert.equal(composerSubmitLabelKey("one"), "composer.add.submit");
+  assert.equal(composerSubmitLabelKey("one\ntwo"), "composer.add.submit.chord");
   assert.equal(QUE_007_COMPLETE, false);
   assert.match(html, /queue-live\.mjs/);
   assert.match(live, /list_overview_items/);
@@ -146,8 +156,12 @@ test("composer hotkeys follow common rich-text chords", () => {
     "ol",
   );
   assert.equal(
-    composerHotkey({ type: "keydown", key: "Enter", metaKey: true }),
+    composerHotkey({ type: "keydown", key: "Enter", shiftKey: true }),
     "submit",
+  );
+  assert.equal(
+    composerHotkey({ type: "keydown", key: "Enter", metaKey: true }),
+    null,
   );
 });
 
