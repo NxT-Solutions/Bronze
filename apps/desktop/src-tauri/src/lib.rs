@@ -184,7 +184,9 @@ fn reveal_quick_panel(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::
             f64::from(QUICK_PANEL_MIN_HEIGHT),
         )))?;
     }
+    let _ = window.unminimize();
     window.show()?;
+    let _ = window.set_focus();
     Ok(())
 }
 
@@ -292,9 +294,78 @@ fn rebuild_status_menu(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return Ok(());
     };
-    let menu = status_tray_menu(app)?;
-    tray.set_menu(Some(menu))?;
+    // Recents are rebuilt when the menu is popped. Keep the item unbound so
+    // AppKit cannot swallow left-click (that click is Show).
+    tray.set_menu(None::<tauri::menu::Menu<tauri::Wry>>)?;
     Ok(())
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum StatusItemClick {
+    ShowPanel,
+    PopupMenu,
+}
+
+#[cfg(target_os = "macos")]
+fn status_item_click(
+    button: tauri::tray::MouseButton,
+    state: tauri::tray::MouseButtonState,
+) -> Option<StatusItemClick> {
+    use tauri::tray::{MouseButton, MouseButtonState};
+    if state != MouseButtonState::Down {
+        return None;
+    }
+    match button {
+        MouseButton::Left => Some(StatusItemClick::ShowPanel),
+        MouseButton::Right => Some(StatusItemClick::PopupMenu),
+        _ => None,
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn popup_status_menu(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) {
+    use tauri::Manager;
+    let Ok(menu) = status_tray_menu(app) else {
+        return;
+    };
+    if let Some(window) = app.get_webview_window("quick") {
+        let at = tauri::Position::Physical(tauri::PhysicalPosition::new(
+            position.x.round() as i32,
+            position.y.round() as i32,
+        ));
+        if window.popup_menu_at(&menu, at).is_ok() {
+            return;
+        }
+    }
+    if let Some(tray) = app.tray_by_id(TRAY_ID) {
+        let _ = tray.set_menu(Some(menu));
+        let _ = tray.with_inner_tray_icon(|inner| inner.show_menu());
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn handle_status_item_event(app: &tauri::AppHandle, event: &tauri::tray::TrayIconEvent) {
+    use tauri::tray::TrayIconEvent;
+    let TrayIconEvent::Click {
+        button,
+        button_state,
+        position,
+        ..
+    } = event
+    else {
+        return;
+    };
+    match status_item_click(*button, *button_state) {
+        Some(StatusItemClick::ShowPanel) => {
+            if let Some(tray) = app.tray_by_id(TRAY_ID) {
+                let _ = tray.set_menu(None::<tauri::menu::Menu<tauri::Wry>>);
+            }
+            let _ = reveal_quick_panel(app);
+        }
+        Some(StatusItemClick::PopupMenu) => popup_status_menu(app, *position),
+        None => {}
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -351,13 +422,14 @@ fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     use tauri::tray::TrayIconBuilder;
     let map = ui_catalog_map(app);
     let app_name = require_key(&map, "app.name").unwrap_or_else(|_| "Bronze".into());
-    let menu = status_tray_menu(app)?;
     let mut tray = TrayIconBuilder::with_id(TRAY_ID)
         .tooltip(&app_name)
-        .menu(&menu)
-        .show_menu_on_left_click(true)
+        .show_menu_on_left_click(false)
         .on_menu_event(|app, event| {
             handle_menu_id(app, event.id().as_ref());
+        })
+        .on_tray_icon_event(|tray, event| {
+            handle_status_item_event(tray.app_handle(), &event);
         });
     if let Some(icon) = app.default_window_icon() {
         tray = tray.icon(icon.clone());
@@ -734,8 +806,30 @@ mod tests {
         assert!(lib.contains("note_external_focus"));
         assert!(lib.contains("capture-result"));
         assert!(lib.contains("on_menu_event"));
-        assert!(lib.contains("show_menu_on_left_click(true)"));
+        assert!(lib.contains("on_tray_icon_event"));
+        assert!(lib.contains("show_menu_on_left_click(false)"));
         assert!(lib.contains("menu.status.show"));
+        assert_eq!(
+            crate::status_item_click(
+                tauri::tray::MouseButton::Left,
+                tauri::tray::MouseButtonState::Down
+            ),
+            Some(crate::StatusItemClick::ShowPanel)
+        );
+        assert_eq!(
+            crate::status_item_click(
+                tauri::tray::MouseButton::Right,
+                tauri::tray::MouseButtonState::Down
+            ),
+            Some(crate::StatusItemClick::PopupMenu)
+        );
+        assert_eq!(
+            crate::status_item_click(
+                tauri::tray::MouseButton::Left,
+                tauri::tray::MouseButtonState::Up
+            ),
+            None
+        );
         assert!(lib.contains("queue-changed"));
         assert!(lib.contains("native_item_title"));
         assert!(lib.contains("tray_entry_label"));
