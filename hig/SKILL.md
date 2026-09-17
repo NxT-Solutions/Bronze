@@ -23,7 +23,7 @@ Official authority: `hig/README.md`.
 - Purpose first: Bronze is a selection-to-action queue. Chrome recedes.
 - One filled primary control per view. Secondary is borderless or ghost.
 - System SF only. No remote fonts, CDN, or bundled SF files (SEC-001).
-- Live tokens stay zinc (`#fafafa` / `#18181b` / `#e4e4e7`). DESIGN.md
+- Live tokens stay zinc (`#fafafa` / `#18181b` / `#8a8a90`). DESIGN.md
   warm bronze hexes are inspiration, not live chrome.
 - No fake Liquid Glass / CSS blur. Opaque surfaces. Materials need
   native rust + DESIGN fallback before anyone fakes them.

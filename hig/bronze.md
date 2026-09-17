@@ -31,7 +31,7 @@ mirrored in `packages/ui/src/styles/globals.css`.
 | `--radius-pill` 999px | status pills only | capsule |
 | `--background` `#fafafa` | window | |
 | `--foreground` `#18181b` | text | |
-| `--border` / `--stroke` `#e4e4e7` / 8% hairline | grouping | |
+| `--border` / `--stroke` `#8a8a90` | grouping (WCAG 1.4.11 ≥3:1) | |
 | `--primary` mixed charcoal | one filled action | |
 
 `packages/ui` contrast tests lock the zinc pairs. Do not paint live

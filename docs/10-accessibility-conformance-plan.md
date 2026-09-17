@@ -30,7 +30,19 @@ Clause 5.8 says double-strike acceptance window must be adjustable to at least 0
 
 ### 2.1 Complete WCAG inventory gate
 
-Priority summaries above do not replace conformance accounting. Before DG-08 can close, ACR source must contain one reviewed row for every WCAG 2.2 Level A and AA success criterion, including criteria that appear unrelated to desktop utility UI. Each row records `Supports`, `Partially Supports`, `Does Not Support`, or `Not Applicable`, with scoped rationale, implementation, build/platform, and evidence. Explicitly evaluate newer criteria such as Consistent Help (3.2.6), Redundant Entry (3.3.7), and Accessible Authentication (3.3.8); do not omit them by sampling. Any applicable partial/non-support blocks public AA claim until remediated or claim scope changes honestly.
+Priority summaries above do not replace conformance accounting. Draft
+WebView rows live in [`docs/evidence/WCAG-22-INVENTORY.md`](evidence/WCAG-22-INVENTORY.md)
+(A, AA, and AAA). That file is not a public AA/AAA claim.
+
+Before DG-08 can close, ACR source must contain one *reviewed* row for
+every WCAG 2.2 Level A and AA success criterion, including criteria that
+appear unrelated to desktop utility UI. Each row records `Supports`,
+`Partially Supports`, `Does Not Support`, or `Not Applicable`, with
+scoped rationale, implementation, build/platform, and evidence.
+Explicitly evaluate newer criteria such as Consistent Help (3.2.6),
+Redundant Entry (3.3.7), and Accessible Authentication (3.3.8); do not
+omit them by sampling. Any applicable partial/non-support blocks public
+AA claim until remediated or claim scope changes honestly.
 
 ## 3. User journeys under test
 
