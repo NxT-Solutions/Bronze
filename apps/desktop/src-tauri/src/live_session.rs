@@ -19,6 +19,7 @@ use bronze_storage::{
     Store, ADR_018_STATUS, QUE_007_COMPLETE,
 };
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -40,6 +41,7 @@ pub trait SelectionHost {
 pub struct FakeSelectionHost {
     pub tree: FakeAxTree,
     pub source_app_name: Option<String>,
+    pub source_bundle_id: Option<String>,
 }
 
 #[cfg(test)]
@@ -50,6 +52,7 @@ impl SelectionHost for FakeSelectionHost {
             outcome,
             text.map(|mut captured| {
                 captured.source_app_name = self.source_app_name.clone();
+                captured.source_bundle_id = self.source_bundle_id.clone();
                 captured
             }),
         )
@@ -108,11 +111,14 @@ impl SelectionHost for LiveAxHost {
                 AxOutcome::InvalidTextEncoding
             }
         };
+        let source_bundle_id = bronze_platform_macos::last_external_pid()
+            .and_then(bronze_platform_macos::native_bundle_id_for_pid);
         (
             mapped,
             text.map(|body| CapturedText {
                 text: body,
                 source_app_name,
+                source_bundle_id,
             }),
         )
     }
@@ -122,6 +128,7 @@ struct SessionPersist<'a> {
     session: &'a mut LiveSession,
     body: String,
     source_app_name: Option<String>,
+    source_bundle_id: Option<String>,
     saved_id: &'a mut Option<String>,
 }
 
@@ -129,7 +136,11 @@ impl PersistHook for SessionPersist<'_> {
     fn persist(&mut self, _request_id: u64) -> Result<(), PersistError> {
         let item = self
             .session
-            .add_captured(self.body.clone(), self.source_app_name.clone())
+            .add_captured(
+                self.body.clone(),
+                self.source_app_name.clone(),
+                self.source_bundle_id.clone(),
+            )
             .map_err(|_| PersistError)?;
         *self.saved_id = Some(item.id);
         Ok(())
@@ -139,7 +150,7 @@ impl PersistHook for SessionPersist<'_> {
 const _: () = assert!(!QUE_007_COMPLETE);
 const _: () = assert!(matches!(ADR_018_STATUS.as_bytes(), b"Proposed"));
 
-#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct QueueItemDto {
     pub id: String,
@@ -150,10 +161,36 @@ pub struct QueueItemDto {
     pub status: String,
     pub rank: String,
     pub source_app_name: Option<String>,
+    #[serde(default)]
+    pub source_app_icon: Option<String>,
+}
+
+impl fmt::Debug for QueueItemDto {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("QueueItemDto")
+            .field("id", &self.id)
+            .field("section_id", &self.section_id)
+            .field("content_language", &self.content_language)
+            .field("status", &self.status)
+            .field("rank", &self.rank)
+            .field("source_app_name", &self.source_app_name)
+            .field(
+                "source_app_icon",
+                &self
+                    .source_app_icon
+                    .as_ref()
+                    .map(|_| "data:image/png;base64"),
+            )
+            .finish_non_exhaustive()
+    }
 }
 
 impl From<QueueItemRow> for QueueItemDto {
     fn from(row: QueueItemRow) -> Self {
+        let source_app_icon = source_app_icon_data_url(
+            row.source_bundle_id.as_deref(),
+            row.source_app_name.as_deref(),
+        );
         Self {
             id: row.id,
             section_id: row.section_id,
@@ -163,8 +200,43 @@ impl From<QueueItemRow> for QueueItemDto {
             status: row.status,
             rank: row.rank,
             source_app_name: row.source_app_name,
+            source_app_icon,
         }
     }
+}
+
+fn source_app_icon_data_url(bundle: Option<&str>, name: Option<&str>) -> Option<String> {
+    let key = bundle
+        .filter(|value| !value.is_empty())
+        .or_else(|| name.filter(|value| !value.is_empty()))?;
+    let png = bronze_platform_macos::native_app_icon_png(key)?;
+    if png.is_empty() {
+        return None;
+    }
+    Some(format!("data:image/png;base64,{}", encode_base64(&png)))
+}
+
+fn encode_base64(bytes: &[u8]) -> String {
+    const TABLE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let a = chunk[0];
+        let b = chunk.get(1).copied().unwrap_or(0);
+        let c = chunk.get(2).copied().unwrap_or(0);
+        out.push(TABLE[(a >> 2) as usize] as char);
+        out.push(TABLE[(((a & 3) << 4) | (b >> 4)) as usize] as char);
+        if chunk.len() > 1 {
+            out.push(TABLE[(((b & 15) << 2) | (c >> 6)) as usize] as char);
+        } else {
+            out.push('=');
+        }
+        if chunk.len() > 2 {
+            out.push(TABLE[(c & 63) as usize] as char);
+        } else {
+            out.push('=');
+        }
+    }
+    out
 }
 
 pub fn effective_ui_locale(requested: Option<&str>) -> &'static str {
@@ -253,6 +325,7 @@ impl LiveSession {
                         session: self,
                         body,
                         source_app_name: captured.source_app_name,
+                        source_bundle_id: captured.source_bundle_id,
                         saved_id: &mut saved_id,
                     },
                     bronze_capture::NoFeedback,
@@ -359,6 +432,7 @@ impl LiveSession {
         &mut self,
         body: String,
         source_app_name: Option<String>,
+        source_bundle_id: Option<String>,
     ) -> Result<QueueItemDto, String> {
         if body.is_empty() {
             return Err("composer_empty".into());
@@ -376,6 +450,7 @@ impl LiveSession {
                     content_language: None,
                 },
                 source_app_name.as_deref(),
+                source_bundle_id.as_deref(),
                 &section,
                 &id,
                 now,
@@ -644,39 +719,12 @@ pub struct MacPasteboard;
 
 impl Pasteboard for MacPasteboard {
     fn write_text(&mut self, text: &str) -> Result<(), CopyError> {
-        write_pasteboard(text)
+        self.write_plain_and_html(text, "")
     }
-}
 
-fn write_pasteboard(text: &str) -> Result<(), CopyError> {
-    #[cfg(target_os = "macos")]
-    {
-        use std::io::Write;
-        use std::process::{Command, Stdio};
-        let mut child = Command::new("/usr/bin/pbcopy")
-            .stdin(Stdio::piped())
-            .spawn()
-            .map_err(|_| CopyError::Pasteboard)?;
-        if let Some(stdin) = child.stdin.as_mut() {
-            stdin
-                .write_all(text.as_bytes())
-                .map_err(|_| CopyError::Pasteboard)?;
-        }
-        child
-            .wait()
+    fn write_plain_and_html(&mut self, plain: &str, html: &str) -> Result<(), CopyError> {
+        bronze_platform_macos::native_pasteboard_write(plain, html)
             .map_err(|_| CopyError::Pasteboard)
-            .and_then(|status| {
-                if status.success() {
-                    Ok(())
-                } else {
-                    Err(CopyError::Pasteboard)
-                }
-            })
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = text;
-        Err(CopyError::Pasteboard)
     }
 }
 
@@ -896,6 +944,8 @@ mod live_session_tests {
         );
         assert_eq!(added.content_language, "und");
         assert_eq!(added.source_app_name, None);
+        assert_eq!(added.source_app_icon, None);
+        assert!(!format!("{added:?}").contains("park me"));
         assert_eq!(session.list_queue(false).expect("list").len(), 1);
         session
             .apply_action(&added.id, "complete")
@@ -927,6 +977,10 @@ mod live_session_tests {
             .expect("copy");
         assert_eq!(text, "Café token");
         assert_eq!(board.last.as_deref(), Some("Café token"));
+        let html = board.last_html.as_deref().expect("html");
+        assert!(html.contains("white-space:pre-wrap"));
+        assert!(html.contains("Café token"));
+        assert!(!html.contains("<script"));
         let (hits, count) = session.search_library("Café").expect("search");
         assert_eq!(count, 1);
         assert_eq!(hits[0].id, first.id);
@@ -987,6 +1041,7 @@ mod live_session_tests {
                 accessibility_granted: true,
             },
             source_app_name: Some("TextEdit".into()),
+            source_bundle_id: Some("com.apple.TextEdit".into()),
         };
         let mut announce = FakeAnnouncer::default();
         let persisted = session
@@ -1002,6 +1057,11 @@ mod live_session_tests {
             Some(bronze_domain::compact_title("  captured  "))
         );
         assert_eq!(overview[0].source_app_name.as_deref(), Some("TextEdit"));
+        if let Some(icon) = &overview[0].source_app_icon {
+            assert!(icon.starts_with("data:image/png;base64,"));
+            assert!(!icon.contains("http://"));
+            assert!(!icon.contains("https://"));
+        }
         assert_eq!(announce.keys, vec![CAPTURE_ONLY_ANNOUNCE_KEY.to_string()]);
         session
             .apply_action(&overview[0].id, "complete")
@@ -1028,6 +1088,7 @@ mod live_session_tests {
                 accessibility_granted: true,
             },
             source_app_name: None,
+            source_bundle_id: None,
         };
         let mut announce = FakeAnnouncer::default();
         let terminal = session
@@ -1051,6 +1112,7 @@ mod live_session_tests {
                 accessibility_granted: true,
             },
             source_app_name: Some("TextEdit".into()),
+            source_bundle_id: None,
         };
         let terminal = session
             .persist_selection(&secret, &mut announce, false)
@@ -1071,5 +1133,11 @@ mod live_session_tests {
         assert_eq!(dto.terminal, "rejected");
         assert_eq!(dto.reason, "no_selection");
         assert!(!format!("{dto:?}").contains("secret"));
+        assert_eq!(encode_base64(b"Man"), "TWFu");
+        assert_eq!(encode_base64(b"Ma"), "TWE=");
+        assert_eq!(encode_base64(b"M"), "TQ==");
+        let tool = format!("{}{}", "pb", "copy");
+        assert!(!include_str!("live_session.rs").contains(&tool));
+        assert!(!include_str!("copy.rs").contains(&tool));
     }
 }

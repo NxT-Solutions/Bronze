@@ -598,3 +598,39 @@ pub extern "C" fn bronze_native_ingress_test_end_inconsistent() -> u32 {
     lock_ingress().inconsistent = false;
     BRONZE_STATUS_OK
 }
+
+#[no_mangle]
+pub extern "C" fn bronze_native_pasteboard_write(
+    plain: BronzeNativeUtf8View,
+    html: BronzeNativeUtf8View,
+) -> u32 {
+    let plain_status = validate(plain);
+    if plain_status != BRONZE_STATUS_OK {
+        return plain_status;
+    }
+    let html_status = validate(html);
+    if html_status != BRONZE_STATUS_OK {
+        return html_status;
+    }
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_bundle_id_for_pid(
+    _pid: i32,
+    _out: *mut BronzeNativeUtf8View,
+) -> u32 {
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_app_icon_png(
+    bundle_or_name: BronzeNativeUtf8View,
+    _out: *mut BronzeNativeUtf8View,
+) -> u32 {
+    let status = validate(bundle_or_name);
+    if status != BRONZE_STATUS_OK {
+        return status;
+    }
+    BRONZE_STATUS_DEGRADED
+}

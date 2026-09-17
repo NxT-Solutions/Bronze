@@ -61,6 +61,7 @@ pub enum AxOutcome {
 pub struct CapturedText {
     pub text: String,
     pub source_app_name: Option<String>,
+    pub source_bundle_id: Option<String>,
 }
 
 impl fmt::Debug for CapturedText {
@@ -174,6 +175,7 @@ pub fn capture(tree: &FakeAxTree) -> (AxOutcome, Option<CapturedText>) {
                             Some(CapturedText {
                                 text,
                                 source_app_name: None,
+                                source_bundle_id: None,
                             }),
                         );
                     }

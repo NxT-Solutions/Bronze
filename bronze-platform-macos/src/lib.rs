@@ -9,7 +9,9 @@ mod abi_stub;
 mod ax_live;
 mod bridge;
 mod display_prefs;
+mod pasteboard;
 mod permission;
+mod source_icon;
 mod status_item;
 mod title;
 
@@ -33,12 +35,14 @@ pub use display_prefs::{
     strengthen, DisplayPrefBridge, DisplayPrefError, DisplayPrefHost, DisplayPreferenceSnapshot,
     FakeDisplayHost,
 };
+pub use pasteboard::native_pasteboard_write;
 #[cfg(target_os = "macos")]
 pub use permission::MacosPreflightHost;
 pub use permission::{
     prompt_used_permissions, snapshot_from_preflight, PermissionRequestHost, PreflightError,
     PreflightHost, PromptAttempt, PromptReason,
 };
+pub use source_icon::{native_app_icon_png, native_bundle_id_for_pid};
 pub use status_item::{
     build_status_menu, StatusAction, StatusMenuError, StatusMenuItem, StringCatalog,
     STATUS_MENU_KEYS,

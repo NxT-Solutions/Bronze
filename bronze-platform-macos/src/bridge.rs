@@ -118,7 +118,7 @@ impl Drop for OwnedUtf8 {
     }
 }
 
-fn map_status(status: u32) -> Result<(), NativeError> {
+pub(crate) fn map_status(status: u32) -> Result<(), NativeError> {
     match status {
         BRONZE_STATUS_OK => Ok(()),
         BRONZE_STATUS_INVALID_UTF8 => Err(NativeError::InvalidUtf8),
@@ -691,6 +691,10 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../native/macos/BronzeNative/Sources/BronzeNative/FrontmostABI.swift"
         ));
+        let tap_abi = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapABI.swift"
+        ));
         assert!(frontmost.contains("NSWorkspace"));
         assert!(frontmost.contains("bronze_native_frontmost_pid"));
         for needle in [
@@ -704,10 +708,19 @@ mod tests {
             "print(",
             "Logger(",
             "FileManager",
+            "bronze_native_pasteboard_write",
+            "bronze_native_app_icon_png",
+            "bronze_native_bundle_id_for_pid",
+            "URLSession",
+            "LanguageModel",
         ] {
             assert!(
                 !engine.contains(needle),
                 "event-tap callback file must not contain {needle} (CAP-002/CAP-004)"
+            );
+            assert!(
+                !tap_abi.contains(needle),
+                "event-tap ABI file must not contain {needle} (CAP-002/CAP-004)"
             );
         }
     }

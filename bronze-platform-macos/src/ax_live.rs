@@ -822,6 +822,9 @@ mod ax_live_tests {
             "../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         );
         assert!(!tap.contains("bronze_native_item_title"));
+        assert!(!tap.contains("bronze_native_pasteboard_write"));
+        assert!(!tap.contains("bronze_native_app_icon_png"));
+        assert!(!tap.contains("bronze_native_bundle_id_for_pid"));
         assert!(!tap.contains("AXAttributedStringForRange"));
     }
 }

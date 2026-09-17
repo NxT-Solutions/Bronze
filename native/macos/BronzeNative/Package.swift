@@ -12,6 +12,7 @@ let package = Package(
             publicHeadersPath: "include",
             linkerSettings: [
                 .linkedFramework("NaturalLanguage"),
+                .linkedFramework("AppKit"),
             ]
         ),
         .testTarget(

@@ -143,6 +143,15 @@ uint32_t bronze_native_ingress_load(
 uint32_t bronze_native_ingress_test_begin_inconsistent(void);
 uint32_t bronze_native_ingress_test_end_inconsistent(void);
 
+// Writes string + HTML in one clearContents. Never logs body. DEGRADED if either type fails.
+uint32_t bronze_native_pasteboard_write(bronze_native_utf8_view plain, bronze_native_utf8_view html);
+
+// On OK, *out is owned UTF-8 (bronze_native_utf8_free). DEGRADED when the PID has no bundle.
+uint32_t bronze_native_bundle_id_for_pid(int32_t pid, bronze_native_utf8_view *out);
+
+// PNG octets in the view struct; not UTF-8. Free with bronze_native_utf8_free. Cap 16 KiB.
+uint32_t bronze_native_app_icon_png(bronze_native_utf8_view bundle_or_name, bronze_native_utf8_view *out);
+
 #ifdef __cplusplus
 }
 #endif

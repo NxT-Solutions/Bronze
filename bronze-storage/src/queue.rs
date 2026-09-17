@@ -38,6 +38,7 @@ pub struct QueueItemRow {
     pub status: String,
     pub rank: String,
     pub source_app_name: Option<String>,
+    pub source_bundle_id: Option<String>,
 }
 
 pub fn queue_action_key(action: QueueAction) -> &'static str {
@@ -84,24 +85,13 @@ impl Store {
 
     pub fn list_items(&self, include_trashed: bool) -> Result<Vec<QueueItemRow>, QueueError> {
         let sql = if include_trashed {
-            "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id ORDER BY items.rank, items.id"
+            "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id ORDER BY items.rank, items.id"
         } else {
-            "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status != 'trashed' ORDER BY items.rank, items.id"
+            "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status != 'trashed' ORDER BY items.rank, items.id"
         };
         let mut stmt = self.conn.prepare(sql).map_err(|_| QueueError::Store)?;
         let rows = stmt
-            .query_map([], |row| {
-                Ok(QueueItemRow {
-                    id: row.get(0)?,
-                    section_id: row.get(1)?,
-                    body: row.get(2)?,
-                    title: row.get(3)?,
-                    content_language: row.get(4)?,
-                    status: row.get(5)?,
-                    rank: row.get(6)?,
-                    source_app_name: row.get(7)?,
-                })
-            })
+            .query_map([], queue_item_from_row)
             .map_err(|_| QueueError::Store)?;
         rows.collect::<Result<_, _>>()
             .map_err(|_| QueueError::Store)
@@ -110,20 +100,9 @@ impl Store {
     pub fn get_item(&self, id: &str) -> Result<QueueItemRow, QueueError> {
         self.conn
             .query_row(
-                "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.id=?1",
+                "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.id=?1",
                 [id],
-                |row| {
-                    Ok(QueueItemRow {
-                        id: row.get(0)?,
-                        section_id: row.get(1)?,
-                        body: row.get(2)?,
-                        title: row.get(3)?,
-                        content_language: row.get(4)?,
-                        status: row.get(5)?,
-                        rank: row.get(6)?,
-                        source_app_name: row.get(7)?,
-                    })
-                },
+                queue_item_from_row,
             )
             .map_err(|_| QueueError::NotFound)
     }
@@ -252,6 +231,20 @@ impl Store {
             .map_err(|_| QueueError::Store)?;
         Ok(())
     }
+}
+
+fn queue_item_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<QueueItemRow> {
+    Ok(QueueItemRow {
+        id: row.get(0)?,
+        section_id: row.get(1)?,
+        body: row.get(2)?,
+        title: row.get(3)?,
+        content_language: row.get(4)?,
+        status: row.get(5)?,
+        rank: row.get(6)?,
+        source_app_name: row.get(7)?,
+        source_bundle_id: row.get(8)?,
+    })
 }
 
 fn parse_lifecycle(status: &str) -> Option<Lifecycle> {

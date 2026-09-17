@@ -62,6 +62,7 @@ impl Store {
         &mut self,
         draft: &ComposerDraft,
         source_app_name: Option<&str>,
+        bundle_id: Option<&str>,
         section_id: &str,
         item_id: &str,
         now_ms: i64,
@@ -71,17 +72,21 @@ impl Store {
         }
         let language = ContentLanguage::parse(draft.content_language.as_deref())
             .map_err(|_| ComposerError::Language)?;
-        let source_id = sanitize_app_name(source_app_name).and_then(|name| {
+        let name = sanitize_app_name(source_app_name);
+        let bundle = sanitize_bundle_id(bundle_id);
+        let source_id = if name.is_none() && bundle.is_none() {
+            None
+        } else {
             let source_id = format!("src-{item_id}");
             self.conn
                 .execute(
                     "INSERT INTO sources (id, bundle_id, app_name, safe_title, url, captured_at_ms, policy_version)
-                     VALUES (?1, NULL, ?2, NULL, NULL, ?3, 1)",
-                    rusqlite::params![source_id, name, now_ms],
+                     VALUES (?1, ?2, ?3, NULL, NULL, ?4, 1)",
+                    rusqlite::params![source_id, bundle, name, now_ms],
                 )
-                .ok()?;
-            Some(source_id)
-        });
+                .ok()
+                .map(|_| source_id)
+        };
         let title = compact_title(&draft.body);
         self.conn
             .execute(
@@ -103,8 +108,20 @@ impl Store {
 }
 
 fn sanitize_app_name(name: Option<&str>) -> Option<String> {
-    let name = name?;
-    let cleaned: String = name.chars().filter(|c| !c.is_control()).take(64).collect();
+    sanitize_source_label(name, 64)
+}
+
+fn sanitize_bundle_id(bundle_id: Option<&str>) -> Option<String> {
+    sanitize_source_label(bundle_id, 128)
+}
+
+fn sanitize_source_label(value: Option<&str>, max_chars: usize) -> Option<String> {
+    let value = value?;
+    let cleaned: String = value
+        .chars()
+        .filter(|c| !c.is_control())
+        .take(max_chars)
+        .collect();
     let trimmed = cleaned.trim();
     if trimmed.is_empty()
         || trimmed.eq_ignore_ascii_case("bronze-desktop")
@@ -225,21 +242,22 @@ mod composer_persist_tests {
             content_language: None,
         };
         store
-            .add_from_capture(&draft, Some("TextEdit"), "s1", "i-cap", 12)
+            .add_from_capture(&draft, Some("TextEdit"), None, "s1", "i-cap", 12)
             .expect("capture");
-        let (kind, app, url): (String, String, Option<String>) = store
+        let (kind, app, url, bundle): (String, String, Option<String>, Option<String>) = store
             .conn
             .query_row(
-                "SELECT items.kind, sources.app_name, sources.url
+                "SELECT items.kind, sources.app_name, sources.url, sources.bundle_id
                  FROM items JOIN sources ON sources.id = items.source_id
                  WHERE items.id='i-cap'",
                 [],
-                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
             )
             .expect("row");
         assert_eq!(kind, "snippet");
         assert_eq!(app, "TextEdit");
         assert_eq!(url, None);
+        assert_eq!(bundle, None);
         let title: String = store
             .conn
             .query_row("SELECT title FROM items WHERE id='i-cap'", [], |row| {
@@ -248,7 +266,7 @@ mod composer_persist_tests {
             .expect("title");
         assert_eq!(title, bronze_domain::compact_title("selected"));
         store
-            .add_from_capture(&draft, Some("Bronze"), "s1", "i-self", 13)
+            .add_from_capture(&draft, Some("Bronze"), None, "s1", "i-self", 13)
             .expect("self");
         let source: Option<String> = store
             .conn
@@ -257,5 +275,85 @@ mod composer_persist_tests {
             })
             .expect("self source");
         assert_eq!(source, None);
+    }
+
+    #[test]
+    fn capture_persists_bundle_id_without_url_or_icon_blob() {
+        let src = include_str!("composer.rs");
+        let insert = src
+            .split("INSERT INTO sources")
+            .nth(1)
+            .expect("insert")
+            .split(';')
+            .next()
+            .expect("stmt");
+        let lower = insert.to_ascii_lowercase();
+        assert!(!lower.contains("png"));
+        assert!(!lower.contains("blob"));
+        assert!(!lower.contains("icon"));
+        assert!(insert.contains("bundle_id"));
+
+        let mut store = open_store();
+        let draft = ComposerDraft {
+            body: "selected".into(),
+            content_language: None,
+        };
+        store
+            .add_from_capture(
+                &draft,
+                Some("TextEdit"),
+                Some("com.apple.TextEdit"),
+                "s1",
+                "i-bundle",
+                14,
+            )
+            .expect("capture");
+        let (app, bundle, url): (String, String, Option<String>) = store
+            .conn
+            .query_row(
+                "SELECT app_name, bundle_id, url FROM sources WHERE id='src-i-bundle'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .expect("source");
+        assert_eq!(app, "TextEdit");
+        assert_eq!(bundle, "com.apple.TextEdit");
+        assert_eq!(url, None);
+        let row = store.get_item("i-bundle").expect("row");
+        assert_eq!(row.source_bundle_id.as_deref(), Some("com.apple.TextEdit"));
+        assert_eq!(row.source_app_name.as_deref(), Some("TextEdit"));
+        store
+            .add_from_capture(
+                &draft,
+                Some("Notes"),
+                Some("Bronze"),
+                "s1",
+                "i-reject-bundle",
+                15,
+            )
+            .expect("reject bronze bundle");
+        let rejected: Option<String> = store
+            .conn
+            .query_row(
+                "SELECT bundle_id FROM sources WHERE id='src-i-reject-bundle'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("rejected");
+        assert_eq!(rejected, None);
+        let cols: Vec<String> = store
+            .conn
+            .prepare("PRAGMA table_info(sources)")
+            .expect("pragma")
+            .query_map([], |row| row.get::<_, String>(1))
+            .expect("cols")
+            .collect::<Result<_, _>>()
+            .expect("names");
+        assert!(!cols
+            .iter()
+            .any(|name| name.to_ascii_lowercase().contains("png")));
+        assert!(!cols
+            .iter()
+            .any(|name| name.to_ascii_lowercase().contains("icon")));
     }
 }

@@ -119,4 +119,13 @@ extern "C" {
     ) -> u32;
     pub fn bronze_native_ingress_test_begin_inconsistent() -> u32;
     pub fn bronze_native_ingress_test_end_inconsistent() -> u32;
+    pub fn bronze_native_pasteboard_write(
+        plain: BronzeNativeUtf8View,
+        html: BronzeNativeUtf8View,
+    ) -> u32;
+    pub fn bronze_native_bundle_id_for_pid(pid: i32, out: *mut BronzeNativeUtf8View) -> u32;
+    pub fn bronze_native_app_icon_png(
+        bundle_or_name: BronzeNativeUtf8View,
+        out: *mut BronzeNativeUtf8View,
+    ) -> u32;
 }

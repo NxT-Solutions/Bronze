@@ -134,6 +134,15 @@ private final class NativeOwnership: @unchecked Sendable {
         return ownedCopyLocked(src, out)
     }
 
+    func ownedRawCopy(_ src: bronze_native_utf8_view, _ out: UnsafeMutablePointer<bronze_native_utf8_view>) -> UInt32 {
+        lock.lock()
+        defer { lock.unlock() }
+        if shuttingDown {
+            return BRONZE_STATUS_SHUTTING_DOWN
+        }
+        return ownedCopyLocked(src, out)
+    }
+
     func free(_ view: bronze_native_utf8_view) -> UInt32 {
         lock.lock()
         defer { lock.unlock() }
@@ -307,4 +316,57 @@ public func bronze_native_probe_cancel(_ request_id: UInt64) -> UInt32 {
 @_cdecl("bronze_native_probe_outstanding")
 public func bronze_native_probe_outstanding() -> UInt64 {
     NativeOwnership.shared.outstanding()
+}
+
+func bronzeOwnedBytesCopy(
+    _ src: bronze_native_utf8_view,
+    _ out: UnsafeMutablePointer<bronze_native_utf8_view>
+) -> UInt32 {
+    NativeOwnership.shared.ownedRawCopy(src, out)
+}
+
+final class BronzeOutViewBox: @unchecked Sendable {
+    let ptr: UnsafeMutablePointer<bronze_native_utf8_view>
+    init(_ ptr: UnsafeMutablePointer<bronze_native_utf8_view>) {
+        self.ptr = ptr
+    }
+}
+
+// AppKit pasteboard and workspace icon APIs require the main thread.
+func bronzeOnAppKit(_ work: @escaping @Sendable () -> UInt32) -> UInt32 {
+    if Thread.isMainThread {
+        return work()
+    }
+    let box = MainStatusBox()
+    let lock = DispatchSemaphore(value: 0)
+    DispatchQueue.main.async {
+        box.value = work()
+        lock.signal()
+    }
+    if lock.wait(timeout: .now() + 2) == .timedOut {
+        return BRONZE_STATUS_DEGRADED
+    }
+    return box.value
+}
+
+private final class MainStatusBox: @unchecked Sendable {
+    var value: UInt32 = BRONZE_STATUS_DEGRADED
+}
+
+func bronzeUtf8String(_ view: bronze_native_utf8_view) -> String? {
+    if view.ptr == nil {
+        return view.len == 0 ? "" : nil
+    }
+    if view.len > UInt64(Int.max) {
+        return nil
+    }
+    let count = Int(view.len)
+    let buffer = UnsafeBufferPointer(start: view.ptr, count: count)
+    let bytes = Array(buffer)
+    let decoded = String(decoding: bytes, as: UTF8.self)
+    let reencoded = Array(decoded.utf8)
+    guard reencoded == bytes else {
+        return nil
+    }
+    return decoded
 }
