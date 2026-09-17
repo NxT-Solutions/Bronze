@@ -10,6 +10,7 @@
   "menu.status.quit": "Salir",
   "panel.quick.title": "Bronze",
   "chrome.skip.toContent": "Saltar al contenido",
+  "chrome.notice.dismiss": "Cerrar",
   "panel.toolbar.overflow": "Más acciones",
   "capture.announce.saved": "Capturado en Bronze.",
   "capture.announce.rejected": "No se capturó ninguna selección; selecciona texto en otra app.",

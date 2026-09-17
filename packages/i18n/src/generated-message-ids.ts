@@ -13,6 +13,7 @@ export const MessageIds = {
   "menu.status.quit": "menu.status.quit",
   "panel.quick.title": "panel.quick.title",
   "chrome.skip.toContent": "chrome.skip.toContent",
+  "chrome.notice.dismiss": "chrome.notice.dismiss",
   "panel.toolbar.overflow": "panel.toolbar.overflow",
   "capture.announce.saved": "capture.announce.saved",
   "capture.announce.rejected": "capture.announce.rejected",

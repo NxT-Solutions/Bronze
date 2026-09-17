@@ -83,7 +83,76 @@ export function applyActionStatus(root, key, anchor) {
   }
   if (anchor) {
     applyActionTip(anchor, text, key.endsWith("failed") ? "failed" : "ok");
+    return;
   }
+  showChromeNotice(root, text, key.endsWith("failed") ? "failed" : "ok");
+}
+
+export function hideChromeNotice(root) {
+  const host = root?.querySelector?.("#chrome-notice");
+  if (!host) {
+    return;
+  }
+  const view = host.ownerDocument?.defaultView;
+  if (view && host.dataset.noticeTimer) {
+    view.clearTimeout(Number(host.dataset.noticeTimer));
+    delete host.dataset.noticeTimer;
+  }
+  const label = host.querySelector?.("#chrome-notice-text");
+  if (label) {
+    label.textContent = "";
+  }
+  host.hidden = true;
+  delete host.dataset.tone;
+}
+
+export function showChromeNotice(root, text, tone = "ok") {
+  const host = root?.querySelector?.("#chrome-notice");
+  const label = host?.querySelector?.("#chrome-notice-text");
+  if (!host || !label) {
+    return;
+  }
+  const view = host.ownerDocument?.defaultView;
+  if (view && host.dataset.noticeTimer) {
+    view.clearTimeout(Number(host.dataset.noticeTimer));
+    delete host.dataset.noticeTimer;
+  }
+  label.textContent = text;
+  host.hidden = text.length === 0;
+  if (tone === "failed") {
+    host.dataset.tone = "failed";
+  } else {
+    delete host.dataset.tone;
+  }
+  if (text) {
+    animateElement(host, [
+      { opacity: 0, transform: "translateY(6px)" },
+      { opacity: 1, transform: "none" },
+    ]);
+  }
+  if (text && typeof view?.setTimeout === "function") {
+    host.dataset.noticeTimer = String(
+      view.setTimeout(() => {
+        hideChromeNotice(root);
+      }, TIP_MS),
+    );
+  }
+}
+
+export function bindChromeNotice(root) {
+  if (!root?.addEventListener) {
+    return;
+  }
+  root.addEventListener("click", (event) => {
+    if (event.target?.closest?.("[data-notice-dismiss]")) {
+      hideChromeNotice(root);
+    }
+  });
+  root.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      hideChromeNotice(root);
+    }
+  });
 }
 
 export function closeOverflowMenus(root, keep = null) {

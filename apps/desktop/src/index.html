@@ -95,7 +95,7 @@
         <p id="composer-error" hidden role="alert" data-i18n="composer.add.error">
           Could not add item
         </p>
-        <p id="capture-status" hidden role="status"></p>
+        <p id="capture-status" class="visually-hidden" hidden role="status"></p>
         <p hidden data-capture-message="ok" data-i18n="capture.announce.saved">
           Captured to Bronze.
         </p>
@@ -179,6 +179,17 @@
         <option value="markdown">Markdown</option>
       </select>
     </main>
+    <div id="chrome-notice" class="chrome-notice" hidden>
+      <p id="chrome-notice-text"></p>
+      <button
+        type="button"
+        class="btn-ghost"
+        data-notice-dismiss
+        data-i18n="chrome.notice.dismiss"
+      >
+        Dismiss
+      </button>
+    </div>
     <dialog id="edit-sheet" class="sheet" aria-labelledby="edit-sheet-title">
       <form method="dialog" class="sheet-card">
         <h2 id="edit-sheet-title" data-i18n="queue.item.edit.title">Edit Item</h2>

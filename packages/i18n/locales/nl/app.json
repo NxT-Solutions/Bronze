@@ -10,6 +10,7 @@
   "menu.status.quit": "Stop",
   "panel.quick.title": "Bronze",
   "chrome.skip.toContent": "Ga naar inhoud",
+  "chrome.notice.dismiss": "Sluiten",
   "panel.toolbar.overflow": "Meer acties",
   "capture.announce.saved": "Vastgelegd in Bronze.",
   "capture.announce.rejected": "Er is geen selectie vastgelegd; selecteer tekst in een andere app.",

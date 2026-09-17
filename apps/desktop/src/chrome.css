@@ -881,6 +881,7 @@ article [data-slot="show-less"][hidden],
 #composer-error[hidden],
 #capture-status[hidden],
 #action-status[hidden],
+.chrome-notice[hidden],
 [data-capture-message][hidden],
 [data-action-message][hidden],
 .action-tip[hidden] {
@@ -930,6 +931,44 @@ article [data-slot="show-less"][hidden],
   background: var(--card);
   color: var(--destructive);
   border-color: color-mix(in srgb, var(--destructive) 35%, var(--stroke));
+}
+
+.chrome-notice {
+  position: fixed;
+  z-index: 24;
+  inset-inline: var(--space-5);
+  inset-block-end: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: min(28rem, calc(100vw - 2 * var(--space-5)));
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow);
+  font-size: var(--text-caption);
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0;
+  word-spacing: normal;
+}
+
+.chrome-notice-text,
+#chrome-notice-text {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.chrome-notice[data-tone="failed"] {
+  color: var(--destructive);
+  border-color: color-mix(in srgb, var(--destructive) 35%, var(--stroke));
+}
+
+.chrome-notice .btn-ghost {
+  flex: 0 0 auto;
 }
 
 .row-actions details {

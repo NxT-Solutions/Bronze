@@ -4,12 +4,15 @@ import {
   animateElement,
   applyActionStatus,
   applyActionTip,
+  bindChromeNotice,
   bindOverflowDismiss,
   closeOverflowMenus,
+  hideChromeNotice,
   MOTION,
   motionAllowed,
   openEditSheet,
   runBusy,
+  showChromeNotice,
 } from "./control.mjs";
 
 test("runBusy sets aria-busy and restores the control", async () => {
@@ -143,6 +146,57 @@ test("action tip writes catalog text on the row and overflow closes away", () =>
     });
   assert.equal(openMenu.open, false);
   assert.deepEqual(focused, ["summary"]);
+});
+
+test("chrome notice is viewport chrome and dismisses", () => {
+  const label = { textContent: "" };
+  const host = {
+    hidden: true,
+    dataset: {},
+    querySelector(sel) {
+      return sel === "#chrome-notice-text" ? label : null;
+    },
+    ownerDocument: { defaultView: null },
+  };
+  const root = {
+    querySelector(sel) {
+      return sel === "#chrome-notice" ? host : null;
+    },
+  };
+  showChromeNotice(root, "This app is excluded from capture.", "failed");
+  assert.equal(label.textContent, "This app is excluded from capture.");
+  assert.equal(host.hidden, false);
+  assert.equal(host.dataset.tone, "failed");
+  hideChromeNotice(root);
+  assert.equal(host.hidden, true);
+  assert.equal(label.textContent, "");
+
+  const clicks = [];
+  const keys = [];
+  const bound = {
+    addEventListener(type, fn) {
+      if (type === "click") {
+        clicks.push(fn);
+      }
+      if (type === "keydown") {
+        keys.push(fn);
+      }
+    },
+    querySelector(sel) {
+      return sel === "#chrome-notice" ? host : null;
+    },
+  };
+  bindChromeNotice(bound);
+  showChromeNotice(bound, "Could not add item", "failed");
+  clicks[0]({
+    target: {
+      closest: (sel) => (sel === "[data-notice-dismiss]" ? true : null),
+    },
+  });
+  assert.equal(host.hidden, true);
+  showChromeNotice(bound, "Captured to Bronze.");
+  keys[0]({ key: "Escape" });
+  assert.equal(host.hidden, true);
 });
 
 test("motion helper stays local and yields under reduce-motion", () => {

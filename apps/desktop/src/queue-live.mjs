@@ -1,10 +1,13 @@
 import { catalogMessage, LOCALE_APPLIED_EVENT } from "./apply-locale.mjs";
 import {
   applyActionStatus,
+  bindChromeNotice,
   bindOverflowDismiss,
   closeOverflowMenus,
+  hideChromeNotice,
   openEditSheet,
   runBusy,
+  showChromeNotice,
 } from "./control.mjs";
 import {
   applySourceRow,
@@ -462,6 +465,7 @@ export function applyCaptureResult(root, result) {
   const text = source?.textContent?.trim() ?? "";
   status.textContent = text;
   status.hidden = text.length === 0;
+  showChromeNotice(root, text, result?.terminal === "saved" ? "ok" : "failed");
 }
 
 export function renderQueueItems(list, items, template) {
@@ -504,6 +508,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   }
 
   bindOverflowDismiss(root);
+  bindChromeNotice(root);
   syncComposerEmpty(editor);
   const submit = form.querySelector("[type=submit]");
   function syncSubmitLabel() {
@@ -530,10 +535,12 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       if (error) {
         error.hidden = true;
       }
+      hideChromeNotice(root);
       await refresh();
     } catch {
       if (error) {
-        error.hidden = false;
+        error.hidden = true;
+        showChromeNotice(root, error.textContent?.trim() ?? "", "failed");
       }
     }
   }

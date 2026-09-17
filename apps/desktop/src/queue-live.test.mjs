@@ -76,7 +76,10 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(live, /queue-changed/);
   assert.match(live, /capture-result/);
   assert.match(live, /LOCALE_APPLIED_EVENT/);
-  assert.match(html, /id="capture-status"/);
+  assert.match(html, /id="capture-status"[^>]*visually-hidden/);
+  assert.match(html, /id="chrome-notice"/);
+  assert.match(html, /data-notice-dismiss/);
+  assert.match(html, /chrome.notice.dismiss/);
   assert.match(html, /role="status"/);
   assert.match(html, /data-i18n="capture.announce.rejected"/);
   assert.match(html, /data-i18n="capture.announce.denied"/);
@@ -88,6 +91,8 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(html, /id="action-status"/);
   assert.match(live, /runBusy/);
   assert.match(live, /applyActionStatus/);
+  assert.match(live, /bindChromeNotice/);
+  assert.match(live, /showChromeNotice/);
   assert.match(live, /bindOverflowDismiss/);
   assert.match(live, /copy\.announce\.copied", button/);
   assert.match(html, /data-slot="action-tip"/);
