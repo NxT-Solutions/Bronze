@@ -1,6 +1,6 @@
-use crate::abi::{BronzeNativeUtf8View, BRONZE_STATUS_OK};
+use crate::abi::{BronzeNativeUtf8View, BRONZE_STATUS_CANCELLED, BRONZE_STATUS_OK};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InstalledApp {
@@ -10,6 +10,43 @@ pub struct InstalledApp {
 
 pub fn try_list_installed_apps() -> Option<Vec<InstalledApp>> {
     native_list_installed_apps_payload().map(|payload| parse_app_list_payload(&payload))
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum PickInstalledApp {
+    Picked(InstalledApp),
+    Cancelled,
+    Unavailable,
+    Invalid,
+}
+
+pub fn try_pick_installed_app() -> PickInstalledApp {
+    match native_pick_installed_app_payload() {
+        NativePick::Payload(payload) => parse_app_list_payload(&payload)
+            .into_iter()
+            .next()
+            .map(PickInstalledApp::Picked)
+            .unwrap_or(PickInstalledApp::Invalid),
+        NativePick::Cancelled => PickInstalledApp::Cancelled,
+        NativePick::Unavailable => PickInstalledApp::Unavailable,
+    }
+}
+
+pub fn installed_app_from_bundle_path(path: &Path) -> Option<InstalledApp> {
+    if path
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return None;
+    }
+    let is_app = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("app"));
+    if !is_app {
+        return None;
+    }
+    read_app_bundle(path)
 }
 
 pub fn default_application_roots() -> Vec<PathBuf> {
@@ -142,6 +179,33 @@ fn native_list_installed_apps_payload() -> Option<String> {
     if status != BRONZE_STATUS_OK {
         return None;
     }
+    take_owned_utf8(out)
+}
+
+enum NativePick {
+    Payload(String),
+    Cancelled,
+    Unavailable,
+}
+
+fn native_pick_installed_app_payload() -> NativePick {
+    let mut out = BronzeNativeUtf8View {
+        ptr: std::ptr::null(),
+        len: 0,
+    };
+    let status = unsafe { crate::abi::bronze_native_pick_installed_app(&mut out) };
+    if status == BRONZE_STATUS_CANCELLED {
+        return NativePick::Cancelled;
+    }
+    if status != BRONZE_STATUS_OK {
+        return NativePick::Unavailable;
+    }
+    take_owned_utf8(out)
+        .map(NativePick::Payload)
+        .unwrap_or(NativePick::Unavailable)
+}
+
+fn take_owned_utf8(out: BronzeNativeUtf8View) -> Option<String> {
     let copied = if out.ptr.is_null() {
         (out.len == 0).then(String::new)
     } else {
@@ -217,6 +281,8 @@ mod installed_apps_tests {
         write_app(&root, "Zebra", "com.example.zebra", "Zebra");
         write_app(&root, "Alpha", "com.example.alpha", "Alpha");
         let collected = collect_apps_from_roots(&[root.clone()]);
+        let picked = installed_app_from_bundle_path(&root.join("Alpha.app"));
+        assert!(installed_app_from_bundle_path(&root.join("Alpha.txt")).is_none());
         fs::remove_dir_all(&root).expect("cleanup");
         assert_eq!(
             collected
@@ -226,23 +292,47 @@ mod installed_apps_tests {
             vec!["com.example.alpha", "com.example.zebra"]
         );
         assert!(try_list_installed_apps().is_none());
+        assert_eq!(try_pick_installed_app(), PickInstalledApp::Unavailable);
         assert!(!is_safe_bundle_id("../evil"));
         assert!(!is_safe_bundle_id("/Applications/Foo.app"));
         assert!(is_safe_bundle_id("com.apple.Safari"));
+        assert_eq!(
+            picked,
+            Some(InstalledApp {
+                bundle_id: "com.example.alpha".into(),
+                name: "Alpha".into(),
+            })
+        );
+        assert!(installed_app_from_bundle_path(Path::new("../evil.app")).is_none());
+        assert!(picked
+            .as_ref()
+            .is_some_and(|app| !app.bundle_id.contains('/') && !app.name.contains('/')));
         let swift = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../native/macos/BronzeNative/Sources/BronzeNative/SourceIconABI.swift"
         ));
         assert!(swift.contains("bronze_native_list_installed_apps"));
+        assert!(swift.contains("bronze_native_pick_installed_app"));
+        assert!(swift.contains("NSOpenPanel"));
+        assert!(swift.contains("bronzeOnAppKitModal"));
+        assert!(swift.contains("allowedFileTypes"));
         assert!(swift.contains("/Applications"));
         assert!(!swift.contains("URLSession"));
         assert!(!swift.contains("http://"));
         assert!(!swift.contains("https://"));
+        let hop = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../native/macos/BronzeNative/Sources/BronzeNative/BronzeNative.swift"
+        ));
+        assert!(hop.contains("bronzeOnAppKitModal"));
+        assert!(hop.contains("lock.wait()"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         assert!(!tap.contains("bronze_native_list_installed_apps"));
+        assert!(!tap.contains("bronze_native_pick_installed_app"));
         assert!(!tap.contains("bronze_native_app_icon_png"));
+        assert!(!tap.contains("NSOpenPanel"));
     }
 }

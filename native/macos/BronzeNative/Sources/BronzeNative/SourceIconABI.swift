@@ -173,35 +173,80 @@ private func installedAppListPayload() -> String {
             continue
         }
         for child in children where child.pathExtension.caseInsensitiveCompare("app") == .orderedSame {
-            guard let bundle = Bundle(url: child),
-                  let id = bundle.bundleIdentifier,
-                  !id.isEmpty,
-                  !id.contains("/"),
-                  !id.contains("\\"),
-                  seen.insert(id).inserted
-            else {
+            guard let row = installedAppRow(from: child), seen.insert(row.0).inserted else {
                 continue
             }
-            let name = (bundle.localizedInfoDictionary?["CFBundleDisplayName"] as? String)
-                ?? (bundle.infoDictionary?["CFBundleDisplayName"] as? String)
-                ?? (bundle.localizedInfoDictionary?["CFBundleName"] as? String)
-                ?? (bundle.infoDictionary?["CFBundleName"] as? String)
-                ?? child.deletingPathExtension().lastPathComponent
-            let cleanName = name
-                .replacingOccurrences(of: "\t", with: " ")
-                .replacingOccurrences(of: "\n", with: " ")
-                .replacingOccurrences(of: "\r", with: " ")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !cleanName.isEmpty, !cleanName.hasPrefix("/"), !cleanName.hasPrefix("~") else {
-                continue
-            }
-            rows.append((id, cleanName))
+            rows.append(row)
         }
     }
     rows.sort { lhs, rhs in
         lhs.1.localizedCaseInsensitiveCompare(rhs.1) == .orderedAscending
     }
     return rows.map { "\($0.0)\t\($0.1)" }.joined(separator: "\n")
+}
+
+@_silgen_name("bronze_native_pick_installed_app")
+public func bronze_native_pick_installed_app(
+    _ out: UnsafeMutablePointer<bronze_native_utf8_view>?
+) -> UInt32 {
+    guard let out else {
+        return BRONZE_STATUS_NOT_FOUND
+    }
+    let outBox = BronzeOutViewBox(out)
+    return bronzeOnAppKitModal {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.treatsFilePackagesAsDirectories = false
+        panel.allowedFileTypes = ["app"]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
+        let response = panel.runModal()
+        guard response == .OK else {
+            return BRONZE_STATUS_CANCELLED
+        }
+        guard let url = panel.url, let row = installedAppRow(from: url) else {
+            return BRONZE_STATUS_DEGRADED
+        }
+        let payload = "\(row.0)\t\(row.1)"
+        let bytes = Array(payload.utf8)
+        guard bytes.count <= listPayloadCap else {
+            return BRONZE_STATUS_DEGRADED
+        }
+        return bytes.withUnsafeBufferPointer { buf in
+            let src = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(bytes.count))
+            return bronze_native_utf8_owned_copy(src, outBox.ptr)
+        }
+    }
+}
+
+private func installedAppRow(from url: URL) -> (String, String)? {
+    guard url.pathExtension.caseInsensitiveCompare("app") == .orderedSame,
+          let bundle = Bundle(url: url),
+          let id = bundle.bundleIdentifier,
+          !id.isEmpty,
+          !id.contains("/"),
+          !id.contains("\\"),
+          !id.contains("..")
+    else {
+        return nil
+    }
+    let name = (bundle.localizedInfoDictionary?["CFBundleDisplayName"] as? String)
+        ?? (bundle.infoDictionary?["CFBundleDisplayName"] as? String)
+        ?? (bundle.localizedInfoDictionary?["CFBundleName"] as? String)
+        ?? (bundle.infoDictionary?["CFBundleName"] as? String)
+        ?? url.deletingPathExtension().lastPathComponent
+    let cleanName = name
+        .replacingOccurrences(of: "\t", with: " ")
+        .replacingOccurrences(of: "\n", with: " ")
+        .replacingOccurrences(of: "\r", with: " ")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !cleanName.isEmpty, !cleanName.hasPrefix("/"), !cleanName.hasPrefix("~"),
+          !cleanName.contains("\\")
+    else {
+        return nil
+    }
+    return (id, cleanName)
 }
 
 private func rasterPng(_ image: NSImage, pixels: Int) -> Data? {

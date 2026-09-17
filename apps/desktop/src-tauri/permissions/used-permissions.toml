@@ -51,6 +51,7 @@ commands.allow = [
   "reset_settings_all",
   "search_settings_fields",
   "list_installed_apps",
+  "pick_installed_app",
   "app_icon_data_url",
   "ui_locale",
   "ui_catalog",

@@ -37,8 +37,9 @@ pub use display_prefs::{
     FakeDisplayHost,
 };
 pub use installed_apps::{
-    collect_apps_from_roots, default_application_roots, is_safe_bundle_id, parse_app_list_payload,
-    try_list_installed_apps, InstalledApp,
+    collect_apps_from_roots, default_application_roots, installed_app_from_bundle_path,
+    is_safe_bundle_id, parse_app_list_payload, try_list_installed_apps, try_pick_installed_app,
+    InstalledApp, PickInstalledApp,
 };
 pub use pasteboard::native_pasteboard_write;
 #[cfg(target_os = "macos")]

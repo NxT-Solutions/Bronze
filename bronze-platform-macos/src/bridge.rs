@@ -712,6 +712,8 @@ mod tests {
             "bronze_native_app_icon_png",
             "bronze_native_bundle_id_for_pid",
             "bronze_native_list_installed_apps",
+            "bronze_native_pick_installed_app",
+            "NSOpenPanel",
             "URLSession",
             "LanguageModel",
         ] {

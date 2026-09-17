@@ -953,6 +953,22 @@ pub fn list_installed_apps() -> Result<Vec<InstalledAppDto>, String> {
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
+pub fn pick_installed_app() -> Result<InstalledAppDto, String> {
+    match bronze_platform_macos::try_pick_installed_app() {
+        bronze_platform_macos::PickInstalledApp::Picked(app) => {
+            if !bronze_platform_macos::is_safe_bundle_id(&app.bundle_id) {
+                return Err("invalid_app".into());
+            }
+            Ok(InstalledAppDto::from(app))
+        }
+        bronze_platform_macos::PickInstalledApp::Cancelled => Err("picker_cancelled".into()),
+        bronze_platform_macos::PickInstalledApp::Unavailable => Err("picker_unavailable".into()),
+        bronze_platform_macos::PickInstalledApp::Invalid => Err("invalid_app".into()),
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
 pub fn app_icon_data_url(bundle_id: String) -> Result<Option<String>, String> {
     if !bronze_platform_macos::is_safe_bundle_id(&bundle_id) {
         return Err("invalid_bundle_id".into());
@@ -1322,7 +1338,11 @@ mod live_session_tests {
         assert!(src.contains("app_excluded"));
         let used = include_str!("../permissions/used-permissions.toml");
         assert!(used.contains("list_installed_apps"));
+        assert!(used.contains("pick_installed_app"));
         assert!(used.contains("app_icon_data_url"));
+        assert!(src.contains("pub fn pick_installed_app()"));
+        assert!(src.contains("picker_cancelled"));
+        assert!(src.contains("picker_unavailable"));
     }
 
     #[test]

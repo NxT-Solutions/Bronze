@@ -349,6 +349,22 @@ func bronzeOnAppKit(_ work: @escaping @Sendable () -> UInt32) -> UInt32 {
     return box.value
 }
 
+/// Modal panels stay open until the operator dismisses them. The 2s hop
+/// used by pasteboard and icons must not wrap NSOpenPanel.
+func bronzeOnAppKitModal(_ work: @escaping @Sendable () -> UInt32) -> UInt32 {
+    if Thread.isMainThread {
+        return work()
+    }
+    let box = MainStatusBox()
+    let lock = DispatchSemaphore(value: 0)
+    DispatchQueue.main.async {
+        box.value = work()
+        lock.signal()
+    }
+    lock.wait()
+    return box.value
+}
+
 private final class MainStatusBox: @unchecked Sendable {
     var value: UInt32 = BRONZE_STATUS_DEGRADED
 }

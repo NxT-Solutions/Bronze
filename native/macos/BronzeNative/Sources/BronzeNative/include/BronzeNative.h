@@ -155,6 +155,10 @@ uint32_t bronze_native_app_icon_png(bronze_native_utf8_view bundle_or_name, bron
 // Owned UTF-8 TSV: bundleId TAB displayName per line. Never includes filesystem paths.
 uint32_t bronze_native_list_installed_apps(bronze_native_utf8_view *out);
 
+// Rust-owned NSOpenPanel for one .app. Owned UTF-8 TSV: bundleId TAB displayName.
+// CANCELLED when the operator dismisses. Never includes filesystem paths.
+uint32_t bronze_native_pick_installed_app(bronze_native_utf8_view *out);
+
 #ifdef __cplusplus
 }
 #endif
