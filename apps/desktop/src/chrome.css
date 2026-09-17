@@ -1025,16 +1025,16 @@ menu {
 fieldset {
   margin: 0;
   padding: var(--space-3);
-  border: 1px solid var(--stroke);
+  border: none;
   border-radius: var(--radius-md);
   background: var(--card);
-  box-shadow: none;
+  box-shadow: 0 0 0 1px var(--stroke);
   display: grid;
   gap: var(--space-2);
 }
 
 legend {
-  padding-inline: 0.35rem;
+  padding: 0;
   font-size: var(--text-caption);
   font-weight: 650;
 }
@@ -1196,12 +1196,15 @@ legend {
   .card,
   .surface,
   article,
-  fieldset,
   .health-card,
   menu,
   .sheet-card {
     border-width: 2px !important;
     border-color: var(--border) !important;
+  }
+
+  fieldset {
+    box-shadow: 0 0 0 2px var(--border);
   }
 }
 
@@ -1224,6 +1227,10 @@ legend {
   --ring: #000000;
   --stroke: #000000;
   --shadow: none;
+}
+
+[data-increase-contrast] fieldset {
+  box-shadow: 0 0 0 2px var(--border);
 }
 
 [data-differentiate-without-color] [data-status] {
