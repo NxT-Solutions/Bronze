@@ -634,3 +634,8 @@ pub extern "C" fn bronze_native_app_icon_png(
     }
     BRONZE_STATUS_DEGRADED
 }
+
+#[no_mangle]
+pub extern "C" fn bronze_native_list_installed_apps(_out: *mut BronzeNativeUtf8View) -> u32 {
+    BRONZE_STATUS_DEGRADED
+}

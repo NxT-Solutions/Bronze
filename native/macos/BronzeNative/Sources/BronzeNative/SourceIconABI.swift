@@ -130,6 +130,80 @@ private func rasterPng(_ image: NSImage) -> Data? {
     return rasterPng(image, pixels: iconPointSize)
 }
 
+private let listPayloadCap = 512 * 1024
+
+@_silgen_name("bronze_native_list_installed_apps")
+public func bronze_native_list_installed_apps(
+    _ out: UnsafeMutablePointer<bronze_native_utf8_view>?
+) -> UInt32 {
+    guard let out else {
+        return BRONZE_STATUS_NOT_FOUND
+    }
+    let outBox = BronzeOutViewBox(out)
+    return bronzeOnAppKit {
+        let payload = installedAppListPayload()
+        let bytes = Array(payload.utf8)
+        guard bytes.count <= listPayloadCap else {
+            return BRONZE_STATUS_DEGRADED
+        }
+        return bytes.withUnsafeBufferPointer { buf in
+            let src = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(bytes.count))
+            return bronze_native_utf8_owned_copy(src, outBox.ptr)
+        }
+    }
+}
+
+private func installedAppListPayload() -> String {
+    var seen = Set<String>()
+    var rows: [(String, String)] = []
+    let fm = FileManager.default
+    let roots = [
+        "/Applications",
+        "/System/Applications",
+        "/System/Applications/Utilities",
+        fm.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path,
+    ]
+    for root in roots {
+        let dir = URL(fileURLWithPath: root, isDirectory: true)
+        guard let children = try? fm.contentsOfDirectory(
+            at: dir,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            continue
+        }
+        for child in children where child.pathExtension.caseInsensitiveCompare("app") == .orderedSame {
+            guard let bundle = Bundle(url: child),
+                  let id = bundle.bundleIdentifier,
+                  !id.isEmpty,
+                  !id.contains("/"),
+                  !id.contains("\\"),
+                  seen.insert(id).inserted
+            else {
+                continue
+            }
+            let name = (bundle.localizedInfoDictionary?["CFBundleDisplayName"] as? String)
+                ?? (bundle.infoDictionary?["CFBundleDisplayName"] as? String)
+                ?? (bundle.localizedInfoDictionary?["CFBundleName"] as? String)
+                ?? (bundle.infoDictionary?["CFBundleName"] as? String)
+                ?? child.deletingPathExtension().lastPathComponent
+            let cleanName = name
+                .replacingOccurrences(of: "\t", with: " ")
+                .replacingOccurrences(of: "\n", with: " ")
+                .replacingOccurrences(of: "\r", with: " ")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleanName.isEmpty, !cleanName.hasPrefix("/"), !cleanName.hasPrefix("~") else {
+                continue
+            }
+            rows.append((id, cleanName))
+        }
+    }
+    rows.sort { lhs, rhs in
+        lhs.1.localizedCaseInsensitiveCompare(rhs.1) == .orderedAscending
+    }
+    return rows.map { "\($0.0)\t\($0.1)" }.joined(separator: "\n")
+}
+
 private func rasterPng(_ image: NSImage, pixels: Int) -> Data? {
     let points = CGFloat(iconPointSize)
     let drawable = (image.copy() as? NSImage) ?? image

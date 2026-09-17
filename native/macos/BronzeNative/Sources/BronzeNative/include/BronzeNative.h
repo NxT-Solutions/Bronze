@@ -152,6 +152,9 @@ uint32_t bronze_native_bundle_id_for_pid(int32_t pid, bronze_native_utf8_view *o
 // PNG octets in the view struct; not UTF-8. Free with bronze_native_utf8_free. Cap 16 KiB.
 uint32_t bronze_native_app_icon_png(bronze_native_utf8_view bundle_or_name, bronze_native_utf8_view *out);
 
+// Owned UTF-8 TSV: bundleId TAB displayName per line. Never includes filesystem paths.
+uint32_t bronze_native_list_installed_apps(bronze_native_utf8_view *out);
+
 #ifdef __cplusplus
 }
 #endif

@@ -711,6 +711,7 @@ mod tests {
             "bronze_native_pasteboard_write",
             "bronze_native_app_icon_png",
             "bronze_native_bundle_id_for_pid",
+            "bronze_native_list_installed_apps",
             "URLSession",
             "LanguageModel",
         ] {

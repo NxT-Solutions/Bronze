@@ -128,4 +128,5 @@ extern "C" {
         bundle_or_name: BronzeNativeUtf8View,
         out: *mut BronzeNativeUtf8View,
     ) -> u32;
+    pub fn bronze_native_list_installed_apps(out: *mut BronzeNativeUtf8View) -> u32;
 }

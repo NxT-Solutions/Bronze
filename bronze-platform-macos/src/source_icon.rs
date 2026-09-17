@@ -80,6 +80,7 @@ mod source_icon_tests {
         ));
         assert!(!tap.contains("bronze_native_app_icon_png"));
         assert!(!tap.contains("bronze_native_bundle_id_for_pid"));
+        assert!(!tap.contains("bronze_native_list_installed_apps"));
         assert!(!tap.contains("bronze_native_pasteboard_write"));
     }
 }

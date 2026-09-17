@@ -390,6 +390,17 @@ pub struct PrivacySettings {
     pub diagnostics_retention_days: u32,
 }
 
+impl PrivacySettings {
+    pub fn excludes_bundle(&self, bundle_id: &str) -> bool {
+        let needle = bundle_id.trim();
+        !needle.is_empty()
+            && self
+                .excluded_bundle_ids
+                .iter()
+                .any(|id| id.trim().eq_ignore_ascii_case(needle))
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DataSettings {
@@ -1053,5 +1064,17 @@ mod tests {
         settings.reset_all_preserving_content();
         assert!(!settings.general.launch_at_login);
         assert_eq!(settings, SettingsV1::defaults());
+    }
+
+    #[test]
+    fn excluded_bundle_ids_match_case_insensitively_and_allow_many() {
+        let mut privacy = SettingsV1::defaults().privacy;
+        privacy.excluded_bundle_ids =
+            vec!["com.apple.Safari".into(), " com.apple.TextEdit ".into()];
+        assert!(privacy.excludes_bundle("com.apple.safari"));
+        assert!(privacy.excludes_bundle("COM.APPLE.TEXTEDIT"));
+        assert!(!privacy.excludes_bundle("com.apple.Notes"));
+        assert!(!privacy.excludes_bundle(""));
+        assert!(!privacy.excludes_bundle("   "));
     }
 }

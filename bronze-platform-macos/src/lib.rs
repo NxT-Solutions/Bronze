@@ -9,6 +9,7 @@ mod abi_stub;
 mod ax_live;
 mod bridge;
 mod display_prefs;
+mod installed_apps;
 mod pasteboard;
 mod permission;
 mod source_icon;
@@ -34,6 +35,10 @@ pub use bridge::{
 pub use display_prefs::{
     strengthen, DisplayPrefBridge, DisplayPrefError, DisplayPrefHost, DisplayPreferenceSnapshot,
     FakeDisplayHost,
+};
+pub use installed_apps::{
+    collect_apps_from_roots, default_application_roots, is_safe_bundle_id, parse_app_list_payload,
+    try_list_installed_apps, InstalledApp,
 };
 pub use pasteboard::native_pasteboard_write;
 #[cfg(target_os = "macos")]

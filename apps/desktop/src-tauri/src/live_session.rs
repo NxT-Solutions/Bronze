@@ -37,6 +37,7 @@ pub fn is_overview_status(status: &str) -> bool {
 }
 
 pub trait SelectionHost {
+    fn peek_bundle_id(&self) -> Option<String>;
     fn read(&self) -> (AxOutcome, Option<CapturedText>);
 }
 
@@ -49,6 +50,10 @@ pub struct FakeSelectionHost {
 
 #[cfg(test)]
 impl SelectionHost for FakeSelectionHost {
+    fn peek_bundle_id(&self) -> Option<String> {
+        self.source_bundle_id.clone()
+    }
+
     fn read(&self) -> (AxOutcome, Option<CapturedText>) {
         let (outcome, text) = ax_capture(&self.tree);
         (
@@ -96,6 +101,11 @@ impl CaptureResultDto {
 pub struct LiveAxHost;
 
 impl SelectionHost for LiveAxHost {
+    fn peek_bundle_id(&self) -> Option<String> {
+        bronze_platform_macos::last_external_pid()
+            .and_then(bronze_platform_macos::native_bundle_id_for_pid)
+    }
+
     fn read(&self) -> (AxOutcome, Option<CapturedText>) {
         let (outcome, text, source_app_name) = bronze_platform_macos::read_capture_selection();
         let mapped = match outcome {
@@ -166,6 +176,22 @@ pub struct QueueItemDto {
     pub source_app_name: Option<String>,
     #[serde(default)]
     pub source_app_icon: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct InstalledAppDto {
+    pub bundle_id: String,
+    pub name: String,
+}
+
+impl From<bronze_platform_macos::InstalledApp> for InstalledAppDto {
+    fn from(app: bronze_platform_macos::InstalledApp) -> Self {
+        Self {
+            bundle_id: app.bundle_id,
+            name: app.name,
+        }
+    }
 }
 
 impl fmt::Debug for QueueItemDto {
@@ -364,6 +390,15 @@ impl LiveSession {
         announcer: &mut dyn Announcer,
         webview_visible: bool,
     ) -> Result<CapturePersistOutcome, String> {
+        if let Some(bundle) = host.peek_bundle_id() {
+            if self.settings.privacy.excludes_bundle(&bundle) {
+                return Ok(CapturePersistOutcome {
+                    terminal: Terminal::Rejected,
+                    reason: "app_excluded",
+                    item_id: None,
+                });
+            }
+        }
         let (outcome, text) = host.read();
         match (outcome, text) {
             (AxOutcome::Captured { .. }, Some(captured)) => {
@@ -427,13 +462,16 @@ impl LiveSession {
                     item_id: None,
                 })
             }
-            (AxOutcome::AccessibilityDenied | AxOutcome::AppExcluded, _) => {
-                Ok(CapturePersistOutcome {
-                    terminal: Terminal::Rejected,
-                    reason: "accessibility",
-                    item_id: None,
-                })
-            }
+            (AxOutcome::AppExcluded, _) => Ok(CapturePersistOutcome {
+                terminal: Terminal::Rejected,
+                reason: "app_excluded",
+                item_id: None,
+            }),
+            (AxOutcome::AccessibilityDenied, _) => Ok(CapturePersistOutcome {
+                terminal: Terminal::Rejected,
+                reason: "accessibility",
+                item_id: None,
+            }),
             (AxOutcome::SelectionTooLarge | AxOutcome::InvalidTextEncoding, _) => {
                 Ok(CapturePersistOutcome {
                     terminal: Terminal::Failed,
@@ -902,6 +940,28 @@ pub fn search_settings_fields(query: String) -> Vec<String> {
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
+pub fn list_installed_apps() -> Result<Vec<InstalledAppDto>, String> {
+    bronze_platform_macos::try_list_installed_apps()
+        .map(|apps| {
+            apps.into_iter()
+                .filter(|app| bronze_platform_macos::is_safe_bundle_id(&app.bundle_id))
+                .map(InstalledAppDto::from)
+                .collect()
+        })
+        .ok_or_else(|| "apps_unavailable".into())
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn app_icon_data_url(bundle_id: String) -> Result<Option<String>, String> {
+    if !bronze_platform_macos::is_safe_bundle_id(&bundle_id) {
+        return Err("invalid_bundle_id".into());
+    }
+    Ok(source_app_icon_data_url(Some(&bundle_id), None))
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
 pub fn ui_locale(session: tauri::State<std::sync::Mutex<LiveSession>>) -> String {
     lock_session(&session)
         .map(|session| session.ui_locale().to_string())
@@ -1212,6 +1272,57 @@ mod live_session_tests {
         assert_eq!(terminal.reason, "protected");
         assert!(session.list_overview().expect("still none").is_empty());
         assert!(!format!("{terminal:?}").contains("hunter2"));
+    }
+
+    #[test]
+    fn excluded_bundle_rejects_before_ax_read() {
+        use bronze_capture::{
+            AxRole, FakeAnnouncer, FakeAxNode, FakeAxTree, FakeSelection, Terminal,
+        };
+        let mut session = open_session();
+        let mut settings = session.settings();
+        settings.privacy.excluded_bundle_ids =
+            vec!["com.secret.app".into(), "com.other.app".into()];
+        session.replace_settings(settings).expect("exclude");
+        let host = FakeSelectionHost {
+            tree: FakeAxTree {
+                nodes: vec![FakeAxNode::new(
+                    AxRole::TextArea,
+                    None,
+                    FakeSelection::Text("must-not-persist".into()),
+                    None,
+                )],
+                focused: Some(0),
+                excluded: false,
+                accessibility_granted: true,
+            },
+            source_app_name: Some("Secret".into()),
+            source_bundle_id: Some("com.secret.app".into()),
+        };
+        let mut announce = FakeAnnouncer::default();
+        let terminal = session
+            .persist_selection(&host, &mut announce, false)
+            .expect("excluded");
+        assert_eq!(terminal.terminal, Terminal::Rejected);
+        assert_eq!(terminal.reason, "app_excluded");
+        assert!(session.list_overview().expect("none").is_empty());
+        assert_eq!(host.tree.total_queries(), 0);
+        assert!(announce.keys.is_empty());
+        assert_eq!(list_installed_apps().unwrap_err(), "apps_unavailable");
+        assert_eq!(
+            app_icon_data_url("/Applications/X.app".into()).unwrap_err(),
+            "invalid_bundle_id"
+        );
+        assert_eq!(
+            app_icon_data_url("com.apple.Safari".into()).expect("icon"),
+            None
+        );
+        let src = include_str!("live_session.rs");
+        assert!(src.contains("peek_bundle_id"));
+        assert!(src.contains("app_excluded"));
+        let used = include_str!("../permissions/used-permissions.toml");
+        assert!(used.contains("list_installed_apps"));
+        assert!(used.contains("app_icon_data_url"));
     }
 
     #[test]

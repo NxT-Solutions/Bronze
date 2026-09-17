@@ -28,6 +28,8 @@ pub fn run() {
                 live_session::reset_settings_group,
                 live_session::reset_settings_all,
                 live_session::search_settings_fields,
+                live_session::list_installed_apps,
+                live_session::app_icon_data_url,
                 live_session::ui_locale,
                 live_session::ui_catalog,
                 live_session::backup_library_now,
