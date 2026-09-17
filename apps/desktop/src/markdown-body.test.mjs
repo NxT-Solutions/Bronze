@@ -173,6 +173,12 @@ test("line-start markers become lists and leaked HTML stays text", () => {
   renderMarkdownBody(target, "- <script>alert(1)</script>");
   assert.equal(target.querySelector("script"), null);
   assert.match(target.textContent, /<script>alert\(1\)<\/script>/);
+  renderMarkdownBody(
+    target,
+    "today's versions:• Follo Studio 0.2.21• The follo command 0.1.7",
+  );
+  assert.deepEqual(tagsUnder(target), ["ul", "li", "li"]);
+  assert.match(target.textContent, /Follo Studio 0.2.21/);
 });
 
 test("missing document is unavailable rather than assigned as HTML", () => {

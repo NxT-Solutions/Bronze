@@ -135,6 +135,41 @@ function matchListRun(lines, start, pattern) {
   return items.length > 0 ? { items, next: index } : null;
 }
 
+function splitInlineBullets(text) {
+  if (!text.includes("•")) {
+    return null;
+  }
+  const parts = text
+    .split("•")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  if (parts.length < 2) {
+    return null;
+  }
+  return { lead: parts[0], items: parts.slice(1) };
+}
+
+function pushParagraph(blocks, text) {
+  const split = splitInlineBullets(text);
+  if (!split) {
+    blocks.push({
+      type: "paragraph",
+      children: parseConstrainedMarkdown(text),
+    });
+    return;
+  }
+  if (split.lead) {
+    blocks.push({
+      type: "paragraph",
+      children: parseConstrainedMarkdown(split.lead),
+    });
+  }
+  blocks.push({
+    type: "ul",
+    items: split.items.map((item) => parseConstrainedMarkdown(item)),
+  });
+}
+
 export function parseConstrainedDocument(markdown) {
   const source = typeof markdown === "string" ? markdown : "";
   const lines = source.split(/\r?\n/);
@@ -168,10 +203,7 @@ export function parseConstrainedDocument(markdown) {
       para.push(lines[index]);
       index += 1;
     }
-    blocks.push({
-      type: "paragraph",
-      children: parseConstrainedMarkdown(para.join("\n")),
-    });
+    pushParagraph(blocks, para.join("\n"));
   }
   return blocks;
 }

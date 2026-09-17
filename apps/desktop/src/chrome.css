@@ -312,18 +312,20 @@ button {
     box-shadow var(--ease);
 }
 
-button:hover:not(:disabled),
+button:hover:not(:disabled):not(.btn-primary):not([type="submit"]),
 .segment a:hover,
-summary:hover {
-  background: color-mix(in srgb, var(--secondary) 55%, var(--card));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ring) 18%, transparent);
+summary:hover,
+.btn-toolbar:hover,
+.btn-ghost:hover {
+  background: color-mix(in srgb, var(--muted) 80%, var(--card));
+  box-shadow: none;
 }
 
-button:active:not(:disabled),
+button:active:not(:disabled):not(.btn-primary):not([type="submit"]),
 .segment a:active,
 summary:active {
   transform: translateY(0.5px);
-  background: color-mix(in srgb, var(--secondary) 40%, var(--card));
+  background: var(--muted);
 }
 
 button:disabled,
@@ -357,19 +359,23 @@ button[type="submit"],
   border-color: var(--primary);
 }
 
-button[type="submit"]:hover,
-.btn-primary:hover {
+button[type="submit"]:hover:not(:disabled),
+button.btn-primary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--primary) 88%, #000);
+  color: var(--primary-foreground);
+  box-shadow: none;
+}
+
+button[type="submit"]:active:not(:disabled),
+button.btn-primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 76%, #000);
+  color: var(--primary-foreground);
 }
 
 .btn-ghost {
   background: transparent;
   border-color: transparent;
   color: var(--foreground);
-}
-
-.btn-ghost:hover {
-  background: var(--muted);
 }
 
 .btn-toolbar {
