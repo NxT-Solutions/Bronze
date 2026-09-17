@@ -243,7 +243,9 @@ fn status_tray_menu(
     use tauri::menu::{MenuBuilder, MenuItem};
     use tauri::Manager;
     let map = ui_catalog_map(app);
+    let show = require_key(&map, "menu.status.show").unwrap_or_else(|_| "Show".into());
     let capture = require_key(&map, "menu.status.capture").unwrap_or_else(|_| "Capture".into());
+    let settings = require_key(&map, "settings.title").unwrap_or_else(|_| "Settings".into());
     let help = require_key(&map, "help.title").unwrap_or_else(|_| "Help".into());
     let quit = require_key(&map, "menu.status.quit").unwrap_or_else(|_| "Quit".into());
     let recent = {
@@ -272,10 +274,14 @@ fn status_tray_menu(
     if !recent.is_empty() {
         builder = builder.separator();
     }
+    let show_item = MenuItem::with_id(app, "show-panel", &show, true, None::<&str>)?;
     let capture_item = MenuItem::with_id(app, "capture-selection", &capture, true, None::<&str>)?;
+    let settings_item = MenuItem::with_id(app, "show-settings", &settings, true, None::<&str>)?;
     let help_item = MenuItem::with_id(app, "show-help", &help, true, None::<&str>)?;
     builder = builder
+        .item(&show_item)
         .item(&capture_item)
+        .item(&settings_item)
         .item(&help_item)
         .quit_with_text(&quit);
     Ok(builder.build()?)
@@ -342,26 +348,16 @@ fn start_capture_pump(app: tauri::AppHandle) {
 
 #[cfg(target_os = "macos")]
 fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+    use tauri::tray::TrayIconBuilder;
     let map = ui_catalog_map(app);
     let app_name = require_key(&map, "app.name").unwrap_or_else(|_| "Bronze".into());
     let menu = status_tray_menu(app)?;
     let mut tray = TrayIconBuilder::with_id(TRAY_ID)
         .tooltip(&app_name)
         .menu(&menu)
-        .show_menu_on_left_click(false)
+        .show_menu_on_left_click(true)
         .on_menu_event(|app, event| {
             handle_menu_id(app, event.id().as_ref());
-        })
-        .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click {
-                button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
-                ..
-            } = event
-            {
-                let _ = reveal_quick_panel(tray.app_handle());
-            }
         });
     if let Some(icon) = app.default_window_icon() {
         tray = tray.icon(icon.clone());
@@ -738,6 +734,8 @@ mod tests {
         assert!(lib.contains("note_external_focus"));
         assert!(lib.contains("capture-result"));
         assert!(lib.contains("on_menu_event"));
+        assert!(lib.contains("show_menu_on_left_click(true)"));
+        assert!(lib.contains("menu.status.show"));
         assert!(lib.contains("queue-changed"));
         assert!(lib.contains("native_item_title"));
         assert!(lib.contains("tray_entry_label"));
