@@ -25,8 +25,13 @@ test("composer markup is a labeled textbox with catalog strings", () => {
   assert.match(html, /role="toolbar"/);
   assert.match(html, /data-composer-format="strong"/);
   assert.match(html, /data-composer-format="em"/);
-  assert.match(html, /data-i18n="composer.format.bold"/);
-  assert.match(html, /data-i18n="composer.format.italic"/);
+  assert.match(html, /data-composer-format="ul"/);
+  assert.match(html, /data-composer-format="ol"/);
+  assert.match(html, /data-i18n-aria-label="composer.format.bold"/);
+  assert.match(html, /data-i18n-title="composer.format.bold.tip"/);
+  assert.doesNotMatch(html, /<kbd/);
+  assert.match(html, />B<\/span>/);
+  assert.match(html, />I<\/span>/);
   assert.match(html, /<button\b[^>]*type="submit"/);
   assert.match(html, /data-i18n="composer.add.label"/);
   assert.match(html, /data-i18n="composer.add.submit"/);
@@ -38,5 +43,7 @@ test("composer markup is a labeled textbox with catalog strings", () => {
   assert.equal(en["composer.add.error"], "Could not add item");
   assert.equal(en["composer.format.bold"], "Bold");
   assert.equal(en["composer.format.italic"], "Italic");
+  assert.equal(en["composer.format.bold.tip"], "Bold ⌘B");
+  assert.equal(en["composer.format.italic.tip"], "Italic ⌘I");
   assert.equal(en["panel.empty"], "Select text and Capture, or type here.");
 });

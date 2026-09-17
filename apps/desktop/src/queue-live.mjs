@@ -23,6 +23,19 @@ const FORMAT_TAGS = {
   em: new Set(["em", "i"]),
 };
 
+export function composerFormatAction({ collapsed, alreadyOn }) {
+  if (alreadyOn && collapsed) {
+    return "exit";
+  }
+  if (alreadyOn) {
+    return "unwrap";
+  }
+  if (collapsed) {
+    return "insert";
+  }
+  return "wrap";
+}
+
 function formatAncestor(node, tagName, root) {
   const match = FORMAT_TAGS[tagName] ?? new Set([tagName]);
   let el = node?.nodeType === 1 ? node : node?.parentElement;
@@ -46,31 +59,295 @@ function unwrapElement(el) {
   parent.removeChild(el);
 }
 
-export function wrapComposerSelection(root, tagName) {
-  const doc = root?.ownerDocument;
-  const sel = doc?.getSelection?.();
-  if (!root || !doc?.createElement || !sel || sel.rangeCount === 0) {
+function markHasVisibleText(el) {
+  return (el.textContent ?? "").replaceAll("\u200B", "").length > 0;
+}
+
+function placeCaret(sel, doc, node, offset) {
+  const range = doc.createRange();
+  range.setStart(node, offset);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function ensureComposerCaret(editor) {
+  const doc = editor.ownerDocument;
+  editor.focus?.();
+  const sel = doc.getSelection();
+  if (
+    sel?.rangeCount &&
+    sel.anchorNode &&
+    (sel.anchorNode === editor || editor.contains(sel.anchorNode))
+  ) {
+    return sel;
+  }
+  if (!sel || !doc.createRange) {
+    return null;
+  }
+  const range = doc.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  return sel;
+}
+
+function insertTypingMark(editor, tagName, sel) {
+  const doc = editor.ownerDocument;
+  const range = sel.getRangeAt(0);
+  const el = doc.createElement(tagName);
+  const mark = doc.createTextNode("\u200B");
+  el.appendChild(mark);
+  range.insertNode(el);
+  placeCaret(sel, doc, mark, 1);
+}
+
+function exitTypingMark(el, sel) {
+  const doc = el.ownerDocument;
+  const parent = el.parentNode;
+  if (!parent || !sel.rangeCount) {
     return;
   }
-  if (!root.contains(sel.anchorNode)) {
+  const caret = sel.getRangeAt(0);
+  const after = doc.createRange();
+  after.setStart(caret.startContainer, caret.startOffset);
+  after.setEnd(el, el.childNodes.length);
+  const tail = after.extractContents();
+  const nextSibling = el.nextSibling;
+  if (markHasVisibleText(tail)) {
+    const copy = el.cloneNode(false);
+    copy.appendChild(tail);
+    parent.insertBefore(copy, nextSibling);
+  }
+  if (!markHasVisibleText(el)) {
+    parent.removeChild(el);
+  }
+  const next = doc.createRange();
+  if (el.parentNode) {
+    next.setStartAfter(el);
+  } else if (nextSibling?.parentNode) {
+    next.setStartBefore(nextSibling);
+  } else {
+    next.selectNodeContents(parent);
+    next.collapse(false);
+  }
+  next.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(next);
+}
+
+export function applyComposerFormat(editor, tagName) {
+  if (
+    !editor ||
+    (tagName !== "strong" && tagName !== "em") ||
+    !editor.ownerDocument?.createElement
+  ) {
     return;
   }
-  const existing = formatAncestor(sel.anchorNode, tagName, root);
-  if (existing) {
+  const sel = ensureComposerCaret(editor);
+  if (!sel || sel.rangeCount === 0) {
+    return;
+  }
+  const existing = formatAncestor(sel.anchorNode, tagName, editor);
+  const action = composerFormatAction({
+    collapsed: sel.isCollapsed,
+    alreadyOn: Boolean(existing),
+  });
+  if (action === "exit" && existing) {
+    exitTypingMark(existing, sel);
+    return;
+  }
+  if (action === "unwrap" && existing) {
     unwrapElement(existing);
     return;
   }
-  if (sel.isCollapsed) {
+  if (action === "insert") {
+    insertTypingMark(editor, tagName, sel);
     return;
   }
   const range = sel.getRangeAt(0);
-  const el = doc.createElement(tagName);
+  const el = editor.ownerDocument.createElement(tagName);
   el.appendChild(range.extractContents());
   range.insertNode(el);
   sel.removeAllRanges();
-  const next = doc.createRange();
+  const next = editor.ownerDocument.createRange();
   next.selectNodeContents(el);
   sel.addRange(next);
+}
+
+export function wrapComposerSelection(root, tagName) {
+  applyComposerFormat(root, tagName);
+}
+
+function closestTag(node, root, tags) {
+  let el = node?.nodeType === 1 ? node : node?.parentElement;
+  while (el && el !== root && root.contains(el)) {
+    if (tags.has(el.tagName.toLowerCase())) {
+      return el;
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
+
+function placeCaretIn(sel, doc, node) {
+  const range = doc.createRange();
+  if (node.nodeType === 3) {
+    range.setStart(node, node.data?.length ?? 0);
+  } else {
+    range.selectNodeContents(node);
+    range.collapse(false);
+  }
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function unwrapList(list) {
+  const parent = list.parentNode;
+  const doc = list.ownerDocument;
+  const first = [];
+  for (const li of Array.from(list.children)) {
+    if (li.tagName !== "LI") {
+      continue;
+    }
+    const block = doc.createElement("div");
+    while (li.firstChild) {
+      block.appendChild(li.firstChild);
+    }
+    parent.insertBefore(block, list);
+    first.push(block);
+  }
+  parent.removeChild(list);
+  return first[0] ?? null;
+}
+
+function wrapCurrentInList(editor, sel, listTag) {
+  const doc = editor.ownerDocument;
+  const list = doc.createElement(listTag);
+  const li = doc.createElement("li");
+  const block = closestTag(sel.anchorNode, editor, new Set(["div", "p"]));
+  if (block && block.parentNode === editor) {
+    while (block.firstChild) {
+      li.appendChild(block.firstChild);
+    }
+    if (!markHasVisibleText(li)) {
+      li.appendChild(doc.createTextNode("\u200B"));
+    }
+    list.appendChild(li);
+    block.parentNode.insertBefore(list, block);
+    block.parentNode.removeChild(block);
+  } else {
+    while (editor.firstChild) {
+      li.appendChild(editor.firstChild);
+    }
+    if (!markHasVisibleText(li)) {
+      li.appendChild(doc.createTextNode("\u200B"));
+    }
+    list.appendChild(li);
+    editor.appendChild(list);
+  }
+  placeCaretIn(sel, doc, li.firstChild ?? li);
+}
+
+export function applyComposerList(editor, listTag) {
+  if (!editor || (listTag !== "ul" && listTag !== "ol")) {
+    return;
+  }
+  const sel = ensureComposerCaret(editor);
+  if (!sel || sel.rangeCount === 0) {
+    return;
+  }
+  const existing = closestTag(sel.anchorNode, editor, new Set(["ul", "ol"]));
+  if (existing) {
+    if (existing.tagName.toLowerCase() === listTag) {
+      const block = unwrapList(existing);
+      if (block) {
+        placeCaretIn(sel, editor.ownerDocument, block.firstChild ?? block);
+      }
+      return;
+    }
+    const next = editor.ownerDocument.createElement(listTag);
+    while (existing.firstChild) {
+      next.appendChild(existing.firstChild);
+    }
+    existing.parentNode.insertBefore(next, existing);
+    existing.parentNode.removeChild(existing);
+    return;
+  }
+  wrapCurrentInList(editor, sel, listTag);
+}
+
+function exitListAtItem(li) {
+  const list = li.parentElement;
+  const parent = list?.parentNode;
+  const doc = li.ownerDocument;
+  if (!list || !parent) {
+    return;
+  }
+  const following = [];
+  let sib = li.nextSibling;
+  while (sib) {
+    const next = sib.nextSibling;
+    following.push(sib);
+    sib = next;
+  }
+  list.removeChild(li);
+  const block = doc.createElement("div");
+  block.appendChild(doc.createTextNode("\u200B"));
+  if (following.length > 0) {
+    const rest = doc.createElement(list.tagName);
+    for (const item of following) {
+      rest.appendChild(item);
+    }
+    parent.insertBefore(block, list.nextSibling);
+    parent.insertBefore(rest, block.nextSibling);
+  } else {
+    parent.insertBefore(block, list.nextSibling);
+  }
+  if (!list.querySelector("li")) {
+    parent.removeChild(list);
+  }
+  return block;
+}
+
+export function applyComposerCommand(editor, tag) {
+  if (tag === "ul" || tag === "ol") {
+    applyComposerList(editor, tag);
+    return;
+  }
+  applyComposerFormat(editor, tag);
+}
+
+export function composerHotkey(event) {
+  if (event.isComposing) {
+    return null;
+  }
+  if (composerShouldSubmit(event)) {
+    return "submit";
+  }
+  const meta = Boolean(event.metaKey || event.ctrlKey);
+  const key = typeof event.key === "string" ? event.key.toLowerCase() : "";
+  if (meta && !event.shiftKey && !event.altKey) {
+    if (key === "b") {
+      return "strong";
+    }
+    if (key === "i") {
+      return "em";
+    }
+  }
+  if (meta && event.shiftKey && !event.altKey) {
+    if (event.code === "Digit8" || key === "8" || key === "*") {
+      return "ul";
+    }
+    if (event.code === "Digit7" || key === "7") {
+      return "ol";
+    }
+  }
+  if (event.key === "Enter" && !meta && !event.shiftKey && !event.altKey) {
+    return "list-break";
+  }
+  return null;
 }
 
 export function syncComposerEmpty(el) {
@@ -83,9 +360,15 @@ export function syncComposerEmpty(el) {
 function syncFormatPressed(root, editor) {
   const sel = editor.ownerDocument?.getSelection?.();
   const anchor = sel?.anchorNode;
+  const list = anchor
+    ? closestTag(anchor, editor, new Set(["ul", "ol"]))
+    : null;
   for (const button of root.querySelectorAll("[data-composer-format]")) {
     const tag = button.getAttribute("data-composer-format");
-    const on = Boolean(anchor && formatAncestor(anchor, tag, editor));
+    const on =
+      tag === "ul" || tag === "ol"
+        ? list?.tagName.toLowerCase() === tag
+        : Boolean(anchor && formatAncestor(anchor, tag, editor));
     button.setAttribute("aria-pressed", on ? "true" : "false");
   }
 }
@@ -240,32 +523,44 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       return;
     }
     const tag = button.getAttribute("data-composer-format");
-    if (tag !== "strong" && tag !== "em") {
-      return;
-    }
-    wrapComposerSelection(editor, tag);
+    applyComposerCommand(editor, tag);
     syncComposerEmpty(editor);
     syncFormatPressed(root, editor);
   });
-  editor.addEventListener("keydown", (event) => {
-    if (composerShouldSubmit(event)) {
+  form.addEventListener("keydown", (event) => {
+    const action = composerHotkey(event);
+    if (action === "submit") {
       event.preventDefault();
       const submit = form.querySelector("[type=submit]");
       runBusy(submit, addFromComposer);
       return;
     }
-    if (event.isComposing || !(event.metaKey || event.ctrlKey)) {
+    if (
+      action === "strong" ||
+      action === "em" ||
+      action === "ul" ||
+      action === "ol"
+    ) {
+      event.preventDefault();
+      applyComposerCommand(editor, action);
+      syncComposerEmpty(editor);
+      syncFormatPressed(root, editor);
       return;
     }
-    const key = typeof event.key === "string" ? event.key.toLowerCase() : "";
-    if (key === "b") {
-      event.preventDefault();
-      wrapComposerSelection(editor, "strong");
-      syncFormatPressed(root, editor);
-    } else if (key === "i") {
-      event.preventDefault();
-      wrapComposerSelection(editor, "em");
-      syncFormatPressed(root, editor);
+    if (action === "list-break") {
+      const sel = editor.ownerDocument?.getSelection?.();
+      const li = sel?.anchorNode
+        ? closestTag(sel.anchorNode, editor, new Set(["li"]))
+        : null;
+      if (li && !markHasVisibleText(li)) {
+        event.preventDefault();
+        const block = exitListAtItem(li);
+        if (block) {
+          placeCaretIn(sel, editor.ownerDocument, block.firstChild ?? block);
+        }
+        syncComposerEmpty(editor);
+        syncFormatPressed(root, editor);
+      }
     }
   });
   editor.addEventListener("input", () => {

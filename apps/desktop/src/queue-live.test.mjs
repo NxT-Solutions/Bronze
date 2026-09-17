@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import {
   applyCaptureResult,
   captureFeedbackKey,
+  composerFormatAction,
+  composerHotkey,
   composerShouldSubmit,
   formatCaptureSource,
   QUE_007_COMPLETE,
@@ -103,13 +105,69 @@ test("composer submit is Cmd-Enter or the form and live queue is wired", () => {
   assert.doesNotMatch(html, /data-open-window=/);
   assert.doesNotMatch(live, /\.prompt/);
   assert.match(live, /serializeComposerDom/);
-  assert.match(live, /wrapComposerSelection/);
+  assert.match(live, /applyComposerFormat/);
+  assert.match(live, /applyComposerList/);
+  assert.match(live, /composerHotkey/);
   assert.match(html, /contenteditable="true"/);
   assert.match(html, /data-composer-format="strong"/);
   assert.match(live, /openEditSheet/);
   assert.match(html, /id="edit-sheet"/);
   assert.match(html, /data-edit-dismiss/);
   assert.match(html, /data-i18n="queue.item.edit.save"/);
+});
+
+test("composer hotkeys follow common rich-text chords", () => {
+  assert.equal(
+    composerHotkey({ key: "b", metaKey: true, isComposing: false }),
+    "strong",
+  );
+  assert.equal(
+    composerHotkey({ key: "i", ctrlKey: true, isComposing: false }),
+    "em",
+  );
+  assert.equal(
+    composerHotkey({
+      key: "8",
+      code: "Digit8",
+      metaKey: true,
+      shiftKey: true,
+      isComposing: false,
+    }),
+    "ul",
+  );
+  assert.equal(
+    composerHotkey({
+      key: "7",
+      code: "Digit7",
+      metaKey: true,
+      shiftKey: true,
+      isComposing: false,
+    }),
+    "ol",
+  );
+  assert.equal(
+    composerHotkey({ type: "keydown", key: "Enter", metaKey: true }),
+    "submit",
+  );
+});
+
+test("composer format stays on for the next typed characters", () => {
+  assert.equal(
+    composerFormatAction({ collapsed: true, alreadyOn: false }),
+    "insert",
+  );
+  assert.equal(
+    composerFormatAction({ collapsed: true, alreadyOn: true }),
+    "exit",
+  );
+  assert.equal(
+    composerFormatAction({ collapsed: false, alreadyOn: false }),
+    "wrap",
+  );
+  assert.equal(
+    composerFormatAction({ collapsed: false, alreadyOn: true }),
+    "unwrap",
+  );
 });
 
 test("capture source uses the catalog placeholder and stays unavailable without an app name", () => {

@@ -240,6 +240,12 @@ test("composer DOM serializes to constrained markdown and drops scripts", () => 
     }),
     "\\*",
   );
+  assert.equal(
+    serializeComposerDom({
+      childNodes: [el("strong", [textNode("\u200BHello")])],
+    }),
+    "**Hello**",
+  );
 });
 
 test("missing document is unavailable rather than assigned as HTML", () => {

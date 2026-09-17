@@ -29,6 +29,7 @@ test("shipped locales cover native menu InfoPlist and WebView keys", () => {
     assert.ok(catalog["composer.add.label"]);
     assert.ok(catalog["composer.format.bold"]);
     assert.ok(catalog["composer.format.italic"]);
+    assert.ok(catalog["composer.format.bold.tip"]);
     assert.ok(catalog["capture.source"]);
     assert.ok(catalog["queue.item.showMore"]);
     assert.ok(catalog["queue.item.showLess"]);

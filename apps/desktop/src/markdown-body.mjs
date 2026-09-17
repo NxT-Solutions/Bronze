@@ -261,6 +261,9 @@ function childrenOf(node) {
 function escapeMarkdownText(value) {
   let out = "";
   for (const ch of String(value)) {
+    if (ch === "\u200B") {
+      continue;
+    }
     if (ESCAPABLE.has(ch)) {
       out += `\\${ch}`;
     } else {

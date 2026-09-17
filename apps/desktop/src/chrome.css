@@ -543,6 +543,21 @@ textarea {
   background: color-mix(in srgb, var(--foreground) 8%, var(--card));
 }
 
+.composer-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-h);
+}
+
+.composer-mark[data-composer-format="strong"] span {
+  font-weight: 700;
+}
+
+.composer-mark[data-composer-format="em"] span {
+  font-style: italic;
+}
+
 .composer-body {
   min-height: 5.5rem;
   padding: 0.55rem 0.8rem;
@@ -565,7 +580,7 @@ textarea {
   border-color: color-mix(in srgb, var(--input) 70%, var(--ring));
 }
 
-.composer-body.is-empty::before {
+.composer-body.is-empty:not(:focus)::before {
   content: attr(aria-placeholder);
   color: var(--muted-foreground);
   pointer-events: none;

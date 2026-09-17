@@ -105,6 +105,20 @@ function applyCatalogMessages(scope, messages) {
       el.setAttribute("aria-placeholder", value);
     }
   }
+  for (const el of scope.querySelectorAll("[data-i18n-title]")) {
+    const key = el.getAttribute("data-i18n-title");
+    const value = messages[key];
+    if (typeof value === "string" && !isIcuMessage(value)) {
+      el.setAttribute("title", value);
+    }
+  }
+  for (const el of scope.querySelectorAll("[data-i18n-aria-label]")) {
+    const key = el.getAttribute("data-i18n-aria-label");
+    const value = messages[key];
+    if (typeof value === "string" && !isIcuMessage(value)) {
+      el.setAttribute("aria-label", value);
+    }
+  }
   for (const template of scope.querySelectorAll?.("template") ?? []) {
     applyCatalogMessages(template.content, messages);
   }
