@@ -1,7 +1,8 @@
 import AppKit
 
 private let iconPngCap = 16 * 1024
-private let iconPixels = 16
+private let iconPointSize = 16
+private let iconPixels = 32
 
 @_silgen_name("bronze_native_bundle_id_for_pid")
 public func bronze_native_bundle_id_for_pid(
@@ -57,31 +58,86 @@ public func bronze_native_app_icon_png(
 }
 
 private func pngIcon(for key: String) -> Data? {
-    let workspace = NSWorkspace.shared
-    var image: NSImage?
-    if let url = workspace.urlForApplication(withBundleIdentifier: key) {
-        image = workspace.icon(forFile: url.path)
-    }
-    if image == nil {
-        let match = workspace.runningApplications.first(where: {
-            $0.bundleIdentifier == key || $0.localizedName == key
-        })
-        if let url = match?.bundleURL {
-            image = workspace.icon(forFile: url.path)
-        }
-    }
-    guard let image else {
+    guard let url = officialAppURL(for: key) else {
         return nil
     }
-    return rasterPng(image)
+    return rasterPng(NSWorkspace.shared.icon(forFile: url.path))
+}
+
+private func officialAppURL(for key: String) -> URL? {
+    let workspace = NSWorkspace.shared
+    if let url = workspace.urlForApplication(withBundleIdentifier: key) {
+        return url
+    }
+    if let match = workspace.runningApplications.first(where: { runningApp($0, matches: key) }) {
+        return match.bundleURL
+    }
+    return installedAppURL(matching: key)
+}
+
+private func runningApp(_ app: NSRunningApplication, matches key: String) -> Bool {
+    if let bundle = app.bundleIdentifier, bundle.caseInsensitiveCompare(key) == .orderedSame {
+        return true
+    }
+    if let name = app.localizedName, name.caseInsensitiveCompare(key) == .orderedSame {
+        return true
+    }
+    if let stem = app.bundleURL?.deletingPathExtension().lastPathComponent,
+       stem.caseInsensitiveCompare(key) == .orderedSame
+    {
+        return true
+    }
+    return false
+}
+
+private func installedAppURL(matching key: String) -> URL? {
+    let fm = FileManager.default
+    let roots = [
+        "/Applications",
+        "/System/Applications",
+        "/System/Applications/Utilities",
+        fm.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path,
+    ]
+    for root in roots {
+        let direct = URL(fileURLWithPath: root, isDirectory: true)
+            .appendingPathComponent("\(key).app")
+        if fm.fileExists(atPath: direct.path) {
+            return direct
+        }
+    }
+    for root in roots {
+        let dir = URL(fileURLWithPath: root, isDirectory: true)
+        guard let children = try? fm.contentsOfDirectory(
+            at: dir,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            continue
+        }
+        for child in children where child.pathExtension.caseInsensitiveCompare("app") == .orderedSame {
+            if child.deletingPathExtension().lastPathComponent.caseInsensitiveCompare(key) == .orderedSame {
+                return child
+            }
+        }
+    }
+    return nil
 }
 
 private func rasterPng(_ image: NSImage) -> Data? {
-    let size = iconPixels
+    if let png = rasterPng(image, pixels: iconPixels), png.count <= iconPngCap {
+        return png
+    }
+    return rasterPng(image, pixels: iconPointSize)
+}
+
+private func rasterPng(_ image: NSImage, pixels: Int) -> Data? {
+    let points = CGFloat(iconPointSize)
+    let drawable = (image.copy() as? NSImage) ?? image
+    drawable.size = NSSize(width: points, height: points)
     guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil,
-        pixelsWide: size,
-        pixelsHigh: size,
+        pixelsWide: pixels,
+        pixelsHigh: pixels,
         bitsPerSample: 8,
         samplesPerPixel: 4,
         hasAlpha: true,
@@ -92,15 +148,28 @@ private func rasterPng(_ image: NSImage) -> Data? {
     ) else {
         return nil
     }
-    rep.size = NSSize(width: size, height: size)
+    rep.size = NSSize(width: points, height: points)
     NSGraphicsContext.saveGraphicsState()
-    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-    image.draw(
-        in: NSRect(x: 0, y: 0, width: size, height: size),
-        from: .zero,
-        operation: .copy,
-        fraction: 1
-    )
+    guard let ctx = NSGraphicsContext(bitmapImageRep: rep) else {
+        NSGraphicsContext.restoreGraphicsState()
+        return nil
+    }
+    NSGraphicsContext.current = ctx
+    ctx.imageInterpolation = .high
+    ctx.cgContext.clear(CGRect(x: 0, y: 0, width: pixels, height: pixels))
+    let dest = NSRect(x: 0, y: 0, width: points, height: points)
+    if let best = drawable.bestRepresentation(for: dest, context: ctx, hints: [
+        .interpolation: NSImageInterpolation.high,
+    ]) {
+        best.draw(in: dest)
+    } else {
+        drawable.draw(
+            in: dest,
+            from: .zero,
+            operation: .sourceOver,
+            fraction: 1
+        )
+    }
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])
 }

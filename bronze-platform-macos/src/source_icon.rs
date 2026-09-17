@@ -70,6 +70,10 @@ mod source_icon_tests {
         assert!(!swift.contains("URLSession"));
         assert!(!swift.contains("http://"));
         assert!(!swift.contains("https://"));
+        assert!(swift.contains("caseInsensitiveCompare"));
+        assert!(swift.contains("/Applications"));
+        assert!(swift.contains("sourceOver"));
+        assert!(!swift.contains("com.mitchellh.ghostty"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"

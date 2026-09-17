@@ -206,14 +206,18 @@ impl From<QueueItemRow> for QueueItemDto {
 }
 
 fn source_app_icon_data_url(bundle: Option<&str>, name: Option<&str>) -> Option<String> {
-    let key = bundle
+    for key in [bundle, name]
+        .into_iter()
+        .flatten()
         .filter(|value| !value.is_empty())
-        .or_else(|| name.filter(|value| !value.is_empty()))?;
-    let png = bronze_platform_macos::native_app_icon_png(key)?;
-    if png.is_empty() {
-        return None;
+    {
+        if let Some(png) = bronze_platform_macos::native_app_icon_png(key) {
+            if !png.is_empty() {
+                return Some(format!("data:image/png;base64,{}", encode_base64(&png)));
+            }
+        }
     }
-    Some(format!("data:image/png;base64,{}", encode_base64(&png)))
+    None
 }
 
 fn encode_base64(bytes: &[u8]) -> String {
@@ -1139,5 +1143,8 @@ mod live_session_tests {
         let tool = format!("{}{}", "pb", "copy");
         assert!(!include_str!("live_session.rs").contains(&tool));
         assert!(!include_str!("copy.rs").contains(&tool));
+        let icon = include_str!("live_session.rs");
+        assert!(icon.contains("[bundle, name]"));
+        assert!(icon.contains("native_app_icon_png(key)"));
     }
 }
