@@ -88,7 +88,7 @@
                     Skip
                   </button>
                   <button type="button" class="btn-toolbar" data-queue-action="edit" data-i18n="queue.item.edit">
-                    Edit
+                    Edit…
                   </button>
                   <button type="button" class="btn-toolbar" data-queue-action="moveUp" data-i18n="queue.item.moveUp">
                     Move up
@@ -111,6 +111,23 @@
         <option value="markdown">Markdown</option>
       </select>
     </main>
+    <dialog id="edit-sheet" class="sheet" aria-labelledby="edit-sheet-title">
+      <form method="dialog" class="sheet-card">
+        <h2 id="edit-sheet-title" data-i18n="queue.item.edit.title">Edit Item</h2>
+        <label class="visually-hidden" for="edit-body" data-i18n="queue.item.edit.label">
+          Item text
+        </label>
+        <textarea id="edit-body" name="body" rows="8"></textarea>
+        <div class="toolbar sheet-actions">
+          <button type="button" class="btn-ghost" data-edit-dismiss data-i18n="queue.item.edit.cancel">
+            Cancel
+          </button>
+          <button type="submit" value="save" class="btn-primary" data-i18n="queue.item.edit.save">
+            Save
+          </button>
+        </div>
+      </form>
+    </dialog>
     <script type="module" src="./apply-locale.mjs"></script>
     <script type="module" src="./queue-live.mjs"></script>
   </body>

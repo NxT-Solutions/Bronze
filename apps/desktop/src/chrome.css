@@ -428,10 +428,15 @@ button.btn-primary:active:not(:disabled) {
   color: var(--primary-foreground);
 }
 
-.btn-ghost {
+.btn-ghost,
+button.btn-ghost[type="submit"],
+button.btn-ghost[type="submit"]:hover:not(:disabled),
+button.btn-ghost[type="submit"]:focus-visible,
+button.btn-ghost[type="submit"]:active:not(:disabled) {
   background: transparent;
   border-color: transparent;
   color: var(--foreground);
+  box-shadow: none;
 }
 
 .btn-toolbar {
@@ -1089,6 +1094,45 @@ legend {
   justify-content: flex-end;
 }
 
+.sheet {
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: calc(100vw - 2rem);
+}
+
+.sheet::backdrop {
+  background: color-mix(in srgb, var(--foreground) 28%, transparent);
+}
+
+.sheet-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(24rem, calc(100vw - 2rem));
+  padding: var(--space-5);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-page-card);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: var(--shadow);
+}
+
+.sheet-card h2 {
+  font-size: var(--text-body);
+  font-weight: 590;
+  color: var(--foreground);
+}
+
+.sheet-card textarea {
+  min-height: 8rem;
+  background: var(--background);
+}
+
+.sheet-actions {
+  justify-content: flex-end;
+}
+
 #composer,
 [data-slot="composer"] {
   order: 0;
@@ -1123,7 +1167,8 @@ legend {
   article,
   fieldset,
   .health-card,
-  menu {
+  menu,
+  .sheet-card {
     border-width: 2px !important;
     border-color: var(--border) !important;
   }

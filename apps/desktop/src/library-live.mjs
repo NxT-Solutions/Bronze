@@ -15,6 +15,28 @@ export function announceCount(count) {
   return `${count} items`;
 }
 
+export function libraryEmptyKey(section) {
+  if (section === "trash") {
+    return "library.state.emptyTrash";
+  }
+  if (section === "search") {
+    return "library.state.emptySearch";
+  }
+  return "library.state.empty";
+}
+
+export function applyLibraryEmptyCopy(root, section) {
+  const title = root.querySelector?.("#library-empty-title");
+  const key = libraryEmptyKey(section);
+  const source = root.querySelector?.(
+    `[data-empty-message][data-i18n="${key}"]`,
+  );
+  if (title && source) {
+    title.textContent = source.textContent.trim();
+  }
+  return key;
+}
+
 export function librarySection(hash) {
   if (hash === "#trash") {
     return "trash";
@@ -66,6 +88,7 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
     if (count) {
       count.textContent = announceCount(items.length);
     }
+    applyLibraryEmptyCopy(root, section);
     if (empty) {
       empty.hidden = items.length > 0;
     }

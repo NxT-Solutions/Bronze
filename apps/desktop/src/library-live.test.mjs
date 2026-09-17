@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import {
   ADR_018_STATUS,
   announceCount,
+  applyLibraryEmptyCopy,
+  libraryEmptyKey,
   librarySection,
   QUE_007_COMPLETE,
   syncLibraryNav,
@@ -93,4 +95,34 @@ test("library segment follows the hash and marks the current page", () => {
   assert.equal(section, "archive");
   assert.equal(archive.current, "page");
   assert.equal(trash.current, null);
+});
+
+test("library empty copy names the next action for each section", () => {
+  assert.equal(libraryEmptyKey("archive"), "library.state.empty");
+  assert.equal(libraryEmptyKey("trash"), "library.state.emptyTrash");
+  assert.equal(libraryEmptyKey("search"), "library.state.emptySearch");
+  const title = { textContent: "" };
+  const sources = {
+    "library.state.empty": {
+      textContent: "Capture or type in the queue to fill the archive.",
+    },
+    "library.state.emptyTrash": { textContent: "Trash is empty." },
+  };
+  const root = {
+    querySelector(sel) {
+      if (sel === "#library-empty-title") {
+        return title;
+      }
+      const key = sel.match(/data-i18n="([^"]+)"/)?.[1];
+      return sources[key] ?? null;
+    },
+  };
+  assert.equal(
+    applyLibraryEmptyCopy(root, "trash"),
+    "library.state.emptyTrash",
+  );
+  assert.equal(title.textContent, "Trash is empty.");
+  assert.match(html, /data-empty-message/);
+  assert.match(html, /Export…/);
+  assert.match(html, /Import…/);
 });

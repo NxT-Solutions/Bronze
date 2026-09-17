@@ -33,8 +33,19 @@
         </p>
       </search>
       <section class="empty-state" aria-labelledby="library-empty-title">
-        <h2 id="library-empty-title" data-i18n="library.state.empty">No items</h2>
+        <h2 id="library-empty-title" data-i18n="library.state.empty">
+          Capture or type in the queue to fill the archive.
+        </h2>
       </section>
+      <p hidden data-empty-message data-i18n="library.state.empty">
+        Capture or type in the queue to fill the archive.
+      </p>
+      <p hidden data-empty-message data-i18n="library.state.emptyTrash">
+        Trash is empty.
+      </p>
+      <p hidden data-empty-message data-i18n="library.state.emptySearch">
+        Try a different search.
+      </p>
       <ul id="library-queue"></ul>
       <template id="library-item-template">
         <li class="queue-item">
@@ -57,8 +68,8 @@
           <button type="button" data-i18n="library.archive">Archive</button>
           <button type="button" data-i18n="library.paginate">Next page</button>
           <button type="button" data-i18n="library.backup.now">Back Up Now</button>
-          <button type="button" data-i18n="library.export">Export</button>
-          <button type="button" data-i18n="library.import">Import</button>
+          <button type="button" data-i18n="library.export">Export…</button>
+          <button type="button" data-i18n="library.import">Import…</button>
         </div>
         <p class="muted" data-restore-preview data-i18n="library.restore.preview">
           Restore preview

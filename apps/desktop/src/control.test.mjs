@@ -8,6 +8,7 @@ import {
   closeOverflowMenus,
   MOTION,
   motionAllowed,
+  openEditSheet,
   runBusy,
 } from "./control.mjs";
 
@@ -174,4 +175,51 @@ test("motion helper stays local and yields under reduce-motion", () => {
   animateElement(el, [{ opacity: 0 }, { opacity: 1 }]);
   assert.equal(played.length, 1);
   assert.equal(played[0].options.duration, 180);
+});
+
+test("edit sheet saves or cancels without window.prompt", async () => {
+  let closer;
+  const field = { value: "", focus() {} };
+  const dialog = {
+    returnValue: "save",
+    showModal() {},
+    addEventListener(type, fn) {
+      if (type === "close") {
+        closer = fn;
+      }
+    },
+    removeEventListener() {},
+    querySelector() {
+      return null;
+    },
+    close(value) {
+      this.returnValue = value;
+      closer?.();
+    },
+  };
+  const root = {
+    querySelector(sel) {
+      if (sel === "#edit-sheet") {
+        return dialog;
+      }
+      if (sel === "#edit-body") {
+        return field;
+      }
+      return null;
+    },
+  };
+  const leftover = openEditSheet(root, "stale");
+  assert.equal(dialog.returnValue, "");
+  closer();
+  assert.equal(await leftover, null);
+  const pending = openEditSheet(root, "hello");
+  assert.equal(field.value, "hello");
+  field.value = "world";
+  dialog.returnValue = "save";
+  closer();
+  assert.equal(await pending, "world");
+  const canceled = openEditSheet(root, "keep");
+  dialog.returnValue = "cancel";
+  closer();
+  assert.equal(await canceled, null);
 });

@@ -100,6 +100,11 @@ test("composer submit is Cmd-Enter or the form and live queue is wired", () => {
   assert.doesNotMatch(live, /innerHTML = item\.body/);
   assert.doesNotMatch(itemView, /innerHTML = item\.body/);
   assert.doesNotMatch(html, /data-open-window=/);
+  assert.doesNotMatch(live, /\.prompt/);
+  assert.match(live, /openEditSheet/);
+  assert.match(html, /id="edit-sheet"/);
+  assert.match(html, /data-edit-dismiss/);
+  assert.match(html, /data-i18n="queue.item.edit.save"/);
 });
 
 test("capture source uses the catalog placeholder and stays unavailable without an app name", () => {

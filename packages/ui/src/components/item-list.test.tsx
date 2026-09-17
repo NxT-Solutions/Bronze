@@ -10,7 +10,7 @@ const labels = {
   complete: "Complete",
   skip: "Skip",
   trash: "Trash",
-  edit: "Edit",
+  edit: "Edit…",
 };
 
 describe("ItemList (QUE-002, A11Y-002)", () => {

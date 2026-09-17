@@ -1,4 +1,10 @@
-import { applyActionStatus, bindOverflowDismiss, runBusy } from "./control.mjs";
+import {
+  applyActionStatus,
+  bindOverflowDismiss,
+  closeOverflowMenus,
+  openEditSheet,
+  runBusy,
+} from "./control.mjs";
 import {
   applySourceRow,
   fillItemChrome,
@@ -82,6 +88,7 @@ export function renderQueueItems(list, items, template) {
     node.classList.add("is-entering");
     node.style.setProperty("--enter-delay", `${Math.min(index, 8) * 24}ms`);
     node.dataset.itemId = item.id;
+    node.dataset.body = typeof item.body === "string" ? item.body : "";
     const article = node.querySelector("article");
     fillItemChrome(article, item, labels);
     const source = node.querySelector("[data-slot=source]");
@@ -176,8 +183,10 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
         return;
       }
       if (action === "edit") {
-        const next = root.defaultView?.prompt?.("", "") ?? "";
-        if (next) {
+        closeOverflowMenus(root);
+        const row = button.closest("li");
+        const next = await openEditSheet(root, row?.dataset?.body ?? "");
+        if (next !== null) {
           await invokeFn("edit_queue_item", { id, body: next });
           await refresh();
         }

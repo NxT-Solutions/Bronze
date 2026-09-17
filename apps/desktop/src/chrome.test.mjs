@@ -134,4 +134,8 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(pages[0].html, /class="queue-item"/);
   assert.match(pages[1].html, /class="queue-item"/);
   assert.match(pages[2].html, /class="help-launch"/);
+  assert.match(pages[0].html, /id="edit-sheet"/);
+  assert.match(chrome, /\.sheet-card[\s\S]*background:\s*var\(--card\)/);
+  assert.match(chrome, /button\.btn-ghost\[type="submit"\]/);
+  assert.doesNotMatch(chrome, /backdrop-filter|filter:\s*blur/);
 });

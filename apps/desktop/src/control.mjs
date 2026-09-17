@@ -120,6 +120,34 @@ export function bindOverflowDismiss(root) {
   });
 }
 
+export function openEditSheet(root, initial = "") {
+  const dialog = root?.querySelector?.("#edit-sheet");
+  const field = root?.querySelector?.("#edit-body");
+  if (!dialog || !field) {
+    return Promise.resolve(null);
+  }
+  field.value = initial;
+  if (typeof dialog.showModal !== "function") {
+    return Promise.resolve(null);
+  }
+  dialog.returnValue = "";
+  const dismiss = dialog.querySelector?.("[data-edit-dismiss]");
+  const onDismiss = () => {
+    dialog.close("cancel");
+  };
+  dismiss?.addEventListener?.("click", onDismiss);
+  return new Promise((resolve) => {
+    const finish = () => {
+      dialog.removeEventListener("close", finish);
+      dismiss?.removeEventListener?.("click", onDismiss);
+      resolve(dialog.returnValue === "save" ? field.value : null);
+    };
+    dialog.addEventListener("close", finish);
+    dialog.showModal();
+    field.focus?.();
+  });
+}
+
 export async function runBusy(el, work) {
   if (!el) {
     return work();

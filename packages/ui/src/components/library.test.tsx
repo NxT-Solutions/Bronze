@@ -8,13 +8,13 @@ const labels = {
   title: "Library",
   archive: "Archive",
   paginate: "Next page",
-  empty: "No items",
+  empty: "Capture or type in the queue to fill the archive.",
   loading: "Loading",
   readOnly: "Read only",
   backup: "Back Up Now",
   restore: "Restore preview",
-  exportQueue: "Export",
-  importQueue: "Import",
+  exportQueue: "Export…",
+  importQueue: "Import…",
   secretWarning: "Item bodies in this export may contain secrets.",
 };
 
@@ -46,7 +46,9 @@ describe("Library (QUE-008, WIN-005)", () => {
         onPaginate={() => undefined}
       />,
     );
-    expect(screen.getByRole("status")).toHaveTextContent("No items");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Capture or type in the queue to fill the archive.",
+    );
     expect(
       container.querySelector("[data-library-state='empty']"),
     ).toBeTruthy();

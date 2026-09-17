@@ -8,7 +8,7 @@ const labels = {
   title: "Help",
   about: "About Bronze",
   preview: "Diagnostics preview",
-  exportBundle: "Export support bundle",
+  exportBundle: "Export Support Bundle…",
   humanGates:
     "Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.",
   noUpload: "Bronze never uploads diagnostics automatically.",
@@ -35,7 +35,7 @@ describe("Help (SUP-001/002, SEC-006)", () => {
       container.querySelector("[data-diagnostics-preview]")?.textContent,
     ).toContain("events=1");
     await user.click(
-      screen.getByRole("button", { name: "Export support bundle" }),
+      screen.getByRole("button", { name: "Export Support Bundle…" }),
     );
     expect(onExport).toHaveBeenCalledTimes(1);
   });
