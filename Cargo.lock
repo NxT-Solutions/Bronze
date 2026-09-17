@@ -189,6 +189,7 @@ version = "0.0.0"
 name = "bronze-platform-macos"
 version = "0.0.0"
 dependencies = [
+ "bronze-domain",
  "bronze-settings",
 ]
 

@@ -11,6 +11,7 @@ mod bridge;
 mod display_prefs;
 mod permission;
 mod status_item;
+mod title;
 
 pub use abi::{
     BronzeIngressSnapshot, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_STATUS_CANCELLED,
@@ -42,6 +43,7 @@ pub use status_item::{
     build_status_menu, StatusAction, StatusMenuError, StatusMenuItem, StringCatalog,
     STATUS_MENU_KEYS,
 };
+pub use title::native_item_title;
 
 #[cfg(test)]
 pub(crate) fn lock_native_runtime() -> std::sync::MutexGuard<'static, ()> {

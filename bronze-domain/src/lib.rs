@@ -6,8 +6,10 @@
 mod composer;
 mod entities;
 mod formatters;
+mod markup;
 mod purge;
 mod reflow;
+mod title;
 mod tokens;
 
 pub use composer::{
@@ -20,6 +22,7 @@ pub use formatters::{
     default_output_profile, format_items, lifecycle_after_copy, AdvancePolicy, OutputFormat,
     OutputProfile, PostCopyAction,
 };
+pub use markup::{font_name_traits, markdown_from_runs, StyleRun};
 pub use purge::{
     can_purge_with_descendants, claims_forensic_erasure, empty_trash_requires_confirmation,
     TRASH_RETENTION_DAYS,
@@ -29,6 +32,7 @@ pub use reflow::{
     ReflowError, Size, COMPOSER_MUST_BE_REACHABLE, REFLOW_WIDTH_CSS_PX, TEXT_RESIZE_PERCENT,
     TOOLBAR_OVERFLOW_KEY, TWO_AXIS_SCROLL_ALLOWED,
 };
+pub use title::{compact_title, strip_markup};
 pub use tokens::{
     contrast_ratio, normal_text_pairs, relative_luminance, Rgb, ThemeTokens,
     COMPETITOR_TRADE_DRESS, CONCEPT_PNG_IS_PIXEL_SPEC, DARK, LIGHT, MIN_NORMAL_TEXT_CONTRAST,

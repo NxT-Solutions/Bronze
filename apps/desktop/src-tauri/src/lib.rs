@@ -215,6 +215,11 @@ fn tray_item_title(body: &str) -> String {
     title
 }
 
+fn tray_entry_label(title: Option<&str>, body: &str) -> String {
+    let raw = title.filter(|text| !text.is_empty()).unwrap_or(body);
+    tray_item_title(raw)
+}
+
 #[cfg(target_os = "macos")]
 fn status_tray_menu(
     app: &tauri::AppHandle,
@@ -242,7 +247,7 @@ fn status_tray_menu(
         let entry = MenuItem::with_id(
             app,
             format!("{TRAY_COPY_PREFIX}{}", item.id),
-            tray_item_title(&item.body),
+            tray_entry_label(item.title.as_deref(), &item.body),
             true,
             None::<&str>,
         )?;
@@ -393,15 +398,56 @@ pub fn on_capture_requested(app: &tauri::AppHandle) {
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     let mut announce = FakeAnnouncer::default();
     let persisted = session.persist_selection(&LiveAxHost, &mut announce, visible);
+    let refine = persisted.as_ref().ok().and_then(|outcome| {
+        if outcome.terminal == Terminal::Saved {
+            outcome.item_id.as_ref().and_then(|id| {
+                session
+                    .get_queue_item(id)
+                    .ok()
+                    .map(|item| (item.id, item.body))
+            })
+        } else {
+            None
+        }
+    });
     drop(session);
     if let Ok(outcome) = persisted {
+        let saved = outcome.terminal == Terminal::Saved;
         let dto = CaptureResultDto::from_persist(outcome);
         let _ = app.emit("capture-result", dto);
-        if outcome.terminal == Terminal::Saved {
+        if saved {
             let _ = app.emit("queue-changed", ());
+            if let Some((id, body)) = refine {
+                spawn_title_refine(app, id, body);
+            }
         }
     }
     let _ = rebuild_status_menu(app);
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn spawn_title_refine(app: &tauri::AppHandle, id: String, body: String) {
+    use tauri::{Emitter, Manager};
+    let handle = app.clone();
+    let _ = std::thread::Builder::new()
+        .name("bronze-item-title".into())
+        .spawn(move || {
+            let Some(title) = bronze_platform_macos::native_item_title(&body) else {
+                return;
+            };
+            let app = handle.clone();
+            let _ = handle.run_on_main_thread(move || {
+                {
+                    let session = app.state::<std::sync::Mutex<live_session::LiveSession>>();
+                    let mut session = session
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
+                    let _ = session.set_item_title(&id, &title);
+                }
+                let _ = app.emit("queue-changed", ());
+                let _ = rebuild_status_menu(&app);
+            });
+        });
 }
 
 mod capabilities;
@@ -668,6 +714,11 @@ mod tests {
         assert!(lib.contains("capture-result"));
         assert!(lib.contains("on_menu_event"));
         assert!(lib.contains("queue-changed"));
+        assert!(lib.contains("native_item_title"));
+        assert!(lib.contains("tray_entry_label"));
+        let pump = lib.split("fn start_capture_pump").nth(1).expect("pump");
+        let pump_end = pump.find("\nfn ").unwrap_or(pump.len());
+        assert!(!pump[..pump_end].contains("native_item_title"));
         let capture_fn = lib
             .split("pub fn on_capture_requested")
             .nth(1)
@@ -682,6 +733,27 @@ mod tests {
         );
         assert!(!use_system_focused_fallback(Some(42)));
         assert!(use_system_focused_fallback(None));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn tray_prefers_nonempty_title_over_body() {
+        assert_eq!(
+            crate::tray_entry_label(Some("Headline"), "secret-body-should-not-lead"),
+            crate::tray_item_title("Headline")
+        );
+        assert_eq!(
+            crate::tray_entry_label(None, "plain body"),
+            crate::tray_item_title("plain body")
+        );
+        assert_eq!(
+            crate::tray_entry_label(Some(""), "plain body"),
+            crate::tray_item_title("plain body")
+        );
+        assert!(
+            !crate::tray_entry_label(Some("Headline"), "secret-body-should-not-lead")
+                .contains("secret")
+        );
     }
 
     #[cfg(all(target_os = "macos", bronze_native_linked))]

@@ -68,6 +68,8 @@ fn link_bronze_native() {
     }
     println!("cargo:rustc-link-lib=dylib=swiftCore");
     println!("cargo:rustc-link-lib=framework=Foundation");
+    println!("cargo:rustc-link-lib=framework=NaturalLanguage");
+    println!("cargo:rustc-link-arg=-Wl,-weak_framework,FoundationModels");
     println!("cargo:rustc-cfg=bronze_native_linked");
 }
 

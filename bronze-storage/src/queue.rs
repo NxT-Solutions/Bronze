@@ -1,7 +1,7 @@
 //! Queue actions without drag (story 6.2, QUE-002/003/006).
 
 use crate::migrate::Store;
-use bronze_domain::{can_transition, Lifecycle};
+use bronze_domain::{can_transition, compact_title, Lifecycle};
 use rusqlite::OptionalExtension;
 
 pub const QUEUE_MOVE_UP_KEY: &str = "queue.item.moveUp";
@@ -33,6 +33,7 @@ pub struct QueueItemRow {
     pub id: String,
     pub section_id: String,
     pub body: String,
+    pub title: Option<String>,
     pub content_language: String,
     pub status: String,
     pub rank: String,
@@ -83,9 +84,9 @@ impl Store {
 
     pub fn list_items(&self, include_trashed: bool) -> Result<Vec<QueueItemRow>, QueueError> {
         let sql = if include_trashed {
-            "SELECT items.id, items.section_id, items.body, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id ORDER BY items.rank, items.id"
+            "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id ORDER BY items.rank, items.id"
         } else {
-            "SELECT items.id, items.section_id, items.body, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status != 'trashed' ORDER BY items.rank, items.id"
+            "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status != 'trashed' ORDER BY items.rank, items.id"
         };
         let mut stmt = self.conn.prepare(sql).map_err(|_| QueueError::Store)?;
         let rows = stmt
@@ -94,10 +95,11 @@ impl Store {
                     id: row.get(0)?,
                     section_id: row.get(1)?,
                     body: row.get(2)?,
-                    content_language: row.get(3)?,
-                    status: row.get(4)?,
-                    rank: row.get(5)?,
-                    source_app_name: row.get(6)?,
+                    title: row.get(3)?,
+                    content_language: row.get(4)?,
+                    status: row.get(5)?,
+                    rank: row.get(6)?,
+                    source_app_name: row.get(7)?,
                 })
             })
             .map_err(|_| QueueError::Store)?;
@@ -108,17 +110,18 @@ impl Store {
     pub fn get_item(&self, id: &str) -> Result<QueueItemRow, QueueError> {
         self.conn
             .query_row(
-                "SELECT items.id, items.section_id, items.body, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.id=?1",
+                "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.id=?1",
                 [id],
                 |row| {
                     Ok(QueueItemRow {
                         id: row.get(0)?,
                         section_id: row.get(1)?,
                         body: row.get(2)?,
-                        content_language: row.get(3)?,
-                        status: row.get(4)?,
-                        rank: row.get(5)?,
-                        source_app_name: row.get(6)?,
+                        title: row.get(3)?,
+                        content_language: row.get(4)?,
+                        status: row.get(5)?,
+                        rank: row.get(6)?,
+                        source_app_name: row.get(7)?,
                     })
                 },
             )
@@ -145,11 +148,27 @@ impl Store {
     }
 
     pub fn edit_item_body(&mut self, id: &str, body: &str, now_ms: i64) -> Result<(), QueueError> {
+        let title = compact_title(body);
         let n = self
             .conn
             .execute(
-                "UPDATE items SET body=?1, revision=revision+1, updated_at_ms=?2 WHERE id=?3",
-                rusqlite::params![body, now_ms, id],
+                "UPDATE items SET body=?1, title=?2, revision=revision+1, updated_at_ms=?3 WHERE id=?4",
+                rusqlite::params![body, title, now_ms, id],
+            )
+            .map_err(|_| QueueError::Store)?;
+        if n == 0 {
+            Err(QueueError::NotFound)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn set_item_title(&mut self, id: &str, title: &str, now_ms: i64) -> Result<(), QueueError> {
+        let n = self
+            .conn
+            .execute(
+                "UPDATE items SET title=?1, revision=revision+1, updated_at_ms=?2 WHERE id=?3",
+                rusqlite::params![title, now_ms, id],
             )
             .map_err(|_| QueueError::Store)?;
         if n == 0 {
@@ -274,8 +293,8 @@ mod queue_tests {
             .execute_batch(
                 "INSERT INTO workspaces VALUES ('w1','ws',1,1);
                  INSERT INTO sections VALUES ('s1','w1','inbox','a','active',NULL,1,1,1,NULL);
-                 INSERT INTO items VALUES ('a','s1','note','one','und','queued','1',NULL,1,1,1,NULL,NULL);
-                 INSERT INTO items VALUES ('b','s1','note','two','und','queued','2',NULL,1,1,1,NULL,NULL);",
+                 INSERT INTO items VALUES ('a','s1','note','one','und','queued','1',NULL,1,1,1,NULL,NULL,NULL);
+                 INSERT INTO items VALUES ('b','s1','note','two','und','queued','2',NULL,1,1,1,NULL,NULL,NULL);",
             )
             .expect("seed");
         store

@@ -56,10 +56,11 @@ impl SelectionHost for FakeSelectionHost {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CapturePersistOutcome {
     pub terminal: Terminal,
     pub reason: &'static str,
+    pub item_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Eq, PartialEq)]
@@ -121,14 +122,17 @@ struct SessionPersist<'a> {
     session: &'a mut LiveSession,
     body: String,
     source_app_name: Option<String>,
+    saved_id: &'a mut Option<String>,
 }
 
 impl PersistHook for SessionPersist<'_> {
     fn persist(&mut self, _request_id: u64) -> Result<(), PersistError> {
-        self.session
+        let item = self
+            .session
             .add_captured(self.body.clone(), self.source_app_name.clone())
-            .map(|_| ())
-            .map_err(|_| PersistError)
+            .map_err(|_| PersistError)?;
+        *self.saved_id = Some(item.id);
+        Ok(())
     }
 }
 
@@ -141,6 +145,7 @@ pub struct QueueItemDto {
     pub id: String,
     pub section_id: String,
     pub body: String,
+    pub title: Option<String>,
     pub content_language: String,
     pub status: String,
     pub rank: String,
@@ -153,6 +158,7 @@ impl From<QueueItemRow> for QueueItemDto {
             id: row.id,
             section_id: row.section_id,
             body: row.body,
+            title: row.title,
             content_language: row.content_language,
             status: row.status,
             rank: row.rank,
@@ -240,12 +246,14 @@ impl LiveSession {
         match (outcome, text) {
             (AxOutcome::Captured { .. }, Some(captured)) => {
                 let body = captured.text;
+                let mut saved_id = None;
                 let mut coordinator = CaptureCoordinator::with_hooks(
                     8,
                     SessionPersist {
                         session: self,
                         body,
                         source_app_name: captured.source_app_name,
+                        saved_id: &mut saved_id,
                     },
                     bronze_capture::NoFeedback,
                 );
@@ -279,35 +287,41 @@ impl LiveSession {
                     } else {
                         "failed"
                     },
+                    item_id: saved_id,
                 })
             }
             (AxOutcome::ProtectedContent | AxOutcome::ProtectionUnknown, _) => {
                 Ok(CapturePersistOutcome {
                     terminal: Terminal::Rejected,
                     reason: "protected",
+                    item_id: None,
                 })
             }
             (AxOutcome::NoSelection | AxOutcome::FocusedElementMissing, _) => {
                 Ok(CapturePersistOutcome {
                     terminal: Terminal::Rejected,
                     reason: "no_selection",
+                    item_id: None,
                 })
             }
             (AxOutcome::AccessibilityDenied | AxOutcome::AppExcluded, _) => {
                 Ok(CapturePersistOutcome {
                     terminal: Terminal::Rejected,
                     reason: "accessibility",
+                    item_id: None,
                 })
             }
             (AxOutcome::SelectionTooLarge | AxOutcome::InvalidTextEncoding, _) => {
                 Ok(CapturePersistOutcome {
                     terminal: Terminal::Failed,
                     reason: "failed",
+                    item_id: None,
                 })
             }
             (AxOutcome::Captured { .. }, None) => Ok(CapturePersistOutcome {
                 terminal: Terminal::Failed,
                 reason: "failed",
+                item_id: None,
             }),
         }
     }
@@ -386,6 +400,19 @@ impl LiveSession {
         self.store
             .edit_item_body(id, body, now_ms())
             .map_err(|err| format!("{err:?}"))?;
+        self.store
+            .get_item(id)
+            .map(QueueItemDto::from)
+            .map_err(|_| "not_found".into())
+    }
+
+    pub fn set_item_title(&mut self, id: &str, title: &str) -> Result<(), String> {
+        self.store
+            .set_item_title(id, title, now_ms())
+            .map_err(|err| format!("{err:?}"))
+    }
+
+    pub fn get_queue_item(&self, id: &str) -> Result<QueueItemDto, String> {
         self.store
             .get_item(id)
             .map(QueueItemDto::from)
@@ -673,10 +700,13 @@ pub fn list_overview_items(
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn add_composer_item(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     body: String,
 ) -> Result<QueueItemDto, String> {
-    lock_session(&session)?.add_composer(body)
+    let item = lock_session(&session)?.add_composer(body)?;
+    crate::spawn_title_refine(&app, item.id.clone(), item.body.clone());
+    Ok(item)
 }
 
 #[cfg(target_os = "macos")]
@@ -860,6 +890,10 @@ mod live_session_tests {
         assert_eq!(session.ui_locale(), "en");
         let added = session.add_composer("  park me  ".into()).expect("add");
         assert_eq!(added.body, "  park me  ");
+        assert_eq!(
+            added.title,
+            Some(bronze_domain::compact_title("  park me  "))
+        );
         assert_eq!(added.content_language, "und");
         assert_eq!(added.source_app_name, None);
         assert_eq!(session.list_queue(false).expect("list").len(), 1);
@@ -869,6 +903,15 @@ mod live_session_tests {
         assert_eq!(session.list_queue(false).expect("done")[0].status, "done");
         assert!(session.list_overview().expect("overview").is_empty());
         assert!(session.add_composer(String::new()).is_err());
+        session.set_item_title(&added.id, "Refined").expect("title");
+        assert_eq!(
+            session
+                .get_queue_item(&added.id)
+                .expect("get")
+                .title
+                .as_deref(),
+            Some("Refined")
+        );
     }
 
     #[test]
@@ -954,6 +997,10 @@ mod live_session_tests {
         let overview = session.list_overview().expect("overview");
         assert_eq!(overview.len(), 1);
         assert_eq!(overview[0].body, "  captured  ");
+        assert_eq!(
+            overview[0].title,
+            Some(bronze_domain::compact_title("  captured  "))
+        );
         assert_eq!(overview[0].source_app_name.as_deref(), Some("TextEdit"));
         assert_eq!(announce.keys, vec![CAPTURE_ONLY_ANNOUNCE_KEY.to_string()]);
         session
@@ -1019,6 +1066,7 @@ mod live_session_tests {
         let dto = CaptureResultDto::from_persist(CapturePersistOutcome {
             terminal: Terminal::Rejected,
             reason: "no_selection",
+            item_id: None,
         });
         assert_eq!(dto.terminal, "rejected");
         assert_eq!(dto.reason, "no_selection");

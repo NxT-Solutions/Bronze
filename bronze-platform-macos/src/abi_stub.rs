@@ -412,6 +412,14 @@ pub extern "C" fn bronze_native_frontmost_pid() -> i32 {
 }
 
 #[no_mangle]
+pub extern "C" fn bronze_native_item_title(
+    _body: BronzeNativeUtf8View,
+    _out: *mut BronzeNativeUtf8View,
+) -> u32 {
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
 pub extern "C" fn bronze_native_event_tap_test_feed(
     kind: u32,
     _carbon_key: i32,

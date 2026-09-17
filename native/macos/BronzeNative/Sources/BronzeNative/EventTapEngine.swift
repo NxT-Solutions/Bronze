@@ -1,7 +1,7 @@
 // Session listenOnly tap engine (story 3.3, CAP-002, CAP-004, ADR-005).
 // Callback path: flagsChanged / keyDown → FSM → SPSC. Always pass the event
 // through. No accessibility queries, workspace lookups, DB, window,
-// clipboard, string allocation, or logging.
+// clipboard, language model, string allocation, or logging.
 
 import ApplicationServices
 import Carbon.HIToolbox

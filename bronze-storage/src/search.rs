@@ -96,8 +96,8 @@ mod search_placeholder_tests {
             .execute_batch(
                 "INSERT INTO workspaces VALUES ('w1','ws',1,1);
                  INSERT INTO sections VALUES ('s1','w1','inbox','a','active',NULL,1,1,1,NULL);
-                 INSERT INTO items VALUES ('i1','s1','note','Café token','und','queued','a',NULL,1,1,1,NULL,NULL);
-                 INSERT INTO items VALUES ('i2','s1','note','plain','und','queued','b',NULL,1,1,1,NULL,NULL);",
+                 INSERT INTO items VALUES ('i1','s1','note','Café token','und','queued','a',NULL,1,1,1,NULL,NULL,NULL);
+                 INSERT INTO items VALUES ('i2','s1','note','plain','und','queued','b',NULL,1,1,1,NULL,NULL,NULL);",
             )
             .expect("seed");
         store
@@ -142,7 +142,7 @@ mod search_placeholder_tests {
         store
             .conn
             .execute(
-                "INSERT INTO items VALUES ('i3','s1','note',?1,'und','queued','c',NULL,1,1,1,NULL,NULL)",
+                "INSERT INTO items VALUES ('i3','s1','note',?1,'und','queued','c',NULL,1,1,1,NULL,NULL,NULL)",
                 [query],
             )
             .expect("seed needle");

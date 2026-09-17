@@ -129,8 +129,8 @@ mod undo_tests {
             .execute_batch(
                 "INSERT INTO workspaces VALUES ('w1','ws',1,1);
                  INSERT INTO sections VALUES ('s1','w1','inbox','a','active',NULL,1,1,1,NULL);
-                 INSERT INTO items VALUES ('live','s1','note','keep','und','queued','a',NULL,1,1,1,NULL,NULL);
-                 INSERT INTO items VALUES ('gone','s1','note','drop','und','queued','b',NULL,1,1,1,NULL,NULL);",
+                 INSERT INTO items VALUES ('live','s1','note','keep','und','queued','a',NULL,1,1,1,NULL,NULL,NULL);
+                 INSERT INTO items VALUES ('gone','s1','note','drop','und','queued','b',NULL,1,1,1,NULL,NULL,NULL);",
             )
             .expect("seed");
         store

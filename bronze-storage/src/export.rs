@@ -1,7 +1,7 @@
 //! Deterministic JSON archive + Markdown (story 4.6, DAT-003, SET-001, I18N-003).
 
 use crate::migrate::Store;
-use bronze_domain::ContentLanguage;
+use bronze_domain::{compact_title, ContentLanguage};
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -196,6 +196,7 @@ struct ItemRow {
     section_id: String,
     kind: String,
     body: String,
+    title: Option<String>,
     content_language: String,
     status: String,
     rank: String,
@@ -429,7 +430,7 @@ fn load_sections(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<SectionRow
 
 fn load_items(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<ItemRow>> {
     let mut stmt = conn.prepare(
-        "SELECT id, section_id, kind, body, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms
+        "SELECT id, section_id, kind, body, title, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms
          FROM items ORDER BY id",
     )?;
     let rows = stmt.query_map([], |row| {
@@ -438,13 +439,14 @@ fn load_items(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<ItemRow>> {
             section_id: row.get(1)?,
             kind: row.get(2)?,
             body: row.get(3)?,
-            content_language: row.get(4)?,
-            status: row.get(5)?,
-            rank: row.get(6)?,
-            source_id: row.get(7)?,
-            revision: row.get(8)?,
-            created_at_ms: row.get(9)?,
-            updated_at_ms: row.get(10)?,
+            title: row.get(4)?,
+            content_language: row.get(5)?,
+            status: row.get(6)?,
+            rank: row.get(7)?,
+            source_id: row.get(8)?,
+            revision: row.get(9)?,
+            created_at_ms: row.get(10)?,
+            updated_at_ms: row.get(11)?,
         })
     })?;
     rows.collect()
@@ -507,6 +509,13 @@ fn item_value(row: &ItemRow) -> Value {
                 .unwrap_or(Value::Null),
         ),
         ("status", Value::String(row.status.clone())),
+        (
+            "title",
+            row.title
+                .as_ref()
+                .map(|s| Value::String(s.clone()))
+                .unwrap_or(Value::Null),
+        ),
         ("updatedAtMs", Value::from(row.updated_at_ms)),
     ])
 }
@@ -670,14 +679,22 @@ fn insert_items(
             .and_then(Value::as_str)
             .unwrap_or("und");
         ContentLanguage::parse(Some(lang)).map_err(|_| ImportError::InvalidContentLanguage)?;
+        let body = item.get("body").and_then(Value::as_str).unwrap_or("");
+        let title = item
+            .get("title")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| compact_title(body));
         conn.execute(
-            "INSERT INTO items (id, section_id, kind, body, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, NULL, NULL)",
+            "INSERT INTO items (id, section_id, kind, body, title, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, NULL, NULL)",
             rusqlite::params![
                 id,
                 item.get("sectionId").and_then(Value::as_str).unwrap_or(""),
                 item.get("kind").and_then(Value::as_str).unwrap_or("note"),
-                item.get("body").and_then(Value::as_str).unwrap_or(""),
+                body,
+                title,
                 lang,
                 item.get("status").and_then(Value::as_str).unwrap_or("queued"),
                 item.get("rank").and_then(Value::as_str).unwrap_or("a"),
@@ -758,8 +775,8 @@ mod export_tests {
                 "INSERT INTO workspaces VALUES ('w1','ws',1,1);
                  INSERT INTO sections VALUES ('s-b','w1','Beta','b','active',NULL,1,1,1,NULL);
                  INSERT INTO sections VALUES ('s-a','w1','Alpha','a','active',NULL,1,1,1,NULL);
-                 INSERT INTO items VALUES ('i-b','s-a','note','secret token','fr','queued','b',NULL,1,1,1,NULL,NULL);
-                 INSERT INTO items VALUES ('i-a','s-a','note','hello','en-US','queued','a',NULL,1,1,1,NULL,NULL);
+                 INSERT INTO items VALUES ('i-b','s-a','note','secret token','fr','queued','b',NULL,1,1,1,NULL,NULL,NULL);
+                 INSERT INTO items VALUES ('i-a','s-a','note','hello','en-US','queued','a',NULL,1,1,1,NULL,NULL,NULL);
                  INSERT INTO settings VALUES ('theme','1','\"dark\"',1);
                  INSERT INTO settings VALUES ('diagnosticFlush','1','true',1);
                  INSERT INTO settings VALUES ('logPath','1','\"/Users/me/bronze.log\"',1);

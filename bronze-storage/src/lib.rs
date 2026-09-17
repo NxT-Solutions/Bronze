@@ -18,8 +18,9 @@ pub use export::{
     SECRET_BODY_WARNING_KEY,
 };
 pub use migrate::{
-    checksum_sql, locator_avoids_icloud, v1_migration, BackupBeforeMigration, MigrateError,
-    Migration, NoopBackup, OpenError, PathLocator, Store, StoreLocator, StoreMode, SCHEMA_V1_SQL,
+    checksum_sql, installed_migrations, locator_avoids_icloud, v1_migration, v2_migration,
+    BackupBeforeMigration, MigrateError, Migration, NoopBackup, OpenError, PathLocator, Store,
+    StoreLocator, StoreMode, SCHEMA_V1_SQL, SCHEMA_V2_SQL,
 };
 pub use queue::{
     queue_action_key, QueueAction, QueueError, QueueItemRow, DRAG_REQUIRED, QUEUE_COMPLETE_KEY,

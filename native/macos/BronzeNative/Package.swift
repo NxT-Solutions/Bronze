@@ -9,7 +9,10 @@ let package = Package(
     targets: [
         .target(
             name: "BronzeNative",
-            publicHeadersPath: "include"
+            publicHeadersPath: "include",
+            linkerSettings: [
+                .linkedFramework("NaturalLanguage"),
+            ]
         ),
         .testTarget(
             name: "BronzeNativeTests",

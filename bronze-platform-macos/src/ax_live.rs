@@ -72,6 +72,13 @@ mod sys {
     pub type CfStringRef = *const c_void;
     pub type AxUiElementRef = *mut c_void;
 
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct CfRange {
+        pub location: isize,
+        pub length: isize,
+    }
+
     pub const K_CF_STRING_ENCODING_UTF8: u32 = 0x0800_0100;
     pub const AX_SUCCESS: i32 = 0;
 
@@ -96,6 +103,21 @@ mod sys {
         pub fn CFArrayGetTypeID() -> usize;
         pub fn CFArrayGetCount(the_array: CfTypeRef) -> isize;
         pub fn CFArrayGetValueAtIndex(the_array: CfTypeRef, idx: isize) -> CfTypeRef;
+        pub fn CFAttributedStringGetTypeID() -> usize;
+        pub fn CFAttributedStringGetLength(a_str: CfTypeRef) -> isize;
+        pub fn CFAttributedStringGetAttributes(
+            a_str: CfTypeRef,
+            loc: isize,
+            effective_range: *mut CfRange,
+        ) -> CfTypeRef;
+        pub fn CFAttributedStringGetString(a_str: CfTypeRef) -> CfStringRef;
+        pub fn CFStringCreateWithSubstring(
+            alloc: *const c_void,
+            the_string: CfStringRef,
+            range: CfRange,
+        ) -> CfStringRef;
+        pub fn CFDictionaryGetTypeID() -> usize;
+        pub fn CFDictionaryGetValue(the_dict: CfTypeRef, key: CfTypeRef) -> CfTypeRef;
     }
 
     #[link(name = "ApplicationServices", kind = "framework")]
@@ -114,6 +136,10 @@ mod sys {
             attribute: CfStringRef,
             parameter: CfTypeRef,
             value: *mut CfTypeRef,
+        ) -> i32;
+        pub fn AXUIElementSetMessagingTimeout(
+            element: AxUiElementRef,
+            timeout_in_seconds: f32,
         ) -> i32;
     }
 
@@ -223,15 +249,7 @@ mod sys {
         }
     }
 
-    pub fn take_text(value: CfTypeRef) -> Result<Option<String>, super::LiveAxOutcome> {
-        let text = match cf_string_to_owned(value) {
-            Ok(text) => text,
-            Err(()) => {
-                unsafe { CFRelease(value) };
-                return Err(super::LiveAxOutcome::InvalidTextEncoding);
-            }
-        };
-        unsafe { CFRelease(value) };
+    fn bound_selection(text: String) -> Result<Option<String>, super::LiveAxOutcome> {
         if text.is_empty() {
             Ok(None)
         } else if text.len() > super::LIVE_AX_MAX_BYTES {
@@ -241,20 +259,165 @@ mod sys {
         }
     }
 
-    pub fn selected_text(element: AxUiElementRef) -> Result<Option<String>, super::LiveAxOutcome> {
-        if let Some(selected) = copy_attr(element, "AXSelectedText") {
-            if let Some(text) = take_text(selected)? {
-                return Ok(Some(text));
+    fn dict_string(dict: CfTypeRef, key_name: &str) -> Option<String> {
+        let key = cf_string(key_name)?;
+        let value = unsafe { CFDictionaryGetValue(dict, key) };
+        unsafe { CFRelease(key) };
+        if value.is_null() {
+            None
+        } else {
+            cf_string_to_owned(value).ok()
+        }
+    }
+
+    fn font_traits_from_attrs(attrs: CfTypeRef) -> (bool, bool) {
+        if attrs.is_null() {
+            return (false, false);
+        }
+        unsafe {
+            if CFGetTypeID(attrs) != CFDictionaryGetTypeID() {
+                return (false, false);
             }
         }
-        let Some(range) = copy_attr(element, "AXSelectedTextRange") else {
-            return Ok(None);
+        let Some(key) = cf_string("AXFont") else {
+            return (false, false);
         };
-        let parameterized = copy_param(element, "AXStringForRange", range);
-        unsafe { CFRelease(range) };
-        match parameterized {
-            Some(value) => take_text(value),
-            None => Ok(None),
+        let font = unsafe { CFDictionaryGetValue(attrs, key) };
+        unsafe { CFRelease(key) };
+        if font.is_null() {
+            return (false, false);
+        }
+        unsafe {
+            if CFGetTypeID(font) != CFDictionaryGetTypeID() {
+                return (false, false);
+            }
+        }
+        if let Some(name) = dict_string(font, "AXFontName") {
+            return bronze_domain::font_name_traits(&name);
+        }
+        if let Some(name) = dict_string(font, "AXFontFamily") {
+            return bronze_domain::font_name_traits(&name);
+        }
+        (false, false)
+    }
+
+    fn attributed_to_markdown(value: CfTypeRef) -> Result<String, super::LiveAxOutcome> {
+        unsafe {
+            let len = CFAttributedStringGetLength(value);
+            if len <= 0 {
+                return Ok(String::new());
+            }
+            let mut runs = Vec::new();
+            let mut loc: isize = 0;
+            let mut total = 0usize;
+            while loc < len {
+                let mut effective = CfRange {
+                    location: 0,
+                    length: 0,
+                };
+                let attrs = CFAttributedStringGetAttributes(value, loc, &mut effective);
+                if effective.length <= 0 {
+                    break;
+                }
+                let full = CFAttributedStringGetString(value);
+                let sub = CFStringCreateWithSubstring(std::ptr::null(), full, effective);
+                let text = if sub.is_null() {
+                    String::new()
+                } else {
+                    let owned = cf_string_to_owned(sub).unwrap_or_default();
+                    CFRelease(sub);
+                    owned
+                };
+                total = total.saturating_add(text.len());
+                if total > super::LIVE_AX_MAX_BYTES {
+                    return Err(super::LiveAxOutcome::SelectionTooLarge);
+                }
+                let (bold, italic) = font_traits_from_attrs(attrs);
+                if !text.is_empty() {
+                    runs.push(bronze_domain::StyleRun { text, bold, italic });
+                }
+                let next = effective.location.saturating_add(effective.length);
+                if next <= loc {
+                    break;
+                }
+                loc = next;
+            }
+            Ok(bronze_domain::markdown_from_runs(&runs))
+        }
+    }
+
+    pub fn take_text(value: CfTypeRef) -> Result<Option<String>, super::LiveAxOutcome> {
+        unsafe {
+            if value.is_null() {
+                return Ok(None);
+            }
+            let type_id = CFGetTypeID(value);
+            if type_id == CFAttributedStringGetTypeID() {
+                let text = match attributed_to_markdown(value) {
+                    Ok(text) => text,
+                    Err(outcome) => {
+                        CFRelease(value);
+                        return Err(outcome);
+                    }
+                };
+                CFRelease(value);
+                return bound_selection(text);
+            }
+            if type_id != CFStringGetTypeID() {
+                CFRelease(value);
+                return Err(super::LiveAxOutcome::InvalidTextEncoding);
+            }
+        }
+        let text = match cf_string_to_owned(value) {
+            Ok(text) => text,
+            Err(()) => {
+                unsafe { CFRelease(value) };
+                return Err(super::LiveAxOutcome::InvalidTextEncoding);
+            }
+        };
+        unsafe { CFRelease(value) };
+        bound_selection(text)
+    }
+
+    pub fn selected_text(element: AxUiElementRef) -> Result<Option<String>, super::LiveAxOutcome> {
+        let range = copy_attr(element, "AXSelectedTextRange");
+        if let Some(range) = range {
+            if let Some(value) = copy_param(element, "AXAttributedStringForRange", range) {
+                match take_text(value) {
+                    Ok(Some(text)) => {
+                        unsafe { CFRelease(range) };
+                        return Ok(Some(text));
+                    }
+                    Ok(None) => {}
+                    Err(outcome) => {
+                        unsafe { CFRelease(range) };
+                        return Err(outcome);
+                    }
+                }
+            }
+            if let Some(selected) = copy_attr(element, "AXSelectedText") {
+                match take_text(selected) {
+                    Ok(Some(text)) => {
+                        unsafe { CFRelease(range) };
+                        return Ok(Some(text));
+                    }
+                    Ok(None) => {}
+                    Err(outcome) => {
+                        unsafe { CFRelease(range) };
+                        return Err(outcome);
+                    }
+                }
+            }
+            let parameterized = copy_param(element, "AXStringForRange", range);
+            unsafe { CFRelease(range) };
+            match parameterized {
+                Some(value) => take_text(value),
+                None => Ok(None),
+            }
+        } else if let Some(selected) = copy_attr(element, "AXSelectedText") {
+            take_text(selected)
+        } else {
+            Ok(None)
         }
     }
 
@@ -474,6 +637,13 @@ mod sys {
             Some(out)
         }
     }
+
+    pub(super) fn set_messaging_timeout(element: AxUiElementRef) {
+        // Native AX deadline (docs/07 §9.2), not a late-result check.
+        unsafe {
+            AXUIElementSetMessagingTimeout(element, 1.0);
+        }
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -498,6 +668,7 @@ fn read_system_focused() -> (LiveAxOutcome, Option<String>, Option<String>) {
     if system.is_null() {
         return (LiveAxOutcome::FocusedElementMissing, None, None);
     }
+    sys::set_messaging_timeout(system);
     let focused = copy_attr(system, "AXFocusedUIElement");
     unsafe { CFRelease(system.cast()) };
     let Some(focused) = focused else {
@@ -543,6 +714,7 @@ pub fn read_selection_for_pid(pid: i32) -> (LiveAxOutcome, Option<String>, Optio
     if app.is_null() {
         return (LiveAxOutcome::FocusedElementMissing, None, None);
     }
+    sys::set_messaging_timeout(app);
     let result = walk_application(app);
     unsafe { CFRelease(app.cast()) };
     result
@@ -641,5 +813,15 @@ mod ax_live_tests {
         let walk_src = &src[walk..src.find("fn prefer_terminal").expect("prefer_terminal")];
         assert!(walk_src.contains("take_owned(&mut owned)"));
         assert!(walk_src.contains("None => break"));
+        assert!(src.contains("AXAttributedStringForRange"));
+        assert!(src.contains("AXUIElementSetMessagingTimeout"));
+        assert!(src.contains("CFAttributedStringGetAttributes"));
+        assert!(src.contains("set_messaging_timeout(system)"));
+        assert!(src.contains("set_messaging_timeout(app)"));
+        let tap = include_str!(
+            "../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        );
+        assert!(!tap.contains("bronze_native_item_title"));
+        assert!(!tap.contains("AXAttributedStringForRange"));
     }
 }

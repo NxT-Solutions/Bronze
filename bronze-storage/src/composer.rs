@@ -1,7 +1,7 @@
 //! Persist composer drafts (story 6.1). Failure must not consume the draft.
 
 use crate::migrate::{Store, StoreMode};
-use bronze_domain::{composer_should_add, ComposerChord, ContentLanguage};
+use bronze_domain::{compact_title, composer_should_add, ComposerChord, ContentLanguage};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ComposerDraft {
@@ -40,11 +40,19 @@ impl Store {
         }
         let language = ContentLanguage::parse(draft.content_language.as_deref())
             .map_err(|_| ComposerError::Language)?;
+        let title = compact_title(&draft.body);
         self.conn
             .execute(
-                "INSERT INTO items (id, section_id, kind, body, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
-                 VALUES (?1, ?2, 'prompt', ?3, ?4, 'queued', ?1, NULL, 1, ?5, ?5, NULL, NULL)",
-                rusqlite::params![item_id, section_id, draft.body, language.as_str(), now_ms],
+                "INSERT INTO items (id, section_id, kind, body, title, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
+                 VALUES (?1, ?2, 'prompt', ?3, ?4, ?5, 'queued', ?1, NULL, 1, ?6, ?6, NULL, NULL)",
+                rusqlite::params![
+                    item_id,
+                    section_id,
+                    draft.body,
+                    title,
+                    language.as_str(),
+                    now_ms
+                ],
             )
             .map_err(|_| ComposerError::Store)?;
         Ok(item_id.into())
@@ -74,14 +82,16 @@ impl Store {
                 .ok()?;
             Some(source_id)
         });
+        let title = compact_title(&draft.body);
         self.conn
             .execute(
-                "INSERT INTO items (id, section_id, kind, body, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
-                 VALUES (?1, ?2, 'snippet', ?3, ?4, 'queued', ?1, ?5, 1, ?6, ?6, NULL, NULL)",
+                "INSERT INTO items (id, section_id, kind, body, title, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
+                 VALUES (?1, ?2, 'snippet', ?3, ?4, ?5, 'queued', ?1, ?6, 1, ?7, ?7, NULL, NULL)",
                 rusqlite::params![
                     item_id,
                     section_id,
                     draft.body,
+                    title,
                     language.as_str(),
                     source_id,
                     now_ms
@@ -230,6 +240,13 @@ mod composer_persist_tests {
         assert_eq!(kind, "snippet");
         assert_eq!(app, "TextEdit");
         assert_eq!(url, None);
+        let title: String = store
+            .conn
+            .query_row("SELECT title FROM items WHERE id='i-cap'", [], |row| {
+                row.get(0)
+            })
+            .expect("title");
+        assert_eq!(title, bronze_domain::compact_title("selected"));
         store
             .add_from_capture(&draft, Some("Bronze"), "s1", "i-self", 13)
             .expect("self");

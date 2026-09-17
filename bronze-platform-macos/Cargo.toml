@@ -9,4 +9,5 @@ default = ["abi-stub"]
 abi-stub = []
 
 [dependencies]
+bronze-domain = { path = "../bronze-domain" }
 bronze-settings = { path = "../bronze-settings" }

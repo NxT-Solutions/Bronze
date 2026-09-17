@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub const SCHEMA_V1_SQL: &str = include_str!("v1.sql");
+pub const SCHEMA_V2_SQL: &str = "ALTER TABLE items ADD COLUMN title TEXT;\n";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum StoreMode {
@@ -69,6 +70,18 @@ pub fn v1_migration() -> Migration {
     }
 }
 
+pub fn v2_migration() -> Migration {
+    Migration {
+        version: 2,
+        name: "items_title",
+        sql: SCHEMA_V2_SQL,
+    }
+}
+
+pub fn installed_migrations() -> [Migration; 2] {
+    [v1_migration(), v2_migration()]
+}
+
 pub fn checksum_sql(sql: &str) -> String {
     let digest = Sha256::digest(sql.as_bytes());
     hex_lower(&digest)
@@ -109,7 +122,7 @@ impl Store {
         locator: &dyn StoreLocator,
         backup: &mut dyn BackupBeforeMigration,
     ) -> Result<Self, OpenError> {
-        Self::open_with(locator, backup, &[v1_migration()])
+        Self::open_with(locator, backup, &installed_migrations())
     }
 
     pub fn open_with(
@@ -333,6 +346,28 @@ mod migrate_tests {
     }
 
     #[test]
+    fn migrate_v2_adds_items_title() {
+        let path = temp_db();
+        let locator = PathLocator { path };
+        let mut backup = NoopBackup;
+        let store = Store::open(&locator, &mut backup).expect("open");
+        let checksum = store
+            .migration_checksum(2)
+            .expect("row")
+            .expect("v2 recorded");
+        assert_eq!(checksum, checksum_sql(SCHEMA_V2_SQL));
+        let has_title: i64 = store
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM pragma_table_info('items') WHERE name='title'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("col");
+        assert_eq!(has_title, 1);
+    }
+
+    #[test]
     fn migrate_backup_hook_runs_before_schema_and_can_block() {
         let path = temp_db();
         let locator = PathLocator { path };
@@ -350,7 +385,7 @@ mod migrate_tests {
         let path = temp_db();
         let locator = PathLocator { path: path.clone() };
         let mut backup = NoopBackup;
-        let store = Store::open(&locator, &mut backup).expect("v1");
+        let store = Store::open_with(&locator, &mut backup, &[v1_migration()]).expect("v1");
         drop(store);
 
         let bad = Migration {

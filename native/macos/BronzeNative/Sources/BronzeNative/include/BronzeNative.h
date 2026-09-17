@@ -113,6 +113,11 @@ uint32_t bronze_native_event_tap_test_enqueue_from_caller(uint32_t kind);
 // Frontmost process, NSWorkspace (not AX). 0 when unavailable.
 int32_t bronze_native_frontmost_pid(void);
 
+// On-device item title. On OK, *out is owned and must be freed with
+// bronze_native_utf8_free. DEGRADED when the on-device model is unavailable.
+// INVALID_UTF8 on a bad body. Never unwinds.
+uint32_t bronze_native_item_title(bronze_native_utf8_view body, bronze_native_utf8_view *out);
+
 uint32_t bronze_native_ingress_publish(
     int32_t target_pid,
     uint64_t bundle_token,
