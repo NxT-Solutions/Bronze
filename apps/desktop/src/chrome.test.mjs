@@ -24,6 +24,8 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\[data-slot="source"\]\[hidden\]/);
   assert.match(chrome, /\.empty-state\[hidden\]/);
   assert.match(chrome, /#composer-error\[hidden\]/);
+  assert.match(chrome, /#capture-status\[hidden\]/);
+  assert.match(chrome, /\[data-capture-message\]\[hidden\]/);
   assert.match(chrome, /appearance:\s*none/);
   assert.match(chrome, /160ms ease/);
   assert.doesNotMatch(

@@ -486,7 +486,9 @@ article [data-slot="source"] {
 
 article [data-slot="source"][hidden],
 .empty-state[hidden],
-#composer-error[hidden] {
+#composer-error[hidden],
+#capture-status[hidden],
+[data-capture-message][hidden] {
   display: none;
 }
 

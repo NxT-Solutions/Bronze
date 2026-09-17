@@ -23,6 +23,47 @@ export function listenQueueChanged(handler) {
   return Promise.resolve(null);
 }
 
+export function listenCaptureResult(handler) {
+  const listen = globalThis.__TAURI__?.event?.listen;
+  if (typeof listen === "function") {
+    return listen("capture-result", handler);
+  }
+  return Promise.resolve(null);
+}
+
+export function captureFeedbackKey(result) {
+  if (!result || typeof result !== "object") {
+    return "capture.announce.failed";
+  }
+  if (result.terminal === "saved") {
+    return "capture.announce.saved";
+  }
+  if (result.reason === "accessibility") {
+    return "capture.announce.denied";
+  }
+  if (result.reason === "protected") {
+    return "capture.announce.protected";
+  }
+  if (result.reason === "no_selection") {
+    return "capture.announce.rejected";
+  }
+  return "capture.announce.failed";
+}
+
+export function applyCaptureResult(root, result) {
+  const status = root.querySelector("#capture-status");
+  if (!status) {
+    return;
+  }
+  const key = captureFeedbackKey(result);
+  const source = root.querySelector(
+    `[data-capture-message][data-i18n="${key}"]`,
+  );
+  const text = source?.textContent?.trim() ?? "";
+  status.textContent = text;
+  status.hidden = text.length === 0;
+}
+
 export function formatCaptureSource(template, appName) {
   if (typeof appName !== "string") {
     return null;
@@ -143,6 +184,12 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   listenQueueChanged(() => {
     refresh();
+  });
+  listenCaptureResult((event) => {
+    applyCaptureResult(root, event?.payload ?? event);
+    if (event?.payload?.terminal === "saved" || event?.terminal === "saved") {
+      refresh();
+    }
   });
 
   try {

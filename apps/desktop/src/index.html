@@ -31,6 +31,22 @@
         <p id="composer-error" hidden role="alert" data-i18n="composer.add.error">
           Could not add item
         </p>
+        <p id="capture-status" hidden role="status"></p>
+        <p hidden data-capture-message="ok" data-i18n="capture.announce.saved">
+          Captured to Bronze.
+        </p>
+        <p hidden data-capture-message="no_selection" data-i18n="capture.announce.rejected">
+          No selection was captured; select text in another app.
+        </p>
+        <p hidden data-capture-message="accessibility" data-i18n="capture.announce.denied">
+          Accessibility is required to read the selection.
+        </p>
+        <p hidden data-capture-message="protected" data-i18n="capture.announce.protected">
+          That field is protected and was not captured.
+        </p>
+        <p hidden data-capture-message="failed" data-i18n="capture.announce.failed">
+          Capture did not save.
+        </p>
       </form>
       <p id="queue-empty" class="empty-state" data-i18n="panel.empty">
         Select text and Capture, or type here.
