@@ -36,7 +36,12 @@ describe("locale fallback", () => {
     expect(isSupported("en")).toBe(true);
     expect(isSupported("en-XA")).toBe(true);
     expect(isSupported("ar-XB")).toBe(true);
-    expect(isSupported("fr")).toBe(false);
+    expect(isSupported("nl")).toBe(true);
+    expect(isSupported("fr")).toBe(true);
+    expect(isSupported("de")).toBe(true);
+    expect(isSupported("es")).toBe(true);
+    expect(isSupported("it")).toBe(true);
+    expect(isSupported("pt")).toBe(false);
   });
 });
 
@@ -52,6 +57,9 @@ describe("i18n ICU plural", () => {
     // script-preserving fallback must reach en for unknown script tag
     const { t: tzh } = await createI18n({ lng: "zh-Hant-HK" });
     expect(tzh("app.name")).toBe("Bronze");
+    const { t: tfr } = await createI18n({ lng: "fr" });
+    expect(tfr("settings.field.locale")).toBe("Langue");
+    expect(tfr("capture.source", { appName: "Mail" })).toBe("De Mail");
   });
 
   it("uses en when pt-BR catalog is absent", async () => {

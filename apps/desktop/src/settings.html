@@ -22,6 +22,32 @@
         <input id="settings-search" type="search" name="q" />
       </search>
       <form class="card-stack">
+        <fieldset data-settings-group="general" aria-labelledby="settings-group-general">
+          <legend>
+            <span id="settings-group-general" data-i18n="settings.group.general">General</span>
+          </legend>
+          <div class="field-block">
+            <label for="ui-locale" data-i18n="settings.field.locale">Language</label>
+            <div class="field-row">
+              <select id="ui-locale" name="locale">
+                <option value="en" lang="en" selected>English</option>
+                <option value="nl" lang="nl">Nederlands</option>
+                <option value="fr" lang="fr">Français</option>
+                <option value="de" lang="de">Deutsch</option>
+                <option value="es" lang="es">Español</option>
+                <option value="it" lang="it">Italiano</option>
+              </select>
+              <button
+                type="button"
+                class="btn-ghost"
+                data-reset-field="general.locale"
+                data-i18n="settings.reset.field"
+              >
+                Reset field
+              </button>
+            </div>
+          </div>
+        </fieldset>
         <fieldset data-settings-group="data" aria-labelledby="settings-group-data">
           <legend>
             <span id="settings-group-data" data-i18n="settings.group.data">Data</span>

@@ -9,7 +9,16 @@ import {
 
 describe("catalog glossary (I18N-001)", () => {
   it("names native and InfoPlist keys and card isolation", () => {
-    expect(ADVERTISED_LOCALES).toEqual(["en", "en-XA", "ar-XB"]);
+    expect(ADVERTISED_LOCALES).toEqual([
+      "en",
+      "nl",
+      "fr",
+      "de",
+      "es",
+      "it",
+      "en-XA",
+      "ar-XB",
+    ]);
     expect(NATIVE_GLOSSARY_KEYS).toContain("menu.status.capture");
     expect(INFOPLIST_GLOSSARY.map(([, key]) => key)).toContain("app.name");
     expect(chromeDir("ar-XB")).toBe("rtl");

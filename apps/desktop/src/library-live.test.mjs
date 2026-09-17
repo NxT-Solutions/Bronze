@@ -25,6 +25,7 @@ test("library search stays a substring placeholder", () => {
 });
 
 test("library items sanitize markdown and keep a title plus expand reader", () => {
+  assert.match(live, /LOCALE_APPLIED_EVENT/);
   assert.match(live, /fillItemChrome/);
   assert.doesNotMatch(live, /body\.textContent = item\.body/);
   assert.doesNotMatch(live, /innerHTML = item\.body/);

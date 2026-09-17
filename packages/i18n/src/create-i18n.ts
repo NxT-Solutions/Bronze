@@ -3,13 +3,23 @@ import i18next from "i18next";
 import ICU from "i18next-icu";
 import { initReactI18next } from "react-i18next";
 import arXBApp from "../locales/ar-XB/app.json" with { type: "json" };
+import deApp from "../locales/de/app.json" with { type: "json" };
 import enApp from "../locales/en/app.json" with { type: "json" };
 import enXAApp from "../locales/en-XA/app.json" with { type: "json" };
+import esApp from "../locales/es/app.json" with { type: "json" };
+import frApp from "../locales/fr/app.json" with { type: "json" };
+import itApp from "../locales/it/app.json" with { type: "json" };
+import nlApp from "../locales/nl/app.json" with { type: "json" };
 import type { MessageId } from "./generated-message-ids";
 import { computeFallbackChain } from "./locale";
 
 const resources = {
   en: { app: enApp },
+  nl: { app: nlApp },
+  fr: { app: frApp },
+  de: { app: deApp },
+  es: { app: esApp },
+  it: { app: itApp },
   "en-XA": { app: enXAApp },
   "ar-XB": { app: arXBApp },
 } as const;

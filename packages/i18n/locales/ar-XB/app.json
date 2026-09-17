@@ -69,6 +69,7 @@
   "settings.group.accessibility": "ytilibisseccA",
   "settings.field.launchAtLogin": "nigol ta hcnuaL",
   "settings.field.backupSchedule": "eludehcs pukcaB",
+  "settings.field.locale": "egaugnaL",
   "settings.field.excludedBundleIds": "sppa dedulcxE",
   "settings.backup.daily": "yliaD",
   "settings.backup.weekly": "ylkeeW",

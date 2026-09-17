@@ -13,3 +13,19 @@ export function tauriInvoke(cmd, args) {
 export function showChromeWindow(kind, invokeFn = tauriInvoke) {
   return invokeFn("show_chrome_window", { kind });
 }
+
+export function tauriListen(event, handler) {
+  const listen = globalThis.__TAURI__?.event?.listen;
+  if (typeof listen === "function") {
+    return listen(event, handler);
+  }
+  return Promise.resolve(null);
+}
+
+export function tauriEmit(event, payload) {
+  const emit = globalThis.__TAURI__?.event?.emit;
+  if (typeof emit === "function") {
+    return emit(event, payload);
+  }
+  return Promise.resolve(null);
+}

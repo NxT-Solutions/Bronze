@@ -1,3 +1,4 @@
+import { LOCALE_APPLIED_EVENT } from "./apply-locale.mjs";
 import {
   applyActionStatus,
   bindOverflowDismiss,
@@ -205,6 +206,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (event?.payload?.terminal === "saved" || event?.terminal === "saved") {
       refresh();
     }
+  });
+  root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
+    refresh();
   });
 
   try {

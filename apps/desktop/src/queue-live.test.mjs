@@ -62,6 +62,7 @@ test("composer submit is Cmd-Enter or the form and live queue is wired", () => {
   assert.match(live, /list_overview_items/);
   assert.match(live, /queue-changed/);
   assert.match(live, /capture-result/);
+  assert.match(live, /LOCALE_APPLIED_EVENT/);
   assert.match(html, /id="capture-status"/);
   assert.match(html, /role="status"/);
   assert.match(html, /data-i18n="capture.announce.rejected"/);

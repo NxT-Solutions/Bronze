@@ -69,6 +69,7 @@
   "settings.group.accessibility": "Accessibility",
   "settings.field.launchAtLogin": "Launch at login",
   "settings.field.backupSchedule": "Backup schedule",
+  "settings.field.locale": "Language",
   "settings.field.excludedBundleIds": "Excluded apps",
   "settings.backup.daily": "Daily",
   "settings.backup.weekly": "Weekly",

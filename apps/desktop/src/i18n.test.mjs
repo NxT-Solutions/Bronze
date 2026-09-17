@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
 const localesRoot = join(root, "../../../packages/i18n/locales");
-const locales = ["en", "en-XA", "ar-XB"];
+const locales = ["en", "nl", "fr", "de", "es", "it", "en-XA", "ar-XB"];
 const nativeKeys = [
   "app.name",
   "menu.status.capture",
@@ -18,7 +18,7 @@ const nativeKeys = [
   "panel.quick.title",
 ];
 
-test("en en-XA ar-XB cover native menu InfoPlist and WebView keys", () => {
+test("shipped locales cover native menu InfoPlist and WebView keys", () => {
   for (const locale of locales) {
     const catalog = JSON.parse(
       readFileSync(join(localesRoot, locale, "app.json"), "utf8"),
@@ -32,6 +32,7 @@ test("en en-XA ar-XB cover native menu InfoPlist and WebView keys", () => {
     assert.ok(catalog["queue.item.showLess"]);
     assert.ok(catalog["queue.item.title"]);
     assert.ok(catalog["settings.title"]);
+    assert.ok(catalog["settings.field.locale"]);
     assert.equal(catalog["app.name"], catalog["app.name"]);
   }
   assert.match(html, /data-i18n="panel.quick.title"/);

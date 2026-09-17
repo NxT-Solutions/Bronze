@@ -1,3 +1,8 @@
+import {
+  catalogMessage,
+  formatQueueCount,
+  LOCALE_APPLIED_EVENT,
+} from "./apply-locale.mjs";
 import { runBusy } from "./control.mjs";
 import {
   applySourceRow,
@@ -12,7 +17,7 @@ export const QUE_007_COMPLETE = false;
 export const ADR_018_STATUS = "Proposed";
 
 export function announceCount(count) {
-  return `${count} items`;
+  return formatQueueCount(count, catalogMessage("queue.count"));
 }
 
 export function libraryEmptyKey(section) {
@@ -178,6 +183,14 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
       status.textContent = announceCount(imported);
     }
     await refresh(search?.value ?? "");
+  });
+
+  root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
+    refresh(search?.value ?? "").catch(() => {
+      if (count) {
+        count.textContent = announceCount(0);
+      }
+    });
   });
 
   try {

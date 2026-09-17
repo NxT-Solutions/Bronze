@@ -1,6 +1,15 @@
 /** Native menu/InfoPlist share the WebView glossary (I18N-001/002, G-06). */
 
-export const ADVERTISED_LOCALES = ["en", "en-XA", "ar-XB"] as const;
+export const ADVERTISED_LOCALES = [
+  "en",
+  "nl",
+  "fr",
+  "de",
+  "es",
+  "it",
+  "en-XA",
+  "ar-XB",
+] as const;
 
 export const INFOPLIST_GLOSSARY = [
   ["CFBundleDisplayName", "app.name"],

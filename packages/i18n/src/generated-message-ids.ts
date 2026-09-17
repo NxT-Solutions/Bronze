@@ -72,6 +72,7 @@ export const MessageIds = {
   "settings.group.accessibility": "settings.group.accessibility",
   "settings.field.launchAtLogin": "settings.field.launchAtLogin",
   "settings.field.backupSchedule": "settings.field.backupSchedule",
+  "settings.field.locale": "settings.field.locale",
   "settings.field.excludedBundleIds": "settings.field.excludedBundleIds",
   "settings.backup.daily": "settings.backup.daily",
   "settings.backup.weekly": "settings.backup.weekly",

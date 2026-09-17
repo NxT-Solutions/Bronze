@@ -1,7 +1,24 @@
-export type SupportedLocale = "en" | "en-XA" | "ar-XB";
+export type SupportedLocale =
+  | "en"
+  | "nl"
+  | "fr"
+  | "de"
+  | "es"
+  | "it"
+  | "en-XA"
+  | "ar-XB";
 export type FallbackChain = readonly string[];
 
-const SUPPORTED: SupportedLocale[] = ["en", "en-XA", "ar-XB"];
+const SUPPORTED: SupportedLocale[] = [
+  "en",
+  "nl",
+  "fr",
+  "de",
+  "es",
+  "it",
+  "en-XA",
+  "ar-XB",
+];
 
 export function canonicalizeBcp47(tag: string): string {
   try {
