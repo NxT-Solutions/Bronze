@@ -13,6 +13,7 @@ Before changing chrome or UX, read `hig/SKILL.md` and the surface in
 - System SF, no extra body tracking, no remote fonts
 - Live zinc tokens only; no DESIGN.md brown in chrome
 - Hairline grouping; shadows only on floating menus/tips
+- Concentric corners: inner radius = outer − padding; no capsule buttons
 - Motion ≤200ms and off under Reduce Motion
 - Semantic controls; catalog strings; no raw shortcut IDs as labels
 - No fake Liquid Glass; no Cooper/Copper copy

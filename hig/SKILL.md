@@ -62,6 +62,7 @@ Surface: ________
 - [ ] Lists show human labels, not raw IDs
 - [ ] SF as designed (no extra letter-spacing on body)
 - [ ] Hairline grouping, not drop-shadow hierarchy
+- [ ] Corners concentric (inner = outer − padding); Mac medium controls are rounded rects, not capsules
 - [ ] Paragraphs and rows have breathing room
 - [ ] Feedback lives on the control (tip), live region stays SR-only
 - [ ] Reduce Motion / Increase Contrast / Reduce Transparency still work

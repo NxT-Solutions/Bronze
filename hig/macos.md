@@ -60,6 +60,32 @@ layout defect.
 
 macOS: keep critical information off the bottom strip of a window.
 
+## Corners
+
+Apple’s current system is built on **concentricity** (WWDC 2025–26,
+`containerConcentric` / `ConcentricRectangle`): nested rounded
+rectangles share a corner center. Inner radius = outer radius −
+padding. If a shape sits far from the parent corner, its radius goes
+to zero (or a stated minimum).
+
+- **Fixed** — compact Mac Mini / Small / Medium controls: rounded
+  rectangle, not a capsule. Bronze uses `--radius-control` 8px at
+  `--control-h` 2rem.
+- **Concentric** — a field or grouped list inside a padded card:
+  `R_card = R_control + padding`. Settings / Library / Help cards use
+  `--radius-page-card` (`8 + 20`).
+- **Capsule** — Large / X-Large standout actions, and small status
+  pills. Do not capsule every button on a dense Mac settings page.
+- **Grouped lists** — the group has the radius; rows inside are square
+  (`border-radius: 0`) so they meet the clip.
+- **Windows** — titlebar-only windows stay compact; toolbar windows
+  are softer. Do not fake Liquid Glass. Inset content so it is not
+  clipped by the native window corner.
+
+A card that is 12px round with 20px padding and an 8px field looks
+like the inner shape is fighting the outer one. Grow the card or
+shrink the field; do not pick three unrelated radii.
+
 ## Buttons
 
 A button starts an instantaneous action. Style + label + role.

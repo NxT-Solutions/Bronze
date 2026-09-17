@@ -25,7 +25,10 @@ mirrored in `packages/ui/src/styles/globals.css`.
 | `--text-body` 0.9375rem | titles in cards, window title | Title 3 15 |
 | `--text-title` 1.25rem | rare display | Title 2 |
 | `--control-h` 2rem | push buttons | compact Mac control |
-| `--radius-*` 8 / 10 / 12 | modest, not capsule-heavy | |
+| `--radius-control` 8px | fields, push buttons | rounded rect, not capsule |
+| `--radius-card` 16px | queue cards / articles | modest standalone |
+| `--radius-page-card` `8 + 20` | Settings / Library / Help cards | concentric with `--space-5` |
+| `--radius-pill` 999px | status pills only | capsule |
 | `--background` `#fafafa` | window | |
 | `--foreground` `#18181b` | text | |
 | `--border` / `--stroke` `#e4e4e7` / 8% hairline | grouping | |
@@ -49,6 +52,12 @@ Do not restore 0.04em+ tracking or word-spacing as “polish”.
 Cards, articles, fieldsets, health rows: hairline + opaque fill, no
 drop shadow. A light shadow is allowed only on floating layers (menu,
 help tag).
+
+Corners follow concentricity in `hig/macos.md`. Queue cards stay 16px.
+Page-shell cards use `--radius-page-card` so a control in the corner
+shares the card’s center. Grouped shortcut rows stay square. Status
+pills may be capsules; Add / Copy / record fields stay rounded
+rectangles.
 
 ## Controls
 
