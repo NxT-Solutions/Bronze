@@ -51,12 +51,15 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
 test("settings language switcher uses endonyms and option lang", () => {
   assert.match(html, /data-settings-group="general"/);
   assert.match(html, /data-i18n="settings.field.locale"/);
-  assert.match(html, /<option value="en" lang="en" selected>English<\/option>/);
-  assert.match(html, /<option value="nl" lang="nl">Nederlands<\/option>/);
-  assert.match(html, /<option value="fr" lang="fr">Français<\/option>/);
-  assert.match(html, /<option value="de" lang="de">Deutsch<\/option>/);
-  assert.match(html, /<option value="es" lang="es">Español<\/option>/);
-  assert.match(html, /<option value="it" lang="it">Italiano<\/option>/);
+  assert.match(
+    html,
+    /<option value="en" lang="en" selected>🇬🇧 English<\/option>/,
+  );
+  assert.match(html, /<option value="nl" lang="nl">🇳🇱 Nederlands<\/option>/);
+  assert.match(html, /<option value="fr" lang="fr">🇫🇷 Français<\/option>/);
+  assert.match(html, /<option value="de" lang="de">🇩🇪 Deutsch<\/option>/);
+  assert.match(html, /<option value="es" lang="es">🇪🇸 Español<\/option>/);
+  assert.match(html, /<option value="it" lang="it">🇮🇹 Italiano<\/option>/);
   assert.match(html, /data-reset-field="general.locale"/);
   assert.match(live, /emitUiLocaleChanged/);
 });
