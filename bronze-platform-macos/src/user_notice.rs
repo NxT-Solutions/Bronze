@@ -119,7 +119,10 @@ mod user_notice_tests {
         assert!(swift.contains(".denied"));
         assert!(swift.contains("willPresent"));
         assert!(swift.contains("announcementRequested"));
-        assert!(!swift.contains("NSUserNotification"));
+        assert!(swift.contains("bundledNotificationCenter"));
+        assert!(swift.contains("pathExtension == \"app\""));
+        assert!(swift.contains("NSUserNotification"));
+        assert!(swift.contains("postLegacyNotice"));
         assert!(!swift.contains("URLSession"));
         assert!(!swift.contains("http://"));
         assert!(!swift.contains("https://"));

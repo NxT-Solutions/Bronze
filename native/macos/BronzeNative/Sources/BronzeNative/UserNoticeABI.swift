@@ -18,31 +18,38 @@ public func bronze_native_deliver_user_notice(
         return BRONZE_STATUS_DEGRADED
     }
     return bronzeOnAppKit {
-        installNoticeDelegate()
         announceNotice(bodyText)
-        switch readAuthorizationStatus() {
-        case .authorized, .provisional:
-            postUserNotice(title: titleText, body: bodyText)
-            return BRONZE_STATUS_OK
-        default:
-            return BRONZE_STATUS_DEGRADED
+        if let center = bundledNotificationCenter() {
+            switch readAuthorizationStatus(center) {
+            case .authorized, .provisional:
+                postUserNotice(center, title: titleText, body: bodyText)
+                return BRONZE_STATUS_OK
+            default:
+                return BRONZE_STATUS_DEGRADED
+            }
         }
+        postLegacyNotice(title: titleText, body: bodyText)
+        return BRONZE_STATUS_OK
     }
 }
 
 @_silgen_name("bronze_native_notification_authorization_status")
 public func bronze_native_notification_authorization_status() -> UInt32 {
     bronzeOnAppKit {
-        installNoticeDelegate()
-        return statusCode(readAuthorizationStatus())
+        guard let center = bundledNotificationCenter() else {
+            return BRONZE_STATUS_DEGRADED
+        }
+        return statusCode(readAuthorizationStatus(center))
     }
 }
 
 @_silgen_name("bronze_native_request_notification_authorization")
 public func bronze_native_request_notification_authorization() -> UInt32 {
     bronzeOnAppKitModal {
-        installNoticeDelegate()
-        let current = readAuthorizationStatus()
+        guard let center = bundledNotificationCenter() else {
+            return BRONZE_STATUS_DEGRADED
+        }
+        let current = readAuthorizationStatus(center)
         if current == .denied {
             return BRONZE_STATUS_CANCELLED
         }
@@ -51,7 +58,7 @@ public func bronze_native_request_notification_authorization() -> UInt32 {
         }
         let box = AuthStatusBox()
         let lock = DispatchSemaphore(value: 0)
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { granted, _ in
+        center.requestAuthorization(options: [.alert]) { granted, _ in
             box.value = granted ? .authorized : .denied
             lock.signal()
         }
@@ -70,14 +77,24 @@ private func isSafeNoticeText(_ text: String, max: Int) -> Bool {
         && !trimmed.contains("..")
 }
 
-private func installNoticeDelegate() {
-    UNUserNotificationCenter.current().delegate = BronzeNoticeCenter.shared
+/// UNUserNotificationCenter.current() aborts when the process is not a .app
+/// (tauri dev / cargo-run use target/debug/bronze-desktop).
+private func bundledNotificationCenter() -> UNUserNotificationCenter? {
+    let url = Bundle.main.bundleURL
+    guard url.pathExtension == "app",
+          let id = Bundle.main.bundleIdentifier, !id.isEmpty
+    else {
+        return nil
+    }
+    let center = UNUserNotificationCenter.current()
+    center.delegate = BronzeNoticeCenter.shared
+    return center
 }
 
-private func readAuthorizationStatus() -> UNAuthorizationStatus {
+private func readAuthorizationStatus(_ center: UNUserNotificationCenter) -> UNAuthorizationStatus {
     let box = AuthStatusBox()
     let lock = DispatchSemaphore(value: 0)
-    UNUserNotificationCenter.current().getNotificationSettings { settings in
+    center.getNotificationSettings { settings in
         box.value = settings.authorizationStatus
         lock.signal()
     }
@@ -98,7 +115,11 @@ private func statusCode(_ status: UNAuthorizationStatus) -> UInt32 {
     }
 }
 
-private func postUserNotice(title: String, body: String) {
+private func postUserNotice(
+    _ center: UNUserNotificationCenter,
+    title: String,
+    body: String
+) {
     let content = UNMutableNotificationContent()
     content.title = title
     content.body = body
@@ -108,7 +129,17 @@ private func postUserNotice(title: String, body: String) {
         content: content,
         trigger: nil
     )
-    UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    center.add(request, withCompletionHandler: nil)
+}
+
+private func postLegacyNotice(title: String, body: String) {
+    let notice = NSUserNotification()
+    notice.title = title
+    notice.informativeText = body
+    notice.soundName = nil
+    let center = NSUserNotificationCenter.default
+    center.delegate = BronzeLegacyNoticeCenter.shared
+    center.deliver(notice)
 }
 
 private func announceNotice(_ body: String) {
@@ -136,5 +167,16 @@ private final class BronzeNoticeCenter: NSObject, UNUserNotificationCenterDelega
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .list])
+    }
+}
+
+private final class BronzeLegacyNoticeCenter: NSObject, NSUserNotificationCenterDelegate, @unchecked Sendable {
+    nonisolated(unsafe) static let shared = BronzeLegacyNoticeCenter()
+
+    func userNotificationCenter(
+        _ center: NSUserNotificationCenter,
+        shouldPresent notification: NSUserNotification
+    ) -> Bool {
+        true
     }
 }
