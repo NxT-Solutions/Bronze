@@ -17,11 +17,10 @@ test("quick panel uses zinc surfaces not competitor dress", () => {
   assert.match(chrome, /--background:\s*#fafafa/i);
   assert.match(chrome, /--foreground:\s*#18181b/i);
   assert.match(chrome, /--muted-foreground:\s*#52525b/i);
-  assert.match(chrome, /--border:\s*#8a8a90/i);
-  assert.match(chrome, /--stroke:\s*#8a8a90/i);
-  assert.match(chrome, /--success:\s*#245a40/i);
-  assert.match(chrome, /--warning:\s*#7a450c/i);
-  assert.match(chrome, /--destructive:\s*#9b1c14/i);
+  assert.match(chrome, /--border:\s*#e4e4e7/i);
+  assert.match(chrome, /--success:\s*#2f6f4f/i);
+  assert.match(chrome, /--warning:\s*#8a4e0e/i);
+  assert.match(chrome, /--destructive:\s*#b42318/i);
   assert.doesNotMatch(chrome, /#f7f4ef|#8c6239|#1c1917/i);
   assert.doesNotMatch(css, /#f7f4ef|#8c6239|#1c1917/i);
   assert.doesNotMatch(html.toLowerCase(), /copper|cooper/);

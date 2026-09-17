@@ -22,8 +22,10 @@
         <input id="settings-search" type="search" name="q" />
       </search>
       <form class="card-stack">
-        <fieldset data-settings-group="data">
-          <legend data-i18n="settings.group.data">Data</legend>
+        <fieldset data-settings-group="data" aria-labelledby="settings-group-data">
+          <legend>
+            <span id="settings-group-data" data-i18n="settings.group.data">Data</span>
+          </legend>
           <div class="field-block">
             <label for="backup-schedule" data-i18n="settings.field.backupSchedule">
               Backup schedule
@@ -48,8 +50,10 @@
             </div>
           </div>
         </fieldset>
-        <fieldset data-settings-group="privacy">
-          <legend data-i18n="settings.group.privacy">Privacy</legend>
+        <fieldset data-settings-group="privacy" aria-labelledby="settings-group-privacy">
+          <legend>
+            <span id="settings-group-privacy" data-i18n="settings.group.privacy">Privacy</span>
+          </legend>
           <div class="field-block">
             <label
               for="excluded-bundle-ids"

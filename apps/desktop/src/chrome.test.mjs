@@ -146,4 +146,5 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /fieldset \{[\s\S]*?box-shadow:\s*0 0 0 1px var\(--stroke\)/,
   );
+  assert.match(chrome, /legend \{[\s\S]*?display:\s*contents/);
 });

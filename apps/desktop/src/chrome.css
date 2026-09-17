@@ -14,18 +14,18 @@
   --card-foreground: #18181b;
   --muted: #f4f4f5;
   --muted-foreground: #52525b;
-  --border: #8a8a90;
-  --input: #8a8a90;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
   --ring: #18181b;
   --primary: #18181b;
   --primary-foreground: #fafafa;
   --accent: #18181b;
   --accent-foreground: #fafafa;
-  --success: #245a40;
+  --success: #2f6f4f;
   --success-foreground: #ffffff;
-  --warning: #7a450c;
+  --warning: #8a4e0e;
   --warning-foreground: #ffffff;
-  --destructive: #9b1c14;
+  --destructive: #b42318;
   --destructive-foreground: #ffffff;
   --secondary: #f4f4f5;
   --secondary-foreground: #18181b;
@@ -56,7 +56,7 @@
   --space-5: 20px;
   --space-6: 24px;
 
-  --stroke: #8a8a90;
+  --stroke: color-mix(in srgb, var(--foreground) 8%, transparent);
   --shadow:
     0 0 0 0.5px color-mix(in srgb, var(--foreground) 12%, transparent),
     0 4px 16px color-mix(in srgb, var(--foreground) 6%, transparent);
@@ -1034,7 +1034,10 @@ fieldset {
 }
 
 legend {
-  padding: 0;
+  display: contents;
+}
+
+fieldset > span {
   font-size: var(--text-caption);
   font-weight: 650;
 }
