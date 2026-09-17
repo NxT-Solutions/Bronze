@@ -19,6 +19,7 @@ export const MessageIds = {
   "capture.announce.denied": "capture.announce.denied",
   "capture.announce.protected": "capture.announce.protected",
   "capture.announce.failed": "capture.announce.failed",
+  "capture.announce.excluded": "capture.announce.excluded",
   "composer.add.label": "composer.add.label",
   "composer.placeholder": "composer.placeholder",
   "composer.add.submit": "composer.add.submit",
@@ -84,6 +85,16 @@ export const MessageIds = {
   "settings.field.backupSchedule": "settings.field.backupSchedule",
   "settings.field.locale": "settings.field.locale",
   "settings.field.excludedBundleIds": "settings.field.excludedBundleIds",
+  "settings.field.excludedBundleIds.help":
+    "settings.field.excludedBundleIds.help",
+  "settings.field.excludedBundleIds.search":
+    "settings.field.excludedBundleIds.search",
+  "settings.field.excludedBundleIds.remove":
+    "settings.field.excludedBundleIds.remove",
+  "settings.field.excludedBundleIds.empty":
+    "settings.field.excludedBundleIds.empty",
+  "settings.field.excludedBundleIds.unavailable":
+    "settings.field.excludedBundleIds.unavailable",
   "settings.backup.daily": "settings.backup.daily",
   "settings.backup.weekly": "settings.backup.weekly",
   "settings.reset.field": "settings.reset.field",

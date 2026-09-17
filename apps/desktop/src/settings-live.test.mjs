@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 import {
   applySettingsForm,
   applySettingsSearch,
+  filterInstalledApps,
+  isSafeBundleId,
   patchSettingsFromForm,
+  resolveExcludedApps,
   settingsSearchNeedle,
   settingsUnitHaystack,
   switcherLocale,
@@ -23,25 +26,25 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
     privacy: { excludedBundleIds: ["com.example"] },
   };
   const schedule = { value: "weekly" };
-  const excluded = { value: "com.one, com.two" };
+  const excluded = { dataset: { excludedIds: "" } };
   const locale = { value: "en" };
   const root = {
     querySelector(sel) {
       if (sel === "#backup-schedule") return schedule;
-      if (sel === "#excluded-bundle-ids") return excluded;
+      if (sel === "#excluded-apps") return excluded;
       if (sel === "#ui-locale") return locale;
       return null;
     },
   };
   applySettingsForm(root, settings);
   assert.equal(schedule.value, "daily");
-  assert.equal(excluded.value, "com.example");
+  assert.equal(excluded.dataset.excludedIds, "com.example");
   assert.equal(locale.value, "en");
   settings.general.locale = "nl";
   applySettingsForm(root, settings);
   assert.equal(locale.value, "nl");
   schedule.value = "weekly";
-  excluded.value = "com.one, com.two";
+  excluded.dataset.excludedIds = "com.one\ncom.two";
   locale.value = "fr";
   const next = patchSettingsFromForm(settings, root);
   assert.equal(next.data.backupSchedule, "weekly");
@@ -49,6 +52,37 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   assert.equal(next.general.locale, "fr");
   assert.equal(switcherLocale("system"), "en");
   assert.equal(switcherLocale("de"), "de");
+});
+
+test("excluded app picker searches installed apps and keeps many ids", () => {
+  assert.equal(isSafeBundleId("com.apple.Safari"), true);
+  assert.equal(isSafeBundleId("/Applications/Safari.app"), false);
+  const catalog = [
+    { bundleId: "com.apple.Safari", name: "Safari" },
+    { bundleId: "com.apple.TextEdit", name: "TextEdit" },
+    { bundleId: "/Applications/Evil.app", name: "Evil" },
+  ];
+  assert.deepEqual(
+    filterInstalledApps(catalog, "saf", ["com.apple.TextEdit"]).map(
+      (app) => app.bundleId,
+    ),
+    ["com.apple.Safari"],
+  );
+  assert.deepEqual(
+    resolveExcludedApps(["com.apple.Safari", "com.missing.app"], catalog),
+    [
+      { bundleId: "com.apple.Safari", name: "Safari" },
+      { bundleId: "com.missing.app", name: "com.missing.app" },
+    ],
+  );
+  assert.match(html, /id="excluded-apps-search"/);
+  assert.match(html, /role="combobox"/);
+  assert.match(html, /settings.field.excludedBundleIds.help/);
+  assert.doesNotMatch(html, /name="excludedBundleIds"/);
+  assert.doesNotMatch(html, /id="excluded-bundle-ids"/);
+  assert.match(live, /list_installed_apps/);
+  assert.match(live, /app_icon_data_url/);
+  assert.doesNotMatch(live, /join\(", "\)/);
 });
 
 test("settings language switcher uses endonyms and option lang", () => {

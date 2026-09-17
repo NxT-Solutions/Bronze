@@ -444,6 +444,9 @@ export function captureFeedbackKey(result) {
   if (result.reason === "no_selection") {
     return "capture.announce.rejected";
   }
+  if (result.reason === "app_excluded") {
+    return "capture.announce.excluded";
+  }
   return "capture.announce.failed";
 }
 

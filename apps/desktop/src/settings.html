@@ -142,25 +142,70 @@
           </legend>
           <div class="field-block" data-settings-unit>
             <label
-              for="excluded-bundle-ids"
+              for="excluded-apps-search"
               data-i18n="settings.field.excludedBundleIds"
             >
               Excluded apps
             </label>
-            <div class="field-row">
-              <input
-                id="excluded-bundle-ids"
-                type="text"
-                name="excludedBundleIds"
-              />
-              <button
-                type="button"
-                class="btn-ghost"
-                data-reset-field="privacy.excludedBundleIds"
-                data-i18n="settings.reset.field"
+            <p
+              id="excluded-apps-help"
+              class="muted"
+              data-excluded-help
+              data-i18n="settings.field.excludedBundleIds.help"
+            >
+              Bronze will not capture selections from these apps.
+            </p>
+            <div id="excluded-apps" class="app-picker-field">
+              <ul id="excluded-apps-selected" class="app-chip-list"></ul>
+              <div class="field-row">
+                <div class="app-picker">
+                  <input
+                    id="excluded-apps-search"
+                    type="search"
+                    role="combobox"
+                    aria-expanded="false"
+                    aria-controls="excluded-apps-list"
+                    aria-autocomplete="list"
+                    aria-describedby="excluded-apps-help"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="Search apps on this Mac"
+                    data-i18n-placeholder="settings.field.excludedBundleIds.search"
+                  />
+                  <div
+                    id="excluded-apps-list"
+                    class="app-picker-list"
+                    role="listbox"
+                    hidden
+                  ></div>
+                </div>
+                <button
+                  type="button"
+                  class="btn-ghost"
+                  data-reset-field="privacy.excludedBundleIds"
+                  data-i18n="settings.reset.field"
+                >
+                  Reset field
+                </button>
+              </div>
+              <p
+                hidden
+                class="muted"
+                role="status"
+                data-excluded-apps-empty
+                data-i18n="settings.field.excludedBundleIds.empty"
               >
-                Reset field
-              </button>
+                No matching apps
+              </p>
+              <p
+                hidden
+                class="muted"
+                role="status"
+                data-excluded-apps-unavailable
+                data-i18n="settings.field.excludedBundleIds.unavailable"
+              >
+                Installed apps could not be listed.
+              </p>
             </div>
           </div>
         </fieldset>

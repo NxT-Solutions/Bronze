@@ -28,6 +28,7 @@ const FEEDBACK = {
   "capture.announce.denied": "Accessibility is required to read the selection.",
   "capture.announce.protected": "That field is protected and was not captured.",
   "capture.announce.failed": "Capture did not save.",
+  "capture.announce.excluded": "This app is excluded from capture.",
 };
 
 function captureStatusRoot(messages = FEEDBACK) {
@@ -81,6 +82,7 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(html, /data-i18n="capture.announce.denied"/);
   assert.match(html, /data-i18n="capture.announce.protected"/);
   assert.match(html, /data-i18n="capture.announce.failed"/);
+  assert.match(html, /data-i18n="capture.announce.excluded"/);
   assert.match(html, /data-i18n="copy.announce.copied"/);
   assert.match(html, /data-i18n="copy.announce.failed"/);
   assert.match(html, /id="action-status"/);
@@ -219,6 +221,10 @@ test("capture feedback maps terminal reason to catalog keys and status text", ()
     "capture.announce.protected",
   );
   assert.equal(
+    captureFeedbackKey({ terminal: "rejected", reason: "app_excluded" }),
+    "capture.announce.excluded",
+  );
+  assert.equal(
     captureFeedbackKey({ terminal: "failed" }),
     "capture.announce.failed",
   );
@@ -246,6 +252,11 @@ test("capture feedback maps terminal reason to catalog keys and status text", ()
     inbox.status.textContent,
     FEEDBACK["capture.announce.protected"],
   );
+  applyCaptureResult(inbox, {
+    terminal: "rejected",
+    reason: "app_excluded",
+  });
+  assert.equal(inbox.status.textContent, FEEDBACK["capture.announce.excluded"]);
   applyCaptureResult(inbox, { terminal: "failed", reason: "failed" });
   assert.equal(inbox.status.textContent, FEEDBACK["capture.announce.failed"]);
   const empty = captureStatusRoot({});

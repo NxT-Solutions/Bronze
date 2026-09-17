@@ -39,4 +39,11 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /<html lang="en">/);
   assert.match(html, /data-open-window="help"/);
   assert.doesNotMatch(html, /href="help\.html"/);
+  assert.match(html, /id="excluded-apps-search"/);
+  assert.match(html, /role="combobox"/);
+  assert.doesNotMatch(html, /name="excludedBundleIds"/);
+  assert.equal(
+    en["settings.field.excludedBundleIds.help"],
+    "Bronze will not capture selections from these apps.",
+  );
 });

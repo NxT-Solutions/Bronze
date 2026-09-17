@@ -1,5 +1,10 @@
-import { applyHandTestLocale, emitUiLocaleChanged } from "./apply-locale.mjs";
+import {
+  applyHandTestLocale,
+  catalogMessage,
+  emitUiLocaleChanged,
+} from "./apply-locale.mjs";
 import { runBusy } from "./control.mjs";
+import { sourceIconSrc } from "./item-view.mjs";
 import { showChromeWindow, tauriInvoke } from "./tauri-bridge.mjs";
 
 const SWITCHER_LOCALES = ["en", "nl", "fr", "de", "es", "it"];
@@ -28,6 +33,10 @@ export function settingsSearchMatches(text, needle) {
 
 export function settingsUnitHaystack(unit) {
   const label = unit.querySelector?.("label")?.textContent ?? "";
+  const help = unit.querySelector?.("[data-excluded-help]")?.textContent ?? "";
+  const chips = [...(unit.querySelectorAll?.("[data-app-name]") ?? [])]
+    .map((node) => node.getAttribute?.("data-app-name") ?? "")
+    .join(" ");
   const options = [...(unit.querySelectorAll?.("option") ?? [])]
     .map((option) => `${option.textContent ?? ""} ${option.value ?? ""}`)
     .join(" ");
@@ -35,10 +44,133 @@ export function settingsUnitHaystack(unit) {
   const controlText = control
     ? `${control.value ?? ""} ${control.getAttribute?.("name") ?? ""}`
     : "";
-  if (label || options || controlText.trim()) {
-    return `${label} ${options} ${controlText}`;
+  if (label || help || chips || options || controlText.trim()) {
+    return `${label} ${help} ${chips} ${options} ${controlText}`;
   }
   return unit.textContent ?? "";
+}
+
+export function isSafeBundleId(id) {
+  const value = String(id ?? "").trim();
+  return (
+    value.length > 0 &&
+    value.length <= 256 &&
+    !value.includes("/") &&
+    !value.includes("\\") &&
+    !value.includes("\0") &&
+    !value.includes("..")
+  );
+}
+
+export function filterInstalledApps(apps, query, selectedIds) {
+  const needle = settingsSearchNeedle(query);
+  const selected = new Set(
+    (selectedIds ?? [])
+      .filter(isSafeBundleId)
+      .map((id) => id.trim().toLocaleLowerCase()),
+  );
+  return (Array.isArray(apps) ? apps : []).filter((app) => {
+    if (!isSafeBundleId(app?.bundleId)) {
+      return false;
+    }
+    if (selected.has(app.bundleId.trim().toLocaleLowerCase())) {
+      return false;
+    }
+    return settingsSearchMatches(`${app.name ?? ""} ${app.bundleId}`, needle);
+  });
+}
+
+export function resolveExcludedApps(ids, catalog) {
+  const byId = new Map();
+  for (const app of Array.isArray(catalog) ? catalog : []) {
+    if (!isSafeBundleId(app?.bundleId)) {
+      continue;
+    }
+    byId.set(app.bundleId.trim().toLocaleLowerCase(), {
+      bundleId: app.bundleId.trim(),
+      name: String(app.name ?? "").trim() || app.bundleId.trim(),
+    });
+  }
+  const out = [];
+  const seen = new Set();
+  for (const raw of ids ?? []) {
+    if (!isSafeBundleId(raw)) {
+      continue;
+    }
+    const key = raw.trim().toLocaleLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    out.push(
+      byId.get(key) ?? {
+        bundleId: raw.trim(),
+        name: raw.trim(),
+      },
+    );
+  }
+  return out;
+}
+
+export function readExcludedBundleIds(host) {
+  const raw = host?.dataset?.excludedIds;
+  if (typeof raw === "string") {
+    return raw
+      .split("\n")
+      .map((value) => value.trim())
+      .filter(isSafeBundleId);
+  }
+  return [...(host?.querySelectorAll?.("[data-excluded-app]") ?? [])]
+    .map((node) => node.getAttribute?.("data-bundle-id"))
+    .filter(isSafeBundleId);
+}
+
+export function writeExcludedApps(host, apps) {
+  const selected = resolveExcludedApps(
+    (apps ?? []).map((app) => app.bundleId),
+    apps,
+  );
+  if (host?.dataset) {
+    host.dataset.excludedIds = selected.map((app) => app.bundleId).join("\n");
+  }
+  renderExcludedChips(host, selected);
+  return selected;
+}
+
+export function renderExcludedChips(host, apps) {
+  const list = host?.querySelector?.("#excluded-apps-selected");
+  if (!list?.replaceChildren) {
+    return;
+  }
+  list.replaceChildren();
+  const removeLabel =
+    catalogMessage("settings.field.excludedBundleIds.remove") || "Remove";
+  for (const app of apps) {
+    const item = globalThis.document?.createElement?.("li");
+    if (!item) {
+      continue;
+    }
+    item.className = "app-chip";
+    item.dataset.excludedApp = "";
+    item.dataset.bundleId = app.bundleId;
+    item.dataset.appName = app.name;
+    const icon = globalThis.document.createElement("img");
+    icon.alt = "";
+    icon.hidden = true;
+    icon.width = 16;
+    icon.height = 16;
+    const name = globalThis.document.createElement("span");
+    name.className = "app-chip-name";
+    name.textContent = app.name;
+    const remove = globalThis.document.createElement("button");
+    remove.type = "button";
+    remove.className = "btn-ghost";
+    remove.dataset.removeExcluded = app.bundleId;
+    remove.setAttribute("data-i18n", "settings.field.excludedBundleIds.remove");
+    remove.textContent = removeLabel;
+    item.append(icon, name, remove);
+    list.append(item);
+  }
 }
 
 export function applySettingsSearch(root, rawQuery) {
@@ -87,13 +219,19 @@ export function applySettingsSearch(root, rawQuery) {
 
 export function applySettingsForm(root, settings) {
   const schedule = root.querySelector("#backup-schedule");
-  const excluded = root.querySelector("#excluded-bundle-ids");
   const locale = root.querySelector("#ui-locale");
+  const host = root.querySelector("#excluded-apps");
   if (schedule && settings?.data?.backupSchedule) {
     schedule.value = settings.data.backupSchedule;
   }
-  if (excluded) {
-    excluded.value = (settings?.privacy?.excludedBundleIds ?? []).join(", ");
+  if (host) {
+    writeExcludedApps(
+      host,
+      resolveExcludedApps(
+        settings?.privacy?.excludedBundleIds ?? [],
+        host._installedApps ?? [],
+      ),
+    );
   }
   if (locale) {
     locale.value = switcherLocale(settings?.general?.locale);
@@ -106,15 +244,13 @@ export function patchSettingsFromForm(settings, root) {
     next.general = {};
   }
   const schedule = root.querySelector("#backup-schedule")?.value;
-  const excluded = root.querySelector("#excluded-bundle-ids")?.value ?? "";
   const locale = root.querySelector("#ui-locale")?.value;
   if (schedule === "daily" || schedule === "weekly") {
     next.data.backupSchedule = schedule;
   }
-  next.privacy.excludedBundleIds = excluded
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
+  next.privacy.excludedBundleIds = readExcludedBundleIds(
+    root.querySelector("#excluded-apps"),
+  );
   if (SWITCHER_LOCALES.includes(locale)) {
     next.general.locale = locale;
   }
@@ -153,10 +289,38 @@ export async function bindSettingsLive(
   let settings;
   try {
     settings = await invokeFn("load_settings_v1");
-    await applySavedLocale(root, settings, invokeFn);
   } catch {
     return;
   }
+
+  const host = root.querySelector("#excluded-apps");
+  const unavailable = root.querySelector("[data-excluded-apps-unavailable]");
+  const appSearch = root.querySelector("#excluded-apps-search");
+  let installedApps = [];
+  let appsUnavailable = false;
+  try {
+    const listed = await invokeFn("list_installed_apps");
+    if (!Array.isArray(listed)) {
+      appsUnavailable = true;
+    } else {
+      installedApps = listed.filter((app) => isSafeBundleId(app?.bundleId));
+    }
+  } catch {
+    appsUnavailable = true;
+  }
+  if (host) {
+    host._installedApps = installedApps;
+    host._appsUnavailable = appsUnavailable;
+  }
+  if (unavailable) {
+    unavailable.hidden = !appsUnavailable;
+  }
+  if (appSearch) {
+    appSearch.disabled = appsUnavailable;
+  }
+  await applySavedLocale(root, settings, invokeFn);
+  await refreshExcludedIcons(root, invokeFn);
+  bindExcludedPicker(root, invokeFn, () => persist());
 
   async function persist() {
     const before = settings?.general?.locale;
@@ -164,15 +328,13 @@ export async function bindSettingsLive(
       settings: patchSettingsFromForm(settings, root),
     });
     await applySavedLocale(root, settings, invokeFn);
+    await refreshExcludedIcons(root, invokeFn);
     if (settings?.general?.locale !== before) {
       await emitUiLocaleChanged({ locale: settings.general.locale });
     }
   }
 
   root.querySelector("#backup-schedule")?.addEventListener("change", persist);
-  root
-    .querySelector("#excluded-bundle-ids")
-    ?.addEventListener("change", persist);
   root.querySelector("#ui-locale")?.addEventListener("change", persist);
 
   root.querySelectorAll("[data-reset-field]").forEach((button) => {
@@ -182,6 +344,7 @@ export async function bindSettingsLive(
         const before = settings?.general?.locale;
         settings = await invokeFn("reset_settings_field", { fieldId });
         await applySavedLocale(root, settings, invokeFn);
+        await refreshExcludedIcons(root, invokeFn);
         if (settings?.general?.locale !== before) {
           await emitUiLocaleChanged({ locale: settings.general.locale });
         }
@@ -195,6 +358,7 @@ export async function bindSettingsLive(
       const before = settings?.general?.locale;
       settings = await invokeFn("reset_settings_group", { group });
       await applySavedLocale(root, settings, invokeFn);
+      await refreshExcludedIcons(root, invokeFn);
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }
@@ -206,6 +370,7 @@ export async function bindSettingsLive(
       const before = settings?.general?.locale;
       settings = await invokeFn("reset_settings_all");
       await applySavedLocale(root, settings, invokeFn);
+      await refreshExcludedIcons(root, invokeFn);
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }
@@ -222,6 +387,142 @@ export async function bindSettingsLive(
       });
     });
   });
+}
+
+function bindExcludedPicker(root, invokeFn, persist) {
+  const host = root.querySelector("#excluded-apps");
+  const search = root.querySelector("#excluded-apps-search");
+  const list = root.querySelector("#excluded-apps-list");
+  const empty = root.querySelector("[data-excluded-apps-empty]");
+  if (!host || !search || !list) {
+    return;
+  }
+
+  const closeList = () => {
+    list.hidden = true;
+    search.setAttribute("aria-expanded", "false");
+    if (empty) {
+      empty.hidden = true;
+    }
+  };
+
+  const paintOptions = () => {
+    if (host._appsUnavailable) {
+      closeList();
+      return;
+    }
+    const matches = filterInstalledApps(
+      host._installedApps ?? [],
+      search.value,
+      readExcludedBundleIds(host),
+    );
+    list.replaceChildren();
+    for (const app of matches.slice(0, 50)) {
+      const option = globalThis.document.createElement("button");
+      option.type = "button";
+      option.setAttribute("role", "option");
+      option.className = "app-picker-option";
+      option.dataset.bundleId = app.bundleId;
+      option.dataset.appName = app.name;
+      const icon = globalThis.document.createElement("img");
+      icon.alt = "";
+      icon.hidden = true;
+      icon.width = 16;
+      icon.height = 16;
+      const label = globalThis.document.createElement("span");
+      label.textContent = app.name;
+      option.append(icon, label);
+      option.addEventListener("click", () => {
+        writeExcludedApps(host, [
+          ...resolveExcludedApps(
+            readExcludedBundleIds(host),
+            host._installedApps,
+          ),
+          app,
+        ]);
+        search.value = "";
+        closeList();
+        persist();
+      });
+      list.append(option);
+      fillAppIcon(icon, app.bundleId, invokeFn);
+    }
+    const searching = search.value.trim().length > 0;
+    list.hidden = !searching || matches.length === 0;
+    search.setAttribute(
+      "aria-expanded",
+      searching && matches.length > 0 ? "true" : "false",
+    );
+    if (empty) {
+      empty.hidden = !searching || matches.length > 0;
+    }
+    for (const chip of host.querySelectorAll("[data-excluded-app] img")) {
+      fillAppIcon(chip, chip.parentElement?.dataset?.bundleId, invokeFn);
+    }
+  };
+
+  search.addEventListener("input", paintOptions);
+  search.addEventListener("focus", paintOptions);
+  search.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeList();
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      list.querySelector("[data-bundle-id]")?.click();
+    }
+  });
+  host.addEventListener("click", (event) => {
+    const button = event.target?.closest?.("[data-remove-excluded]");
+    if (!button || !host.contains(button)) {
+      return;
+    }
+    const removeId = button.getAttribute("data-remove-excluded");
+    writeExcludedApps(
+      host,
+      resolveExcludedApps(
+        readExcludedBundleIds(host),
+        host._installedApps,
+      ).filter(
+        (app) =>
+          app.bundleId.toLocaleLowerCase() !== removeId?.toLocaleLowerCase(),
+      ),
+    );
+    persist();
+  });
+  root.addEventListener?.("pointerdown", (event) => {
+    if (!host.contains(event.target)) {
+      closeList();
+    }
+  });
+  paintOptions();
+}
+
+async function refreshExcludedIcons(root, invokeFn) {
+  const host = root.querySelector("#excluded-apps");
+  if (!host) {
+    return;
+  }
+  for (const chip of host.querySelectorAll("[data-excluded-app] img")) {
+    await fillAppIcon(chip, chip.parentElement?.dataset?.bundleId, invokeFn);
+  }
+}
+
+async function fillAppIcon(img, bundleId, invokeFn) {
+  if (!img || !isSafeBundleId(bundleId)) {
+    return;
+  }
+  try {
+    const src = sourceIconSrc(
+      await invokeFn("app_icon_data_url", { bundleId }),
+    );
+    if (src) {
+      img.src = src;
+      img.hidden = false;
+    }
+  } catch {
+    img.hidden = true;
+  }
 }
 
 if (globalThis.document?.readyState) {
