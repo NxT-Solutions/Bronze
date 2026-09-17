@@ -14,7 +14,7 @@ This matrix converts PRD into executable backlog. Status starts `planned`. Imple
 | CAP-006 | protected-field hard block | M3 | seeded secure fixture; zero content in ABI/log/DB/clipboard | planned |
 | CAP-007 | exact Unicode/whitespace | M3 | fidelity golden corpus | planned |
 | CAP-008 | opt-in safe provenance | M3 | policy combinations and export/output tests | planned |
-| CAP-009 | exclusions/per-app provenance | M3/M6 | exclusion before AX query; picker/settings tests | planned |
+| CAP-009 | exclusions/per-app provenance | M3/M6 | exclusion before AX query (`excluded_bundle_rejects_before_ax_read`); searchable multi-select picker/settings tests; per-app provenance still planned | planned |
 | CAP-010 | redacted staged diagnostics | M3 | schema cannot contain content; failure-path evidence | planned |
 
 ## 2. Queue

@@ -32,7 +32,7 @@ Acceptance:
 - Duplicate text is allowed; optional duplicate warning cannot block by default.
 - Empty/only-zero-width/unsupported selection returns `no_selection`, leaves store unchanged, and offers manual entry. AX/manual routes do not mutate clipboard; enabled experimental synthetic fallback may already have changed shared pasteboard and performs no restorative write.
 - Secure field returns `protected_content`; no content, title, or keystrokes are logged.
-- Excluded app returns `app_excluded` before selection retrieval.
+- Excluded app returns `app_excluded` before selection retrieval. The exclusion list is `SettingsV1.privacy.excludedBundleIds`, edited in Settings Privacy as a searchable multi-select of installed apps (no free-text bundle dump; no filesystem paths to WebView).
 - Stale target/focus/policy or over-age queued request returns `target_changed`/`capture_expired`; it never retargets newer focus or destination section. macOS exposes no immutable trigger-time selection snapshot: within unchanged control, captured text is selection observed at bounded provider-read time. This limitation is documented and covered by change-during-capture tests.
 
 ### F-CAP-02 Modifier double tap

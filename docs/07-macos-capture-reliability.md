@@ -320,7 +320,7 @@ Resolution:
 2. Reject `capture_expired` when age exceeds internal all-provider ceiling, initially 1 second; ceiling is bounded release configuration, not unbounded user setting.
 3. Resolve snapshotted target PID; verify process exists and bundle token/activation generation still match.
 4. Revalidate app policy. Any policy-revision change rejects `policy_changed`; newly relaxed policy never escalates queued request, and newly restrictive policy takes effect immediately.
-5. Apply CAP-009 exclusion before AX content query.
+5. Apply CAP-009 exclusion before AX content query. Live `persist_selection` peeks the last-external bundle ID against `SettingsV1.privacy.excludedBundleIds` and returns `app_excluded` without calling `host.read()` when it matches.
 6. Capture AX application/focused element/window identity as provider-time context.
 7. Verify snapshotted destination still exists and accepts capture; never replace it with current active section.
 8. Never show/focus quick panel before AX result or fallback decision.
@@ -381,7 +381,7 @@ This build records the focused process name on capture (CAP-008 app name). URL a
 
 Rules:
 
-- CAP-009 exclusion runs before content/provenance read.
+- CAP-009 exclusion runs before content/provenance read. The live reason is `app_excluded`, not `accessibility`. Settings Privacy is a searchable multi-select; the list payload is bundle ID and name only.
 - Per-app provenance disable overrides global setting.
 - Never scrape browser UI hierarchy to infer URL in P0.
 - No PID persists.
