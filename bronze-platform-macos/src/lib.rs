@@ -15,6 +15,7 @@ mod permission;
 mod source_icon;
 mod status_item;
 mod title;
+mod user_notice;
 
 pub use abi::{
     BronzeIngressSnapshot, BronzeNativeUtf8View, BRONZE_ABI_VERSION, BRONZE_STATUS_CANCELLED,
@@ -54,6 +55,7 @@ pub use status_item::{
     STATUS_MENU_KEYS,
 };
 pub use title::native_item_title;
+pub use user_notice::{is_safe_notice_text, try_deliver_user_notice};
 
 #[cfg(test)]
 pub(crate) fn lock_native_runtime() -> std::sync::MutexGuard<'static, ()> {

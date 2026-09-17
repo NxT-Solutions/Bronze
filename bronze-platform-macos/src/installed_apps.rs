@@ -332,6 +332,7 @@ mod installed_apps_tests {
         ));
         assert!(!tap.contains("bronze_native_list_installed_apps"));
         assert!(!tap.contains("bronze_native_pick_installed_app"));
+        assert!(!tap.contains("bronze_native_deliver_user_notice"));
         assert!(!tap.contains("bronze_native_app_icon_png"));
         assert!(!tap.contains("NSOpenPanel"));
     }

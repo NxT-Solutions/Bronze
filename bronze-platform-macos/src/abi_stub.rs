@@ -644,3 +644,19 @@ pub extern "C" fn bronze_native_list_installed_apps(_out: *mut BronzeNativeUtf8V
 pub extern "C" fn bronze_native_pick_installed_app(_out: *mut BronzeNativeUtf8View) -> u32 {
     BRONZE_STATUS_DEGRADED
 }
+
+#[no_mangle]
+pub extern "C" fn bronze_native_deliver_user_notice(
+    title: BronzeNativeUtf8View,
+    body: BronzeNativeUtf8View,
+) -> u32 {
+    let title_status = validate(title);
+    if title_status != BRONZE_STATUS_OK {
+        return title_status;
+    }
+    let body_status = validate(body);
+    if body_status != BRONZE_STATUS_OK {
+        return body_status;
+    }
+    BRONZE_STATUS_DEGRADED
+}

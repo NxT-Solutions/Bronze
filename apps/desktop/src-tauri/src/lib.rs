@@ -529,6 +529,7 @@ pub fn on_capture_requested(app: &tauri::AppHandle) {
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     let mut announce = FakeAnnouncer::default();
+    let catalog = session.ui_catalog();
     let persisted = session.persist_selection(&LiveAxHost, &mut announce, visible);
     let refine = persisted.as_ref().ok().and_then(|outcome| {
         if outcome.terminal == Terminal::Saved {
@@ -546,6 +547,7 @@ pub fn on_capture_requested(app: &tauri::AppHandle) {
     if let Ok(outcome) = persisted {
         let saved = outcome.terminal == Terminal::Saved;
         let dto = CaptureResultDto::from_persist(outcome);
+        let _ = live_session::deliver_capture_user_notice(&catalog, &dto);
         let _ = app.emit("capture-result", dto);
         if saved {
             let _ = app.emit("queue-changed", ());
@@ -902,6 +904,8 @@ mod tests {
             snapshot_at < prompt_at,
             "frontmost PID must be snapshotted before a permission prompt"
         );
+        assert!(capture_fn.contains("deliver_capture_user_notice"));
+        assert!(capture_fn.contains("capture-result"));
         assert!(!use_system_focused_fallback(Some(42)));
         assert!(use_system_focused_fallback(None));
     }

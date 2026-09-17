@@ -82,6 +82,7 @@ mod source_icon_tests {
         assert!(!tap.contains("bronze_native_bundle_id_for_pid"));
         assert!(!tap.contains("bronze_native_list_installed_apps"));
         assert!(!tap.contains("bronze_native_pick_installed_app"));
+        assert!(!tap.contains("bronze_native_deliver_user_notice"));
         assert!(!tap.contains("NSOpenPanel"));
         assert!(!tap.contains("bronze_native_pasteboard_write"));
     }

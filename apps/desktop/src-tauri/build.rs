@@ -66,6 +66,7 @@ fn link_bronze_native() {
     for dir in swift_runtime_dirs() {
         println!("cargo:rustc-link-search=native={}", dir.display());
     }
+    println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
     println!("cargo:rustc-link-lib=dylib=swiftCore");
     println!("cargo:rustc-link-lib=framework=Foundation");
     println!("cargo:rustc-link-lib=framework=AppKit");

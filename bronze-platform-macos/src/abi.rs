@@ -130,4 +130,8 @@ extern "C" {
     ) -> u32;
     pub fn bronze_native_list_installed_apps(out: *mut BronzeNativeUtf8View) -> u32;
     pub fn bronze_native_pick_installed_app(out: *mut BronzeNativeUtf8View) -> u32;
+    pub fn bronze_native_deliver_user_notice(
+        title: BronzeNativeUtf8View,
+        body: BronzeNativeUtf8View,
+    ) -> u32;
 }

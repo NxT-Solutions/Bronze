@@ -298,6 +298,35 @@ pub struct UiCatalogDto {
     pub messages: std::collections::BTreeMap<String, String>,
 }
 
+pub fn capture_notice_catalog_key(terminal: &str, reason: &str) -> &'static str {
+    if terminal == "saved" {
+        return "capture.announce.saved";
+    }
+    match reason {
+        "accessibility" => "capture.announce.denied",
+        "protected" => "capture.announce.protected",
+        "no_selection" => "capture.announce.rejected",
+        "app_excluded" => "capture.announce.excluded",
+        _ => "capture.announce.failed",
+    }
+}
+
+pub fn deliver_capture_user_notice(
+    catalog: &UiCatalogDto,
+    dto: &CaptureResultDto,
+) -> Result<(), String> {
+    let key = capture_notice_catalog_key(&dto.terminal, &dto.reason);
+    let title = catalog
+        .messages
+        .get("app.name")
+        .or_else(|| catalog.messages.get("panel.quick.title"))
+        .map(String::as_str)
+        .unwrap_or("Bronze");
+    let body = catalog.messages.get(key).map(String::as_str).unwrap_or("");
+    bronze_platform_macos::try_deliver_user_notice(title, body)
+        .map_err(|_| "notice_unavailable".into())
+}
+
 pub fn named_output_profile(name: &str) -> OutputProfile {
     match name {
         "markdown" | "markdown-bullets" => OutputProfile {
@@ -1354,6 +1383,30 @@ mod live_session_tests {
         });
         assert_eq!(dto.terminal, "rejected");
         assert_eq!(dto.reason, "no_selection");
+        assert_eq!(
+            capture_notice_catalog_key("saved", "ok"),
+            "capture.announce.saved"
+        );
+        assert_eq!(
+            capture_notice_catalog_key("rejected", "app_excluded"),
+            "capture.announce.excluded"
+        );
+        assert_eq!(
+            capture_notice_catalog_key("rejected", "no_selection"),
+            "capture.announce.rejected"
+        );
+        assert_eq!(
+            capture_notice_catalog_key("rejected", "accessibility"),
+            "capture.announce.denied"
+        );
+        assert_eq!(
+            capture_notice_catalog_key("rejected", "protected"),
+            "capture.announce.protected"
+        );
+        assert_eq!(
+            capture_notice_catalog_key("failed", "failed"),
+            "capture.announce.failed"
+        );
         assert!(!format!("{dto:?}").contains("secret"));
         assert_eq!(encode_base64(b"Man"), "TWFu");
         assert_eq!(encode_base64(b"Ma"), "TWE=");
