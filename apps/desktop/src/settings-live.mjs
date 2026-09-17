@@ -11,6 +11,80 @@ export function switcherLocale(tag) {
   return "en";
 }
 
+export function settingsSearchNeedle(raw) {
+  return String(raw ?? "")
+    .trim()
+    .toLocaleLowerCase();
+}
+
+export function settingsSearchMatches(text, needle) {
+  if (!needle) {
+    return true;
+  }
+  return String(text ?? "")
+    .toLocaleLowerCase()
+    .includes(needle);
+}
+
+export function settingsUnitHaystack(unit) {
+  const label = unit.querySelector?.("label")?.textContent ?? "";
+  const options = [...(unit.querySelectorAll?.("option") ?? [])]
+    .map((option) => `${option.textContent ?? ""} ${option.value ?? ""}`)
+    .join(" ");
+  const control = unit.querySelector?.("input, select, textarea");
+  const controlText = control
+    ? `${control.value ?? ""} ${control.getAttribute?.("name") ?? ""}`
+    : "";
+  if (label || options || controlText.trim()) {
+    return `${label} ${options} ${controlText}`;
+  }
+  return unit.textContent ?? "";
+}
+
+export function applySettingsSearch(root, rawQuery) {
+  const needle = settingsSearchNeedle(rawQuery);
+  const searching = needle.length > 0;
+
+  for (const unit of root.querySelectorAll("[data-settings-unit]")) {
+    unit.hidden =
+      searching && !settingsSearchMatches(settingsUnitHaystack(unit), needle);
+  }
+
+  for (const section of root.querySelectorAll("[data-settings-section]")) {
+    const title =
+      section.querySelector("[data-settings-title]")?.textContent ?? "";
+    const titleHit = settingsSearchMatches(title, needle);
+    const units = [...section.querySelectorAll("[data-settings-unit]")];
+    if (searching && titleHit) {
+      for (const unit of units) {
+        unit.hidden = false;
+      }
+      section.hidden = false;
+      continue;
+    }
+    if (units.length > 0) {
+      section.hidden = searching && units.every((unit) => unit.hidden);
+      continue;
+    }
+    section.hidden =
+      searching && !settingsSearchMatches(section.textContent ?? "", needle);
+  }
+
+  const form = root.querySelector("[data-settings-form]");
+  if (form) {
+    const groups = [...form.querySelectorAll("[data-settings-section]")];
+    form.hidden = searching && groups.every((section) => section.hidden);
+  }
+
+  const empty = root.querySelector("[data-settings-search-empty]");
+  if (empty) {
+    const visible = [...root.querySelectorAll("[data-settings-section]")].some(
+      (section) => !section.hidden,
+    );
+    empty.hidden = !searching || visible;
+  }
+}
+
 export function applySettingsForm(root, settings) {
   const schedule = root.querySelector("#backup-schedule");
   const excluded = root.querySelector("#excluded-bundle-ids");
@@ -61,6 +135,17 @@ export async function bindSettingsLive(
   root = document,
   invokeFn = tauriInvoke,
 ) {
+  const search = root.querySelector("#settings-search");
+  const filterSettings = () => {
+    const query = search?.value ?? "";
+    search
+      ?.closest?.(".chrome-search")
+      ?.classList.toggle("is-filled", query.trim().length > 0);
+    applySettingsSearch(root, query);
+  };
+  search?.addEventListener("input", filterSettings);
+  filterSettings();
+
   const form = root.querySelector("#settings form");
   if (!form) {
     return;
@@ -125,19 +210,6 @@ export async function bindSettingsLive(
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }
     });
-  });
-
-  const search = root.querySelector("#settings-search");
-  search?.addEventListener("input", async () => {
-    const ids = await invokeFn("search_settings_fields", {
-      query: search.value,
-    });
-    for (const fieldset of root.querySelectorAll("[data-settings-group]")) {
-      const group = fieldset.getAttribute("data-settings-group");
-      fieldset.hidden =
-        search.value.length > 0 &&
-        !ids.some((id) => id.startsWith(`${group}.`));
-    }
   });
 
   root.querySelectorAll("[data-open-window]").forEach((button) => {

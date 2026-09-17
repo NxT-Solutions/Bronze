@@ -14,19 +14,63 @@
           <span class="brand-mark" aria-hidden="true"></span>
           <h1 data-i18n="settings.title">Settings</h1>
         </div>
+        <search class="chrome-search">
+          <label class="visually-hidden" for="settings-search" data-i18n="settings.search.label">
+            Search settings
+          </label>
+          <span class="chrome-search-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+              <circle
+                cx="6.6"
+                cy="6.6"
+                r="4.1"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path
+                d="m9.8 9.8 3.6 3.6"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </span>
+          <input
+            id="settings-search"
+            type="search"
+            name="q"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="search"
+            placeholder="Search settings"
+            aria-placeholder="Search settings"
+            data-i18n-placeholder="settings.search.label"
+          />
+        </search>
       </header>
-      <search class="search-card card">
-        <label for="settings-search" data-i18n="settings.search.label">
-          Search settings
-        </label>
-        <input id="settings-search" type="search" name="q" />
-      </search>
-      <form class="card-stack">
-        <fieldset data-settings-group="general" aria-labelledby="settings-group-general">
+      <p
+        class="empty-state"
+        hidden
+        data-settings-search-empty
+        role="status"
+        data-i18n="library.state.emptySearch"
+      >
+        Try a different search.
+      </p>
+      <form class="card-stack" data-settings-form>
+        <fieldset
+          data-settings-group="general"
+          data-settings-section
+          aria-labelledby="settings-group-general"
+        >
           <legend>
-            <span id="settings-group-general" data-i18n="settings.group.general">General</span>
+            <span
+              id="settings-group-general"
+              data-settings-title
+              data-i18n="settings.group.general"
+            >General</span>
           </legend>
-          <div class="field-block">
+          <div class="field-block" data-settings-unit>
             <label for="ui-locale" data-i18n="settings.field.locale">Language</label>
             <div class="field-row">
               <select id="ui-locale" name="locale">
@@ -48,11 +92,19 @@
             </div>
           </div>
         </fieldset>
-        <fieldset data-settings-group="data" aria-labelledby="settings-group-data">
+        <fieldset
+          data-settings-group="data"
+          data-settings-section
+          aria-labelledby="settings-group-data"
+        >
           <legend>
-            <span id="settings-group-data" data-i18n="settings.group.data">Data</span>
+            <span
+              id="settings-group-data"
+              data-settings-title
+              data-i18n="settings.group.data"
+            >Data</span>
           </legend>
-          <div class="field-block">
+          <div class="field-block" data-settings-unit>
             <label for="backup-schedule" data-i18n="settings.field.backupSchedule">
               Backup schedule
             </label>
@@ -76,11 +128,19 @@
             </div>
           </div>
         </fieldset>
-        <fieldset data-settings-group="privacy" aria-labelledby="settings-group-privacy">
+        <fieldset
+          data-settings-group="privacy"
+          data-settings-section
+          aria-labelledby="settings-group-privacy"
+        >
           <legend>
-            <span id="settings-group-privacy" data-i18n="settings.group.privacy">Privacy</span>
+            <span
+              id="settings-group-privacy"
+              data-settings-title
+              data-i18n="settings.group.privacy"
+            >Privacy</span>
           </legend>
-          <div class="field-block">
+          <div class="field-block" data-settings-unit>
             <label
               for="excluded-bundle-ids"
               data-i18n="settings.field.excludedBundleIds"
@@ -126,14 +186,20 @@
       <section
         class="card-stack"
         data-slot="permission-health"
+        data-settings-section
         aria-labelledby="permission-health-title"
       >
-        <h2 id="permission-health-title" data-i18n="settings.permission.title">
+        <h2
+          id="permission-health-title"
+          data-settings-title
+          data-i18n="settings.permission.title"
+        >
           Permission health
         </h2>
         <ul class="health-list">
           <li
             class="health-card"
+            data-settings-unit
             data-capability="inputMonitoring"
             data-usage="required"
             data-status="denied"
@@ -174,6 +240,7 @@
           </li>
           <li
             class="health-card"
+            data-settings-unit
             data-capability="accessibility"
             data-usage="required"
             data-status="denied"
@@ -214,6 +281,7 @@
           </li>
           <li
             class="health-card"
+            data-settings-unit
             data-capability="screenRecording"
             data-usage="notUsed"
             data-status="notUsed"
@@ -240,13 +308,20 @@
       <section
         class="card"
         data-slot="shortcut-recorder"
+        data-settings-section
         aria-labelledby="shortcuts-title"
       >
-        <h2 id="shortcuts-title" data-i18n="settings.shortcuts.title">Shortcuts</h2>
+        <h2
+          id="shortcuts-title"
+          data-settings-title
+          data-i18n="settings.shortcuts.title"
+        >
+          Shortcuts
+        </h2>
         <p class="muted" role="status" data-shortcut-live data-i18n="settings.shortcuts.live">
           Only Shift double-tap is live among seeded shortcuts.
         </p>
-        <div class="field-block">
+        <div class="field-block" data-settings-unit>
           <label for="shortcut-record" data-i18n="settings.shortcuts.record">
             Record shortcut
           </label>
@@ -259,62 +334,70 @@
         </div>
         <p data-standard-chord="capture.selection"></p>
         <ul class="shortcut-list" data-shortcut-registry>
-          <li data-action="app.togglePanel">
+          <li data-settings-unit data-action="app.togglePanel">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.app.togglePanel">Toggle panel</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="capture.selection">
+          <li data-settings-unit data-action="capture.selection">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.capture.selection">Capture selection</span>
             <kbd data-i18n="settings.shortcuts.chord.shiftDoubleTap">Shift double-tap</kbd>
           </li>
-          <li data-action="capture.newNote">
+          <li data-settings-unit data-action="capture.newNote">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.capture.newNote">New note</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.copy">
+          <li data-settings-unit data-action="queue.copy">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copy">Copy</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.copyWithProfile">
+          <li data-settings-unit data-action="queue.copyWithProfile">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copyWithProfile">Copy with profile</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.copyAndAdvance">
+          <li data-settings-unit data-action="queue.copyAndAdvance">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copyAndAdvance">Copy and advance</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.complete">
+          <li data-settings-unit data-action="queue.complete">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.complete">Complete</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.edit">
+          <li data-settings-unit data-action="queue.edit">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.edit">Edit</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.moveUp">
+          <li data-settings-unit data-action="queue.moveUp">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.moveUp">Move up</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.moveDown">
+          <li data-settings-unit data-action="queue.moveDown">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.moveDown">Move down</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.search">
+          <li data-settings-unit data-action="queue.search">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.search">Search</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="queue.undo">
+          <li data-settings-unit data-action="queue.undo">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.undo">Undo</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
-          <li data-action="window.settings">
+          <li data-settings-unit data-action="window.settings">
             <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.window.settings">Settings</span>
             <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
           </li>
         </ul>
       </section>
-      <section class="card" aria-labelledby="settings-export-preview">
-        <h2 id="settings-export-preview" data-i18n="settings.export.preview">
+      <section
+        class="card"
+        data-settings-section
+        aria-labelledby="settings-export-preview"
+      >
+        <h2
+          id="settings-export-preview"
+          data-settings-title
+          data-i18n="settings.export.preview"
+        >
           Export preview
         </h2>
         <output data-export-preview>
@@ -328,7 +411,7 @@
           </p>
         </output>
       </section>
-      <p class="help-launch">
+      <p class="help-launch" data-settings-section>
         <button
           type="button"
           class="btn-ghost"

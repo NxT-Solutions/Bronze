@@ -16,6 +16,14 @@ const en = JSON.parse(
 test("settings window is searchable grouped with daily weekly backup and export preview", () => {
   assert.match(html, /id="settings"/);
   assert.match(html, /id="settings-search"/);
+  assert.match(html, /class="chrome-search"/);
+  assert.match(html, /class="chrome-search-icon"/);
+  assert.match(html, /data-i18n-placeholder="settings.search.label"/);
+  assert.match(html, /placeholder="Search settings"/);
+  assert.doesNotMatch(html, /search-card/);
+  assert.match(html, /data-settings-section/);
+  assert.match(html, /data-settings-unit/);
+  assert.match(html, /data-settings-search-empty/);
   assert.match(html, /data-settings-group="data"/);
   assert.match(html, /data-reset-field="data.backupSchedule"/);
   assert.match(html, /<option value="daily"/);
