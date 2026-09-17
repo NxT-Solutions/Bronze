@@ -40,8 +40,8 @@ Hand-test in the **native** window only:
 - Composer **Add** (or Cmd-Enter) persists to local SQLite
 - **Copy** on a row writes the 6-4 pasteboard path (`pbcopy`); default profile is Plain
 - Complete / skip hide the row from this inbox; trash removes it
-- **Capture** (status menu or Bronze app menu) and **Shift double-tap** (either side) read AX selected text from the last non-Bronze app, then persist it to the same store. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue
-- Captured rows show catalog `capture.source` (`From {appName}`) using the source process name (CAP-008 app name only; no URL). Composer **Add** rows stay unlabeled
+- **Capture** (status menu or Bronze app menu) and **Shift double-tap** (either side, gap 250 ms, hold ≤400 ms) snapshot `NSWorkspace` frontmost PID first, then read AX selected text (`AXSelectedText`, or selected-text range) from that last non-Bronze app. Persist writes the same store. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue. Select text in another app (TextEdit is the known-good check); capturing Bronze’s own WebView does not prove the path
+- Inbox `#capture-status` shows catalog `capture.announce.saved|rejected|denied|protected|failed` after every persist outcome. A saved row also shows catalog `capture.source` (`From {appName}`) using the source process name (CAP-008 app name only; no URL). Composer **Add** rows stay unlabeled
 - Status item: left-click **Show**; menu is the latest five overview items (click copies), then Capture, Help, Quit
 - Status or app-menu **Show** recreates the Quick Panel if you closed it
 - Settings / Library / Help recreate if you closed them

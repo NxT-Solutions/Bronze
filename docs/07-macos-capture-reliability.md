@@ -54,7 +54,7 @@ Permission state is a closed enum, not a single linear path. Valid values:
 “Granted” never implies healthy. Health requires operation-level self-test. Permission service (SET-003, SET-004, CAP-003, CAP-010, ADR-001, ADR-005):
 
 - On native runtime start, requests Accessibility (`AXIsProcessTrustedWithOptions` with `kAXTrustedCheckOptionPrompt`) and Input Monitoring (`CGRequestListenEventAccess`) when preflight is not already granted. Requests run off the event-tap callback thread.
-- On the first capture path, repeats that request once if still ungranted. Launch is not a prompt loop.
+- On the first capture path, snapshots last-external PID first (`note_external_focus` / `bronze_native_frontmost_pid`), then repeats that request once if still ungranted. Launch is not a prompt loop. The permission dialog is never shown before the PID snapshot.
 - Permission-health Retest always calls those request APIs again. macOS may refuse a second Input Monitoring dialog; Accessibility may re-prompt on some OS versions.
 - If the OS will not re-prompt after that attempt, a System Settings deep-link is the fallback — after the request, not instead of it. Bronze never auto-opens Settings and never deep-links Screen Recording.
 - Never requests Screen Recording. Health UI keeps Screen Recording as Not used.
@@ -119,15 +119,15 @@ Apple APIs: [CGEvent tap creation](https://developer.apple.com/documentation/cor
 
 CAP-003 menu path must retain target even if opening status menu activates Bronze:
 
-- Native target tracker observes NSWorkspace application activation.
-- lastExternalPID updates whenever a non-Bronze app becomes active (`note_external_focus`; own PID / Bronze / `bronze-desktop` are skipped).
-- Opening the status menu or running Capture consumes that last-external PID. The provider builds `AXUIElementCreateApplication` for that PID and walks ancestors; it does not substitute whichever app is frontmost after Bronze or the menu activates.
+- Native target tracker records `NSWorkspace.shared.frontmostApplication` through `bronze_native_frontmost_pid`. `note_external_focus` is that PID only; it does not read AX focus.
+- lastExternalPID updates whenever a non-Bronze app is frontmost (`note_external_focus`; own PID / Bronze / `bronze-desktop` are skipped). The capture pump samples this every 20 ms.
+- Opening the status menu or running Capture snapshots that last-external PID before any first-capture permission prompt, then consumes it. The provider builds `AXUIElementCreateApplication` for that PID and walks ancestors; it does not substitute whichever app is frontmost after Bronze or the menu activates.
 - If last-external read returns no selection or a missing focused element, Capture falls back to system-wide focused AX.
-- Capture persists AX selected text into the same queue store as the composer, then announces a content-free saved result. It does not reveal or focus the Quick Panel (WIN-003 capture-only).
+- Capture persists AX selected text (`AXSelectedText`, or `AXSelectedTextRange` plus `AXStringForRange`) into the same queue store as the composer. It emits `capture-result` `{ terminal, reason }` for every persist outcome (`saved`/`rejected`/`failed`/`cancelled`) and `queue-changed` only on Saved. It does not reveal or focus the Quick Panel (WIN-003 capture-only).
 - Status-item left-click is Show. The status menu lists the latest five overview items (click copies via the Plain profile), then Capture, Help, and Quit. Titles are flattened and capped at 48 characters.
 - The only enabled seeded chord is `capture.selection`: Shift double-tap, either side, gap 250 ms, max hold 400 ms. The other twelve `ShortcutActionId` rows stay disabled. ADR-018 stays Proposed. Clipboard fallback stays `manual`; Capture does not synthesize Cmd+C.
 - Capture stores CAP-008 app-name provenance from the focused process (`proc_name` for the AX element's PID). Bronze / `bronze-desktop` is omitted. URL and window title are not stored. Provenance failure never fails a valid text capture.
-- The inbox shows catalog `capture.source` (`From {appName}`) on captured rows that have a name. Composer rows have no source line. CSS keeps `[hidden]` source, empty, and composer-error slots unrendered.
+- The inbox shows catalog `capture.source` (`From {appName}`) on captured rows that have a name. Composer rows have no source line. `#capture-status` copies catalog `capture.announce.saved|rejected|denied|protected|failed` from `capture-result`. CSS keeps `[hidden]` source, empty, composer-error, capture-status, and capture-message slots unrendered.
 - If target exited, return target_lost and open manual composer.
 - File and image attachments stay out (ADR-001: separate threat model and ADR).
 
@@ -148,10 +148,12 @@ Event-tap callback performs no NSWorkspace, AX, database, allocation, or string 
 
 ### 5.1 Thread
 
-Swift creates CFMachPort and CFRunLoopSource on dedicated thread. Run loop:
+`CGEvent.tapCreate` and the CFMachPort / CFRunLoopSource run on the dedicated `bronze.event-tap` thread inside `runTapLoop`. The tap is not created on the caller thread. If Input Monitoring is missing, create fails and health is `degraded`. The capture pump retries `event_tap_start` plus `event_tap_set_enabled(true)` at most once per second while health is not `Listening`.
 
-1. Install tap.
-2. Signal readiness.
+Run loop:
+
+1. Install tap on this thread.
+2. Signal readiness (or degraded if create failed).
 3. Receive minimal event set.
 4. Feed preallocated FSM state.
 5. Push only Trigger with fixed-size ingress context, Reset, or TapDisabled records to bounded single-producer channel; after each enqueue attempt, release-publish completed-ingress sequence atomically.
@@ -173,7 +175,7 @@ Channel capacity is finite for safety, but CAP-004 forbids unaccounted loss. Thi
 
 Use CGEventTimestamp, elapsed nanoseconds since system startup, for all gesture intervals. Never use wall clock. [CGEventTimestamp](https://developer.apple.com/documentation/coregraphics/cgeventtimestamp)
 
-Use public Carbon virtual-key constants for left/right modifier identity; no magic numbers in domain code. Track left and right state separately. App-generated synthetic copy events carry private source tag and cannot enter modifier FSM.
+Use public Carbon virtual-key constants for left/right modifier identity; no magic numbers in domain code. Track left and right state separately. `flagsChanged` uses the event keycode when it names a Shift side; otherwise it uses a `.maskShift` edge against `lastShiftSide`. A `flagsChanged` event that is neither a Shift keycode nor a Shift-flag edge is a cancel. App-generated synthetic copy events carry private source tag and cannot enter modifier FSM.
 
 ### 5.3 Disable and recovery
 
@@ -337,8 +339,8 @@ macOS AX does not expose immutable selection snapshot tied to trigger timestamp.
 5. Read role and subrole only.
 6. Build a bounded, cycle-safe chain from the focused element through at most 16 ancestors.
 7. Before any content query at each node, classify role/subrole as protected, allowed text, neutral container, or unknown content-bearing. Fail closed for `kAXSecureTextFieldSubrole`, known password/protected equivalents, or unknown content-bearing state. Unknown protection prohibits both AX content query and synthetic fallback, regardless of app category. Empty, neutral, and unknown nodes continue.
-8. At each allowed node, query `kAXSelectedTextAttribute`. Empty or missing child value is inconclusive; continue to ancestor.
-9. At each node, if direct selection is unavailable/empty, query `kAXSelectedTextRangeAttribute` and `kAXStringForRangeParameterizedAttribute` when supported.
+8. At each allowed node (`AXTextField`, `AXTextArea`, `AXStaticText`, `AXWebArea`, `AXText`, `AXComboBox`), query `kAXSelectedTextAttribute`. Empty or missing child value is inconclusive; continue to ancestor.
+9. At each allowed node, if direct selection is unavailable/empty, query `kAXSelectedTextRangeAttribute` and `kAXStringForRangeParameterizedAttribute` when supported.
 10. Stop on first allowed non-empty selection. Only full-chain exhaustion returns no selection/unsupported.
 11. Validate result type, UTF-8 conversion, byte/grapheme limit, process/focused-element identity, age, and request generation. Where selected range exists, require same range before/after text read; otherwise re-read selected text once within budget and require stable result.
 12. Query optional provenance only under CAP-008 policy.

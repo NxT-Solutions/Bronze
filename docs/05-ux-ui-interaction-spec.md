@@ -99,12 +99,12 @@ Do not intercept VoiceOver, system, text editing, or IME chords. Shortcut resolv
 Stage feedback must be immediate but not noisy:
 
 - Trigger acknowledged: optional brief haptic/sound/visual, each independently configurable.
-- Success: non-focus-stealing visual status plus native `NSAccessibility.post(..., notification: .announcementRequested, userInfo: [.announcement, .priority])` announcement, “Captured to Research.” Use localized text and medium priority; test against source-focus preservation. WebView live region is used only when Bronze window is active; hidden/background WKWebView announcement is not trusted. [Apple announcement API](https://developer.apple.com/documentation/appkit/nsaccessibility-swift.struct/notification/announcementrequested)
-- No selection: visible status, “No selectable text found. Copy manually or open a note.”
-- Permission: concise reason plus Open Settings and Use Manual Capture.
-- Secure field: “Protected field not captured.” No source/content details.
+- Success: non-focus-stealing `#capture-status` plus native `NSAccessibility.post(..., notification: .announcementRequested, userInfo: [.announcement, .priority])` announcement, catalog `capture.announce.saved` (“Captured to Bronze.”). Use localized text and medium priority; test against source-focus preservation. WebView live region is used only when Bronze window is active; hidden/background WKWebView announcement is not trusted. [Apple announcement API](https://developer.apple.com/documentation/appkit/nsaccessibility-swift.struct/notification/announcementrequested)
+- No selection: visible `#capture-status`, catalog `capture.announce.rejected` (“No selection was captured; select text in another app.”).
+- Permission: visible `#capture-status`, catalog `capture.announce.denied` (“Accessibility is required to read the selection.”). Settings permission health still offers Retest and Open System Settings; the composer stays available.
+- Secure field: catalog `capture.announce.protected` (“That field is protected and was not captured.”). No source/content details.
 - Busy: queued position or progress, never silent drop.
-- Failure: stable diagnostic ID and Retry; raw details stay in redacted diagnostics.
+- Failure: catalog `capture.announce.failed` (“Capture did not save.”). Raw details stay in redacted diagnostics.
 
 Toasts do not contain sole copy of critical recovery action; persistent status center keeps last result.
 
@@ -164,7 +164,7 @@ Examples are semantic intent; localization controls wording:
 - “Item: Compare configuration formats. Queued. Position 2 of 4.”
 - “Complete Compare configuration formats, checkbox, unchecked.”
 - “Moved to position 3 of 4.”
-- “Captured to Research.”
+- “Captured to Bronze.”
 - “Copy format, pop-up button, Numbered list.”
 
 Avoid repeating full item content on every status update. User can request details.
