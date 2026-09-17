@@ -32,7 +32,8 @@
   --destructive-foreground: #ffffff;
   --secondary: #f4f4f5;
   --secondary-foreground: #18181b;
-  --radius: 0.625rem;
+  --radius: 0.5rem;
+  --radius-control: 0.5rem;
   --text-micro: 0.6875rem;
   --text-caption: 0.8125rem;
   --text-body: 0.9375rem;
@@ -91,8 +92,8 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --radius-sm: 0.5rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
 }
 
 /* Visible focus - do not remove without replacement */

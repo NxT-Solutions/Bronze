@@ -96,6 +96,16 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\.page-shell \.card[\s\S]*gap:\s*var\(--space-4\)/);
   assert.match(chrome, /\.library-dock/);
   assert.match(chrome, /\[data-standard-chord\]:empty/);
+  assert.match(chrome, /--radius-control:\s*8px/);
+  assert.match(
+    chrome,
+    /--radius-page-card:\s*calc\(var\(--radius-control\) \+ var\(--space-5\)\)/,
+  );
+  assert.match(
+    chrome,
+    /\.page-shell \.card[\s\S]*border-radius:\s*var\(--radius-page-card\)/,
+  );
+  assert.match(chrome, /\.pill[\s\S]*border-radius:\s*var\(--radius-pill\)/);
   assert.doesNotMatch(
     chrome.toLowerCase(),
     /copper|cooper|@import|fonts\.google/,
