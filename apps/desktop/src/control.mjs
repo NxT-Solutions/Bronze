@@ -1,5 +1,38 @@
 const TIP_MS = 2200;
 
+export const MOTION = {
+  duration: 180,
+  easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+};
+
+export function motionAllowed(doc) {
+  if (!doc) {
+    return false;
+  }
+  if (doc.documentElement?.hasAttribute("data-reduce-motion")) {
+    return false;
+  }
+  const query = doc.defaultView?.matchMedia?.(
+    "(prefers-reduced-motion: reduce)",
+  );
+  return !query?.matches;
+}
+
+export function animateElement(el, keyframes, options = {}) {
+  if (!el || typeof el.animate !== "function") {
+    return null;
+  }
+  if (!motionAllowed(el.ownerDocument)) {
+    return null;
+  }
+  return el.animate(keyframes, {
+    duration: MOTION.duration,
+    easing: MOTION.easing,
+    fill: "forwards",
+    ...options,
+  });
+}
+
 export function readStatusText(root, key, slot = "action-message") {
   const source = root?.querySelector(`[data-${slot}][data-i18n="${key}"]`);
   return source?.textContent?.trim() ?? "";
@@ -22,6 +55,12 @@ export function applyActionTip(anchor, text, tone = "ok") {
     tip.dataset.tone = "failed";
   } else {
     delete tip.dataset.tone;
+  }
+  if (text) {
+    animateElement(tip, [
+      { opacity: 0, transform: "translateY(4px) scale(0.96)" },
+      { opacity: 1, transform: "none" },
+    ]);
   }
   if (text && typeof view?.setTimeout === "function") {
     tip.dataset.tipTimer = String(

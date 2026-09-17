@@ -3,8 +3,11 @@
 /* Bronze design tokens - system fonts only (SEC-001), no remote */
 :root {
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", ui-sans-serif, system-ui,
     sans-serif;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
   /* Light (from DESIGN.md, zinc hand-test surfaces) */
@@ -159,8 +162,11 @@
 body {
   font-family: var(--font-sans);
   font-size: var(--text-body);
-  line-height: 1.45;
-  letter-spacing: 0;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: 0.01em;
+  word-spacing: 0.04em;
+  -webkit-font-smoothing: antialiased;
   background: var(--background);
   color: var(--foreground);
 }

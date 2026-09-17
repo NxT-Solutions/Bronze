@@ -77,8 +77,10 @@ export function applyCaptureResult(root, result) {
 export function renderQueueItems(list, items, template) {
   const labels = readExpandLabels(template.content);
   list.replaceChildren();
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
     const node = template.content.firstElementChild.cloneNode(true);
+    node.classList.add("is-entering");
+    node.style.setProperty("--enter-delay", `${Math.min(index, 8) * 24}ms`);
     node.dataset.itemId = item.id;
     const article = node.querySelector("article");
     fillItemChrome(article, item, labels);

@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  animateElement,
   applyActionStatus,
   applyActionTip,
   bindOverflowDismiss,
   closeOverflowMenus,
+  MOTION,
+  motionAllowed,
   runBusy,
 } from "./control.mjs";
 
@@ -109,4 +112,36 @@ test("action tip writes catalog text on the row and overflow closes away", () =>
     .find((row) => row.type === "pointerdown")
     .fn({ target: { closest: () => null } });
   assert.equal(first.open, false);
+});
+
+test("motion helper stays local and yields under reduce-motion", () => {
+  assert.equal(MOTION.duration, 180);
+  assert.match(MOTION.easing, /cubic-bezier/);
+  assert.equal(
+    motionAllowed({
+      documentElement: { hasAttribute: () => true },
+    }),
+    false,
+  );
+  assert.equal(
+    motionAllowed({
+      documentElement: { hasAttribute: () => false },
+      defaultView: { matchMedia: () => ({ matches: true }) },
+    }),
+    false,
+  );
+  const played = [];
+  const el = {
+    ownerDocument: {
+      documentElement: { hasAttribute: () => false },
+      defaultView: { matchMedia: () => ({ matches: false }) },
+    },
+    animate(frames, options) {
+      played.push({ frames, options });
+      return { finished: Promise.resolve() };
+    },
+  };
+  animateElement(el, [{ opacity: 0 }, { opacity: 1 }]);
+  assert.equal(played.length, 1);
+  assert.equal(played[0].options.duration, 180);
 });

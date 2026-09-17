@@ -42,8 +42,10 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
     if (list && template) {
       const labels = readExpandLabels(template.content);
       list.replaceChildren();
-      for (const item of items) {
+      for (const [index, item] of items.entries()) {
         const node = template.content.firstElementChild.cloneNode(true);
+        node.classList.add("is-entering");
+        node.style.setProperty("--enter-delay", `${Math.min(index, 8) * 24}ms`);
         const article = node.querySelector("article");
         fillItemChrome(article, item, labels);
         const source = node.querySelector("[data-slot=source]");

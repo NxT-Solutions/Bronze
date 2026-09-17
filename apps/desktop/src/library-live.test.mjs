@@ -34,4 +34,5 @@ test("library items sanitize markdown and keep a title plus expand reader", () =
   assert.match(live, /applySourceRow/);
   assert.match(live, /sourceAppIcon/);
   assert.match(live, /runBusy/);
+  assert.match(live, /is-entering/);
 });

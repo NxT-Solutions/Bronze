@@ -92,6 +92,7 @@ test("composer submit is Cmd-Enter or the form and live queue is wired", () => {
   assert.match(live, /sourceAppIcon/);
   assert.match(live, /applySourceRow/);
   assert.match(live, /fillItemChrome/);
+  assert.match(live, /is-entering/);
   assert.doesNotMatch(live, /http:\/\//);
   assert.match(itemView, /renderMarkdownBody/);
   assert.match(itemView, /is-expanded/);
