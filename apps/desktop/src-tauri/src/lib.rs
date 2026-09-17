@@ -368,24 +368,18 @@ fn attach_status_button_action(item: &objc2_app_kit::NSStatusItem) {
 }
 
 #[cfg(target_os = "macos")]
-fn popup_status_menu(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) {
-    use tauri::Manager;
+fn popup_status_menu(app: &tauri::AppHandle) {
     let Ok(menu) = status_tray_menu(app) else {
         return;
     };
-    if let Some(window) = app.get_webview_window("quick") {
-        let at = tauri::Position::Physical(tauri::PhysicalPosition::new(
-            position.x.round() as i32,
-            position.y.round() as i32,
-        ));
-        if window.popup_menu_at(&menu, at).is_ok() {
-            return;
-        }
-    }
-    if let Some(tray) = app.tray_by_id(TRAY_ID) {
-        let _ = tray.set_menu(Some(menu));
-        let _ = tray.with_inner_tray_icon(|inner| inner.show_menu());
-    }
+    let Some(tray) = app.tray_by_id(TRAY_ID) else {
+        return;
+    };
+    // NSStatusItem.performClick places the menu flush under the extra.
+    // A WebView context menu is positioned in the panel, not the menu bar.
+    let _ = tray.set_menu(Some(menu));
+    let _ = tray.with_inner_tray_icon(|inner| inner.show_menu());
+    let _ = tray.set_menu(None::<tauri::menu::Menu<tauri::Wry>>);
 }
 
 #[cfg(target_os = "macos")]
@@ -394,7 +388,6 @@ fn handle_status_item_event(app: &tauri::AppHandle, event: &tauri::tray::TrayIco
     let TrayIconEvent::Click {
         button,
         button_state,
-        position,
         ..
     } = event
     else {
@@ -407,7 +400,7 @@ fn handle_status_item_event(app: &tauri::AppHandle, event: &tauri::tray::TrayIco
             }
             let _ = reveal_quick_panel(app);
         }
-        Some(StatusItemClick::PopupMenu) => popup_status_menu(app, *position),
+        Some(StatusItemClick::PopupMenu) => popup_status_menu(app),
         None => {}
     }
 }
@@ -884,6 +877,10 @@ mod tests {
         );
         assert!(lib.contains("setAction"));
         assert!(lib.contains("showPanel:"));
+        let popup = lib.split("fn popup_status_menu").nth(1).expect("popup");
+        let popup_end = popup.find("\nfn ").unwrap_or(popup.len());
+        assert!(popup[..popup_end].contains("show_menu"));
+        assert!(!popup[..popup_end].contains("popup_menu_at"));
         assert!(lib.contains("queue-changed"));
         assert!(lib.contains("native_item_title"));
         assert!(lib.contains("tray_entry_label"));
