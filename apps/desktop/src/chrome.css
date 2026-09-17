@@ -53,8 +53,8 @@
 
   --stroke: color-mix(in srgb, var(--foreground) 8%, transparent);
   --shadow:
-    0 0.5px 0 color-mix(in srgb, var(--foreground) 5%, transparent),
-    0 8px 24px color-mix(in srgb, var(--foreground) 4%, transparent);
+    0 0 0 0.5px color-mix(in srgb, var(--foreground) 12%, transparent),
+    0 4px 16px color-mix(in srgb, var(--foreground) 6%, transparent);
 }
 
 *,
@@ -76,9 +76,9 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-body);
   font-weight: 400;
-  line-height: 1.47;
-  letter-spacing: 0.01em;
-  word-spacing: 0.04em;
+  line-height: 1.4;
+  letter-spacing: 0;
+  word-spacing: normal;
   background: var(--background);
   color: var(--foreground);
   overflow-x: hidden;
@@ -137,15 +137,14 @@ h2,
 h3 {
   margin: 0;
   font-family: var(--font-display);
-  letter-spacing: 0.01em;
-  word-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 h1 {
   font-size: var(--text-title);
   font-weight: 590;
   line-height: 1.2;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.02em;
 }
 
 h2 {
@@ -219,8 +218,8 @@ a {
   color: var(--foreground);
   text-decoration: none;
   font-size: var(--text-caption);
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  font-weight: 510;
+  letter-spacing: 0;
   transition:
     background var(--ease),
     color var(--ease);
@@ -250,7 +249,7 @@ a {
   color: var(--card-foreground);
   border: 1px solid var(--stroke);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   padding: var(--space-4);
 }
 
@@ -311,20 +310,17 @@ button {
   background: var(--card);
   color: var(--foreground);
   font-size: var(--text-caption);
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  word-spacing: 0.06em;
+  font-weight: 510;
+  letter-spacing: 0;
   white-space: nowrap;
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
-  box-shadow: 0 0.5px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+  box-shadow: none;
   transition:
     background var(--ease),
     border-color var(--ease),
-    color var(--ease),
-    transform var(--ease),
-    box-shadow var(--ease);
+    color var(--ease);
 }
 
 button:hover:not(:disabled):not(.btn-primary):not([type="submit"]),
@@ -339,7 +335,6 @@ summary:hover,
 button:active:not(:disabled):not(.btn-primary):not([type="submit"]),
 .segment a:active,
 summary:active {
-  transform: scale(0.97);
   background: var(--muted);
 }
 
@@ -372,19 +367,17 @@ summary[aria-busy="true"]::after {
 @keyframes bronze-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
 
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
 @keyframes bronze-pop {
   from {
     opacity: 0;
-    transform: translateY(4px) scale(0.96);
+    transform: translateY(2px);
   }
 
   to {
@@ -417,7 +410,6 @@ button.btn-primary[aria-busy="true"] {
 
 button[type="submit"]:active:not(:disabled),
 button.btn-primary:active:not(:disabled) {
-  transform: scale(0.97);
   background: color-mix(in srgb, var(--primary) 88%, #000);
   color: var(--primary-foreground);
 }
@@ -446,11 +438,10 @@ textarea {
   background: var(--background);
   color: var(--foreground);
   font-weight: 400;
-  letter-spacing: 0.01em;
-  word-spacing: 0.04em;
+  letter-spacing: 0;
+  word-spacing: normal;
   transition:
     border-color var(--ease),
-    box-shadow var(--ease),
     background var(--ease);
 }
 
@@ -550,7 +541,7 @@ pre {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 li.is-entering {
@@ -563,18 +554,19 @@ article {
   color: var(--card-foreground);
   border: 1px solid var(--stroke);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   padding: var(--space-4);
 }
 
 article p {
   margin: 0;
-  font-size: var(--text-body);
+  font-size: inherit;
 }
 
 article [data-slot="title"] {
   margin-block-end: var(--space-1);
-  font-weight: 600;
+  font-size: var(--text-body);
+  font-weight: 590;
   line-height: 1.35;
   letter-spacing: 0;
   word-spacing: normal;
@@ -584,7 +576,7 @@ article [data-slot="title"] {
 
 article [data-slot="body"] {
   margin: 0;
-  font-size: var(--text-body);
+  font-size: var(--text-caption);
   line-height: 1.45;
   white-space: pre-wrap;
   tab-size: 4;
@@ -672,17 +664,18 @@ article [data-slot="show-less"][hidden],
   position: absolute;
   z-index: 4;
   inset-inline-start: 0;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 6px);
   max-width: min(16rem, 80vw);
-  padding: 0.4rem 0.7rem;
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--primary) 72%, #71717a);
-  color: var(--primary-foreground);
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--stroke);
   font-size: var(--text-caption);
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.35;
-  letter-spacing: 0.01em;
-  word-spacing: 0.06em;
+  letter-spacing: 0;
+  word-spacing: normal;
   white-space: normal;
   pointer-events: none;
   box-shadow: var(--shadow);
@@ -690,8 +683,9 @@ article [data-slot="show-less"][hidden],
 }
 
 .action-tip[data-tone="failed"] {
-  background: var(--destructive);
-  color: var(--destructive-foreground);
+  background: var(--card);
+  color: var(--destructive);
+  border-color: color-mix(in srgb, var(--destructive) 35%, var(--stroke));
 }
 
 .row-actions details {
@@ -702,21 +696,21 @@ article [data-slot="show-less"][hidden],
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  min-height: var(--control-h);
-  padding-inline: 0.9rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--stroke);
-  background: var(--card);
-  color: var(--foreground);
+  gap: 0.35rem;
+  min-height: 1.75rem;
+  padding-inline: 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted-foreground);
   font-size: var(--text-caption);
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  word-spacing: 0.06em;
+  font-weight: 400;
+  letter-spacing: 0;
+  word-spacing: normal;
   list-style: none;
   transition:
     background var(--ease),
-    transform var(--ease);
+    color var(--ease);
 }
 
 .row-actions summary::-webkit-details-marker {
@@ -755,7 +749,12 @@ menu {
 
 .row-actions menu button {
   width: 100%;
+  min-height: 1.75rem;
   justify-content: flex-start;
+  border: none;
+  background: transparent;
+  font-weight: 400;
+  box-shadow: none;
 }
 
 .search-card {
@@ -799,7 +798,7 @@ menu {
   border: 1px solid var(--stroke);
   border-radius: var(--radius-md);
   background: var(--card);
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .health-card p {
@@ -872,7 +871,7 @@ fieldset {
   border: 1px solid var(--stroke);
   border-radius: var(--radius-md);
   background: var(--card);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   display: grid;
   gap: var(--space-2);
 }
@@ -906,7 +905,7 @@ legend {
 [data-slot="toolbar-overflow"] summary {
   cursor: pointer;
   font-size: var(--text-caption);
-  font-weight: 600;
+  font-weight: 400;
 }
 
 #composer,

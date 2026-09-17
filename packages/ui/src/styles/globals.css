@@ -163,9 +163,9 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-body);
   font-weight: 400;
-  line-height: 1.47;
-  letter-spacing: 0.01em;
-  word-spacing: 0.04em;
+  line-height: 1.4;
+  letter-spacing: 0;
+  word-spacing: normal;
   -webkit-font-smoothing: antialiased;
   background: var(--background);
   color: var(--foreground);

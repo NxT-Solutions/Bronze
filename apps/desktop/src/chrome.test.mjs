@@ -73,6 +73,18 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /@keyframes bronze-pop/);
   assert.match(chrome, /SF Pro Display/);
   assert.match(chrome, /optimizeLegibility/);
+  assert.match(chrome, /article \{[\s\S]*box-shadow:\s*none/);
+  assert.match(
+    chrome,
+    /article \[data-slot="title"\][\s\S]*font-weight:\s*590/,
+  );
+  assert.match(
+    chrome,
+    /article \[data-slot="body"\][\s\S]*font-size:\s*var\(--text-caption\)/,
+  );
+  assert.match(chrome, /\.action-tip[\s\S]*background:\s*var\(--card\)/);
+  assert.match(chrome, /\.row-actions summary[\s\S]*background:\s*transparent/);
+  assert.match(chrome, /\.row-actions menu button[\s\S]*border:\s*none/);
   assert.doesNotMatch(
     chrome.toLowerCase(),
     /copper|cooper|@import|fonts\.google/,
