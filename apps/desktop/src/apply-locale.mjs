@@ -102,6 +102,7 @@ function applyCatalogMessages(scope, messages) {
     const value = messages[key];
     if (typeof value === "string" && !isIcuMessage(value)) {
       el.setAttribute("placeholder", value);
+      el.setAttribute("aria-placeholder", value);
     }
   }
   for (const template of scope.querySelectorAll?.("template") ?? []) {

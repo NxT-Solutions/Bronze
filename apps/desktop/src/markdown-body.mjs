@@ -243,3 +243,120 @@ export function renderMarkdownBody(targetEl, markdown) {
   const nodes = documentToNodes(doc, parseConstrainedDocument(markdown));
   targetEl.replaceChildren(...nodes);
 }
+
+function nodeName(node) {
+  return String(node.tagName || node.nodeName || "").toLowerCase();
+}
+
+function childrenOf(node) {
+  if (node.childNodes && typeof node.childNodes.length === "number") {
+    return Array.from(node.childNodes);
+  }
+  if (Array.isArray(node.children)) {
+    return node.children;
+  }
+  return [];
+}
+
+function escapeMarkdownText(value) {
+  let out = "";
+  for (const ch of String(value)) {
+    if (ESCAPABLE.has(ch)) {
+      out += `\\${ch}`;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+function serializeInline(node) {
+  if (node.nodeType === 3 || node.nodeName === "#text") {
+    return escapeMarkdownText(node.data ?? node.textContent ?? "");
+  }
+  if (node.nodeType !== 1) {
+    return "";
+  }
+  const tag = nodeName(node);
+  if (tag === "script" || tag === "style" || tag === "noscript") {
+    return "";
+  }
+  if (tag === "br") {
+    return "\n";
+  }
+  const inner = childrenOf(node).map(serializeInline).join("");
+  if (tag === "strong" || tag === "b") {
+    return inner ? `**${inner}**` : "";
+  }
+  if (tag === "em" || tag === "i") {
+    return inner ? `*${inner}*` : "";
+  }
+  return inner;
+}
+
+function serializeList(node) {
+  const ordered = nodeName(node) === "ol";
+  return childrenOf(node)
+    .filter((child) => nodeName(child) === "li")
+    .map((item, index) => {
+      const text = childrenOf(item).map(serializeInline).join("");
+      return ordered ? `${index + 1}. ${text}` : `- ${text}`;
+    })
+    .join("\n");
+}
+
+function serializeBlocks(node) {
+  const parts = [];
+  let inline = "";
+
+  function flushInline() {
+    if (inline.length > 0) {
+      parts.push(inline);
+      inline = "";
+    }
+  }
+
+  for (const child of childrenOf(node)) {
+    if (child.nodeType === 3 || child.nodeName === "#text") {
+      inline += escapeMarkdownText(child.data ?? child.textContent ?? "");
+      continue;
+    }
+    if (child.nodeType !== 1) {
+      continue;
+    }
+    const tag = nodeName(child);
+    if (tag === "script" || tag === "style" || tag === "noscript") {
+      continue;
+    }
+    if (tag === "br") {
+      flushInline();
+      continue;
+    }
+    if (tag === "ul" || tag === "ol") {
+      flushInline();
+      const list = serializeList(child);
+      if (list) {
+        parts.push(list);
+      }
+      continue;
+    }
+    if (tag === "div" || tag === "p") {
+      flushInline();
+      const line = serializeBlocks(child);
+      if (line.length > 0) {
+        parts.push(line);
+      }
+      continue;
+    }
+    inline += serializeInline(child);
+  }
+  flushInline();
+  return parts.join("\n");
+}
+
+export function serializeComposerDom(root) {
+  if (!root) {
+    return "";
+  }
+  return serializeBlocks(root).replace(/\n+$/u, "");
+}

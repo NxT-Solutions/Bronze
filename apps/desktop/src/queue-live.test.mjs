@@ -102,6 +102,10 @@ test("composer submit is Cmd-Enter or the form and live queue is wired", () => {
   assert.doesNotMatch(itemView, /innerHTML = item\.body/);
   assert.doesNotMatch(html, /data-open-window=/);
   assert.doesNotMatch(live, /\.prompt/);
+  assert.match(live, /serializeComposerDom/);
+  assert.match(live, /wrapComposerSelection/);
+  assert.match(html, /contenteditable="true"/);
+  assert.match(html, /data-composer-format="strong"/);
   assert.match(live, /openEditSheet/);
   assert.match(html, /id="edit-sheet"/);
   assert.match(html, /data-edit-dismiss/);

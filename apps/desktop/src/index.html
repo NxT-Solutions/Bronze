@@ -16,16 +16,45 @@
         </div>
       </header>
       <form id="composer" class="composer-well card" data-slot="composer">
-        <label class="visually-hidden" for="composer-body" data-i18n="composer.add.label">
+        <span id="composer-label" class="visually-hidden" data-i18n="composer.add.label">
           Add item
-        </label>
-        <textarea
-          id="composer-body"
-          name="body"
-          rows="3"
-          data-i18n-placeholder="composer.placeholder"
-          placeholder="Type or Capture"
-        ></textarea>
+        </span>
+        <div class="composer-editor">
+          <div class="composer-toolbar" role="toolbar" aria-labelledby="composer-format-label">
+            <span id="composer-format-label" class="visually-hidden" data-i18n="composer.format.toolbar">
+              Formatting
+            </span>
+            <button
+              type="button"
+              class="btn-toolbar"
+              data-composer-format="strong"
+              aria-pressed="false"
+              data-i18n="composer.format.bold"
+            >
+              Bold
+            </button>
+            <button
+              type="button"
+              class="btn-toolbar"
+              data-composer-format="em"
+              aria-pressed="false"
+              data-i18n="composer.format.italic"
+            >
+              Italic
+            </button>
+          </div>
+          <div
+            id="composer-body"
+            class="composer-body is-empty"
+            role="textbox"
+            tabindex="0"
+            aria-multiline="true"
+            aria-labelledby="composer-label"
+            aria-placeholder="Type or Capture"
+            data-i18n-placeholder="composer.placeholder"
+            contenteditable="true"
+          ></div>
+        </div>
         <button type="submit" class="btn-primary" data-i18n="composer.add.submit">
           Add
         </button>

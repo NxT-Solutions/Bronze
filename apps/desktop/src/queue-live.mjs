@@ -13,9 +13,82 @@ import {
   readExpandLabels,
   syncExpandVisibility,
 } from "./item-view.mjs";
+import { serializeComposerDom } from "./markdown-body.mjs";
 import { tauriInvoke } from "./tauri-bridge.mjs";
 
-export { formatCaptureSource };
+export { formatCaptureSource, serializeComposerDom };
+
+const FORMAT_TAGS = {
+  strong: new Set(["strong", "b"]),
+  em: new Set(["em", "i"]),
+};
+
+function formatAncestor(node, tagName, root) {
+  const match = FORMAT_TAGS[tagName] ?? new Set([tagName]);
+  let el = node?.nodeType === 1 ? node : node?.parentElement;
+  while (el && el !== root && root.contains(el)) {
+    if (match.has(el.tagName.toLowerCase())) {
+      return el;
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
+
+function unwrapElement(el) {
+  const parent = el.parentNode;
+  if (!parent) {
+    return;
+  }
+  while (el.firstChild) {
+    parent.insertBefore(el.firstChild, el);
+  }
+  parent.removeChild(el);
+}
+
+export function wrapComposerSelection(root, tagName) {
+  const doc = root?.ownerDocument;
+  const sel = doc?.getSelection?.();
+  if (!root || !doc?.createElement || !sel || sel.rangeCount === 0) {
+    return;
+  }
+  if (!root.contains(sel.anchorNode)) {
+    return;
+  }
+  const existing = formatAncestor(sel.anchorNode, tagName, root);
+  if (existing) {
+    unwrapElement(existing);
+    return;
+  }
+  if (sel.isCollapsed) {
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  const el = doc.createElement(tagName);
+  el.appendChild(range.extractContents());
+  range.insertNode(el);
+  sel.removeAllRanges();
+  const next = doc.createRange();
+  next.selectNodeContents(el);
+  sel.addRange(next);
+}
+
+export function syncComposerEmpty(el) {
+  if (!el?.classList) {
+    return;
+  }
+  el.classList.toggle("is-empty", serializeComposerDom(el).length === 0);
+}
+
+function syncFormatPressed(root, editor) {
+  const sel = editor.ownerDocument?.getSelection?.();
+  const anchor = sel?.anchorNode;
+  for (const button of root.querySelectorAll("[data-composer-format]")) {
+    const tag = button.getAttribute("data-composer-format");
+    const on = Boolean(anchor && formatAncestor(anchor, tag, editor));
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+}
 
 export const QUE_007_COMPLETE = false;
 
@@ -111,16 +184,17 @@ export function renderQueueItems(list, items, template) {
 export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   const list = root.querySelector("#queue");
   const form = root.querySelector("#composer");
-  const textarea = root.querySelector("#composer-body");
+  const editor = root.querySelector("#composer-body");
   const error = root.querySelector("#composer-error");
   const empty = root.querySelector("#queue-empty");
   const template = root.querySelector("#queue-item-template");
   const profile = root.querySelector("#output-profile");
-  if (!list || !form || !textarea || !template) {
+  if (!list || !form || !editor || !template) {
     return;
   }
 
   bindOverflowDismiss(root);
+  syncComposerEmpty(editor);
 
   async function refresh() {
     const items = await invokeFn("list_overview_items");
@@ -132,8 +206,11 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   async function addFromComposer() {
     try {
-      await invokeFn("add_composer_item", { body: textarea.value });
-      textarea.value = "";
+      await invokeFn("add_composer_item", {
+        body: serializeComposerDom(editor),
+      });
+      editor.replaceChildren();
+      syncComposerEmpty(editor);
       if (error) {
         error.hidden = true;
       }
@@ -152,12 +229,68 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       runBusy(submit, addFromComposer);
     }
   });
-  textarea.addEventListener("keydown", (event) => {
+  form.addEventListener("mousedown", (event) => {
+    if (event.target.closest("[data-composer-format]")) {
+      event.preventDefault();
+    }
+  });
+  form.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-composer-format]");
+    if (!button) {
+      return;
+    }
+    const tag = button.getAttribute("data-composer-format");
+    if (tag !== "strong" && tag !== "em") {
+      return;
+    }
+    wrapComposerSelection(editor, tag);
+    syncComposerEmpty(editor);
+    syncFormatPressed(root, editor);
+  });
+  editor.addEventListener("keydown", (event) => {
     if (composerShouldSubmit(event)) {
       event.preventDefault();
       const submit = form.querySelector("[type=submit]");
       runBusy(submit, addFromComposer);
+      return;
     }
+    if (event.isComposing || !(event.metaKey || event.ctrlKey)) {
+      return;
+    }
+    const key = typeof event.key === "string" ? event.key.toLowerCase() : "";
+    if (key === "b") {
+      event.preventDefault();
+      wrapComposerSelection(editor, "strong");
+      syncFormatPressed(root, editor);
+    } else if (key === "i") {
+      event.preventDefault();
+      wrapComposerSelection(editor, "em");
+      syncFormatPressed(root, editor);
+    }
+  });
+  editor.addEventListener("input", () => {
+    syncComposerEmpty(editor);
+  });
+  editor.addEventListener("paste", (event) => {
+    event.preventDefault();
+    const text = event.clipboardData?.getData("text/plain") ?? "";
+    const doc = editor.ownerDocument;
+    const sel = doc?.getSelection?.();
+    if (!sel || sel.rangeCount === 0 || !text) {
+      return;
+    }
+    sel.deleteFromDocument();
+    const node = doc.createTextNode(text);
+    const range = sel.getRangeAt(0);
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    syncComposerEmpty(editor);
+  });
+  editor.ownerDocument?.addEventListener("selectionchange", () => {
+    syncFormatPressed(root, editor);
   });
 
   list.addEventListener("click", async (event) => {

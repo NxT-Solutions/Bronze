@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   applyHandTestLocale,
   catalogHasRealSpaces,
@@ -13,6 +16,11 @@ import {
   SHIPPED_UI_LOCALES,
   UI_LOCALE_EVENT,
 } from "./apply-locale.mjs";
+
+const applyLocaleSource = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "apply-locale.mjs"),
+  "utf8",
+);
 
 test("hand-test locale stays en unless a shipped or pseudo locale is explicit", () => {
   assert.equal(HAND_TEST_DEFAULT_LOCALE, "en");
@@ -82,6 +90,7 @@ test("applyHandTestLocale sets html lang and catalog chrome", () => {
   assert.equal(root.documentElement.lang, "nl");
   assert.equal(heading.textContent, "Instellingen");
   assert.equal(title.textContent, "Instellingen");
+  assert.match(applyLocaleSource, /setAttribute\("aria-placeholder", value\)/);
 });
 
 test("formatQueueCount uses ICU branches without concatenation", () => {

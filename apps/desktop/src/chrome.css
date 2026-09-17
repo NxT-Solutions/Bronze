@@ -528,9 +528,55 @@ textarea {
   gap: var(--space-3);
 }
 
-.composer-well textarea {
+.composer-editor {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.composer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.composer-toolbar [aria-pressed="true"] {
+  background: color-mix(in srgb, var(--foreground) 8%, var(--card));
+}
+
+.composer-body {
   min-height: 5.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
   background: var(--card);
+  color: var(--foreground);
+  font-weight: 400;
+  letter-spacing: 0;
+  word-spacing: 0.02em;
+  line-height: 1.45;
+  overflow: auto;
+  white-space: pre-wrap;
+  transition:
+    border-color var(--ease),
+    background var(--ease);
+}
+
+.composer-body:hover {
+  border-color: color-mix(in srgb, var(--input) 70%, var(--ring));
+}
+
+.composer-body.is-empty::before {
+  content: attr(aria-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.composer-body :where(p, ul, ol) {
+  margin: 0;
+}
+
+.composer-body :where(ul, ol) {
+  padding-inline-start: 1.2rem;
 }
 
 .copy-dock {
@@ -1196,6 +1242,7 @@ fieldset > span {
   input,
   textarea,
   select,
+  .composer-body,
   .card,
   .surface,
   article,

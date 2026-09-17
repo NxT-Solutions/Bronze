@@ -7,6 +7,7 @@ import {
   parseConstrainedDocument,
   parseConstrainedMarkdown,
   renderMarkdownBody,
+  serializeComposerDom,
 } from "./markdown-body.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -179,6 +180,66 @@ test("line-start markers become lists and leaked HTML stays text", () => {
   );
   assert.deepEqual(tagsUnder(target), ["p", "ul", "li", "li"]);
   assert.match(target.textContent, /Follo Studio 0.2.21/);
+});
+
+function textNode(value) {
+  return { nodeType: 3, nodeName: "#text", data: value };
+}
+
+function el(tag, kids) {
+  return {
+    nodeType: 1,
+    tagName: tag.toUpperCase(),
+    nodeName: tag.toUpperCase(),
+    childNodes: kids,
+  };
+}
+
+test("composer DOM serializes to constrained markdown and drops scripts", () => {
+  assert.equal(
+    serializeComposerDom({
+      childNodes: [el("strong", [textNode("Hello")]), textNode(" world")],
+    }),
+    "**Hello** world",
+  );
+  assert.equal(
+    serializeComposerDom({
+      childNodes: [el("em", [textNode("hi")])],
+    }),
+    "*hi*",
+  );
+  assert.equal(
+    serializeComposerDom({
+      childNodes: [
+        el("div", [textNode("one")]),
+        el("div", [el("strong", [textNode("two")])]),
+      ],
+    }),
+    "one\n**two**",
+  );
+  assert.equal(
+    serializeComposerDom({
+      childNodes: [
+        el("ul", [
+          el("li", [textNode("a")]),
+          el("li", [el("em", [textNode("b")])]),
+        ]),
+      ],
+    }),
+    "- a\n- *b*",
+  );
+  assert.equal(
+    serializeComposerDom({
+      childNodes: [el("br", [])],
+    }),
+    "",
+  );
+  assert.equal(
+    serializeComposerDom({
+      childNodes: [el("script", [textNode("alert(1)")]), textNode("*")],
+    }),
+    "\\*",
+  );
 });
 
 test("missing document is unavailable rather than assigned as HTML", () => {
