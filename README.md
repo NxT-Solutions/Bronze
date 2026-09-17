@@ -45,7 +45,7 @@ Hand-test in the **native** window only:
 - Status item: left-click **Show**; menu is the latest five overview items (click copies), then Capture, Help, Quit
 - Status or app-menu **Show** recreates the Quick Panel if you closed it
 - Settings / Library / Help recreate if you closed them
-- Settings load/save `SettingsV1`; permission **Retest** and **Open System Settings** run from the Settings window
+- Settings load/save `SettingsV1`; permission **Retest** and **Open System Settings** run from the Settings window. Privacy excluded apps is a search plus **Choose app…** (Finder `.app` panel); WebView never receives paths
 - Library search is substring-only (`QUE_007_COMPLETE=false`; ADR-018 stays Proposed)
 - Backup / export / import write under the Rust-owned app data dir; WebView paths are rejected
 
