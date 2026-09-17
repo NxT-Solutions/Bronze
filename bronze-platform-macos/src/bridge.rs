@@ -284,9 +284,13 @@ impl NativeRuntime {
     }
 
     pub fn event_tap_start(&self) -> Result<EventTapHealth, NativeError> {
+        Self::event_tap_start_shared()
+    }
+
+    pub fn event_tap_start_shared() -> Result<EventTapHealth, NativeError> {
         let status = catch_ffi(|| unsafe { abi::bronze_native_event_tap_start() })?;
         match status {
-            BRONZE_STATUS_OK => Ok(self.event_tap_health()?),
+            BRONZE_STATUS_OK => Self::event_tap_health_shared(),
             BRONZE_STATUS_DEGRADED => Ok(EventTapHealth::Degraded),
             other => map_status(other).map(|()| EventTapHealth::Idle),
         }
@@ -298,6 +302,10 @@ impl NativeRuntime {
     }
 
     pub fn event_tap_health(&self) -> Result<EventTapHealth, NativeError> {
+        Self::event_tap_health_shared()
+    }
+
+    pub fn event_tap_health_shared() -> Result<EventTapHealth, NativeError> {
         let raw = catch_ffi(|| unsafe { abi::bronze_native_event_tap_health() })?;
         match raw {
             BRONZE_EVENT_TAP_IDLE => Ok(EventTapHealth::Idle),
@@ -679,6 +687,12 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
+        let frontmost = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../native/macos/BronzeNative/Sources/BronzeNative/FrontmostABI.swift"
+        ));
+        assert!(frontmost.contains("NSWorkspace"));
+        assert!(frontmost.contains("bronze_native_frontmost_pid"));
         for needle in [
             "AXUIElement",
             "NSPasteboard",

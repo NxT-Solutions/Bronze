@@ -27,6 +27,8 @@ public final class EventTapEngine: @unchecked Sendable {
     private var thread: Thread?
     private let ready = DispatchSemaphore(value: 0)
     private var gestureEnabled = false
+    private var shiftFlagDown = false
+    private var lastShiftSide: ModifierSide = .left
 
     public init() {
         fsm = DoubleTapFSM(config: .defaults)
@@ -62,26 +64,8 @@ public final class EventTapEngine: @unchecked Sendable {
         stopLiveTap()
         spsc.reset()
         applyConfig()
-        let mask: CGEventMask =
-            (1 << CGEventType.flagsChanged.rawValue)
-                | (1 << CGEventType.keyDown.rawValue)
-                | (1 << CGEventType.tapDisabledByTimeout.rawValue)
-                | (1 << CGEventType.tapDisabledByUserInput.rawValue)
-        let unmanaged = Unmanaged.passUnretained(self)
-        guard let port = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
-            place: .tailAppendEventTap,
-            options: .listenOnly,
-            eventsOfInterest: mask,
-            callback: EventTapEngine.callback,
-            userInfo: unmanaged.toOpaque()
-        ) else {
-            health = .degraded
-            spsc.bindProducer()
-            return health
-        }
-        tap = port
-        source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, port, 0)
+        health = .idle
+        while ready.wait(timeout: .now()) == .success {}
         let thread = Thread { [weak self] in
             self?.runTapLoop()
         }
@@ -89,7 +73,9 @@ public final class EventTapEngine: @unchecked Sendable {
         self.thread = thread
         thread.start()
         _ = ready.wait(timeout: .now() + 2)
-        health = .listening
+        if health != .listening {
+            health = .degraded
+        }
         return health
     }
 
@@ -150,6 +136,8 @@ public final class EventTapEngine: @unchecked Sendable {
     private func clearPressed() {
         pressedLeft = false
         pressedRight = false
+        shiftFlagDown = false
+        lastShiftSide = .left
     }
 
     private func applyOutcome(_ outcome: DoubleTapOutcome) -> Bool {
@@ -160,12 +148,34 @@ public final class EventTapEngine: @unchecked Sendable {
     }
 
     private func runTapLoop() {
+        let mask: CGEventMask =
+            (1 << CGEventType.flagsChanged.rawValue)
+                | (1 << CGEventType.keyDown.rawValue)
+                | (1 << CGEventType.tapDisabledByTimeout.rawValue)
+                | (1 << CGEventType.tapDisabledByUserInput.rawValue)
+        let unmanaged = Unmanaged.passUnretained(self)
+        guard let port = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .tailAppendEventTap,
+            options: .listenOnly,
+            eventsOfInterest: mask,
+            callback: EventTapEngine.callback,
+            userInfo: unmanaged.toOpaque()
+        ) else {
+            health = .degraded
+            spsc.bindProducer()
+            ready.signal()
+            return
+        }
+        tap = port
+        source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, port, 0)
         let rl = CFRunLoopGetCurrent()
         runLoop = rl
         if let source {
             CFRunLoopAddSource(rl, source, .commonModes)
         }
         spsc.bindProducer()
+        health = .listening
         ready.signal()
         CFRunLoopRun()
     }
@@ -198,6 +208,7 @@ public final class EventTapEngine: @unchecked Sendable {
             }
         case .flagsChanged:
             let key = Int(event.getIntegerValueField(.keyboardEventKeycode))
+            let nowDown = event.flags.contains(.maskShift)
             if let side = ModifierSide(carbonKeyCode: key) {
                 let down: Bool
                 switch side {
@@ -208,9 +219,19 @@ public final class EventTapEngine: @unchecked Sendable {
                     down = !pressedRight
                     pressedRight = down
                 }
+                shiftFlagDown = nowDown
+                lastShiftSide = side
                 _ = applyOutcome(fsm.handle(DoubleTapEvent(
                     kind: down ? .down : .up,
                     side: side,
+                    timeNs: timeNs
+                )))
+            } else if nowDown != shiftFlagDown {
+                let kind: DoubleTapEventKind = nowDown ? .down : .up
+                shiftFlagDown = nowDown
+                _ = applyOutcome(fsm.handle(DoubleTapEvent(
+                    kind: kind,
+                    side: lastShiftSide,
                     timeNs: timeNs
                 )))
             } else {

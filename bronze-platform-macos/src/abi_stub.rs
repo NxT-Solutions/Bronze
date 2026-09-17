@@ -407,6 +407,11 @@ pub extern "C" fn bronze_native_event_tap_test_attach() -> u32 {
 }
 
 #[no_mangle]
+pub extern "C" fn bronze_native_frontmost_pid() -> i32 {
+    0
+}
+
+#[no_mangle]
 pub extern "C" fn bronze_native_event_tap_test_feed(
     kind: u32,
     _carbon_key: i32,

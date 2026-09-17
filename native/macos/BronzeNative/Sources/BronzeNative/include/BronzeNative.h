@@ -110,6 +110,9 @@ uint32_t bronze_native_event_tap_test_feed(uint32_t kind, int32_t carbon_key, ui
 uint32_t bronze_native_event_tap_test_disable(void);
 uint32_t bronze_native_event_tap_test_enqueue_from_caller(uint32_t kind);
 
+// Frontmost process, NSWorkspace (not AX). 0 when unavailable.
+int32_t bronze_native_frontmost_pid(void);
+
 uint32_t bronze_native_ingress_publish(
     int32_t target_pid,
     uint64_t bundle_token,

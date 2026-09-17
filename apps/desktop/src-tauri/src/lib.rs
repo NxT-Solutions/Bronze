@@ -45,29 +45,7 @@ pub fn run() {
                 Ok(())
             })
             .on_menu_event(|app, event| {
-                let id = event.id().as_ref();
-                if let Some(item_id) = id.strip_prefix(TRAY_COPY_PREFIX) {
-                    copy_overview_item(app, item_id);
-                    return;
-                }
-                match id {
-                    "show-library" => {
-                        let _ = show_chrome_window(app.clone(), "library".into());
-                    }
-                    "show-settings" => {
-                        let _ = show_chrome_window(app.clone(), "settings".into());
-                    }
-                    "show-help" => {
-                        let _ = show_chrome_window(app.clone(), "help".into());
-                    }
-                    "show-panel" => {
-                        let _ = reveal_quick_panel(app);
-                    }
-                    "capture-selection" => {
-                        on_capture_requested(app);
-                    }
-                    _ => {}
-                }
+                handle_menu_id(app, event.id().as_ref());
             });
     }
     builder
@@ -304,23 +282,39 @@ fn copy_overview_item(app: &tauri::AppHandle, id: &str) {
 
 #[cfg(target_os = "macos")]
 fn start_capture_pump(app: tauri::AppHandle) {
-    use bronze_platform_macos::{NativeRuntime, BRONZE_TAP_REC_TRIGGER};
+    use bronze_platform_macos::{EventTapHealth, NativeRuntime, BRONZE_TAP_REC_TRIGGER};
+    use std::time::{Duration, Instant};
     std::thread::Builder::new()
         .name("bronze-capture-pump".into())
-        .spawn(move || loop {
-            bronze_platform_macos::note_external_focus();
-            if let Ok(Some(record)) = NativeRuntime::event_tap_drain_shared() {
-                if record.kind == BRONZE_TAP_REC_TRIGGER {
-                    let handle = app.clone();
-                    let _ = handle.run_on_main_thread({
-                        let handle = handle.clone();
-                        move || {
-                            on_capture_requested(&handle);
-                        }
-                    });
+        .spawn(move || {
+            let mut last_retry = Instant::now()
+                .checked_sub(Duration::from_secs(2))
+                .unwrap_or_else(Instant::now);
+            loop {
+                bronze_platform_macos::note_external_focus();
+                if last_retry.elapsed() >= Duration::from_secs(1) {
+                    let listening = NativeRuntime::event_tap_health_shared()
+                        .ok()
+                        .is_some_and(|health| health == EventTapHealth::Listening);
+                    if !listening {
+                        let _ = NativeRuntime::event_tap_start_shared();
+                        let _ = NativeRuntime::event_tap_set_enabled_shared(true);
+                    }
+                    last_retry = Instant::now();
                 }
+                if let Ok(Some(record)) = NativeRuntime::event_tap_drain_shared() {
+                    if record.kind == BRONZE_TAP_REC_TRIGGER {
+                        let handle = app.clone();
+                        let _ = handle.run_on_main_thread({
+                            let handle = handle.clone();
+                            move || {
+                                on_capture_requested(&handle);
+                            }
+                        });
+                    }
+                }
+                std::thread::sleep(Duration::from_millis(20));
             }
-            std::thread::sleep(std::time::Duration::from_millis(20));
         })
         .ok();
 }
@@ -335,6 +329,9 @@ fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
         .tooltip(&app_name)
         .menu(&menu)
         .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| {
+            handle_menu_id(app, event.id().as_ref());
+        })
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
@@ -353,10 +350,38 @@ fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
 }
 
 #[cfg(target_os = "macos")]
+fn handle_menu_id(app: &tauri::AppHandle, id: &str) {
+    if let Some(item_id) = id.strip_prefix(TRAY_COPY_PREFIX) {
+        copy_overview_item(app, item_id);
+        return;
+    }
+    match id {
+        "show-library" => {
+            let _ = show_chrome_window(app.clone(), "library".into());
+        }
+        "show-settings" => {
+            let _ = show_chrome_window(app.clone(), "settings".into());
+        }
+        "show-help" => {
+            let _ = show_chrome_window(app.clone(), "help".into());
+        }
+        "show-panel" => {
+            let _ = reveal_quick_panel(app);
+        }
+        "capture-selection" => {
+            on_capture_requested(app);
+        }
+        _ => {}
+    }
+}
+
+#[cfg(target_os = "macos")]
 pub fn on_capture_requested(app: &tauri::AppHandle) {
     use bronze_capture::FakeAnnouncer;
-    use live_session::LiveAxHost;
+    use bronze_capture::Terminal;
+    use live_session::{CaptureResultDto, LiveAxHost};
     use tauri::{Emitter, Manager};
+    bronze_platform_macos::note_external_focus();
     let _ = capture_permissions::prompt_on_first_capture_path();
     let visible = app
         .get_webview_window("quick")
@@ -367,10 +392,14 @@ pub fn on_capture_requested(app: &tauri::AppHandle) {
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     let mut announce = FakeAnnouncer::default();
-    let _ = session.persist_selection(&LiveAxHost, &mut announce, visible);
+    let persisted = session.persist_selection(&LiveAxHost, &mut announce, visible);
     drop(session);
-    if visible && !window_edge::CAPTURE_ONLY_REVEALS_PANEL {
-        let _ = app.emit("queue-changed", ());
+    if let Ok(outcome) = persisted {
+        let dto = CaptureResultDto::from_persist(outcome);
+        let _ = app.emit("capture-result", dto);
+        if outcome.terminal == Terminal::Saved {
+            let _ = app.emit("queue-changed", ());
+        }
     }
     let _ = rebuild_status_menu(app);
 }
@@ -633,7 +662,23 @@ mod tests {
         assert!(lib.contains("help.title"));
         assert!(lib.contains("event_tap_set_enabled"));
         assert!(lib.contains("event_tap_drain_shared"));
+        assert!(lib.contains("event_tap_start_shared"));
+        assert!(lib.contains("note_external_focus"));
+        assert!(lib.contains("capture-result"));
+        assert!(lib.contains("on_menu_event"));
         assert!(lib.contains("queue-changed"));
+        let capture_fn = lib
+            .split("pub fn on_capture_requested")
+            .nth(1)
+            .expect("capture fn");
+        let prompt_at = capture_fn
+            .find("prompt_on_first_capture_path")
+            .expect("prompt");
+        let snapshot_at = capture_fn.find("note_external_focus").expect("snapshot");
+        assert!(
+            snapshot_at < prompt_at,
+            "frontmost PID must be snapshotted before a permission prompt"
+        );
     }
 
     #[cfg(all(target_os = "macos", bronze_native_linked))]

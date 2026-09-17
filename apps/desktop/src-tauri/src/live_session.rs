@@ -56,6 +56,36 @@ impl SelectionHost for FakeSelectionHost {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct CapturePersistOutcome {
+    pub terminal: Terminal,
+    pub reason: &'static str,
+}
+
+#[derive(Clone, Debug, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CaptureResultDto {
+    pub terminal: String,
+    pub reason: String,
+}
+
+impl CaptureResultDto {
+    pub fn from_persist(outcome: CapturePersistOutcome) -> Self {
+        Self {
+            terminal: match outcome.terminal {
+                Terminal::Saved => "saved",
+                Terminal::Rejected => "rejected",
+                Terminal::Failed
+                | Terminal::TriggerQueueOverflow
+                | Terminal::ContextUnavailable => "failed",
+                Terminal::Cancelled => "cancelled",
+            }
+            .into(),
+            reason: outcome.reason.into(),
+        }
+    }
+}
+
 pub struct LiveAxHost;
 
 impl SelectionHost for LiveAxHost {
@@ -205,7 +235,7 @@ impl LiveSession {
         host: &dyn SelectionHost,
         announcer: &mut dyn Announcer,
         webview_visible: bool,
-    ) -> Result<Terminal, String> {
+    ) -> Result<CapturePersistOutcome, String> {
         let (outcome, text) = host.read();
         match (outcome, text) {
             (AxOutcome::Captured { .. }, Some(captured)) => {
@@ -242,19 +272,43 @@ impl LiveSession {
                     debug_assert_eq!(owner, FocusOwner::Source);
                     let _ = CAPTURE_ONLY_REVEALS_PANEL;
                 }
-                Ok(terminal)
+                Ok(CapturePersistOutcome {
+                    terminal,
+                    reason: if terminal == Terminal::Saved {
+                        "ok"
+                    } else {
+                        "failed"
+                    },
+                })
             }
             (AxOutcome::ProtectedContent | AxOutcome::ProtectionUnknown, _) => {
-                Ok(Terminal::Rejected)
+                Ok(CapturePersistOutcome {
+                    terminal: Terminal::Rejected,
+                    reason: "protected",
+                })
             }
             (AxOutcome::NoSelection | AxOutcome::FocusedElementMissing, _) => {
-                Ok(Terminal::Rejected)
+                Ok(CapturePersistOutcome {
+                    terminal: Terminal::Rejected,
+                    reason: "no_selection",
+                })
             }
-            (AxOutcome::AccessibilityDenied | AxOutcome::AppExcluded, _) => Ok(Terminal::Rejected),
+            (AxOutcome::AccessibilityDenied | AxOutcome::AppExcluded, _) => {
+                Ok(CapturePersistOutcome {
+                    terminal: Terminal::Rejected,
+                    reason: "accessibility",
+                })
+            }
             (AxOutcome::SelectionTooLarge | AxOutcome::InvalidTextEncoding, _) => {
-                Ok(Terminal::Failed)
+                Ok(CapturePersistOutcome {
+                    terminal: Terminal::Failed,
+                    reason: "failed",
+                })
             }
-            (AxOutcome::Captured { .. }, None) => Ok(Terminal::Failed),
+            (AxOutcome::Captured { .. }, None) => Ok(CapturePersistOutcome {
+                terminal: Terminal::Failed,
+                reason: "failed",
+            }),
         }
     }
 
@@ -892,10 +946,11 @@ mod live_session_tests {
             source_app_name: Some("TextEdit".into()),
         };
         let mut announce = FakeAnnouncer::default();
-        let terminal = session
+        let persisted = session
             .persist_selection(&host, &mut announce, false)
             .expect("persist");
-        assert_eq!(terminal, Terminal::Saved);
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert_eq!(persisted.reason, "ok");
         let overview = session.list_overview().expect("overview");
         assert_eq!(overview.len(), 1);
         assert_eq!(overview[0].body, "  captured  ");
@@ -931,7 +986,8 @@ mod live_session_tests {
         let terminal = session
             .persist_selection(&empty, &mut announce, false)
             .expect("empty");
-        assert_eq!(terminal, Terminal::Rejected);
+        assert_eq!(terminal.terminal, Terminal::Rejected);
+        assert_eq!(terminal.reason, "no_selection");
         assert!(session.list_overview().expect("none").is_empty());
         assert!(announce.keys.is_empty());
 
@@ -952,8 +1008,20 @@ mod live_session_tests {
         let terminal = session
             .persist_selection(&secret, &mut announce, false)
             .expect("secure");
-        assert_eq!(terminal, Terminal::Rejected);
+        assert_eq!(terminal.terminal, Terminal::Rejected);
+        assert_eq!(terminal.reason, "protected");
         assert!(session.list_overview().expect("still none").is_empty());
         assert!(!format!("{terminal:?}").contains("hunter2"));
+    }
+
+    #[test]
+    fn capture_result_dto_maps_terminal_without_body() {
+        let dto = CaptureResultDto::from_persist(CapturePersistOutcome {
+            terminal: Terminal::Rejected,
+            reason: "no_selection",
+        });
+        assert_eq!(dto.terminal, "rejected");
+        assert_eq!(dto.reason, "no_selection");
+        assert!(!format!("{dto:?}").contains("secret"));
     }
 }

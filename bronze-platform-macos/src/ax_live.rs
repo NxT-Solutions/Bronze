@@ -28,7 +28,7 @@ pub fn classify_ax_role(role: &str, subrole: &str) -> AxProtection {
         return AxProtection::Protected;
     }
     match role {
-        "AXTextField" | "AXTextArea" | "AXStaticText" | "AXWebArea" | "AXText" => {
+        "AXTextField" | "AXTextArea" | "AXStaticText" | "AXWebArea" | "AXText" | "AXComboBox" => {
             AxProtection::AllowedText
         }
         "AXApplication" | "AXWindow" | "AXGroup" | "AXScrollArea" | "AXLayoutArea"
@@ -92,6 +92,12 @@ mod sys {
         ) -> i32;
         pub fn AXUIElementGetPid(element: AxUiElementRef, pid: *mut i32) -> i32;
         pub fn AXUIElementCreateApplication(pid: i32) -> AxUiElementRef;
+        pub fn AXUIElementCopyParameterizedAttributeValue(
+            element: AxUiElementRef,
+            attribute: CfStringRef,
+            parameter: CfTypeRef,
+            value: *mut CfTypeRef,
+        ) -> i32;
     }
 
     extern "C" {
@@ -182,24 +188,56 @@ mod sys {
         super::LAST_EXTERNAL_PID.store(pid, std::sync::atomic::Ordering::SeqCst);
     }
 
-    pub fn selected_text(element: AxUiElementRef) -> Result<Option<String>, super::LiveAxOutcome> {
-        let Some(selected) = copy_attr(element, "AXSelectedText") else {
-            return Ok(None);
+    pub fn copy_param(
+        element: AxUiElementRef,
+        name: &str,
+        parameter: CfTypeRef,
+    ) -> Option<CfTypeRef> {
+        let attr = cf_string(name)?;
+        let mut out = std::ptr::null();
+        let status = unsafe {
+            AXUIElementCopyParameterizedAttributeValue(element, attr, parameter, &mut out)
         };
-        let text = match cf_string_to_owned(selected) {
+        unsafe { CFRelease(attr) };
+        if status != AX_SUCCESS || out.is_null() {
+            None
+        } else {
+            Some(out)
+        }
+    }
+
+    pub fn take_text(value: CfTypeRef) -> Result<Option<String>, super::LiveAxOutcome> {
+        let text = match cf_string_to_owned(value) {
             Ok(text) => text,
             Err(()) => {
-                unsafe { CFRelease(selected) };
+                unsafe { CFRelease(value) };
                 return Err(super::LiveAxOutcome::InvalidTextEncoding);
             }
         };
-        unsafe { CFRelease(selected) };
+        unsafe { CFRelease(value) };
         if text.is_empty() {
             Ok(None)
         } else if text.len() > super::LIVE_AX_MAX_BYTES {
             Err(super::LiveAxOutcome::SelectionTooLarge)
         } else {
             Ok(Some(text))
+        }
+    }
+
+    pub fn selected_text(element: AxUiElementRef) -> Result<Option<String>, super::LiveAxOutcome> {
+        if let Some(selected) = copy_attr(element, "AXSelectedText") {
+            if let Some(text) = take_text(selected)? {
+                return Ok(Some(text));
+            }
+        }
+        let Some(range) = copy_attr(element, "AXSelectedTextRange") else {
+            return Ok(None);
+        };
+        let parameterized = copy_param(element, "AXStringForRange", range);
+        unsafe { CFRelease(range) };
+        match parameterized {
+            Some(value) => take_text(value),
+            None => Ok(None),
         }
     }
 
@@ -307,26 +345,14 @@ fn read_system_focused() -> (LiveAxOutcome, Option<String>, Option<String>) {
 }
 
 #[cfg(target_os = "macos")]
+fn frontmost_pid() -> i32 {
+    unsafe { crate::abi::bronze_native_frontmost_pid() }
+}
+
+#[cfg(target_os = "macos")]
 pub fn note_external_focus() {
-    use sys::{
-        copy_attr, pid_for_element, remember_external_pid, AXUIElementCreateSystemWide, CFRelease,
-    };
-    if trusted_or_denied().is_some() {
-        return;
-    }
-    let system = unsafe { AXUIElementCreateSystemWide() };
-    if system.is_null() {
-        return;
-    }
-    let focused = copy_attr(system, "AXFocusedUIElement");
-    unsafe { CFRelease(system.cast()) };
-    let Some(focused) = focused else {
-        return;
-    };
-    if let Some(pid) = pid_for_element(focused.cast_mut()) {
-        remember_external_pid(pid);
-    }
-    unsafe { CFRelease(focused) };
+    use sys::remember_external_pid;
+    remember_external_pid(frontmost_pid());
 }
 
 #[cfg(target_os = "macos")]
@@ -409,6 +435,10 @@ mod ax_live_tests {
     fn classify_roles_and_skip_bronze_process_names() {
         assert_eq!(
             classify_ax_role("AXTextArea", ""),
+            AxProtection::AllowedText
+        );
+        assert_eq!(
+            classify_ax_role("AXComboBox", ""),
             AxProtection::AllowedText
         );
         assert_eq!(classify_ax_role("AXWebArea", ""), AxProtection::AllowedText);

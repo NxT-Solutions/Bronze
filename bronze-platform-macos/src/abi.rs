@@ -88,6 +88,7 @@ extern "C" {
     pub fn bronze_native_event_tap_test_feed(kind: u32, carbon_key: i32, time_ns: u64) -> u32;
     pub fn bronze_native_event_tap_test_disable() -> u32;
     pub fn bronze_native_event_tap_test_enqueue_from_caller(kind: u32) -> u32;
+    pub fn bronze_native_frontmost_pid() -> i32;
     pub fn bronze_native_ingress_publish(
         target_pid: i32,
         bundle_token: u64,
