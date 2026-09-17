@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  parseConstrainedDocument,
   parseConstrainedMarkdown,
   renderMarkdownBody,
 } from "./markdown-body.mjs";
@@ -156,6 +157,22 @@ test("renderMarkdownBody uses elements for emphasis and text for leaked HTML", (
   assert.deepEqual(tagsUnder(target), ["strong"]);
   assert.equal(target.textContent, "Hello <script>alert(1)</script>");
   assert.equal(target.querySelector("a"), null);
+});
+
+test("line-start markers become lists and leaked HTML stays text", () => {
+  const doc = createDocument();
+  const target = doc.createElement("div");
+  const listed = parseConstrainedDocument("- one\n- **two**\n*italic*");
+  assert.equal(listed[0].type, "ul");
+  assert.equal(listed[0].items.length, 2);
+  renderMarkdownBody(target, "- one\n- **two**");
+  assert.deepEqual(tagsUnder(target), ["ul", "li", "li", "strong"]);
+  assert.equal(target.querySelector("strong").textContent, "two");
+  renderMarkdownBody(target, "1. first\n2. second");
+  assert.deepEqual(tagsUnder(target), ["ol", "li", "li"]);
+  renderMarkdownBody(target, "- <script>alert(1)</script>");
+  assert.equal(target.querySelector("script"), null);
+  assert.match(target.textContent, /<script>alert\(1\)<\/script>/);
 });
 
 test("missing document is unavailable rather than assigned as HTML", () => {

@@ -24,12 +24,29 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\[data-slot="source"\]\[hidden\]/);
   assert.match(chrome, /article:not\(\.is-expanded\)\s*\[data-slot="body"\]/);
   assert.match(chrome, /\[data-slot="body"\][\s\S]*white-space:\s*pre-wrap/);
-  assert.match(chrome, /-webkit-line-clamp:\s*3/);
-  assert.doesNotMatch(chrome, /article p\s*\{[^}]*-webkit-line-clamp/);
+  assert.match(chrome, /\[data-slot="body"\][\s\S]*tab-size:\s*4/);
+  assert.match(
+    chrome,
+    /article:not\(\.is-expanded\)\s*\[data-slot="body"\][\s\S]*max-height:\s*calc\(1\.45em \* 3\)/,
+  );
+  assert.doesNotMatch(chrome, /-webkit-line-clamp/);
+  assert.doesNotMatch(chrome, /-webkit-box-orient/);
+  assert.match(
+    chrome,
+    /\[data-slot="source-icon"\][\s\S]*object-fit:\s*contain/,
+  );
+  assert.match(
+    chrome,
+    /\[data-slot="source-icon"\][\s\S]*background:\s*transparent/,
+  );
   assert.match(chrome, /\.empty-state\[hidden\]/);
   assert.match(chrome, /#composer-error\[hidden\]/);
   assert.match(chrome, /#capture-status\[hidden\]/);
+  assert.match(chrome, /#action-status\[hidden\]/);
   assert.match(chrome, /\[data-capture-message\]\[hidden\]/);
+  assert.match(chrome, /cursor:\s*pointer/);
+  assert.match(chrome, /\[aria-busy="true"\]/);
+  assert.match(chrome, /article \[data-slot="body"\] ul/);
   assert.match(chrome, /appearance:\s*none/);
   assert.match(chrome, /160ms ease/);
   assert.doesNotMatch(

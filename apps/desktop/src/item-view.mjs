@@ -1,5 +1,65 @@
 import { renderMarkdownBody } from "./markdown-body.mjs";
 
+const PNG_DATA_PREFIX = "data:image/png;base64,";
+
+export function formatCaptureSource(template, appName) {
+  if (typeof appName !== "string") {
+    return null;
+  }
+  const name = appName.trim();
+  if (
+    name.length === 0 ||
+    typeof template !== "string" ||
+    !template.includes("{appName}")
+  ) {
+    return null;
+  }
+  return template.replaceAll("{appName}", name);
+}
+
+export function sourceIconSrc(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  if (!value.startsWith(PNG_DATA_PREFIX)) {
+    return null;
+  }
+  if (/https?:|file:|javascript:/i.test(value)) {
+    return null;
+  }
+  if (value.length <= PNG_DATA_PREFIX.length) {
+    return null;
+  }
+  return value;
+}
+
+export function applySourceRow(article, formattedLabel, iconSrc) {
+  const source = article?.querySelector("[data-slot=source]");
+  if (!source) {
+    return;
+  }
+  const labelEl = source.querySelector("[data-slot=source-label]") ?? source;
+  if (!formattedLabel) {
+    source.hidden = true;
+    return;
+  }
+  labelEl.textContent = formattedLabel;
+  source.hidden = false;
+  const img = source.querySelector("[data-slot=source-icon]");
+  if (!img) {
+    return;
+  }
+  const safe = sourceIconSrc(iconSrc);
+  if (safe) {
+    img.src = safe;
+    img.hidden = false;
+  } else {
+    img.removeAttribute?.("src");
+    img.src = "";
+    img.hidden = true;
+  }
+}
+
 export function readExpandLabels(root) {
   const more = root?.querySelector("[data-slot=expand]");
   const less = root?.querySelector("[data-slot=show-less]");

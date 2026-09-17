@@ -1,9 +1,14 @@
+import { applyActionStatus, runBusy } from "./control.mjs";
 import {
+  applySourceRow,
   fillItemChrome,
+  formatCaptureSource,
   readExpandLabels,
   syncExpandVisibility,
 } from "./item-view.mjs";
 import { tauriInvoke } from "./tauri-bridge.mjs";
+
+export { formatCaptureSource };
 
 export const QUE_007_COMPLETE = false;
 
@@ -69,21 +74,6 @@ export function applyCaptureResult(root, result) {
   status.hidden = text.length === 0;
 }
 
-export function formatCaptureSource(template, appName) {
-  if (typeof appName !== "string") {
-    return null;
-  }
-  const name = appName.trim();
-  if (
-    name.length === 0 ||
-    typeof template !== "string" ||
-    !template.includes("{appName}")
-  ) {
-    return null;
-  }
-  return template.replaceAll("{appName}", name);
-}
-
 export function renderQueueItems(list, items, template) {
   const labels = readExpandLabels(template.content);
   list.replaceChildren();
@@ -93,15 +83,13 @@ export function renderQueueItems(list, items, template) {
     const article = node.querySelector("article");
     fillItemChrome(article, item, labels);
     const source = node.querySelector("[data-slot=source]");
-    if (source) {
-      const label = formatCaptureSource(source.textContent, item.sourceAppName);
-      if (label) {
-        source.textContent = label;
-        source.hidden = false;
-      } else {
-        source.hidden = true;
-      }
-    }
+    const labelNode =
+      source?.querySelector("[data-slot=source-label]") ?? source;
+    const label = formatCaptureSource(
+      labelNode?.textContent,
+      item.sourceAppName,
+    );
+    applySourceRow(article, label, item.sourceAppIcon);
     node.querySelectorAll("[data-queue-action]").forEach((button) => {
       button.dataset.itemId = item.id;
     });
@@ -148,13 +136,15 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     if (composerShouldSubmit(event)) {
-      addFromComposer();
+      const submit = form.querySelector("[type=submit]");
+      runBusy(submit, addFromComposer);
     }
   });
   textarea.addEventListener("keydown", (event) => {
     if (composerShouldSubmit(event)) {
       event.preventDefault();
-      addFromComposer();
+      const submit = form.querySelector("[type=submit]");
+      runBusy(submit, addFromComposer);
     }
   });
 
@@ -168,23 +158,30 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (!id || !action) {
       return;
     }
-    if (action === "copy") {
-      await invokeFn("copy_queue_items", {
-        itemIds: [id],
-        profile: profile?.value ?? "plain",
-      });
-      return;
-    }
-    if (action === "edit") {
-      const next = root.defaultView?.prompt?.("", "") ?? "";
-      if (next) {
-        await invokeFn("edit_queue_item", { id, body: next });
-        await refresh();
+    await runBusy(button, async () => {
+      if (action === "copy") {
+        try {
+          await invokeFn("copy_queue_items", {
+            itemIds: [id],
+            profile: profile?.value ?? "plain",
+          });
+          applyActionStatus(root, "copy.announce.copied");
+        } catch {
+          applyActionStatus(root, "copy.announce.failed");
+        }
+        return;
       }
-      return;
-    }
-    await invokeFn("apply_queue_item_action", { id, action });
-    await refresh();
+      if (action === "edit") {
+        const next = root.defaultView?.prompt?.("", "") ?? "";
+        if (next) {
+          await invokeFn("edit_queue_item", { id, body: next });
+          await refresh();
+        }
+        return;
+      }
+      await invokeFn("apply_queue_item_action", { id, action });
+      await refresh();
+    });
   });
 
   listenQueueChanged(() => {

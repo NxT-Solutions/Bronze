@@ -29,4 +29,9 @@ test("library items sanitize markdown and keep a title plus expand reader", () =
   assert.match(html, /data-slot="expand"/);
   assert.match(html, /data-i18n="queue.item.showMore"/);
   assert.match(html, /data-i18n="queue.item.showLess"/);
+  assert.match(html, /data-slot="source"/);
+  assert.match(html, /data-slot="source-icon"/);
+  assert.match(live, /applySourceRow/);
+  assert.match(live, /sourceAppIcon/);
+  assert.match(live, /runBusy/);
 });

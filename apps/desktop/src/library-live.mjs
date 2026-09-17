@@ -1,5 +1,8 @@
+import { runBusy } from "./control.mjs";
 import {
+  applySourceRow,
   fillItemChrome,
+  formatCaptureSource,
   readExpandLabels,
   syncExpandVisibility,
 } from "./item-view.mjs";
@@ -43,6 +46,14 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
         const node = template.content.firstElementChild.cloneNode(true);
         const article = node.querySelector("article");
         fillItemChrome(article, item, labels);
+        const source = node.querySelector("[data-slot=source]");
+        const labelNode =
+          source?.querySelector("[data-slot=source-label]") ?? source;
+        const label = formatCaptureSource(
+          labelNode?.textContent,
+          item.sourceAppName,
+        );
+        applySourceRow(article, label, item.sourceAppIcon);
         list.append(node);
         syncExpandVisibility(article);
       }
@@ -58,38 +69,39 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
     });
   });
 
-  root
-    .querySelector("[data-i18n='library.backup.now']")
-    ?.addEventListener("click", async () => {
-      const path = await invokeFn("backup_library_now", {
-        requestedPath: null,
-      });
-      if (status) {
-        status.textContent = path;
-      }
+  function bindBusyClick(selector, work) {
+    const button = root.querySelector(selector);
+    button?.addEventListener("click", () => {
+      runBusy(button, work);
     });
-  root
-    .querySelector("[data-i18n='library.export']")
-    ?.addEventListener("click", async () => {
-      const path = await invokeFn("export_library_archive", {
-        requestedPath: null,
-      });
-      if (status) {
-        status.textContent = path;
-      }
+  }
+
+  bindBusyClick("[data-i18n='library.backup.now']", async () => {
+    const path = await invokeFn("backup_library_now", {
+      requestedPath: null,
     });
-  root
-    .querySelector("[data-i18n='library.import']")
-    ?.addEventListener("click", async () => {
-      const imported = await invokeFn("import_library_archive", {
-        snapshot: null,
-        requestedPath: null,
-      });
-      if (status) {
-        status.textContent = announceCount(imported);
-      }
-      await refresh(search?.value ?? "");
+    if (status) {
+      status.textContent = path;
+    }
+  });
+  bindBusyClick("[data-i18n='library.export']", async () => {
+    const path = await invokeFn("export_library_archive", {
+      requestedPath: null,
     });
+    if (status) {
+      status.textContent = path;
+    }
+  });
+  bindBusyClick("[data-i18n='library.import']", async () => {
+    const imported = await invokeFn("import_library_archive", {
+      snapshot: null,
+      requestedPath: null,
+    });
+    if (status) {
+      status.textContent = announceCount(imported);
+    }
+    await refresh(search?.value ?? "");
+  });
 
   try {
     await refresh("");

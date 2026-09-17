@@ -1,3 +1,4 @@
+import { runBusy } from "./control.mjs";
 import { showChromeWindow, tauriInvoke } from "./tauri-bridge.mjs";
 
 export function applySettingsForm(root, settings) {
@@ -54,27 +55,29 @@ export async function bindSettingsLive(
     ?.addEventListener("change", persist);
 
   root.querySelectorAll("[data-reset-field]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const fieldId = button.getAttribute("data-reset-field");
-      settings = await invokeFn("reset_settings_field", { fieldId });
-      applySettingsForm(root, settings);
+    button.addEventListener("click", () => {
+      runBusy(button, async () => {
+        const fieldId = button.getAttribute("data-reset-field");
+        settings = await invokeFn("reset_settings_field", { fieldId });
+        applySettingsForm(root, settings);
+      });
     });
   });
-  root
-    .querySelector("[data-reset-group]")
-    ?.addEventListener("click", async () => {
-      const group = root
-        .querySelector("[data-reset-group]")
-        .getAttribute("data-reset-group");
+  const resetGroup = root.querySelector("[data-reset-group]");
+  resetGroup?.addEventListener("click", () => {
+    runBusy(resetGroup, async () => {
+      const group = resetGroup.getAttribute("data-reset-group");
       settings = await invokeFn("reset_settings_group", { group });
       applySettingsForm(root, settings);
     });
-  root
-    .querySelector("[data-reset-all]")
-    ?.addEventListener("click", async () => {
+  });
+  const resetAll = root.querySelector("[data-reset-all]");
+  resetAll?.addEventListener("click", () => {
+    runBusy(resetAll, async () => {
       settings = await invokeFn("reset_settings_all");
       applySettingsForm(root, settings);
     });
+  });
 
   const search = root.querySelector("#settings-search");
   search?.addEventListener("input", async () => {
@@ -91,10 +94,12 @@ export async function bindSettingsLive(
 
   root.querySelectorAll("[data-open-window]").forEach((button) => {
     button.addEventListener("click", () => {
-      const kind = button.getAttribute("data-open-window");
-      if (kind) {
-        showChromeWindow(kind, invokeFn);
-      }
+      runBusy(button, async () => {
+        const kind = button.getAttribute("data-open-window");
+        if (kind) {
+          await showChromeWindow(kind, invokeFn);
+        }
+      });
     });
   });
 }

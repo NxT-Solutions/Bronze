@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   applyExpandState,
+  applySourceRow,
   fillItemChrome,
+  formatCaptureSource,
   readExpandLabels,
+  sourceIconSrc,
   syncExpandVisibility,
 } from "./item-view.mjs";
 
@@ -61,11 +64,24 @@ function createDocument() {
         children.length = 0;
         children.push(...nodes);
       },
+      src: "",
       setAttribute(name, value) {
         attrs[name] = String(value);
+        if (name === "src") {
+          el.src = String(value);
+        }
       },
       getAttribute(name) {
+        if (name === "src") {
+          return el.src || null;
+        }
         return Object.hasOwn(attrs, name) ? attrs[name] : null;
+      },
+      removeAttribute(name) {
+        delete attrs[name];
+        if (name === "src") {
+          el.src = "";
+        }
       },
       addEventListener(type, handler) {
         listeners.push({ type, handler });
@@ -163,7 +179,17 @@ function articleFixture(doc) {
   less.dataset.slot = "show-less";
   less.textContent = "Show less";
   less.hidden = true;
-  article.append(title, body, expand, less);
+  const source = doc.createElement("p");
+  source.dataset.slot = "source";
+  source.hidden = true;
+  const icon = doc.createElement("img");
+  icon.dataset.slot = "source-icon";
+  icon.hidden = true;
+  const label = doc.createElement("span");
+  label.dataset.slot = "source-label";
+  label.textContent = "From {appName}";
+  source.append(icon, label);
+  article.append(title, body, expand, less, source);
   return article;
 }
 
@@ -236,4 +262,39 @@ test("expand button stays hidden until the body overflows", () => {
   body.clientHeight = 20;
   syncExpandVisibility(article);
   assert.equal(button.hidden, false);
+});
+
+test("source icon accepts only rust png data urls", () => {
+  assert.equal(
+    sourceIconSrc("data:image/png;base64,abc"),
+    "data:image/png;base64,abc",
+  );
+  assert.equal(sourceIconSrc("https://example.com/cursor.png"), null);
+  assert.equal(sourceIconSrc("data:image/png;base64,http://evil"), null);
+  assert.equal(sourceIconSrc("data:image/svg+xml;base64,abc"), null);
+  assert.equal(sourceIconSrc(""), null);
+});
+
+test("source row shows catalog name and optional official icon", () => {
+  const doc = createDocument();
+  const article = articleFixture(doc);
+  applySourceRow(
+    article,
+    formatCaptureSource("From {appName}", "Cursor"),
+    "data:image/png;base64,abc",
+  );
+  const source = article.querySelector("[data-slot=source]");
+  const icon = article.querySelector("[data-slot=source-icon]");
+  assert.equal(source.hidden, false);
+  assert.equal(
+    source.querySelector("[data-slot=source-label]").textContent,
+    "From Cursor",
+  );
+  assert.equal(icon.hidden, false);
+  assert.equal(icon.src, "data:image/png;base64,abc");
+  applySourceRow(article, "From Ghostty", "https://cdn.example/icon.png");
+  assert.equal(icon.hidden, true);
+  assert.equal(icon.src, "");
+  applySourceRow(article, null, "data:image/png;base64,abc");
+  assert.equal(source.hidden, true);
 });

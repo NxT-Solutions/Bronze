@@ -20,4 +20,9 @@ test("copy toolbar uses a named profile and has no synthetic paste", () => {
   assert.doesNotMatch(html, /synthetic[- ]paste/i);
   assert.equal(en["copy.action.copy"], "Copy");
   assert.equal(en["copy.profile.label"], "Output profile");
+  assert.equal(en["copy.announce.copied"], "Copied to the clipboard.");
+  assert.equal(
+    en["copy.announce.failed"],
+    "Copy did not write to the clipboard.",
+  );
 });

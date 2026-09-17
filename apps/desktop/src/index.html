@@ -47,6 +47,14 @@
         <p hidden data-capture-message="failed" data-i18n="capture.announce.failed">
           Capture did not save.
         </p>
+        <p id="action-status" hidden role="status"></p>
+        <p hidden data-action-message data-i18n="copy.announce.copied">
+          Copied to the clipboard.
+        </p>
+        <p hidden data-action-message data-i18n="copy.announce.failed">
+          Copy did not write to the clipboard.
+        </p>
+        <p hidden data-action-message data-i18n="action.working">Working</p>
       </form>
       <p id="queue-empty" class="empty-state" data-i18n="panel.empty">
         Select text and Capture, or type here.
@@ -61,8 +69,9 @@
               Show more
             </button>
             <span hidden data-slot="show-less" data-i18n="queue.item.showLess">Show less</span>
-            <p class="muted" data-slot="source" data-i18n="capture.source" hidden>
-              From {appName}
+            <p class="muted" data-slot="source" hidden>
+              <img data-slot="source-icon" alt="" width="16" height="16" hidden />
+              <span data-slot="source-label" data-i18n="capture.source">From {appName}</span>
             </p>
             <div class="row-actions">
               <button type="button" class="btn-primary" data-queue-action="copy" data-i18n="copy.action.copy">
