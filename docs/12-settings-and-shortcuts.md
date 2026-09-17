@@ -219,7 +219,7 @@ Health statuses are not booleans: `unknown`, `not_requested`, `denied`, `granted
 
 `privacy.excludedBundleIds` is a list of stable bundle IDs. Settings Privacy is a searchable multi-select of apps installed on this Mac (CAP-009): the operator adds many apps from that list, not a free-text bundle dump. Copy states that Bronze will not capture selections from those apps. The list IPC returns bundle ID and display name only; WebView never receives filesystem paths (SEC-001). Official icons come from the local app via `app_icon_data_url`. If the installed-app list is unavailable, add is disabled and already-saved IDs remain removable.
 
-Live capture peeks the last-external bundle ID and returns `app_excluded` before any AX selection read when that bundle is on the list (F-CAP-01). Event-tap callbacks do not list apps or read icons.
+Live capture peeks the last-external bundle ID and returns `app_excluded` before any AX selection read when that bundle is on the list (F-CAP-01). That terminal delivers catalog `capture.announce.excluded` as a Notification Center banner and `#chrome-notice`, never captured text. Event-tap callbacks do not list apps, read icons, or post notices.
 
 Application policy picker lists installed/running app metadata without scanning content. Per stable bundle ID it also controls synthetic fallback and provenance. Unknown/missing/changed bundle IDs inherit capture setting but deny synthetic fallback and provenance by default until user confirms. Built-in recommended exclusions: password managers, authentication tools, Terminal/iTerm secure-input contexts, banking/health apps where identifiable; user confirms rather than hidden defaults.
 

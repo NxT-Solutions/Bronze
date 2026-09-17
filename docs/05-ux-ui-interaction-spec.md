@@ -100,15 +100,14 @@ Do not intercept VoiceOver, system, text editing, or IME chords. Shortcut resolv
 Stage feedback must be immediate but not noisy:
 
 - Trigger acknowledged: optional brief haptic/sound/visual, each independently configurable.
-- Success: non-focus-stealing `#capture-status` plus native `NSAccessibility.post(..., notification: .announcementRequested, userInfo: [.announcement, .priority])` announcement, catalog `capture.announce.saved` (“Captured to Bronze.”). Use localized text and medium priority; test against source-focus preservation. WebView live region is used only when Bronze window is active; hidden/background WKWebView announcement is not trusted. [Apple announcement API](https://developer.apple.com/documentation/appkit/nsaccessibility-swift.struct/notification/announcementrequested)
-- No selection: visible `#capture-status`, catalog `capture.announce.rejected` (“No selection was captured; select text in another app.”).
-- Permission: visible `#capture-status`, catalog `capture.announce.denied` (“Accessibility is required to read the selection.”). Settings permission health still offers Retest and Open System Settings; the composer stays available.
-- Secure field: catalog `capture.announce.protected` (“That field is protected and was not captured.”). No source/content details.
+- Success and every other capture terminal: rust delivers a Notification Center banner via AppKit `NSUserNotification` (not `UNUserNotificationCenter`) plus `NSAccessibility.post(..., notification: .announcementRequested)` using catalog `app.name` / `panel.quick.title` and `capture.announce.saved|rejected|denied|protected|failed|excluded`. Title and body are catalog strings only — never the captured selection, a path, or diagnostics. Event-tap does not post notices. [Apple announcement API](https://developer.apple.com/documentation/appkit/nsaccessibility-swift.struct/notification/announcementrequested)
+- `#capture-status` is a visually hidden live region. When the queue WebView is open, `#chrome-notice` (`position: fixed`) also shows that catalog line so a scrolled inbox is not the only clue. Composer add failure uses the same notice (`composer.add.error`) and stays out of the scroll flow. This is not a composer dump.
+- Permission denial still offers Retest and Open System Settings; the composer stays available.
+- Secure field and excluded app: catalog `capture.announce.protected` / `capture.announce.excluded`. No source/content details in the banner.
 - Busy: queued position or progress, never silent drop.
-- Failure: catalog `capture.announce.failed` (“Capture did not save.”). Raw details stay in redacted diagnostics.
-- Copy and other queue actions set `aria-busy` with a visible spinner on the control, pointer/hover/active states on every clickable control, and `#action-status` catalog `copy.announce.copied` / `copy.announce.failed` after pasteboard write.
+- Copy and other queue actions set `aria-busy` with a visible spinner on the control, pointer/hover/active states on every clickable control, a tip on the control, and `#action-status` catalog `copy.announce.copied` / `copy.announce.failed` after pasteboard write. Copy does not post a Notification Center banner.
 
-Toasts do not contain sole copy of critical recovery action; persistent status center keeps last result.
+Toasts do not contain sole copy of critical recovery action; Notification Center plus `#chrome-notice` keep the last no-anchor result visible when the queue is scrolled or Bronze is in the background.
 
 ## 8. First-run onboarding
 

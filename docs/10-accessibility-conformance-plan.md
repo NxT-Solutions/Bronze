@@ -70,7 +70,7 @@ Each journey must pass keyboard-only, VoiceOver, Voice Control, and Switch Contr
 - Completion checkbox label includes item summary; selection checkbox has distinct wording.
 - Dialog: name/description, initial focus, modal/inert background, Escape, focus restoration.
 - Menu: correct menu/menuitem roles only when desktop menu keyboard behavior fully implemented; otherwise use labeled popover with buttons.
-- Toast/status: `role=status`/polite region for routine result; alert only for urgent blocking error. Critical actions persist outside toast.
+- Toast/status: `role=status`/polite region for routine result; alert only for urgent blocking error. Capture terminals also post a Notification Center banner (`NSUserNotification`) and viewport-fixed `#chrome-notice`; `#capture-status` stays visually hidden. Critical actions persist outside toast.
 - Tooltip never sole label/instruction. Authored hover/focus content is keyboard- and pointer-accessible, dismissible without moving focus/pointer unless WCAG exception applies, hoverable, and persistent until dismissed, trigger leaves, or information becomes invalid, satisfying WCAG 1.4.13.
 - For WCAG 2.5.3 and Voice Control, accessible name contains exact visible control text, preferably as prefix. Do not replace visible wording with divergent `aria-label` text.
 - Icon-only controls have programmatic and localized accessible names.
