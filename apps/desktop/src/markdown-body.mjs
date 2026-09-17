@@ -212,7 +212,11 @@ function documentToNodes(doc, blocks) {
   const nodes = [];
   for (const block of blocks) {
     if (block.type === "paragraph") {
-      nodes.push(...astToNodes(doc, block.children));
+      const paragraph = doc.createElement("p");
+      for (const child of astToNodes(doc, block.children)) {
+        appendChild(paragraph, child);
+      }
+      nodes.push(paragraph);
       continue;
     }
     const list = doc.createElement(block.type === "ol" ? "ol" : "ul");

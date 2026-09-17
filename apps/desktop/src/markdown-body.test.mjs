@@ -138,23 +138,23 @@ test("renderMarkdownBody uses elements for emphasis and text for leaked HTML", (
   const doc = createDocument();
   const target = doc.createElement("div");
   renderMarkdownBody(target, "**Hello**");
-  assert.deepEqual(tagsUnder(target), ["strong"]);
+  assert.deepEqual(tagsUnder(target), ["p", "strong"]);
   assert.equal(target.querySelector("strong").textContent, "Hello");
   assert.equal(target.querySelector("script"), null);
   assert.equal(target.querySelector("img"), null);
 
   renderMarkdownBody(target, "<script>alert(1)</script>");
   assert.equal(target.textContent, "<script>alert(1)</script>");
-  assert.deepEqual(tagsUnder(target), []);
+  assert.deepEqual(tagsUnder(target), ["p"]);
   assert.equal(target.querySelector("script"), null);
 
   renderMarkdownBody(target, '<img onerror="alert(1)">');
   assert.equal(target.textContent, '<img onerror="alert(1)">');
-  assert.deepEqual(tagsUnder(target), []);
+  assert.deepEqual(tagsUnder(target), ["p"]);
   assert.equal(target.querySelector("img"), null);
 
   renderMarkdownBody(target, "**Hello** <script>alert(1)</script>");
-  assert.deepEqual(tagsUnder(target), ["strong"]);
+  assert.deepEqual(tagsUnder(target), ["p", "strong"]);
   assert.equal(target.textContent, "Hello <script>alert(1)</script>");
   assert.equal(target.querySelector("a"), null);
 });
@@ -177,7 +177,7 @@ test("line-start markers become lists and leaked HTML stays text", () => {
     target,
     "today's versions:• Follo Studio 0.2.21• The follo command 0.1.7",
   );
-  assert.deepEqual(tagsUnder(target), ["ul", "li", "li"]);
+  assert.deepEqual(tagsUnder(target), ["p", "ul", "li", "li"]);
   assert.match(target.textContent, /Follo Studio 0.2.21/);
 });
 

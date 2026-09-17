@@ -50,6 +50,18 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /button\.btn-primary:hover:not\(:disabled\)[\s\S]*--primary-foreground/,
   );
+  assert.match(
+    chrome,
+    /button\.btn-primary:disabled[\s\S]*--primary-foreground/,
+  );
+  assert.match(
+    chrome,
+    /button\.btn-primary\[aria-busy="true"\][\s\S]*--primary-foreground/,
+  );
+  assert.match(chrome, /\.row-actions menu[\s\S]*position:\s*absolute/);
+  assert.match(chrome, /\.row-actions menu[\s\S]*flex-direction:\s*column/);
+  assert.match(chrome, /summary::-webkit-details-marker/);
+  assert.match(chrome, /article \[data-slot="body"\] p/);
   assert.match(chrome, /article \[data-slot="body"\] ul/);
   assert.match(chrome, /appearance:\s*none/);
   assert.match(chrome, /160ms ease/);
