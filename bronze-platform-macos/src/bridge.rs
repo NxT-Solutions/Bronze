@@ -714,8 +714,12 @@ mod tests {
             "bronze_native_list_installed_apps",
             "bronze_native_pick_installed_app",
             "bronze_native_deliver_user_notice",
+            "bronze_native_notification_authorization_status",
+            "bronze_native_request_notification_authorization",
             "NSOpenPanel",
             "NSUserNotification",
+            "UNUserNotificationCenter",
+            "UserNotifications",
             "URLSession",
             "LanguageModel",
         ] {

@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "BronzeNative",
+    platforms: [.macOS(.v13)],
     products: [
         .library(name: "BronzeNative", type: .static, targets: ["BronzeNative"]),
     ],
@@ -13,6 +14,7 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("NaturalLanguage"),
                 .linkedFramework("AppKit"),
+                .linkedFramework("UserNotifications"),
             ]
         ),
         .testTarget(

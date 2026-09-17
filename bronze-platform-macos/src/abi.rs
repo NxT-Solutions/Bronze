@@ -134,4 +134,6 @@ extern "C" {
         title: BronzeNativeUtf8View,
         body: BronzeNativeUtf8View,
     ) -> u32;
+    pub fn bronze_native_notification_authorization_status() -> u32;
+    pub fn bronze_native_request_notification_authorization() -> u32;
 }

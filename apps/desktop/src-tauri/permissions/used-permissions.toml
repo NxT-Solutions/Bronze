@@ -9,6 +9,14 @@ description = "Open Privacy & Security panes for used permissions after a prompt
 commands.allow = ["open_privacy_settings"]
 
 [[permission]]
+identifier = "allow-notification-authorization"
+description = "Read and request Notification Center authorization when not denied"
+commands.allow = [
+  "notification_authorization_status",
+  "request_notification_authorization",
+]
+
+[[permission]]
 identifier = "allow-show-chrome-window"
 description = "Show the Library, Settings, or Help window from the Quick Panel"
 commands.allow = ["show_chrome_window"]

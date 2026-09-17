@@ -14,6 +14,8 @@ pub fn run() {
             .invoke_handler(tauri::generate_handler![
                 capture_permissions::retest_used_permissions,
                 capture_permissions::open_privacy_settings,
+                capture_permissions::notification_authorization_status,
+                capture_permissions::request_notification_authorization,
                 show_chrome_window,
                 live_session::list_queue_items,
                 live_session::list_overview_items,
@@ -203,6 +205,7 @@ fn start_native_or_die() {
             bronze_platform_macos::check_abi_version(version)
                 .expect("BronzeNative ABI mismatch is fail-closed (CAP-004)");
             let _ = capture_permissions::prompt_on_native_start();
+            let _ = capture_permissions::prompt_notification_if_undetermined();
             let _ = runtime.event_tap_start();
             let _ = runtime.event_tap_set_enabled(true);
             // Process-lifetime: dropping would shutdown the in-process static lib.
@@ -677,6 +680,9 @@ mod tests {
                 assert!(permissions
                     .iter()
                     .any(|permission| permission.as_str() == Some("allow-settings-live")));
+                assert!(permissions.iter().any(|permission| {
+                    permission.as_str() == Some("allow-notification-authorization")
+                }));
             } else if name == "quick" {
                 assert!(permissions
                     .iter()
@@ -853,6 +859,7 @@ mod tests {
         assert!(lib.contains("event_tap_set_enabled"));
         assert!(lib.contains("event_tap_drain_shared"));
         assert!(lib.contains("event_tap_start_shared"));
+        assert!(lib.contains("prompt_notification_if_undetermined"));
         assert!(lib.contains("note_external_focus"));
         assert!(lib.contains("capture-result"));
         assert!(lib.contains("on_menu_event"));

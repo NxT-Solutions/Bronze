@@ -63,5 +63,8 @@ mod packaging_tests {
         assert!(forbids_get_task_allow(&entitlements));
         assert!(entitlements.contains("app-sandbox"));
         assert!(entitlements.contains("<false/>"));
+        let info = fs::read_to_string(manifest.join("Info.plist")).unwrap();
+        assert!(info.contains("NSUserNotificationsUsageDescription"));
+        assert!(info.contains("local banner"));
     }
 }

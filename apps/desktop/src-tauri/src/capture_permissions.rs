@@ -43,6 +43,27 @@ pub fn prompt_on_native_start() -> PromptAttempt {
 }
 
 #[cfg(target_os = "macos")]
+pub fn prompt_notification_if_undetermined() -> bronze_platform_macos::NoticeAuthorization {
+    bronze_platform_macos::prompt_notification_authorization_if_needed()
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn notification_authorization_status() -> String {
+    bronze_platform_macos::notification_authorization_status()
+        .as_str()
+        .to_string()
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn request_notification_authorization() -> String {
+    bronze_platform_macos::request_notification_authorization()
+        .as_str()
+        .to_string()
+}
+
+#[cfg(target_os = "macos")]
 pub fn prompt_on_first_capture_path() -> Option<PromptAttempt> {
     use std::sync::atomic::{AtomicBool, Ordering};
     static DONE: AtomicBool = AtomicBool::new(false);
@@ -73,6 +94,9 @@ pub fn privacy_settings_open_target(capability: &str) -> Option<&'static str> {
         "accessibility" => bronze_settings::privacy_settings_url(
             bronze_settings::PermissionCapability::Accessibility,
         ),
+        "notifications" => {
+            Some("x-apple.systempreferences:com.apple.Notifications-Settings.extension")
+        }
         _ => None,
     }
 }
@@ -141,13 +165,18 @@ mod tests {
         assert_eq!(privacy_settings_open_target("automation"), None);
         assert!(privacy_settings_open_target("inputMonitoring").is_some());
         assert!(privacy_settings_open_target("accessibility").is_some());
+        assert!(privacy_settings_open_target("notifications").is_some());
     }
 
     #[test]
     fn desktop_start_requests_used_permissions_not_screen_recording() {
         let src = include_str!("lib.rs");
         assert!(src.contains("prompt_on_native_start"));
+        assert!(src.contains("prompt_notification_if_undetermined"));
         assert!(src.contains("prompt_on_first_capture_path"));
+        let used = include_str!("../permissions/used-permissions.toml");
+        assert!(used.contains("notification_authorization_status"));
+        assert!(used.contains("request_notification_authorization"));
         assert!(!src.contains("CGRequestScreenCaptureAccess"));
         assert!(!src.contains("NSScreenCapture"));
         let perms = include_str!("capture_permissions.rs");
@@ -155,6 +184,9 @@ mod tests {
             .split_once("#[cfg(test)]")
             .expect("production and tests");
         assert!(production.contains("PromptReason::NativeStart"));
+        assert!(production.contains("prompt_notification_if_undetermined"));
+        assert!(production.contains("notification_authorization_status"));
+        assert!(production.contains("request_notification_authorization"));
         assert!(production.contains("PromptReason::FirstCapture"));
         assert!(production.contains("PromptReason::HealthRetest"));
         assert!(!production.contains("CGRequestScreenCaptureAccess"));

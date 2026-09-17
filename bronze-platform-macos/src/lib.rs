@@ -55,7 +55,11 @@ pub use status_item::{
     STATUS_MENU_KEYS,
 };
 pub use title::native_item_title;
-pub use user_notice::{is_safe_notice_text, try_deliver_user_notice};
+pub use user_notice::{
+    is_safe_notice_text, notification_authorization_status,
+    prompt_notification_authorization_if_needed, request_notification_authorization,
+    try_deliver_user_notice, NoticeAuthorization,
+};
 
 #[cfg(test)]
 pub(crate) fn lock_native_runtime() -> std::sync::MutexGuard<'static, ()> {

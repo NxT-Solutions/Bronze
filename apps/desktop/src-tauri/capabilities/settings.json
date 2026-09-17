@@ -7,6 +7,7 @@
     "core:default",
     "allow-retest-used-permissions",
     "allow-open-privacy-settings",
+    "allow-notification-authorization",
     "allow-settings-live"
   ]
 }
