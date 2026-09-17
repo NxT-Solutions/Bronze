@@ -1,0 +1,22 @@
+---
+description: WCAG 2.2 for Bronze chrome — read wcag/ before UI or a11y work
+globs: apps/desktop/src/**/*.{html,css,mjs},packages/ui/**/*.{css,tsx,ts}
+alwaysApply: false
+---
+
+# WCAG 2.2
+
+Before changing chrome or accessibility, read `wcag/SKILL.md` and the
+surface in `wcag/screens.md`.
+
+- WebView target is WCAG 2.2 AA; take AAA when tokens or markup allow
+- Never claim WCAG, VoiceOver, or notarization without docs/evidence
+- Semantic controls; catalog strings; accessible name contains visible text
+- Text ≥4.5:1 (AA) and ≥7:1 where tokens allow (AAA)
+- UI / non-text / focus ≥3:1 (1.4.11)
+- Visible `:focus-visible`; skip link first; no keyboard trap
+- Targets ≥24×24 (AA). 44×44 is AAA Partial on compact Mac
+- `#action-status` stays SR-only; no `role="menu"` without full keyboard
+- No clickable `div`; no remote fonts
+
+Canonical files: `wcag/`. Adapters must not diverge.

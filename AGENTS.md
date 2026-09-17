@@ -79,7 +79,7 @@ hedgehog verify <task-id>
 
 An agent reporting success never moves a task — only a passing `hedgehog verify` does.
 
-Agent files: `.cursor/agents`. Skills: `.cursor/skills` and `.claude/skills`. Project context: `HEDGEHOG.md`. Design authority for chrome: `hig/`.
+Agent files: `.cursor/agents`. Skills: `.cursor/skills` and `.claude/skills`. Project context: `HEDGEHOG.md`. Design authority for chrome: `hig/`. Accessibility authority for WebView chrome: `wcag/`.
 
 | Agent | Use when | File |
 | --- | --- | --- |
@@ -102,5 +102,24 @@ library. Do not keep a second copy of these rules in a vendor folder.
 
 Applies on any Settings, Library, Help, queue, CSS, typography, motion,
 or “Apple-like” change.
+
+## WCAG 2.2 (all agents)
+
+Cursor, Claude Code, Codex, Grok, and any future OSS agent use the same
+library. Do not keep a second copy of these rules in a vendor folder.
+
+- Start: `wcag/SKILL.md`
+- POUR, criteria, tokens, surfaces: `wcag/principles.md`, `wcag/criteria.md`, `wcag/bronze.md`, `wcag/screens.md`
+- Adapter map: `wcag/README.md`
+- Cursor rule: `.cursor/rules/wcag.mdc` (chrome globs)
+- Cursor / Claude skills: `.cursor/skills/wcag/`, `.claude/skills/wcag/` (pointers only)
+- Claude Code entry: `CLAUDE.md`
+
+WebView target is WCAG 2.2 AA. Meet AAA where tokens or markup allow.
+Do not claim WCAG, VoiceOver, or notarization without `docs/evidence/`
+and human gate 9.3.
+
+Applies on any Settings, Library, Help, queue, CSS, contrast, focus,
+keyboard, label, or “WCAG / a11y” change.
 
 Do not run Hedgehog `full-stack-app` / `pwa-app` / `landing-page` cores. Bronze is the **adopted** core: keep Tauri 2, Rust, in-process Swift, and existing ADRs.
