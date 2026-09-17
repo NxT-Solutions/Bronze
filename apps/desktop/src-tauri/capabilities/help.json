@@ -3,5 +3,5 @@
   "description": "Capability for the help window",
   "local": true,
   "windows": ["help"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "allow-ui-catalog"]
 }

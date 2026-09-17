@@ -29,6 +29,7 @@ pub fn run() {
                 live_session::reset_settings_all,
                 live_session::search_settings_fields,
                 live_session::ui_locale,
+                live_session::ui_catalog,
                 live_session::backup_library_now,
                 live_session::export_library_archive,
                 live_session::import_library_archive,
@@ -76,9 +77,24 @@ fn show_chrome_window(app: tauri::AppHandle, kind: String) -> Result<(), String>
 }
 
 #[cfg(target_os = "macos")]
+fn ui_catalog_map(app: &tauri::AppHandle) -> std::collections::BTreeMap<String, String> {
+    use tauri::Manager;
+    let locale = app
+        .try_state::<std::sync::Mutex<live_session::LiveSession>>()
+        .map(|session| {
+            session
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .ui_locale()
+        })
+        .unwrap_or(live_session::HAND_TEST_UI_LOCALE);
+    crate::catalog::load_ui_catalog_map(&locales_root(), locale)
+}
+
+#[cfg(target_os = "macos")]
 fn install_chrome_menu(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
-    let map = load_locale_map(&locales_root(), "en");
+    let map = ui_catalog_map(app);
     let app_name = require_key(&map, "app.name").unwrap_or_else(|_| "Bronze".into());
     let library = require_key(&map, "library.title").unwrap_or_else(|_| "Library".into());
     let settings = require_key(&map, "settings.title").unwrap_or_else(|_| "Settings".into());
@@ -226,7 +242,7 @@ fn status_tray_menu(
 ) -> Result<tauri::menu::Menu<tauri::Wry>, Box<dyn std::error::Error>> {
     use tauri::menu::{MenuBuilder, MenuItem};
     use tauri::Manager;
-    let map = load_locale_map(&locales_root(), "en");
+    let map = ui_catalog_map(app);
     let capture = require_key(&map, "menu.status.capture").unwrap_or_else(|_| "Capture".into());
     let help = require_key(&map, "help.title").unwrap_or_else(|_| "Help".into());
     let quit = require_key(&map, "menu.status.quit").unwrap_or_else(|_| "Quit".into());
@@ -327,7 +343,7 @@ fn start_capture_pump(app: tauri::AppHandle) {
 #[cfg(target_os = "macos")]
 fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-    let map = load_locale_map(&locales_root(), "en");
+    let map = ui_catalog_map(app);
     let app_name = require_key(&map, "app.name").unwrap_or_else(|_| "Bronze".into());
     let menu = status_tray_menu(app)?;
     let mut tray = TrayIconBuilder::with_id(TRAY_ID)
@@ -467,8 +483,9 @@ pub use window_edge::{
 mod catalog;
 mod packaging;
 pub use catalog::{
-    catalog_dir, load_locale_map, locales_root, require_key, ADVERTISED_LOCALES,
-    INFOPLIST_GLOSSARY, NATIVE_GLOSSARY_KEYS, PANEL_CHROME_KEYS, WEBVIEW_GLOSSARY_KEYS,
+    catalog_dir, catalog_exists, html_lang, load_locale_map, load_ui_catalog_map, locales_root,
+    require_key, ADVERTISED_LOCALES, INFOPLIST_GLOSSARY, NATIVE_GLOSSARY_KEYS, PANEL_CHROME_KEYS,
+    SHIPPED_UI_LOCALES, WEBVIEW_GLOSSARY_KEYS,
 };
 pub use packaging::{
     forbids_get_task_allow, recorded_arch, sbom_stub, DG01_INTEL_SUPPORT, GET_TASK_ALLOW_FORBIDDEN,
@@ -560,6 +577,14 @@ mod tests {
                 assert!(permissions
                     .iter()
                     .any(|permission| permission.as_str() == Some("allow-library-live")));
+            } else if name == "help" {
+                assert_eq!(
+                    permissions,
+                    &vec![
+                        Value::String("core:default".into()),
+                        Value::String("allow-ui-catalog".into())
+                    ]
+                );
             } else {
                 assert_eq!(permissions, &vec![Value::String("core:default".into())]);
             }

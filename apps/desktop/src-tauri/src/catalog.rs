@@ -9,6 +9,32 @@ use crate::window_edge::TextDirection;
 
 pub const ADVERTISED_LOCALES: &[&str] = &["en", "en-XA", "ar-XB"];
 
+pub const SHIPPED_UI_LOCALES: &[&str] = &["en", "nl", "fr", "de", "es", "it", "en-XA", "ar-XB"];
+
+pub fn html_lang(locale: &str) -> &'static str {
+    match locale {
+        "nl" => "nl",
+        "fr" => "fr",
+        "de" => "de",
+        "es" => "es",
+        "it" => "it",
+        "ar-XB" => "ar",
+        _ => "en",
+    }
+}
+
+pub fn catalog_exists(locales_root: &Path, locale: &str) -> bool {
+    locales_root.join(locale).join("app.json").is_file()
+}
+
+pub fn load_ui_catalog_map(locales_root: &Path, locale: &str) -> BTreeMap<String, String> {
+    if catalog_exists(locales_root, locale) {
+        load_locale_map(locales_root, locale)
+    } else {
+        load_locale_map(locales_root, "en")
+    }
+}
+
 /// InfoPlist slots share catalog keys with WebView (no separate .strings files).
 pub const INFOPLIST_GLOSSARY: &[(&str, &str)] = &[
     ("CFBundleDisplayName", "app.name"),
@@ -106,6 +132,28 @@ mod catalog_tests {
             .iter()
             .map(|locale| (*locale, load_locale_map(&root, locale)))
             .collect()
+    }
+
+    #[test]
+    fn shipped_ui_locales_resolve_html_lang_and_fallback_catalog() {
+        assert_eq!(
+            SHIPPED_UI_LOCALES,
+            ["en", "nl", "fr", "de", "es", "it", "en-XA", "ar-XB"]
+        );
+        assert!(SHIPPED_UI_LOCALES.contains(&"nl"));
+        assert!(!SHIPPED_UI_LOCALES.contains(&"system"));
+        assert_eq!(html_lang("nl"), "nl");
+        assert_eq!(html_lang("ar-XB"), "ar");
+        assert_eq!(html_lang("en-XA"), "en");
+        assert_eq!(html_lang("zz"), "en");
+        let root = locales_root();
+        assert!(catalog_exists(&root, "en"));
+        let loaded = load_ui_catalog_map(&root, "nl");
+        assert!(loaded.contains_key("settings.title"));
+        if !catalog_exists(&root, "nl") {
+            let english = load_locale_map(&root, "en");
+            assert_eq!(loaded.get("settings.title"), english.get("settings.title"));
+        }
     }
 
     #[test]

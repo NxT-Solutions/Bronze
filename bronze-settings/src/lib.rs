@@ -18,8 +18,9 @@ pub use health::{
 };
 pub use permission::{PermissionSnapshot, PermissionState};
 pub use schema::{
-    search_settings, BackupSchedule, SchemaError, SettingsField, SettingsGroup, SettingsV1,
-    ShortcutActionId, ShortcutBinding, SCHEMA_VERSION, SETTINGS_FIELDS,
+    persisted_locale_allowed, search_settings, BackupSchedule, SchemaError, SettingsField,
+    SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, PERSISTED_LOCALE_TAGS,
+    SCHEMA_VERSION, SETTINGS_FIELDS,
 };
 pub use shortcuts::{
     capture_alternatives_ok, recorder_swallows, skip_test_marks_untested, CaptureAlternatives,

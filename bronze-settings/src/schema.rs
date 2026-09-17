@@ -342,6 +342,14 @@ pub struct GeneralSettings {
     pub start_view: StartView,
 }
 
+pub const PERSISTED_LOCALE_TAGS: &[&str] = &[
+    "system", "en", "nl", "fr", "de", "es", "it", "en-XA", "ar-XB",
+];
+
+pub fn persisted_locale_allowed(tag: &str) -> bool {
+    PERSISTED_LOCALE_TAGS.contains(&tag)
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CaptureSettings {
@@ -428,6 +436,7 @@ pub enum SchemaError {
     PreserveWhitespaceRequired,
     TimingOutOfBounds,
     UnknownField,
+    UnknownLocale,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -747,6 +756,9 @@ impl SettingsV1 {
         if !(BACKUP_RETENTION_MIN..=BACKUP_RETENTION_MAX).contains(&self.data.backup_retention) {
             return Err(SchemaError::BackupRetentionOutOfBounds);
         }
+        if !persisted_locale_allowed(&self.general.locale) {
+            return Err(SchemaError::UnknownLocale);
+        }
         Ok(())
     }
 
@@ -1003,6 +1015,24 @@ mod tests {
             .iter()
             .all(|field| field.group == SettingsGroup::General));
         assert!(general.iter().any(|field| field.id == "general.locale"));
+        assert!(search_settings("language")
+            .iter()
+            .any(|field| field.id == "general.locale"));
+    }
+
+    #[test]
+    fn persisted_locale_accepts_shipped_tags_and_rejects_unknown() {
+        let mut settings = SettingsV1::defaults();
+        assert_eq!(settings.general.locale, "system");
+        assert!(settings.validate().is_ok());
+        for tag in PERSISTED_LOCALE_TAGS {
+            settings.general.locale = (*tag).into();
+            assert!(settings.validate().is_ok(), "{tag} should persist");
+        }
+        settings.general.locale = "zz".into();
+        assert_eq!(settings.validate().unwrap_err(), SchemaError::UnknownLocale);
+        settings.general.locale = "nl-BE".into();
+        assert_eq!(settings.validate().unwrap_err(), SchemaError::UnknownLocale);
     }
 
     #[test]

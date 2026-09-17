@@ -1,8 +1,11 @@
 //! Hand-test queue/settings/portability IPC (QUE-002/005/007, SET-001, DAT-002/003).
 
+use crate::catalog::{
+    catalog_dir, catalog_exists, html_lang, load_ui_catalog_map, locales_root, SHIPPED_UI_LOCALES,
+};
 use crate::copy::{copy_items, CopyError, Pasteboard};
 use crate::portability::{accept_native_path, PathSource};
-use crate::window_edge::CAPTURE_ONLY_REVEALS_PANEL;
+use crate::window_edge::{TextDirection, CAPTURE_ONLY_REVEALS_PANEL};
 use bronze_capture::{
     apply_capture_success, Announcer, AxOutcome, CaptureCoordinator, CaptureIngressContext,
     CaptureMode, CapturedText, FocusOwner, FocusSnapshot, PersistError, PersistHook, Terminal,
@@ -244,11 +247,29 @@ fn encode_base64(bytes: &[u8]) -> String {
 }
 
 pub fn effective_ui_locale(requested: Option<&str>) -> &'static str {
-    match requested {
-        Some("en-XA") => "en-XA",
-        Some("ar-XB") => "ar-XB",
-        _ => HAND_TEST_UI_LOCALE,
+    let raw = requested.unwrap_or("system").trim();
+    if raw.is_empty() || raw.eq_ignore_ascii_case("system") {
+        return HAND_TEST_UI_LOCALE;
     }
+    if let Some(exact) = SHIPPED_UI_LOCALES.iter().copied().find(|tag| *tag == raw) {
+        return exact;
+    }
+    let primary = raw.split(['-', '_']).next().unwrap_or("");
+    SHIPPED_UI_LOCALES
+        .iter()
+        .copied()
+        .find(|tag| *tag == primary)
+        .unwrap_or(HAND_TEST_UI_LOCALE)
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiCatalogDto {
+    pub locale: String,
+    pub html_lang: String,
+    pub dir: String,
+    pub catalog_available: bool,
+    pub messages: std::collections::BTreeMap<String, String>,
 }
 
 pub fn named_output_profile(name: &str) -> OutputProfile {
@@ -295,6 +316,31 @@ impl LiveSession {
 
     pub fn ui_locale(&self) -> &'static str {
         effective_ui_locale(Some(self.settings.general.locale.as_str()))
+    }
+
+    pub fn ui_catalog(&self) -> UiCatalogDto {
+        Self::catalog_for(self.ui_locale())
+    }
+
+    fn catalog_for(locale: &'static str) -> UiCatalogDto {
+        let root = locales_root();
+        let catalog_available = catalog_exists(&root, locale);
+        let applied = if catalog_available { locale } else { "en" };
+        let dir = match catalog_dir(applied) {
+            TextDirection::Rtl => "rtl",
+            TextDirection::Ltr => "ltr",
+        };
+        UiCatalogDto {
+            locale: locale.to_string(),
+            html_lang: html_lang(applied).to_string(),
+            dir: dir.into(),
+            catalog_available,
+            messages: load_ui_catalog_map(&root, locale),
+        }
+    }
+
+    pub fn unavailable_catalog() -> UiCatalogDto {
+        Self::catalog_for(HAND_TEST_UI_LOCALE)
     }
 
     pub fn list_queue(&self, include_trashed: bool) -> Result<Vec<QueueItemDto>, String> {
@@ -864,6 +910,14 @@ pub fn ui_locale(session: tauri::State<std::sync::Mutex<LiveSession>>) -> String
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
+pub fn ui_catalog(session: tauri::State<std::sync::Mutex<LiveSession>>) -> UiCatalogDto {
+    lock_session(&session)
+        .map(|session| session.ui_catalog())
+        .unwrap_or_else(|_| LiveSession::unavailable_catalog())
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
 pub fn backup_library_now(
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     requested_path: Option<String>,
@@ -1023,7 +1077,40 @@ mod live_session_tests {
         session.import_library(&snapshot).expect("import");
         assert_eq!(effective_ui_locale(Some("system")), "en");
         assert_eq!(effective_ui_locale(Some("en-XA")), "en-XA");
+        assert_eq!(effective_ui_locale(Some("nl")), "nl");
+        assert_eq!(effective_ui_locale(Some("fr")), "fr");
+        assert_eq!(effective_ui_locale(Some("de")), "de");
+        assert_eq!(effective_ui_locale(Some("es")), "es");
+        assert_eq!(effective_ui_locale(Some("it")), "it");
+        assert_eq!(effective_ui_locale(Some("nl-BE")), "nl");
+        assert_eq!(effective_ui_locale(Some("zz")), "en");
         assert!(!search_settings("backup").is_empty());
+    }
+
+    #[test]
+    fn persist_nl_exposes_locale_and_english_fallback_catalog() {
+        let mut session = open_session();
+        assert_eq!(session.ui_locale(), "en");
+        let mut settings = session.settings();
+        settings.general.locale = "nl".into();
+        session.replace_settings(settings).expect("save nl");
+        assert_eq!(session.ui_locale(), "nl");
+        let catalog = session.ui_catalog();
+        assert_eq!(catalog.locale, "nl");
+        assert_eq!(catalog.dir, "ltr");
+        assert!(catalog.messages.contains_key("settings.title"));
+        if catalog.catalog_available {
+            assert_eq!(catalog.html_lang, "nl");
+        } else {
+            assert_eq!(catalog.html_lang, "en");
+            assert_eq!(
+                catalog.messages.get("settings.title").map(String::as_str),
+                Some("Settings")
+            );
+        }
+        session.reset_field("general.locale").expect("reset");
+        assert_eq!(session.ui_locale(), "en");
+        assert!(session.ui_catalog().catalog_available);
     }
 
     #[test]

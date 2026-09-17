@@ -24,6 +24,7 @@ commands.allow = [
   "edit_queue_item",
   "copy_queue_items",
   "ui_locale",
+  "ui_catalog",
 ]
 
 [[permission]]
@@ -36,6 +37,7 @@ commands.allow = [
   "export_library_archive",
   "import_library_archive",
   "ui_locale",
+  "ui_catalog",
 ]
 
 [[permission]]
@@ -49,4 +51,10 @@ commands.allow = [
   "reset_settings_all",
   "search_settings_fields",
   "ui_locale",
+  "ui_catalog",
 ]
+
+[[permission]]
+identifier = "allow-ui-catalog"
+description = "Read the effective UI locale and catalog strings"
+commands.allow = ["ui_locale", "ui_catalog"]
