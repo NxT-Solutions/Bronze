@@ -52,11 +52,12 @@ Token pairs must be measured in all themes. Normal text target 4.5:1; large text
 
 Each item exposes:
 
+- heading from stored `items.title` (`h3`); hidden when the title is absent or blank; the UI does not invent a title;
 - lifecycle control with item-specific accessible label;
 - kind icon plus visible/announced label when kind matters;
-- content preview preserving line breaks;
+- content preview: constrained markdown rendered as `strong`/`em`/text with line breaks (`white-space: pre-wrap`); collapsed to three lines; catalog `queue.item.showMore` / `queue.item.showLess` expands the full body on a real `button` (`aria-expanded`);
 - optional user-editable content-language metadata, defaulting to unknown rather than guessed;
-- optional provenance row: catalog `capture.source` (`From {appName}`) when Capture stored a focused-process name; no URL or title in this build; composer rows omit the row;
+- optional provenance row: catalog `capture.source` (`From {appName}`) when Capture stored a focused-process name; no URL or window title in this build; composer rows omit the row;
 - status text (`Queued`, `Copied`, `Done`, etc.);
 - context action button;
 - drag handle only when pointer reordering enabled, with Move Up/Down menu equivalents.

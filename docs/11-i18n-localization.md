@@ -162,7 +162,7 @@ Maintain `research/glossary.md` during implementation. Terms needing stable cont
 - RTL static and interaction smoke;
 - IME composer test confirms Enter does not submit during composition;
 - locale-independent JSON export golden tests;
-- native strings coverage — menu.status.*, panel.quick.title, and InfoPlist CFBundleDisplayName/CFBundleName resolve through the same `app.json` glossary as WebView (`en`, `en-XA`, `ar-XB`); RTL chrome smoke keeps a physical edge; item cards use per-item `lang` plus `dir="auto"` (I18N-001/002/003/004, G-06);
+- native strings coverage — menu.status.*, panel.quick.title, and InfoPlist CFBundleDisplayName/CFBundleName resolve through the same `app.json` glossary as WebView (`en`, `en-XA`, `ar-XB`); RTL chrome smoke keeps a physical edge; item cards use per-item `lang` plus `dir="auto"`; expand controls use `queue.item.showMore` / `queue.item.showLess` (I18N-001/002/003/004, G-06);
 - a11y names remain meaningful under longest locale.
 
 ## 13. Initial locale rollout

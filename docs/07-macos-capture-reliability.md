@@ -31,7 +31,7 @@ Provider order:
 
 AX is primary. Synthetic copy is disabled until user understands clipboard and simulated-input effects. Manual paths remain available regardless of Input Monitoring, timed gesture, or source compatibility.
 
-P0 captures plain text. It preserves Unicode scalar content, line breaks, indentation, and intentional leading/trailing whitespace. No trim, NFC/NFD normalization, translation, smart-quote conversion, Markdown parsing, or remote lookup occurs.
+P0 stores constrained markdown when AX attributes exist, else exact Unicode plaintext. It preserves Unicode scalar content, line breaks, indentation, and intentional leading/trailing whitespace. No trim, NFC/NFD rewrite, translation, smart-quote conversion, remote lookup, or hosted model runs on the AX path. Constrained markdown is produced from attributed selection (bold/italic font traits → `**` / `*`), not by parsing the user's text as a document language.
 
 Empty string and selection consisting only of configured zero-width formatting/control characters produce no_selection. Ordinary whitespace-only selection remains content; do not implement emptiness using trim.
 
@@ -123,11 +123,11 @@ CAP-003 menu path must retain target even if opening status menu activates Bronz
 - lastExternalPID updates whenever a non-Bronze app is frontmost (`note_external_focus`; own PID / Bronze / `bronze-desktop` are skipped). The capture pump samples this every 20 ms.
 - Opening the status menu or running Capture snapshots that last-external PID before any first-capture permission prompt, then consumes it. The persist read does not resample frontmost. The provider builds `AXUIElementCreateApplication` for that PID and walks the focused element, then that app’s main window and windows, including a bounded child search for allowed text roles. It does not substitute whichever app is frontmost after Bronze or a permission dialog activates.
 - System-wide focused AX is used only when no last-external PID exists. That fallback never reads Bronze / `bronze-desktop` / own PID.
-- Capture persists AX selected text (`AXSelectedText`, or `AXSelectedTextRange` plus `AXStringForRange`) into the same queue store as the composer. It emits `capture-result` `{ terminal, reason }` for every persist outcome (`saved`/`rejected`/`failed`/`cancelled`) and `queue-changed` only on Saved. It does not reveal or focus the Quick Panel (WIN-003 capture-only).
-- Status-item left-click is Show. The status menu lists the latest five overview items (click copies via the Plain profile), then Capture, Help, and Quit. Titles are flattened and capped at 48 characters.
+- Capture persists AX selection into the same queue store as the composer: `AXSelectedTextRange` plus `AXAttributedStringForRange` when available, else `AXSelectedText` (CFAttributedString or CFString), else `AXStringForRange`. Attributed runs become constrained markdown; fallback is exact Unicode plaintext. Persist writes `compact_title` immediately. After Saved, a background `bronze-item-title` thread may call `bronze_native_item_title` and later `set_item_title` plus `queue-changed`. It emits `capture-result` `{ terminal, reason }` for every persist outcome (`saved`/`rejected`/`failed`/`cancelled`) and `queue-changed` on Saved. It does not reveal or focus the Quick Panel (WIN-003 capture-only).
+- Status-item left-click is Show. The status menu lists the latest five overview items (click copies via the Plain profile), then Capture, Help, and Quit. Each label prefers the stored item title, else a flattened body, capped at 48 characters.
 - The only enabled seeded chord is `capture.selection`: Shift double-tap, either side, gap 250 ms, max hold 400 ms. The other twelve `ShortcutActionId` rows stay disabled. ADR-018 stays Proposed. Clipboard fallback stays `manual`; Capture does not synthesize Cmd+C.
 - Capture stores CAP-008 app-name provenance from the focused process (`proc_name` for the AX element's PID). Bronze / `bronze-desktop` is omitted. URL and window title are not stored. Provenance failure never fails a valid text capture.
-- The inbox shows catalog `capture.source` (`From {appName}`) on captured rows that have a name. Composer rows have no source line. `#capture-status` copies catalog `capture.announce.saved|rejected|denied|protected|failed` from `capture-result`. CSS keeps `[hidden]` source, empty, composer-error, capture-status, and capture-message slots unrendered.
+- The inbox shows a heading from stored `items.title` when present, sanitized constrained-markdown body (three-line clamp plus catalog `queue.item.showMore` / `queue.item.showLess`), and catalog `capture.source` (`From {appName}`) on captured rows that have a name. Composer rows have no source line. `#capture-status` copies catalog `capture.announce.saved|rejected|denied|protected|failed` from `capture-result`. CSS keeps `[hidden]` title, expand, source, empty, composer-error, capture-status, and capture-message slots unrendered.
 - If target exited, return target_lost and open manual composer.
 - File and image attachments stay out (ADR-001: separate threat model and ADR).
 
@@ -142,7 +142,7 @@ CAP-003 menu path must retain target even if opening status menu activates Bronz
 
 Native target tracker and Rust coordinator prepublish fixed-size `CaptureIngressContext`: external target PID, interned bundle-identity token, application activation generation, destination UUID plus accept-capture generation, app-policy/settings revisions, and context generation. Update uses seqlock or equivalent atomic snapshot protocol. Every invoked/observed trigger path loads stable context and assigns request ID/monotonic time before request can wait behind older work. Modifier event-tap path writes fields into preallocated channel record; standard-chord and menu callbacks submit same immutable record schema through serialized coordinator entry and never produce into event-tap SPSC channel. If consistent context cannot be read within bounded attempts, request terminates `context_unavailable`.
 
-Event-tap callback performs no NSWorkspace, AX, database, allocation, or string work. Focused element/window identity cannot be captured safely there; provider acquires it later inside snapshotted process, then enforces age and identity revalidation. Status-menu path snapshots last external target before Bronze activation. Standard chord, modifier gesture, and menu use same ingress contract.
+Event-tap callback performs no NSWorkspace, AX, database, window, clipboard, language-model, allocation, or string work. Focused element/window identity cannot be captured safely there; persist acquires it later on the capture-request path after the tap only enqueues, then enforces age and identity revalidation. Status-menu path snapshots last external target before Bronze activation. Standard chord, modifier gesture, and menu use same ingress contract.
 
 ## 5. Event-tap runtime
 
@@ -164,6 +164,7 @@ Callback restrictions:
 - p99 below 1 ms.
 - No main-thread dispatch awaited.
 - No AX or NSWorkspace call.
+- No language-model, clipboard, or window work.
 - No database, filesystem, Tauri event, translation, or log.
 - No dynamic string construction.
 - No lock that UI/capture coordinator may hold.
@@ -339,8 +340,8 @@ macOS AX does not expose immutable selection snapshot tied to trigger timestamp.
 5. Read role and subrole only.
 6. Build a bounded, cycle-safe chain from the start element through at most 16 ancestors. At each empty allowed or container node, search at most 24 children for allowed text roles. Unknown nodes are not content-queried.
 7. Before any content query at each node, classify role/subrole as protected, allowed text, neutral container, or unknown content-bearing. Fail closed for `kAXSecureTextFieldSubrole`, known password/protected equivalents, or unknown content-bearing state. Unknown protection prohibits both AX content query and synthetic fallback, regardless of app category. Empty, neutral, and unknown nodes continue.
-8. At each allowed node (`AXTextField`, `AXTextArea`, `AXStaticText`, `AXWebArea`, `AXText`, `AXComboBox`), query `kAXSelectedTextAttribute`. Empty or missing child value is inconclusive; continue to children, then ancestor.
-9. At each allowed node, if direct selection is unavailable/empty, query `kAXSelectedTextRangeAttribute` and `kAXStringForRangeParameterizedAttribute` when supported.
+8. At each allowed node (`AXTextField`, `AXTextArea`, `AXStaticText`, `AXWebArea`, `AXText`, `AXComboBox`), prefer attributed selection: `AXSelectedTextRange` plus `AXAttributedStringForRange`. Bold/italic come from `AXFont` / `AXFontName` / `AXFontFamily` and become constrained markdown `**` / `*`. Empty or missing child value is inconclusive; continue to children, then ancestor.
+9. If attributed range is unavailable or empty, query `AXSelectedText` (CFAttributedString or CFString), then `AXStringForRange` when a range exists. Fallback without attributes is exact Unicode plaintext (whitespace preserved).
 10. Stop on first allowed non-empty selection. Only full-chain exhaustion on that PID returns no selection/unsupported.
 11. Validate result type, UTF-8 conversion, byte/grapheme limit, process/focused-element identity, age, and request generation. Where selected range exists, require same range before/after text read; otherwise re-read selected text once within budget and require stable result.
 12. Query optional provenance only under CAP-008 policy.
@@ -350,8 +351,9 @@ References: [selected text](https://developer.apple.com/documentation/applicatio
 
 ### 9.2 Timeout and retry
 
-- AX runs off event-tap and main UI thread.
-- Call [`AXUIElementSetMessagingTimeout`](https://developer.apple.com/documentation/applicationservices/1459345-axuielementsetmessagingtimeout) on target application element before synchronous queries; deadline is native, not only a late-result check. If a call still wedges/fails, abandon affected worker generation and recreate provider queue without blocking later captures.
+- Event-tap callback does not call AX. Live persist (`read_capture_selection`) runs on the capture-request path after the tap only enqueues.
+- Title refine (`bronze_native_item_title`) is off the main thread (`bronze-item-title`). Persist itself is the capture-request path, not the tap callback.
+- The live path calls [`AXUIElementSetMessagingTimeout`](https://developer.apple.com/documentation/applicationservices/1459345-axuielementsetmessagingtimeout) with 1.0 s on the application element and the system-wide element before queries; deadline is native, not only a late-result check. If a call still wedges/fails, abandon affected worker generation and recreate provider queue without blocking later captures.
 - Overall target budget supports G-02 300 ms p95.
 - Only kAXErrorCannotComplete receives bounded retry, suggested 20 ms then 50 ms.
 - Permission denial, unsupported attribute, invalid element, process exit, illegal argument, and protected field do not retry.

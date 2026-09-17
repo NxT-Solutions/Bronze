@@ -331,8 +331,8 @@ WebView must preserve normal Cmd-C inside editable controls or non-collapsed tex
 
 - Workspace: one local v1 root.
 - Section: title, state, color token, stable order, timestamps.
-- Item: identity, section, content, canonical BCP 47/`und` content language, lifecycle, stable order, source, revision, timestamps.
-- Source: optional provenance according to policy; captured/authored text always lives in `items.body`.
+- Item: identity, section, content, optional title, canonical BCP 47/`und` content language, lifecycle, stable order, source, revision, timestamps.
+- Source: optional provenance according to policy; captured/authored text always lives in `items.body`; optional `items.title` is a derived heading, not a second body.
 - CaptureRequest: transient request plus redacted terminal diagnostic.
 - OutputProfile: deterministic formatter, post-copy lifecycle action, and focus-advance policy; sole post-copy authority.
 - Shortcut: semantic action plus trigger representation.
@@ -351,7 +351,7 @@ No UI-only state may silently change lifecycle.
 workspaces(id, name, created_at_ms, updated_at_ms)
 sections(id, workspace_id, title, state, color_token, rank, revision,
          created_at_ms, updated_at_ms, deleted_at_ms)
-items(id, section_id, kind, body, content_language, status, rank, source_id, revision,
+items(id, section_id, kind, body, title, content_language, status, rank, source_id, revision,
       created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
 sources(id, bundle_id, app_name, safe_title, url, captured_at_ms, policy_version)
 item_revisions(item_id, revision, body, content_language, status, changed_at_ms, change_kind)

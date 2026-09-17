@@ -40,8 +40,8 @@ Hand-test in the **native** window only:
 - Composer **Add** (or Cmd-Enter) persists to local SQLite
 - **Copy** on a row writes the 6-4 pasteboard path (`pbcopy`); default profile is Plain
 - Complete / skip hide the row from this inbox; trash removes it
-- **Capture** (status menu or Bronze app menu) and **Shift double-tap** (either side, gap 250 ms, hold ≤400 ms) snapshot `NSWorkspace` frontmost PID first, then read AX selected text from **that** last non-Bronze app only (focused element, then its windows/children; `AXSelectedText` or selected-text range). The persist read does not follow Bronze or a permission dialog. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue. Select text in another app (TextEdit is the known-good check), then Capture or double-tap Shift **without** needing to keep that app frontmost. Capturing Bronze’s own WebView is rejected
-- Inbox `#capture-status` shows catalog `capture.announce.saved|rejected|denied|protected|failed` after every persist outcome. A saved row also shows catalog `capture.source` (`From {appName}`) using the source process name (CAP-008 app name only; no URL). Composer **Add** rows stay unlabeled
+- **Capture** (status menu or Bronze app menu) and **Shift double-tap** (either side, gap 250 ms, hold ≤400 ms) snapshot `NSWorkspace` frontmost PID first, then read AX selection from **that** last non-Bronze app only (focused element, then its windows/children; attributed range when available, else `AXSelectedText` or `AXStringForRange`). The persist read does not follow Bronze or a permission dialog. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue. Select text in another app (TextEdit is the known-good check), then Capture or double-tap Shift **without** needing to keep that app frontmost. Capturing Bronze’s own WebView is rejected
+- Inbox `#capture-status` shows catalog `capture.announce.saved|rejected|denied|protected|failed` after every persist outcome. A saved row also shows catalog `capture.source` (`From {appName}`) using the source process name (CAP-008 app name only; no URL). Composer **Add** rows stay unlabeled. Each row may show a stored `title` heading; the body is sanitized constrained markdown with **Show more** / **Show less** when it overflows. Titles persist as `compact_title` and may refine on-device (ADR-019 Proposed; no hosted AI, no PCC, no bundled GGUF)
 - Status item: left-click **Show**; menu is the latest five overview items (click copies), then Capture, Help, Quit
 - Status or app-menu **Show** recreates the Quick Panel if you closed it
 - Settings / Library / Help recreate if you closed them
@@ -67,7 +67,7 @@ See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a gr
 
 **Verify (maintainer bar, not required to launch):** `pnpm verify`. Local debug package (SEC-005): `tooling/package-debug.sh`.
 
-**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. QUE-007 locale search is **blocked** on ADR-018. Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
+**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. ADR-019 (on-device titles) is **Proposed**. QUE-007 locale search is **blocked** on ADR-018. Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
 
 ## Start here (planning pack)
 
