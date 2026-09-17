@@ -213,7 +213,7 @@
       >
         <h2 id="shortcuts-title" data-i18n="settings.shortcuts.title">Shortcuts</h2>
         <p class="muted" role="status" data-shortcut-live data-i18n="settings.shortcuts.live">
-          Listening
+          Only Shift double-tap is live among seeded shortcuts.
         </p>
         <div class="field-block">
           <label for="shortcut-record" data-i18n="settings.shortcuts.record">
@@ -228,19 +228,58 @@
         </div>
         <p data-standard-chord="capture.selection"></p>
         <ul class="shortcut-list" data-shortcut-registry>
-          <li data-action="app.togglePanel">app.togglePanel</li>
-          <li data-action="capture.selection">capture.selection</li>
-          <li data-action="capture.newNote">capture.newNote</li>
-          <li data-action="queue.copy">queue.copy</li>
-          <li data-action="queue.copyWithProfile">queue.copyWithProfile</li>
-          <li data-action="queue.copyAndAdvance">queue.copyAndAdvance</li>
-          <li data-action="queue.complete">queue.complete</li>
-          <li data-action="queue.edit">queue.edit</li>
-          <li data-action="queue.moveUp">queue.moveUp</li>
-          <li data-action="queue.moveDown">queue.moveDown</li>
-          <li data-action="queue.search">queue.search</li>
-          <li data-action="queue.undo">queue.undo</li>
-          <li data-action="window.settings">window.settings</li>
+          <li data-action="app.togglePanel">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.app.togglePanel">Toggle panel</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="capture.selection">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.capture.selection">Capture selection</span>
+            <kbd data-i18n="settings.shortcuts.chord.shiftDoubleTap">Shift double-tap</kbd>
+          </li>
+          <li data-action="capture.newNote">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.capture.newNote">New note</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.copy">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copy">Copy</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.copyWithProfile">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copyWithProfile">Copy with profile</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.copyAndAdvance">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copyAndAdvance">Copy and advance</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.complete">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.complete">Complete</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.edit">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.edit">Edit</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.moveUp">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.moveUp">Move up</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.moveDown">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.moveDown">Move down</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.search">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.search">Search</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="queue.undo">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.undo">Undo</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
+          <li data-action="window.settings">
+            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.window.settings">Settings</span>
+            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+          </li>
         </ul>
       </section>
       <section class="card" aria-labelledby="settings-export-preview">

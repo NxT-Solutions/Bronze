@@ -36,5 +36,8 @@ test("shortcut recorder lists every action and keeps capture.selection as standa
     assert.match(html, new RegExp(`data-action="${action}"`));
   }
   assert.match(html, /data-i18n="settings.shortcuts.skipTest"/);
+  assert.doesNotMatch(html, />app\.togglePanel</);
+  assert.match(html, /data-i18n="settings.shortcuts.action.app.togglePanel"/);
   assert.equal(en["settings.shortcuts.record"], "Record shortcut");
+  assert.equal(en["settings.shortcuts.action.queue.copy"], "Copy");
 });
