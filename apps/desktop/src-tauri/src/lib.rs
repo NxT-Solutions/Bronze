@@ -313,14 +313,58 @@ fn status_item_click(
     state: tauri::tray::MouseButtonState,
 ) -> Option<StatusItemClick> {
     use tauri::tray::{MouseButton, MouseButtonState};
-    if state != MouseButtonState::Down {
-        return None;
-    }
     match button {
         MouseButton::Left => Some(StatusItemClick::ShowPanel),
-        MouseButton::Right => Some(StatusItemClick::PopupMenu),
+        MouseButton::Right if state == MouseButtonState::Down => Some(StatusItemClick::PopupMenu),
         _ => None,
     }
+}
+
+#[cfg(target_os = "macos")]
+static STATUS_APP: std::sync::Mutex<Option<tauri::AppHandle>> = std::sync::Mutex::new(None);
+
+#[cfg(target_os = "macos")]
+objc2::define_class!(
+    #[unsafe(super(objc2::runtime::NSObject))]
+    #[name = "BronzeStatusClickTarget"]
+    struct StatusClickTarget;
+
+    impl StatusClickTarget {
+        #[unsafe(method(showPanel:))]
+        fn show_panel(&self, _sender: Option<&objc2::runtime::AnyObject>) {
+            let app = STATUS_APP.lock().ok().and_then(|guard| guard.clone());
+            if let Some(app) = app {
+                let _ = reveal_quick_panel(&app);
+            }
+        }
+    }
+);
+
+#[cfg(target_os = "macos")]
+fn remember_status_app(app: &tauri::AppHandle) {
+    if let Ok(mut slot) = STATUS_APP.lock() {
+        *slot = Some(app.clone());
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn attach_status_button_action(item: &objc2_app_kit::NSStatusItem) {
+    use objc2::rc::Retained;
+    use objc2::{msg_send, sel, AllocAnyThread};
+    use objc2_foundation::MainThreadMarker;
+    let Some(mtm) = MainThreadMarker::new() else {
+        return;
+    };
+    let Some(button) = item.button(mtm) else {
+        return;
+    };
+    let target: Retained<StatusClickTarget> =
+        unsafe { msg_send![StatusClickTarget::alloc(), init] };
+    unsafe {
+        button.setTarget(Some(&*target));
+        button.setAction(Some(sel!(showPanel:)));
+    }
+    std::mem::forget(target);
 }
 
 #[cfg(target_os = "macos")]
@@ -432,9 +476,15 @@ fn install_status_item(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
             handle_status_item_event(tray.app_handle(), &event);
         });
     if let Some(icon) = app.default_window_icon() {
-        tray = tray.icon(icon.clone());
+        tray = tray.icon(icon.clone()).icon_as_template(true);
     }
-    tray.build(app)?;
+    remember_status_app(app);
+    let tray = tray.build(app)?;
+    let _ = tray.with_inner_tray_icon(|inner| {
+        if let Some(item) = inner.ns_status_item() {
+            attach_status_button_action(&item);
+        }
+    });
     Ok(())
 }
 
@@ -828,8 +878,10 @@ mod tests {
                 tauri::tray::MouseButton::Left,
                 tauri::tray::MouseButtonState::Up
             ),
-            None
+            Some(crate::StatusItemClick::ShowPanel)
         );
+        assert!(lib.contains("setAction"));
+        assert!(lib.contains("showPanel:"));
         assert!(lib.contains("queue-changed"));
         assert!(lib.contains("native_item_title"));
         assert!(lib.contains("tray_entry_label"));
