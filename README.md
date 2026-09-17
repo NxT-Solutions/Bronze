@@ -49,7 +49,7 @@ Hand-test in the **native** window only:
 - Library search is substring-only (`QUE_007_COMPLETE=false`; ADR-018 stays Proposed)
 - Backup / export / import write under the Rust-owned app data dir; WebView paths are rejected
 
-Palette is zinc (`#fafafa` / `#18181b` / `#8a8a90`). Default UI locale is **en**.
+Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**.
 
 **Still stub / backlog.** The other twelve seeded `ShortcutActionId` rows stay **disabled**. File and image attachments are out until a new ADR and threat-model update (ADR-001). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
 

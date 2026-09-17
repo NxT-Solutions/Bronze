@@ -63,7 +63,7 @@ local bundle.
 
 - Clickable `div` or icon-only control without a name
 - `aria-label` that does not contain the visible text
-- Hairline borders below 3:1 (1.4.11)
+- Painting default chrome at 3:1 just to satisfy 1.4.11 (use Increase Contrast)
 - Body or muted text below 4.5:1 (AA) or, where tokens allow, 7:1
 - Removing `:focus-visible` or using `outline: none` without a
   replacement

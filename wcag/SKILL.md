@@ -22,8 +22,10 @@ Official authority: `wcag/README.md`.
 ## Hard stops (do not violate)
 
 - POUR first: perceivable, operable, understandable, robust.
-- WebView claim *target* is WCAG 2.2 Level AA. Meet AAA where the
-  product already can without new settings, media, or a color picker.
+- WebView *target* is WCAG 2.2 AA for structure, keyboard, and text.
+  Default chrome follows Apple HIG hairlines. Do not thicken grouping
+  strokes to chase 1.4.11 or 1.4.6 AAA. Increase Contrast is the 3:1
+  border path.
 - Never claim WCAG, VoiceOver, or notarization without
   `docs/evidence/` artifacts and human gate 9.3.
 - Semantic HTML. Real `button` / `a` / `label` / `summary`. No
@@ -47,11 +49,9 @@ Official authority: `wcag/README.md`.
 2. Read `screens.md` for that surface and `bronze.md` for tokens.
 3. Map the change to a principle in `principles.md` and the success
    criteria in `criteria.md`.
-4. Prefer meeting the AA row. If an AAA row is reachable with a token
-   or markup change (contrast 7:1, 80ch prose, line-height 1.5, focus
-   appearance), take it. Leave AAA Partial when it fights compact Mac
-   HIG (2.5.5 44×44) or needs a new settings capability (1.4.8
-   fg/bg picker).
+4. Prefer meeting the AA row when it does not fight HIG. Leave 1.4.11
+   grouping, 1.4.6 pill AAA, and 2.5.5 44×44 Partial. Increase Contrast
+   covers stronger borders. Do not add a fg/bg picker for 1.4.8.
 5. Edit existing ui-layer files when possible. A new file is Hedgehog
    change-work.
 6. Run the ui verify command from `.hedgehog/core.yaml`.
@@ -68,8 +68,8 @@ Surface: ________
 - [ ] 1.3.1 Headings and labels match the visual structure
 - [ ] 1.3.2 DOM order is the reading order
 - [ ] 1.4.1 Status is not color-only (text or state on the control)
-- [ ] 1.4.3 / 1.4.6 Text contrast 4.5:1 AA, 7:1 AAA where tokens allow
-- [ ] 1.4.11 UI / non-text contrast ≥3:1 (borders, icons, focus)
+- [ ] 1.4.3 Text contrast ≥4.5:1. Do not restyle HIG hairlines for 1.4.6
+- [ ] 1.4.11 Focus ring ≥3:1. Grouping hairlines stay HIG; Increase Contrast exists
 - [ ] 1.4.13 Hover/focus tips are dismissible, hoverable, persistent
 - [ ] 2.1.1 Every operation has a keyboard path
 - [ ] 2.1.2 No keyboard trap (Escape leaves sheets and overflow)

@@ -28,12 +28,12 @@ human.
 | 1.4.3 Contrast (Minimum) | AA | Normal text ≥4.5:1. Locked in `contrast.ts`. |
 | 1.4.4 Resize Text | AA | 200% text resize without loss. A11Y-003. |
 | 1.4.5 Images of Text | AA | UI text is real text. Status is not a PNG. |
-| 1.4.6 Contrast (Enhanced) | AAA | Light/dark body and muted text ≥7:1. Pill text ≥7:1. |
+| 1.4.6 Contrast (Enhanced) | AAA | Partial. Light body/muted already ≥7:1. Pills stay HIG colors (≥4.5:1, not 7:1). |
 | 1.4.7 Low or No Background Audio | AAA | N/A. No foreground speech with background audio. |
 | 1.4.8 Visual Presentation | AAA | Partial. Line-height 1.5, prose ≤80ch, not justified. No user fg/bg picker. |
 | 1.4.9 Images of Text (No Exception) | AAA | Supports. Chrome does not use images of text. |
 | 1.4.10 Reflow | AA | 400% / 320 CSS px; ordinary UI is one scroll direction. |
-| 1.4.11 Non-text Contrast | AA | Borders, icons, and focus ≥3:1 against adjacent colors. |
+| 1.4.11 Non-text Contrast | AA | Partial. Focus ring ≥3:1. Grouping hairlines follow HIG. Increase Contrast / `prefers-contrast: more` is the 3:1 border path. |
 | 1.4.12 Text Spacing | AA | Author styles must not clip when the user sets WCAG spacing. |
 | 1.4.13 Content on Hover or Focus | AA | Action tips are dismissible, hoverable, and persist until dismissed or invalid. |
 

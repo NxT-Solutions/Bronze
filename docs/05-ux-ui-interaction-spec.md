@@ -4,7 +4,7 @@
 
 Bronze should feel like temporary working memory attached to current task: instant to summon, quiet when idle, explicit about state, forgiving when platform capture fails. It must not look or behave like surveillance software.
 
-Warm bronze tokens from DESIGN.md are inspiration, not a pixel spec (A11Y-003). The running desktop chrome uses a zinc/neutral hand-test set (`#fafafa` surface, `#18181b` text, `#8a8a90` grouping stroke) so the product is not a brown/metal theme. Automated sampling requires normal text ≥4.5:1 (AA) and ≥7:1 on body, muted, and pill text (AAA stretch), plus non-text ≥3:1. That sampling is not a public WCAG AA or AAA claim. Draft WebView rows live in `docs/evidence/WCAG-22-INVENTORY.md`. No Copper trade dress.
+Warm bronze tokens from DESIGN.md are inspiration, not a pixel spec (A11Y-003). The running desktop chrome uses a zinc/neutral hand-test set (`#fafafa` surface, `#18181b` text, `#e4e4e7` hairline) so the product is not a brown/metal theme. Automated sampling requires normal text ≥4.5:1. Grouping hairlines follow HIG; Increase Contrast is the 3:1 non-text path. That sampling is not a public WCAG AA or AAA claim. Draft WebView rows live in `docs/evidence/WCAG-22-INVENTORY.md`. No Copper trade dress.
 
 ## 2. Information architecture
 

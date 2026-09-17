@@ -74,7 +74,7 @@ Results:
 | 1.4.4 Resize Text | Partial | Layout aims at 200% (A11Y-003). Human zoom matrix is 9.3. |
 | 1.4.5 Images of Text | Supports | UI is real text. |
 | 1.4.10 Reflow | Partial | Column layout and overflow tests exist. 400%/320 human matrix is 9.3. |
-| 1.4.11 Non-text Contrast | Supports | `--border` / `--stroke` `#8a8a90` ≥3:1; dark `#71717a`. |
+| 1.4.11 Non-text Contrast | Partial | Focus ring ≥3:1. Default grouping is HIG hairline (`#e4e4e7` / 8% mix). Increase Contrast / `prefers-contrast: more` is the 3:1 border path. |
 | 1.4.12 Text Spacing | Partial | Author styles do not clip at default. User-override matrix is 9.3. |
 | 1.4.13 Content on Hover or Focus | Supports | Action tip on the control; dismissible; `#action-status` is SR-only. |
 | 2.4.5 Multiple Ways | Partial | Four windows plus menu bar, not a multi-page site. |
@@ -99,7 +99,7 @@ Results:
 | 1.2.8 Media Alternative (Prerecorded) | N/A | No media. |
 | 1.2.9 Audio-only (Live) | N/A | No media. |
 | 1.3.6 Identify Purpose | Partial | Landmarks and buttons; no full purpose taxonomy. |
-| 1.4.6 Contrast (Enhanced) | Supports | Body, muted, and pill text ≥7:1 in light and dark tokens. |
+| 1.4.6 Contrast (Enhanced) | Partial | Light body/muted ≥7:1. Status pills stay HIG colors (≥4.5:1). |
 | 1.4.7 Low or No Background Audio | N/A | No speech over audio. |
 | 1.4.8 Visual Presentation | Partial | Line-height 1.5, prose ≤80ch, not justified. No user fg/bg picker. |
 | 1.4.9 Images of Text (No Exception) | Supports | No images of text. |
@@ -132,5 +132,6 @@ Results:
 - 200%/400% human reflow matrix (A11Y-003 / 9.3)
 - Independent ACR review (DG-08)
 - 2.5.5 44×44 vs compact Mac HIG
+- Default grouping hairlines vs 1.4.11 (Increase Contrast is the 3:1 path)
 - 1.4.8 user-selected foreground and background
 - Native status item / menu bar (EN 301 549, not this inventory)

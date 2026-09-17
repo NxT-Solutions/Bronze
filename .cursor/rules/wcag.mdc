@@ -9,11 +9,11 @@ alwaysApply: false
 Before changing chrome or accessibility, read `wcag/SKILL.md` and the
 surface in `wcag/screens.md`.
 
-- WebView target is WCAG 2.2 AA; take AAA when tokens or markup allow
+- WebView target is WCAG 2.2 AA for structure, keyboard, and text
 - Never claim WCAG, VoiceOver, or notarization without docs/evidence
 - Semantic controls; catalog strings; accessible name contains visible text
-- Text ≥4.5:1 (AA) and ≥7:1 where tokens allow (AAA)
-- UI / non-text / focus ≥3:1 (1.4.11)
+- Text ≥4.5:1. Do not thicken HIG hairlines to chase 1.4.11 or 1.4.6 AAA
+- Focus ring ≥3:1. Increase Contrast is the 3:1 grouping-border path
 - Visible `:focus-visible`; skip link first; no keyboard trap
 - Targets ≥24×24 (AA). 44×44 is AAA Partial on compact Mac
 - `#action-status` stays SR-only; no `role="menu"` without full keyboard

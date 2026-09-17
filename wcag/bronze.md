@@ -35,10 +35,10 @@ Defined in `apps/desktop/src/chrome.css` and mirrored in
 | `--foreground` | `#18181b` | text | 1.4.3 / 1.4.6 ≥7:1 |
 | `--card` | `#ffffff` | surfaces | |
 | `--muted-foreground` | `#52525b` | secondary text | ≥7:1 on muted/card |
-| `--border` / `--input` / `--stroke` | `#8a8a90` | grouping | 1.4.11 ≥3:1 |
-| `--success` | `#245a40` | granted pill | white text ≥7:1 |
-| `--warning` | `#7a450c` | warning pill | white text ≥7:1 |
-| `--destructive` | `#9b1c14` | denied / trash | white text ≥7:1 |
+| `--border` / `--input` / `--stroke` | `#e4e4e7` / 8% hairline | grouping | 1.4.11 Partial; Increase Contrast is the 3:1 path |
+| `--success` | `#2f6f4f` | granted pill | white text ≥4.5:1 |
+| `--warning` | `#8a4e0e` | warning pill | white text ≥4.5:1 |
+| `--destructive` | `#b42318` | denied / trash | white text ≥4.5:1 |
 | `--ring` | `#18181b` | focus | 2.4.7 / 2.4.13 |
 | `--control-h` | `2rem` (32px) | push buttons | 2.5.8 AA; 2.5.5 AAA Partial |
 
@@ -46,8 +46,8 @@ Dark (`.dark` in globals; live desktop chrome is light):
 
 | Token | Dark | WCAG |
 | --- | --- | --- |
-| `--muted-foreground` | `#b4b4bb` | ≥7:1 on `#27272a` |
-| `--border` / `--input` | `#71717a` | 1.4.11 ≥3:1 on bg/card |
+| `--muted-foreground` | `#a1a1aa` | ≥4.5:1 on `#27272a` |
+| `--border` / `--input` | `#3f3f46` | HIG hairline; Increase Contrast is the 3:1 path |
 | `--success` / `--warning` / `--destructive` | pastels with `#18181b` text | ≥7:1 |
 
 Increase Contrast / `data-increase-contrast` forces black borders.
