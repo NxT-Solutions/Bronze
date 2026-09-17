@@ -96,6 +96,14 @@ export const MessageIds = {
     "settings.field.excludedBundleIds.empty",
   "settings.field.excludedBundleIds.unavailable":
     "settings.field.excludedBundleIds.unavailable",
+  "settings.field.excludedBundleIds.howto":
+    "settings.field.excludedBundleIds.howto",
+  "settings.field.excludedBundleIds.choose":
+    "settings.field.excludedBundleIds.choose",
+  "settings.field.excludedBundleIds.pickerUnavailable":
+    "settings.field.excludedBundleIds.pickerUnavailable",
+  "settings.field.excludedBundleIds.invalidApp":
+    "settings.field.excludedBundleIds.invalidApp",
   "settings.backup.daily": "settings.backup.daily",
   "settings.backup.weekly": "settings.backup.weekly",
   "settings.reset.field": "settings.reset.field",

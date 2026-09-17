@@ -1188,6 +1188,16 @@ menu {
   font-size: var(--text-caption);
 }
 
+.field-help,
+.field-block > label {
+  margin: 0;
+  max-width: 36rem;
+  letter-spacing: 0;
+  word-spacing: normal;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
 .field-block {
   display: grid;
   gap: var(--space-2);
@@ -1253,16 +1263,61 @@ menu {
   white-space: nowrap;
 }
 
-.app-chip .btn-ghost {
-  min-height: 1.4rem;
-  padding-inline: 0.4rem;
-  font-size: var(--text-micro);
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+.btn-icon svg {
+  display: block;
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.btn-icon:hover:not(:disabled) {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--muted));
+}
+
+.app-chip .btn-icon {
+  flex: 0 0 auto;
 }
 
 .app-picker {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.app-picker-field .field-row {
+  flex-wrap: wrap;
+}
+
+.app-picker-search {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 8rem;
+  margin-inline-start: 0;
+}
+
+.app-picker-search:focus-within,
+.app-picker-search.is-filled {
+  flex-basis: auto;
+}
+
+.field-row .app-picker-search input {
+  flex: none;
+  width: 100%;
 }
 
 .app-picker-list {

@@ -34,6 +34,8 @@ export function settingsSearchMatches(text, needle) {
 export function settingsUnitHaystack(unit) {
   const label = unit.querySelector?.("label")?.textContent ?? "";
   const help = unit.querySelector?.("[data-excluded-help]")?.textContent ?? "";
+  const howto =
+    unit.querySelector?.("[data-excluded-howto]")?.textContent ?? "";
   const chips = [...(unit.querySelectorAll?.("[data-app-name]") ?? [])]
     .map((node) => node.getAttribute?.("data-app-name") ?? "")
     .join(" ");
@@ -44,10 +46,66 @@ export function settingsUnitHaystack(unit) {
   const controlText = control
     ? `${control.value ?? ""} ${control.getAttribute?.("name") ?? ""}`
     : "";
-  if (label || help || chips || options || controlText.trim()) {
-    return `${label} ${help} ${chips} ${options} ${controlText}`;
+  if (label || help || howto || chips || options || controlText.trim()) {
+    return `${label} ${help} ${howto} ${chips} ${options} ${controlText}`;
   }
   return unit.textContent ?? "";
+}
+
+export function isSafeDisplayName(name) {
+  const value = String(name ?? "").trim();
+  return (
+    value.length > 0 &&
+    !value.includes("/") &&
+    !value.includes("\\") &&
+    !value.includes("\0") &&
+    !value.includes("..")
+  );
+}
+
+export function pickerFailureCode(error) {
+  const text =
+    typeof error === "string" ? error : String(error?.message ?? error ?? "");
+  if (text.includes("picker_cancelled")) {
+    return "picker_cancelled";
+  }
+  if (text.includes("picker_unavailable")) {
+    return "picker_unavailable";
+  }
+  return "invalid_app";
+}
+
+export function addExcludedApp(host, app) {
+  if (!isSafeBundleId(app?.bundleId)) {
+    return false;
+  }
+  const bundleId = app.bundleId.trim();
+  const rawName = String(app.name ?? "").trim();
+  const picked = {
+    bundleId,
+    name: isSafeDisplayName(rawName) ? rawName : bundleId,
+  };
+  const catalog = [...(host?._installedApps ?? []), picked];
+  if (host) {
+    host._installedApps = catalog;
+  }
+  writeExcludedApps(host, [
+    ...resolveExcludedApps(readExcludedBundleIds(host), catalog),
+    picked,
+  ]);
+  return true;
+}
+
+export async function pickExcludedApp(host, invokeFn) {
+  try {
+    const app = await invokeFn("pick_installed_app");
+    if (!addExcludedApp(host, app)) {
+      return "invalid_app";
+    }
+    return "picked";
+  } catch (error) {
+    return pickerFailureCode(error);
+  }
 }
 
 export function isSafeBundleId(id) {
@@ -164,10 +222,31 @@ export function renderExcludedChips(host, apps) {
     name.textContent = app.name;
     const remove = globalThis.document.createElement("button");
     remove.type = "button";
-    remove.className = "btn-ghost";
+    remove.className = "btn-icon";
     remove.dataset.removeExcluded = app.bundleId;
-    remove.setAttribute("data-i18n", "settings.field.excludedBundleIds.remove");
-    remove.textContent = removeLabel;
+    remove.setAttribute(
+      "data-i18n-aria-label",
+      "settings.field.excludedBundleIds.remove",
+    );
+    remove.setAttribute("aria-label", removeLabel);
+    const mark = globalThis.document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "svg",
+    );
+    mark.setAttribute("viewBox", "0 0 12 12");
+    mark.setAttribute("aria-hidden", "true");
+    mark.setAttribute("focusable", "false");
+    const path = globalThis.document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
+    path.setAttribute(
+      "d",
+      "M2.1 1.4 1.4 2.1 5.3 6 1.4 9.9l.7.7L6 6.7l3.9 3.9.7-.7L6.7 6l3.9-3.9-.7-.7L6 5.3z",
+    );
+    path.setAttribute("fill", "currentColor");
+    mark.append(path);
+    remove.append(mark);
     item.append(icon, name, remove);
     list.append(item);
   }
@@ -389,14 +468,42 @@ export async function bindSettingsLive(
   });
 }
 
+function showPickerStatus(root, code) {
+  const status = root.querySelector("[data-excluded-apps-picker]");
+  if (!status) {
+    return;
+  }
+  if (code === "picked" || code === "picker_cancelled") {
+    status.textContent = "";
+    status.hidden = true;
+    return;
+  }
+  const key =
+    code === "picker_unavailable"
+      ? "settings.field.excludedBundleIds.pickerUnavailable"
+      : "settings.field.excludedBundleIds.invalidApp";
+  status.textContent =
+    catalogMessage(key) ||
+    (code === "picker_unavailable"
+      ? "The app picker is unavailable."
+      : "That item is not a valid app.");
+  status.hidden = false;
+}
+
 function bindExcludedPicker(root, invokeFn, persist) {
   const host = root.querySelector("#excluded-apps");
   const search = root.querySelector("#excluded-apps-search");
   const list = root.querySelector("#excluded-apps-list");
   const empty = root.querySelector("[data-excluded-apps-empty]");
+  const choose = root.querySelector("[data-pick-installed-app]");
+  const searchWrap = search?.closest?.(".app-picker-search");
   if (!host || !search || !list) {
     return;
   }
+
+  const syncSearchChrome = () => {
+    searchWrap?.classList.toggle("is-filled", search.value.trim().length > 0);
+  };
 
   const closeList = () => {
     list.hidden = true;
@@ -441,6 +548,7 @@ function bindExcludedPicker(root, invokeFn, persist) {
           app,
         ]);
         search.value = "";
+        syncSearchChrome();
         closeList();
         persist();
       });
@@ -461,8 +569,23 @@ function bindExcludedPicker(root, invokeFn, persist) {
     }
   };
 
-  search.addEventListener("input", paintOptions);
+  search.addEventListener("input", () => {
+    syncSearchChrome();
+    paintOptions();
+  });
   search.addEventListener("focus", paintOptions);
+  choose?.addEventListener("click", () => {
+    runBusy(choose, async () => {
+      const result = await pickExcludedApp(host, invokeFn);
+      showPickerStatus(root, result);
+      if (result === "picked") {
+        search.value = "";
+        syncSearchChrome();
+        closeList();
+        persist();
+      }
+    });
+  });
   search.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeList();
@@ -495,6 +618,7 @@ function bindExcludedPicker(root, invokeFn, persist) {
       closeList();
     }
   });
+  syncSearchChrome();
   paintOptions();
 }
 

@@ -46,4 +46,12 @@ test("settings window is searchable grouped with daily weekly backup and export 
     en["settings.field.excludedBundleIds.help"],
     "Bronze will not capture selections from these apps.",
   );
+  assert.equal(
+    en["settings.field.excludedBundleIds.howto"],
+    "Search to add many apps, or choose a missing app from Finder.",
+  );
+  assert.equal(en["settings.field.excludedBundleIds.choose"], "Choose app…");
+  assert.match(html, /settings.field.excludedBundleIds.howto/);
+  assert.match(html, /data-pick-installed-app/);
+  assert.match(html, /class="chrome-search app-picker-search"/);
 });

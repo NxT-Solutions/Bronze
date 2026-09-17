@@ -149,29 +149,56 @@
             </label>
             <p
               id="excluded-apps-help"
-              class="muted"
+              class="muted field-help"
               data-excluded-help
               data-i18n="settings.field.excludedBundleIds.help"
             >
               Bronze will not capture selections from these apps.
             </p>
+            <p
+              id="excluded-apps-howto"
+              class="muted field-help"
+              data-excluded-howto
+              data-i18n="settings.field.excludedBundleIds.howto"
+            >
+              Search to add many apps, or choose a missing app from Finder.
+            </p>
             <div id="excluded-apps" class="app-picker-field">
               <ul id="excluded-apps-selected" class="app-chip-list"></ul>
               <div class="field-row">
                 <div class="app-picker">
-                  <input
-                    id="excluded-apps-search"
-                    type="search"
-                    role="combobox"
-                    aria-expanded="false"
-                    aria-controls="excluded-apps-list"
-                    aria-autocomplete="list"
-                    aria-describedby="excluded-apps-help"
-                    autocomplete="off"
-                    spellcheck="false"
-                    placeholder="Search apps on this Mac"
-                    data-i18n-placeholder="settings.field.excludedBundleIds.search"
-                  />
+                  <div class="chrome-search app-picker-search">
+                    <span class="chrome-search-icon" aria-hidden="true">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                        <circle
+                          cx="6.6"
+                          cy="6.6"
+                          r="4.1"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                        />
+                        <path
+                          d="m9.8 9.8 3.6 3.6"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    </span>
+                    <input
+                      id="excluded-apps-search"
+                      type="search"
+                      role="combobox"
+                      aria-expanded="false"
+                      aria-controls="excluded-apps-list"
+                      aria-autocomplete="list"
+                      aria-describedby="excluded-apps-help excluded-apps-howto"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="Search apps on this Mac"
+                      data-i18n-placeholder="settings.field.excludedBundleIds.search"
+                    />
+                  </div>
                   <div
                     id="excluded-apps-list"
                     class="app-picker-list"
@@ -179,6 +206,14 @@
                     hidden
                   ></div>
                 </div>
+                <button
+                  type="button"
+                  class="btn-ghost"
+                  data-pick-installed-app
+                  data-i18n="settings.field.excludedBundleIds.choose"
+                >
+                  Choose app…
+                </button>
                 <button
                   type="button"
                   class="btn-ghost"
@@ -206,6 +241,12 @@
               >
                 Installed apps could not be listed.
               </p>
+              <p
+                hidden
+                class="muted"
+                role="status"
+                data-excluded-apps-picker
+              ></p>
             </div>
           </div>
         </fieldset>

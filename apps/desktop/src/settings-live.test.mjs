@@ -8,7 +8,11 @@ import {
   applySettingsSearch,
   filterInstalledApps,
   isSafeBundleId,
+  isSafeDisplayName,
   patchSettingsFromForm,
+  pickExcludedApp,
+  pickerFailureCode,
+  readExcludedBundleIds,
   resolveExcludedApps,
   settingsSearchNeedle,
   settingsUnitHaystack,
@@ -81,8 +85,48 @@ test("excluded app picker searches installed apps and keeps many ids", () => {
   assert.doesNotMatch(html, /name="excludedBundleIds"/);
   assert.doesNotMatch(html, /id="excluded-bundle-ids"/);
   assert.match(live, /list_installed_apps/);
+  assert.match(live, /pick_installed_app/);
   assert.match(live, /app_icon_data_url/);
+  assert.match(live, /btn-icon/);
+  assert.match(live, /data-i18n-aria-label/);
+  assert.doesNotMatch(live, /remove\.textContent = removeLabel/);
+  assert.match(html, /data-pick-installed-app/);
+  assert.match(html, /settings.field.excludedBundleIds.howto/);
+  assert.match(html, /settings.field.excludedBundleIds.choose/);
   assert.doesNotMatch(live, /join\(", "\)/);
+  assert.doesNotMatch(live, /pick_installed_app\([^)]*path/);
+  assert.equal(isSafeDisplayName("Safari"), true);
+  assert.equal(isSafeDisplayName("/Applications/Safari.app"), false);
+  assert.equal(pickerFailureCode("picker_cancelled"), "picker_cancelled");
+  assert.equal(pickerFailureCode("picker_unavailable"), "picker_unavailable");
+  assert.equal(pickerFailureCode("nope"), "invalid_app");
+});
+
+test("finder pick adds a bundle without sending a path", async () => {
+  const host = {
+    dataset: { excludedIds: "" },
+    _installedApps: [],
+    querySelector() {
+      return null;
+    },
+  };
+  const picked = await pickExcludedApp(host, async (cmd, args) => {
+    assert.equal(cmd, "pick_installed_app");
+    assert.equal(args, undefined);
+    return { bundleId: "com.setapp.Foo", name: "Foo" };
+  });
+  assert.equal(picked, "picked");
+  assert.deepEqual(readExcludedBundleIds(host), ["com.setapp.Foo"]);
+  const cancelled = await pickExcludedApp(host, async () => {
+    throw "picker_cancelled";
+  });
+  assert.equal(cancelled, "picker_cancelled");
+  assert.deepEqual(readExcludedBundleIds(host), ["com.setapp.Foo"]);
+  const bad = await pickExcludedApp(host, async () => {
+    return { bundleId: "/Applications/Evil.app", name: "Evil" };
+  });
+  assert.equal(bad, "invalid_app");
+  assert.deepEqual(readExcludedBundleIds(host), ["com.setapp.Foo"]);
 });
 
 test("settings language switcher uses endonyms and option lang", () => {
