@@ -23,5 +23,12 @@ mod pasteboard_tests {
         let err = native_pasteboard_write("secret-plain", "<p>secret-html</p>").expect_err("stub");
         assert_eq!(err, NativeError::Degraded);
         assert!(!format!("{err:?}").contains("secret"));
+        let swift = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../native/macos/BronzeNative/Sources/BronzeNative/PasteboardABI.swift"
+        ));
+        assert!(swift.contains("writeObjects"));
+        assert!(swift.contains("forType: .string"));
+        assert!(!swift.contains("wrotePlain && wroteHtml"));
     }
 }

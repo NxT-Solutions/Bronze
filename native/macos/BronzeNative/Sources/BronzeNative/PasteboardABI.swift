@@ -17,11 +17,20 @@ public func bronze_native_pasteboard_write(
     return bronzeOnAppKit {
         let board = NSPasteboard.general
         board.clearContents()
-        let wrotePlain = board.setString(plainText, forType: .string)
-        let wroteHtml = board.setString(htmlText, forType: .html)
-        if wrotePlain && wroteHtml {
+        let item = NSPasteboardItem()
+        guard item.setString(plainText, forType: .string) else {
+            return board.setString(plainText, forType: .string)
+                ? BRONZE_STATUS_OK
+                : BRONZE_STATUS_DEGRADED
+        }
+        if !htmlText.isEmpty, let htmlData = htmlText.data(using: .utf8) {
+            item.setData(htmlData, forType: .html)
+        }
+        if board.writeObjects([item]) {
             return BRONZE_STATUS_OK
         }
-        return BRONZE_STATUS_DEGRADED
+        return board.setString(plainText, forType: .string)
+            ? BRONZE_STATUS_OK
+            : BRONZE_STATUS_DEGRADED
     }
 }

@@ -53,17 +53,40 @@ fn escape_inline(text: &str) -> String {
         .replace('`', "\\`")
 }
 
-pub fn html_from_constrained_markdown(md: &str) -> String {
+fn list_item_body(line: &str) -> Option<(&str, bool)> {
+    let trimmed = line.trim_start();
+    if let Some(rest) = trimmed.strip_prefix("- ") {
+        return Some((rest, false));
+    }
+    if let Some(rest) = trimmed.strip_prefix("+ ") {
+        return Some((rest, false));
+    }
+    if let Some(rest) = trimmed.strip_prefix("• ") {
+        return Some((rest, false));
+    }
+    if let Some(rest) = trimmed.strip_prefix("* ") {
+        return Some((rest, false));
+    }
+    let digits = trimmed.bytes().take_while(u8::is_ascii_digit).count();
+    if digits > 0 {
+        let after = &trimmed[digits..];
+        if let Some(rest) = after.strip_prefix(". ") {
+            return Some((rest, true));
+        }
+    }
+    None
+}
+
+fn render_inline_markdown(md: &str, body: &mut String) {
     let chars: Vec<char> = md.chars().collect();
     let mut i = 0;
     let mut bold = false;
     let mut italic = false;
-    let mut body = String::new();
     while i < chars.len() {
         if chars[i] == '\\' && i + 1 < chars.len() {
             let next = chars[i + 1];
             if next == '\\' || next == '*' || next == '`' {
-                append_text(&mut body, next);
+                append_text(body, next);
                 i += 2;
                 continue;
             }
@@ -72,20 +95,20 @@ pub fn html_from_constrained_markdown(md: &str) -> String {
             if matches!(chars.get(i..i + 3), Some(['*', '*', '*'])) {
                 let want_bold = !bold;
                 let want_italic = !italic;
-                set_style(&mut body, &mut bold, &mut italic, want_bold, want_italic);
+                set_style(body, &mut bold, &mut italic, want_bold, want_italic);
                 i += 3;
                 continue;
             }
             if matches!(chars.get(i..i + 2), Some(['*', '*'])) {
                 let want_bold = !bold;
                 let keep_italic = italic;
-                set_style(&mut body, &mut bold, &mut italic, want_bold, keep_italic);
+                set_style(body, &mut bold, &mut italic, want_bold, keep_italic);
                 i += 2;
                 continue;
             }
             let keep_bold = bold;
             let want_italic = !italic;
-            set_style(&mut body, &mut bold, &mut italic, keep_bold, want_italic);
+            set_style(body, &mut bold, &mut italic, keep_bold, want_italic);
             i += 1;
             continue;
         }
@@ -102,10 +125,41 @@ pub fn html_from_constrained_markdown(md: &str) -> String {
             i += 1;
             continue;
         }
-        append_text(&mut body, chars[i]);
+        append_text(body, chars[i]);
         i += 1;
     }
-    set_style(&mut body, &mut bold, &mut italic, false, false);
+    set_style(body, &mut bold, &mut italic, false, false);
+}
+
+pub fn html_from_constrained_markdown(md: &str) -> String {
+    let mut body = String::new();
+    let lines: Vec<&str> = md.split('\n').collect();
+    let mut i = 0;
+    while i < lines.len() {
+        if let Some((_, ordered)) = list_item_body(lines[i]) {
+            let tag = if ordered { "ol" } else { "ul" };
+            body.push_str(&format!("<{tag}>"));
+            while i < lines.len() {
+                let Some((item, item_ordered)) = list_item_body(lines[i]) else {
+                    break;
+                };
+                if item_ordered != ordered {
+                    break;
+                }
+                body.push_str("<li>");
+                render_inline_markdown(item, &mut body);
+                body.push_str("</li>");
+                i += 1;
+            }
+            body.push_str(&format!("</{tag}>"));
+            continue;
+        }
+        render_inline_markdown(lines[i], &mut body);
+        i += 1;
+        if i < lines.len() {
+            body.push_str("<br>");
+        }
+    }
     format!("<div style=\"white-space:pre-wrap\">{body}</div>")
 }
 
@@ -201,5 +255,11 @@ mod markup_tests {
         let escaped = html_from_constrained_markdown("\\*not\\*");
         assert!(escaped.contains("*not*"));
         assert!(!escaped.contains("<em>"));
+
+        let list = html_from_constrained_markdown("- one\n- **two**");
+        assert!(list.contains("<ul>"));
+        assert!(list.contains("<li>one</li>"));
+        assert!(list.contains("<li><strong>two</strong></li>"));
+        assert!(!list.contains("<script"));
     }
 }

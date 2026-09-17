@@ -14,8 +14,9 @@ pub enum LiveAxOutcome {
 
 pub const LIVE_AX_MAX_BYTES: usize = 1 << 20;
 const AX_CHAIN_LIMIT: usize = 16;
-const AX_CHILD_BUDGET: usize = 24;
+const AX_CHILD_BUDGET: usize = 80;
 const AX_WINDOW_LIMIT: usize = 8;
+const AX_CHILD_FANOUT: isize = 32;
 
 pub fn use_system_focused_fallback(last_external: Option<i32>) -> bool {
     last_external.is_none()
@@ -42,9 +43,8 @@ pub fn classify_ax_role(role: &str, subrole: &str) -> AxProtection {
         return AxProtection::Protected;
     }
     match role {
-        "AXTextField" | "AXTextArea" | "AXStaticText" | "AXWebArea" | "AXText" | "AXComboBox" => {
-            AxProtection::AllowedText
-        }
+        "AXTextField" | "AXTextArea" | "AXStaticText" | "AXWebArea" | "AXText" | "AXComboBox"
+        | "AXBrowser" | "AXDocument" => AxProtection::AllowedText,
         "AXApplication" | "AXWindow" | "AXGroup" | "AXScrollArea" | "AXLayoutArea"
         | "AXToolbar" | "AXMenuBar" | "AXMenu" | "AXSplitter" | "AXTabGroup" => {
             AxProtection::NeutralContainer
@@ -468,7 +468,7 @@ mod sys {
             return;
         };
         if let Some(n) = array_len(children) {
-            for idx in 0..n.min(16) {
+            for idx in 0..n.min(super::AX_CHILD_FANOUT) {
                 if let Some(child) = array_get(children, idx) {
                     queue.push(child.cast_mut());
                 }
@@ -487,21 +487,21 @@ mod sys {
         let subrole = attr_string(element, "AXSubrole");
         match super::classify_ax_role(&role, &subrole) {
             super::AxProtection::Protected => Err(super::LiveAxOutcome::ProtectedContent),
-            super::AxProtection::AllowedText => match selected_text(element) {
-                Ok(Some(text)) => {
-                    let len = text.len();
-                    Ok(Some((
-                        super::LiveAxOutcome::Captured { len },
-                        Some(text),
-                        source_app_name,
-                    )))
+            super::AxProtection::AllowedText | super::AxProtection::NeutralContainer => {
+                match selected_text(element) {
+                    Ok(Some(text)) => {
+                        let len = text.len();
+                        Ok(Some((
+                            super::LiveAxOutcome::Captured { len },
+                            Some(text),
+                            source_app_name,
+                        )))
+                    }
+                    Ok(None) => Ok(None),
+                    Err(outcome) => Err(outcome),
                 }
-                Ok(None) => Ok(None),
-                Err(outcome) => Err(outcome),
-            },
-            super::AxProtection::NeutralContainer | super::AxProtection::UnknownContentBearing => {
-                Ok(None)
             }
+            super::AxProtection::UnknownContentBearing => Ok(None),
         }
     }
 
@@ -768,6 +768,11 @@ mod ax_live_tests {
             AxProtection::AllowedText
         );
         assert_eq!(classify_ax_role("AXWebArea", ""), AxProtection::AllowedText);
+        assert_eq!(classify_ax_role("AXBrowser", ""), AxProtection::AllowedText);
+        assert_eq!(
+            classify_ax_role("AXDocument", ""),
+            AxProtection::AllowedText
+        );
         assert_eq!(
             classify_ax_role("AXWindow", ""),
             AxProtection::NeutralContainer
