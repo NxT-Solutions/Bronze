@@ -110,23 +110,191 @@ fn wrap_notice_helper(swift_bin: &Path, dest_dir: &Path, icon: &Path) {
         std::fs::copy(icon, resources.join("AppIcon.icns")).expect("BronzeNotice icon");
     }
     std::fs::write(app.join("Contents/PkgInfo"), "APPL????").expect("BronzeNotice PkgInfo");
-    let signed = Command::new("/usr/bin/codesign")
-        .args([
-            "--force",
-            "--deep",
-            "--sign",
-            "-",
-            "--identifier",
-            "app.bronze.desktop.notice",
-        ])
-        .arg(&app)
-        .status()
-        .expect("codesign BronzeNotice.app");
+    sign_notice_helper(&app, dest_dir);
+}
+
+/// Ad-hoc signatures pin the designated requirement to a cdhash, so
+/// Notification Center treats each rebuild as a different app. A persistent
+/// local cert keeps identifier + certificate leaf stable across tauri-dev.
+fn sign_notice_helper(app: &Path, dest_dir: &Path) {
+    let target_dir = dest_dir.parent().unwrap_or(dest_dir);
+    let identity = ensure_notice_signing_identity(target_dir);
+    let previous = user_keychains();
+    if let Some(keychain) = identity.as_ref() {
+        let mut next = vec![keychain.clone()];
+        for path in &previous {
+            if path != keychain {
+                next.push(path.clone());
+            }
+        }
+        set_user_keychains(&next);
+        unlock_notice_keychain(Path::new(keychain));
+    }
+    let mut sign = Command::new("/usr/bin/codesign");
+    sign.args(["--force", "--deep", "--sign"]);
+    if identity.is_some() {
+        sign.arg("Bronze Notice");
+    } else {
+        sign.arg("-");
+    }
+    sign.args(["--identifier", "app.bronze.desktop.notice"])
+        .arg(app);
+    let signed = sign.status().expect("codesign BronzeNotice.app");
+    set_user_keychains(&previous);
     assert!(
         signed.success(),
         "codesign must bind Info.plist onto BronzeNotice.app"
     );
 }
+
+fn ensure_notice_signing_identity(target_dir: &Path) -> Option<String> {
+    let keychain = target_dir.join("bronze-notice-signing.keychain-db");
+    if !keychain.exists() {
+        let created = Command::new("/usr/bin/security")
+            .args(["create-keychain", "-p", NOTICE_SIGNING_PASS])
+            .arg(&keychain)
+            .status()
+            .ok()?;
+        if !created.success() {
+            return None;
+        }
+        let _ = Command::new("/usr/bin/security")
+            .args(["set-keychain-settings", "-t", "86400"])
+            .arg(&keychain)
+            .status();
+    }
+    unlock_notice_keychain(&keychain);
+    if !notice_identity_present(&keychain) && !import_notice_signing_cert(&keychain) {
+        return None;
+    }
+    let _ = Command::new("/usr/bin/security")
+        .args([
+            "set-key-partition-list",
+            "-S",
+            "apple-tool:,apple:,codesign:",
+            "-s",
+            "-k",
+            NOTICE_SIGNING_PASS,
+        ])
+        .arg(&keychain)
+        .status();
+    Some(keychain.to_string_lossy().into_owned())
+}
+
+fn notice_identity_present(keychain: &Path) -> bool {
+    let out = Command::new("/usr/bin/security")
+        .args(["find-identity", "-p", "codesigning"])
+        .arg(keychain)
+        .output();
+    out.ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).contains("Bronze Notice"))
+        .unwrap_or(false)
+}
+
+fn import_notice_signing_cert(keychain: &Path) -> bool {
+    let dir = std::env::temp_dir().join("bronze-notice-signing");
+    let _ = std::fs::create_dir_all(&dir);
+    let cfg = dir.join("openssl.cnf");
+    let key = dir.join("key.pem");
+    let cert = dir.join("cert.pem");
+    let p12 = dir.join("cert.p12");
+    if std::fs::write(&cfg, NOTICE_OPENSSL_CNF).is_err() {
+        return false;
+    }
+    let req = Command::new("/usr/bin/openssl")
+        .args(["req", "-new", "-x509", "-days", "3650", "-nodes", "-config"])
+        .arg(&cfg)
+        .arg("-keyout")
+        .arg(&key)
+        .arg("-out")
+        .arg(&cert)
+        .status();
+    if !req.map(|s| s.success()).unwrap_or(false) {
+        return false;
+    }
+    let export = Command::new("/usr/bin/openssl")
+        .args(["pkcs12", "-export", "-inkey"])
+        .arg(&key)
+        .arg("-in")
+        .arg(&cert)
+        .arg("-out")
+        .arg(&p12)
+        .args(["-passout", "pass:p12pass", "-name", "Bronze Notice"])
+        .status();
+    if !export.map(|s| s.success()).unwrap_or(false) {
+        return false;
+    }
+    Command::new("/usr/bin/security")
+        .arg("import")
+        .arg(&p12)
+        .args(["-k"])
+        .arg(keychain)
+        .args([
+            "-P",
+            "p12pass",
+            "-T",
+            "/usr/bin/codesign",
+            "-T",
+            "/usr/bin/security",
+        ])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn unlock_notice_keychain(keychain: &Path) {
+    let _ = Command::new("/usr/bin/security")
+        .args(["unlock-keychain", "-p", NOTICE_SIGNING_PASS])
+        .arg(keychain)
+        .status();
+}
+
+fn user_keychains() -> Vec<String> {
+    let out = Command::new("/usr/bin/security")
+        .args(["list-keychains", "-d", "user"])
+        .output();
+    let Ok(out) = out else {
+        return Vec::new();
+    };
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim().trim_matches('"');
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        })
+        .collect()
+}
+
+fn set_user_keychains(paths: &[String]) {
+    if paths.is_empty() {
+        return;
+    }
+    let mut cmd = Command::new("/usr/bin/security");
+    cmd.args(["list-keychains", "-d", "user", "-s"]);
+    for path in paths {
+        cmd.arg(path);
+    }
+    let _ = cmd.status();
+}
+
+const NOTICE_SIGNING_PASS: &str = "bronze-notice-local";
+
+const NOTICE_OPENSSL_CNF: &str = r#"[ req ]
+distinguished_name = dn
+x509_extensions = ext
+prompt = no
+[ dn ]
+CN = Bronze Notice
+O = Bronze
+[ ext ]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage = critical,codeSigning
+"#;
 
 const NOTICE_HELPER_PLIST: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <plist version="1.0">
@@ -151,6 +319,10 @@ const NOTICE_HELPER_PLIST: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
   <string>6.0</string>
   <key>LSUIElement</key>
   <true/>
+  <key>NSPrincipalClass</key>
+  <string>NSApplication</string>
+  <key>NSUserNotificationAlertStyle</key>
+  <string>banner</string>
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSUserNotificationsUsageDescription</key>

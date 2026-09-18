@@ -72,8 +72,12 @@ mod packaging_tests {
         assert!(build.contains("BronzeNotice.app"));
         assert!(build.contains("AppIcon.icns"));
         assert!(build.contains("NSUserNotificationsUsageDescription"));
+        assert!(build.contains("NSUserNotificationAlertStyle"));
+        assert!(build.contains("NSPrincipalClass"));
         assert!(build.contains("/usr/bin/codesign"));
         assert!(build.contains("app.bronze.desktop.notice"));
+        assert!(build.contains("Bronze Notice"));
+        assert!(build.contains("bronze-notice-signing.keychain"));
         assert!(!build.contains("externalBin"));
     }
 }

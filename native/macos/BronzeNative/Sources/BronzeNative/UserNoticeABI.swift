@@ -124,10 +124,11 @@ private func postUserNotice(
     content.title = title
     content.body = body
     content.sound = nil
+    content.interruptionLevel = .active
     let request = UNNotificationRequest(
         identifier: "bronze.capture.\(UUID().uuidString)",
         content: content,
-        trigger: nil
+        trigger: UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
     )
     center.add(request, withCompletionHandler: nil)
 }
@@ -139,12 +140,13 @@ private func postLegacyNotice(title: String, body: String) {
     guard let app = noticeHelperApp() else {
         return
     }
-    // Permission sheets only appear when this helper is an activating instance.
-    let config = NSWorkspace.OpenConfiguration()
-    config.createsNewApplicationInstance = true
-    config.activates = true
-    config.arguments = [title, body]
-    NSWorkspace.shared.openApplication(at: app, configuration: config) { _, _ in }
+    // Launch Services (`open -g`) makes the helper responsible for its own
+    // UN identity. NSWorkspace.openApplication keeps this binary as parent
+    // and usernoted then drops the banner.
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+    process.arguments = ["-n", "-g", app.path, "--args", title, body]
+    try? process.run()
 }
 
 private func noticeHelperApp() -> URL? {

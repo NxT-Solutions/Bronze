@@ -53,8 +53,12 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         self.body = body
     }
 
+    func applicationWillFinishLaunching(_: Notification) {
+        UNUserNotificationCenter.current().delegate = self
+    }
+
     func applicationDidFinishLaunching(_: Notification) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
             self.quit()
         }
         let center = UNUserNotificationCenter.current()
@@ -74,7 +78,7 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         case .authorized, .provisional:
             post(center)
         case .notDetermined:
-            NSApp.activate(ignoringOtherApps: true)
+            presentAsForeground()
             center.requestAuthorization(options: [.alert]) { granted, _ in
                 DispatchQueue.main.async {
                     if granted {
@@ -91,13 +95,20 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         }
     }
 
-    func userNotificationCenter(
+    /// Accessory LSUIElement launches can add a request that usernoted never presents.
+    @MainActor
+    private func presentAsForeground() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .list])
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             self.quit()
         }
     }
@@ -108,13 +119,18 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         content.title = title
         content.body = body
         content.sound = nil
+        content.interruptionLevel = .active
         let request = UNNotificationRequest(
             identifier: "bronze.capture.\(UUID().uuidString)",
             content: content,
-            trigger: nil
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
         )
         center.add(request) { error in
             if error != nil {
+                self.quit()
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                 self.quit()
             }
         }
