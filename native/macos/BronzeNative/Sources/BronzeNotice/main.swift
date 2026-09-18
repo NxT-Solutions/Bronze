@@ -4,23 +4,33 @@ import UserNotifications
 @main
 enum BronzeNoticeMain {
     static func main() {
-        let args = CommandLine.arguments
-        guard args.count >= 3 else {
-            return
-        }
-        let title = args[1]
-        let body = args[2]
-        guard isSafeNoticeText(title, max: 80), isSafeNoticeText(body, max: 200) else {
+        guard let texts = noticePayload(CommandLine.arguments) else {
             return
         }
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
-        let delegate = BronzeNoticeDelegate(title: title, body: body)
+        let delegate = BronzeNoticeDelegate(title: texts.0, body: texts.1)
         BronzeNoticeDelegate.running = delegate
         app.delegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
         app.run()
     }
+}
+
+/// Launch Services may inject `-psn_*` before the title/body pair.
+private func noticePayload(_ args: [String]) -> (String, String)? {
+    let texts = args.dropFirst().filter { arg in
+        !arg.hasPrefix("-psn_") && !arg.hasPrefix("-NS")
+    }
+    guard texts.count >= 2 else {
+        return nil
+    }
+    let title = texts[texts.startIndex]
+    let body = texts[texts.index(after: texts.startIndex)]
+    guard isSafeNoticeText(title, max: 80), isSafeNoticeText(body, max: 200) else {
+        return nil
+    }
+    return (title, body)
 }
 
 private func isSafeNoticeText(_ text: String, max: Int) -> Bool {
@@ -50,20 +60,32 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         center.getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .authorized, .provisional:
-                self.post(center)
-            case .notDetermined:
-                center.requestAuthorization(options: [.alert]) { granted, _ in
+            let status = settings.authorizationStatus
+            DispatchQueue.main.async {
+                self.handleSettings(status)
+            }
+        }
+    }
+
+    @MainActor
+    private func handleSettings(_ status: UNAuthorizationStatus) {
+        let center = UNUserNotificationCenter.current()
+        switch status {
+        case .authorized, .provisional:
+            post(center)
+        case .notDetermined:
+            NSApp.activate(ignoringOtherApps: true)
+            center.requestAuthorization(options: [.alert]) { granted, _ in
+                DispatchQueue.main.async {
                     if granted {
-                        self.post(center)
+                        self.post(UNUserNotificationCenter.current())
                     } else {
                         self.quit()
                     }
                 }
-            default:
-                self.quit()
             }
+        default:
+            quit()
         }
     }
 
@@ -78,6 +100,7 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         }
     }
 
+    @MainActor
     private func post(_ center: UNUserNotificationCenter) {
         let content = UNMutableNotificationContent()
         content.title = title

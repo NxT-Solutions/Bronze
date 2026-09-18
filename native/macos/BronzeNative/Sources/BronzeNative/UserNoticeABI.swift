@@ -139,12 +139,12 @@ private func postLegacyNotice(title: String, body: String) {
     guard let app = noticeHelperApp() else {
         return
     }
-    let task = Process()
-    task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-    task.arguments = ["-n", "-g", app.path, "--args", title, body]
-    task.standardOutput = FileHandle.nullDevice
-    task.standardError = FileHandle.nullDevice
-    try? task.run()
+    // Permission sheets only appear when this helper is an activating instance.
+    let config = NSWorkspace.OpenConfiguration()
+    config.createsNewApplicationInstance = true
+    config.activates = true
+    config.arguments = [title, body]
+    NSWorkspace.shared.openApplication(at: app, configuration: config) { _, _ in }
 }
 
 private func noticeHelperApp() -> URL? {

@@ -124,7 +124,10 @@ mod user_notice_tests {
         assert!(swift.contains("postLegacyNotice"));
         assert!(swift.contains("BronzeNotice.app"));
         assert!(swift.contains("noticeHelperApp"));
-        assert!(swift.contains("/usr/bin/open"));
+        assert!(swift.contains("NSWorkspace"));
+        assert!(swift.contains("OpenConfiguration"));
+        assert!(swift.contains("createsNewApplicationInstance"));
+        assert!(!swift.contains("/usr/bin/open"));
         assert!(!swift.contains("display notification"));
         assert!(!swift.contains("osascript"));
         assert!(!swift.contains("NSUserNotificationCenter"));
@@ -140,6 +143,9 @@ mod user_notice_tests {
         assert!(helper.contains("requestAuthorization"));
         assert!(helper.contains("willPresent"));
         assert!(helper.contains("isSafeNoticeText"));
+        assert!(helper.contains("noticePayload"));
+        assert!(helper.contains("-psn_"));
+        assert!(helper.contains("NSApp.activate"));
         assert!(!helper.contains("osascript"));
         assert!(!helper.contains("display notification"));
         assert!(!helper.contains("URLSession"));
