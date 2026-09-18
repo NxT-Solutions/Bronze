@@ -22,13 +22,12 @@ const live = readFileSync(join(root, "queue-live.mjs"), "utf8");
 const itemView = readFileSync(join(root, "item-view.mjs"), "utf8");
 
 const FEEDBACK = {
-  "capture.announce.saved": "Captured to Bronze.",
-  "capture.announce.rejected":
-    "No selection was captured; select text in another app.",
-  "capture.announce.denied": "Accessibility is required to read the selection.",
-  "capture.announce.protected": "That field is protected and was not captured.",
-  "capture.announce.failed": "Capture did not save.",
-  "capture.announce.excluded": "This app is excluded from capture.",
+  "capture.announce.saved": "Saved.",
+  "capture.announce.rejected": "No text selected.",
+  "capture.announce.denied": "Allow Accessibility to capture.",
+  "capture.announce.protected": "Protected field.",
+  "capture.announce.failed": "Could not save.",
+  "capture.announce.excluded": "This app is excluded.",
 };
 
 function captureStatusRoot(messages = FEEDBACK) {

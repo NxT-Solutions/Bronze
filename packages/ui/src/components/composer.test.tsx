@@ -24,7 +24,7 @@ describe("Composer (QUE-002, A11Y-002)", () => {
       <Composer
         label="Add item"
         submitLabel="Add"
-        errorLabel="Could not add item"
+        errorLabel="Could not add."
         onAdd={onAdd}
       />,
     );
@@ -36,7 +36,7 @@ describe("Composer (QUE-002, A11Y-002)", () => {
       contentLanguage: "und",
     });
     expect(field).toHaveValue("park me");
-    expect(screen.getByRole("alert")).toHaveTextContent("Could not add item");
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not add.");
   });
 
   it("axe passes on empty and error", async () => {
@@ -44,7 +44,7 @@ describe("Composer (QUE-002, A11Y-002)", () => {
       <Composer
         label="Add item"
         submitLabel="Add"
-        errorLabel="Could not add item"
+        errorLabel="Could not add."
         onAdd={async () => {
           throw new Error("store");
         }}
@@ -55,7 +55,7 @@ describe("Composer (QUE-002, A11Y-002)", () => {
       <Composer
         label="Add item"
         submitLabel="Add"
-        errorLabel="Could not add item"
+        errorLabel="Could not add."
         onAdd={async () => {
           throw new Error("store");
         }}

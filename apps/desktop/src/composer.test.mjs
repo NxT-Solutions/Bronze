@@ -41,7 +41,7 @@ test("composer markup is a labeled textbox with catalog strings", () => {
   assert.equal(en["composer.placeholder"], "Type or Capture");
   assert.equal(en["composer.add.submit"], "Add");
   assert.equal(en["composer.add.submit.chord"], "Add ⇧↩");
-  assert.equal(en["composer.add.error"], "Could not add item");
+  assert.equal(en["composer.add.error"], "Could not add.");
   assert.equal(en["composer.format.bold"], "Bold");
   assert.equal(en["composer.format.italic"], "Italic");
   assert.equal(en["composer.format.bold.tip"], "Bold ⌘B");

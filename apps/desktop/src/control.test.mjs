@@ -42,13 +42,13 @@ test("action status copies catalog text and hides when missing", () => {
         return status;
       }
       if (sel.includes("copy.announce.copied")) {
-        return { textContent: "Copied to the clipboard." };
+        return { textContent: "Copied." };
       }
       return null;
     },
   };
   applyActionStatus(root, "copy.announce.copied");
-  assert.equal(status.textContent, "Copied to the clipboard.");
+  assert.equal(status.textContent, "Copied.");
   assert.equal(status.hidden, false);
   applyActionStatus(root, "missing");
   assert.equal(status.textContent, "");
@@ -68,8 +68,8 @@ test("action tip writes catalog text on the row and overflow closes away", () =>
     },
     ownerDocument: { defaultView: null },
   };
-  applyActionTip(button, "Copied to the clipboard.");
-  assert.equal(tip.textContent, "Copied to the clipboard.");
+  applyActionTip(button, "Copied.");
+  assert.equal(tip.textContent, "Copied.");
   assert.equal(tip.hidden, false);
   applyActionStatus(
     {
@@ -78,7 +78,7 @@ test("action tip writes catalog text on the row and overflow closes away", () =>
           return { textContent: "", hidden: true };
         }
         if (sel.includes("copy.announce.failed")) {
-          return { textContent: "Copy did not write to the clipboard." };
+          return { textContent: "Could not copy." };
         }
         return null;
       },
@@ -163,8 +163,8 @@ test("chrome notice is viewport chrome and dismisses", () => {
       return sel === "#chrome-notice" ? host : null;
     },
   };
-  showChromeNotice(root, "This app is excluded from capture.", "failed");
-  assert.equal(label.textContent, "This app is excluded from capture.");
+  showChromeNotice(root, "This app is excluded.", "failed");
+  assert.equal(label.textContent, "This app is excluded.");
   assert.equal(host.hidden, false);
   assert.equal(host.dataset.tone, "failed");
   hideChromeNotice(root);
@@ -187,14 +187,14 @@ test("chrome notice is viewport chrome and dismisses", () => {
     },
   };
   bindChromeNotice(bound);
-  showChromeNotice(bound, "Could not add item", "failed");
+  showChromeNotice(bound, "Could not add.", "failed");
   clicks[0]({
     target: {
       closest: (sel) => (sel === "[data-notice-dismiss]" ? true : null),
     },
   });
   assert.equal(host.hidden, true);
-  showChromeNotice(bound, "Captured to Bronze.");
+  showChromeNotice(bound, "Saved.");
   keys[0]({ key: "Escape" });
   assert.equal(host.hidden, true);
 });
