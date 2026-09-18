@@ -4,11 +4,19 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  applyNoticeAuthorization,
   applyPermissionResult,
+  loadNoticeAuthorization,
+  NOTICE_REQUEST_COMMAND,
+  NOTICE_STATUS_COMMAND,
+  noticePillStatus,
   OPEN_SETTINGS_COMMAND,
   pillStatusForState,
   RETEST_COMMAND,
+  requestNoticeAuthorization,
   retestUsedPermission,
+  shouldRevealNoticeAllow,
+  shouldRevealNoticeSettings,
 } from "./permission-health.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -41,8 +49,26 @@ test("permission health lists independent rows and unused screen recording", () 
   assert.match(html, /data-permission-retest="inputMonitoring"/);
   assert.match(html, /data-permission-retest="accessibility"/);
   assert.match(html, /data-permission-open-settings="inputMonitoring"/);
+  assert.match(html, /data-capability="notifications"/);
+  assert.match(html, /data-permission-allow-notifications/);
+  assert.match(html, /data-permission-open-settings="notifications"/);
+  assert.doesNotMatch(html, /data-permission-retest="notifications"/);
   assert.doesNotMatch(html, /data-permission-retest="screenRecording"/);
   assert.match(html, /permission-health\.mjs/);
+  assert.equal(
+    en["settings.permission.notifications.why"],
+    "Needed for Notification Center banners",
+  );
+  assert.equal(
+    en["settings.permission.notifications.alternative"],
+    "The in-app notice still appears",
+  );
+  assert.equal(
+    en["settings.permission.notifications.allow"],
+    "Allow notifications",
+  );
+  assert.equal(en["settings.permission.status.unavailable"], "Unavailable");
+  assert.equal(en["settings.permission.status.notRequested"], "Not requested");
 });
 
 test("retest uses an injected request hook and never asks for screen recording", async () => {
@@ -85,4 +111,46 @@ test("retest uses an injected request hook and never asks for screen recording",
   );
   assert.equal(card.dataset.status, "denied");
   assert.equal(open.hidden, false);
+});
+
+test("notice health loads status only and shows Allow while undetermined", async () => {
+  const commands = [];
+  const pill = { dataset: {}, textContent: "Unavailable", setAttribute() {} };
+  const card = { dataset: {}, querySelector: () => pill };
+  const allow = { hidden: true };
+  const open = { hidden: true };
+  const root = {
+    querySelector(sel) {
+      if (String(sel).includes('data-capability="notifications"')) return card;
+      if (String(sel).includes("allow-notifications")) return allow;
+      if (String(sel).includes("open-settings")) return open;
+      return pill;
+    },
+  };
+  const status = await loadNoticeAuthorization(root, async (cmd) => {
+    commands.push(cmd);
+    return "unavailable";
+  });
+  assert.deepEqual(commands, [NOTICE_STATUS_COMMAND]);
+  assert.equal(status, "unavailable");
+  assert.equal(noticePillStatus("unavailable"), "unavailable");
+  assert.equal(noticePillStatus("not_requested"), "notRequested");
+  assert.equal(shouldRevealNoticeAllow("not_requested"), true);
+  assert.equal(shouldRevealNoticeAllow("unavailable"), false);
+  assert.equal(shouldRevealNoticeSettings("denied"), true);
+  applyNoticeAuthorization(root, "not_requested");
+  assert.equal(card.dataset.status, "notRequested");
+  assert.equal(allow.hidden, false);
+  assert.equal(open.hidden, true);
+  applyNoticeAuthorization(root, "denied");
+  assert.equal(allow.hidden, true);
+  assert.equal(open.hidden, false);
+  const requested = await requestNoticeAuthorization(root, async (cmd) => {
+    commands.push(cmd);
+    return "healthy";
+  });
+  assert.deepEqual(commands, [NOTICE_STATUS_COMMAND, NOTICE_REQUEST_COMMAND]);
+  assert.equal(requested, "healthy");
+  assert.equal(card.dataset.status, "granted");
+  assert.notEqual(NOTICE_REQUEST_COMMAND, RETEST_COMMAND);
 });

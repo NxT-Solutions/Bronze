@@ -214,7 +214,7 @@ export function renderExcludedChips(host, apps) {
     item.dataset.appName = app.name;
     const icon = globalThis.document.createElement("img");
     icon.alt = "";
-    icon.hidden = true;
+    icon.className = "app-picker-option-icon";
     icon.width = 16;
     icon.height = 16;
     const name = globalThis.document.createElement("span");
@@ -346,10 +346,31 @@ async function applySavedLocale(root, settings, invokeFn) {
   }
 }
 
+export function bindSearchClear(root = document) {
+  for (const wrap of root.querySelectorAll(".chrome-search")) {
+    const input = wrap.querySelector("input[type='search']");
+    const clear = wrap.querySelector("[data-search-clear]");
+    if (!input || !clear) {
+      continue;
+    }
+    const sync = () => {
+      clear.hidden = String(input.value ?? "").length === 0;
+    };
+    input.addEventListener("input", sync);
+    clear.addEventListener("click", () => {
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    });
+    sync();
+  }
+}
+
 export async function bindSettingsLive(
   root = document,
   invokeFn = tauriInvoke,
 ) {
+  bindSearchClear(root);
   const search = root.querySelector("#settings-search");
   const filterSettings = () => {
     const query = search?.value ?? "";
@@ -533,7 +554,7 @@ function bindExcludedPicker(root, invokeFn, persist) {
       option.dataset.appName = app.name;
       const icon = globalThis.document.createElement("img");
       icon.alt = "";
-      icon.hidden = true;
+      icon.className = "app-picker-option-icon";
       icon.width = 16;
       icon.height = 16;
       const label = globalThis.document.createElement("span");
@@ -642,10 +663,12 @@ async function fillAppIcon(img, bundleId, invokeFn) {
     );
     if (src) {
       img.src = src;
-      img.hidden = false;
+      img.classList.add("is-ready");
+    } else {
+      img.classList.remove("is-ready");
     }
   } catch {
-    img.hidden = true;
+    img.classList.remove("is-ready");
   }
 }
 

@@ -532,7 +532,7 @@ textarea:hover {
   width: 100%;
   min-height: 1.75rem;
   padding-block: 0.2rem;
-  padding-inline: 1.65rem 0.6rem;
+  padding-inline: 1.65rem 1.7rem;
   border-color: transparent;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--foreground) 5.5%, var(--muted));
@@ -557,17 +557,43 @@ textarea:hover {
 }
 
 .chrome-search input::-webkit-search-cancel-button {
+  display: none;
   appearance: none;
   -webkit-appearance: none;
+}
+
+.chrome-search-clear {
+  position: absolute;
+  inset-inline-end: 0.4rem;
+  inset-block-start: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+  transform: translateY(-50%);
+}
+
+.chrome-search-clear svg {
+  display: block;
   width: 0.7rem;
   height: 0.7rem;
-  margin: 0;
-  background: var(--muted-foreground);
-  mask:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='black' d='M2.1 1.4 1.4 2.1 5.3 6 1.4 9.9l.7.7L6 6.7l3.9 3.9.7-.7L6.7 6l3.9-3.9-.7-.7L6 5.3z'/%3E%3C/svg%3E")
-    center / contain no-repeat;
-  cursor: pointer;
-  opacity: 0.7;
+}
+
+.chrome-search-clear[hidden] {
+  display: none;
+}
+
+.chrome-search-clear:hover:not(:disabled) {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--muted));
 }
 
 .chrome-search:focus-within,
@@ -1178,7 +1204,9 @@ menu {
   color: var(--destructive-foreground);
 }
 
-.pill[data-status="notUsed"] {
+.pill[data-status="notUsed"],
+.pill[data-status="notRequested"],
+.pill[data-status="unavailable"] {
   background: var(--muted);
   color: var(--muted-foreground);
 }
@@ -1361,11 +1389,17 @@ menu {
   background: color-mix(in srgb, var(--foreground) 6%, var(--muted));
 }
 
-.app-picker-option img {
-  width: 16px;
-  height: 16px;
+.app-picker-option-icon {
+  flex: 0 0 1rem;
+  width: 1rem;
+  height: 1rem;
   border-radius: 4px;
   object-fit: contain;
+  visibility: hidden;
+}
+
+.app-picker-option-icon.is-ready {
+  visibility: visible;
 }
 
 fieldset {

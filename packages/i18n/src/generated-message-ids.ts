@@ -177,6 +177,17 @@ export const MessageIds = {
     "settings.permission.composer.available",
   "settings.permission.openSystemSettings":
     "settings.permission.openSystemSettings",
+  "settings.permission.notifications.why":
+    "settings.permission.notifications.why",
+  "settings.permission.notifications.alternative":
+    "settings.permission.notifications.alternative",
+  "settings.permission.notifications.allow":
+    "settings.permission.notifications.allow",
+  "settings.permission.status.notRequested":
+    "settings.permission.status.notRequested",
+  "settings.permission.status.unavailable":
+    "settings.permission.status.unavailable",
+  "settings.search.clear": "settings.search.clear",
   "help.title": "help.title",
   "help.about": "help.about",
   "help.diagnostics.preview": "help.diagnostics.preview",

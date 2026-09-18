@@ -54,4 +54,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /settings.field.excludedBundleIds.howto/);
   assert.match(html, /data-pick-installed-app/);
   assert.match(html, /class="chrome-search app-picker-search"/);
+  assert.match(html, /data-search-clear/);
+  assert.match(html, /data-i18n-aria-label="settings.search.clear"/);
+  assert.equal(en["settings.search.clear"], "Clear search");
 });

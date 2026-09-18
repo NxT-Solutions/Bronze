@@ -88,6 +88,9 @@ test("excluded app picker searches installed apps and keeps many ids", () => {
   assert.match(live, /pick_installed_app/);
   assert.match(live, /app_icon_data_url/);
   assert.match(live, /btn-icon/);
+  assert.match(live, /app-picker-option-icon/);
+  assert.match(live, /bindSearchClear/);
+  assert.match(live, /is-ready/);
   assert.match(live, /data-i18n-aria-label/);
   assert.doesNotMatch(live, /remove\.textContent = removeLabel/);
   assert.match(html, /data-pick-installed-app/);

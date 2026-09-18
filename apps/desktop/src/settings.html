@@ -46,6 +46,21 @@
             aria-placeholder="Search settings"
             data-i18n-placeholder="settings.search.label"
           />
+          <button
+            type="button"
+            class="chrome-search-clear"
+            hidden
+            data-search-clear
+            data-i18n-aria-label="settings.search.clear"
+            aria-label="Clear search"
+          >
+            <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+              <path
+                fill="currentColor"
+                d="M2.1 1.4 1.4 2.1 5.3 6 1.4 9.9l.7.7L6 6.7l3.9 3.9.7-.7L6.7 6l3.9-3.9-.7-.7L6 5.3z"
+              />
+            </svg>
+          </button>
         </search>
       </header>
       <p
@@ -198,6 +213,21 @@
                       placeholder="Search apps on this Mac"
                       data-i18n-placeholder="settings.field.excludedBundleIds.search"
                     />
+                    <button
+                      type="button"
+                      class="chrome-search-clear"
+                      hidden
+                      data-search-clear
+                      data-i18n-aria-label="settings.search.clear"
+                      aria-label="Clear search"
+                    >
+                      <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                        <path
+                          fill="currentColor"
+                          d="M2.1 1.4 1.4 2.1 5.3 6 1.4 9.9l.7.7L6 6.7l3.9 3.9.7-.7L6.7 6l3.9-3.9-.7-.7L6 5.3z"
+                        />
+                      </svg>
+                    </button>
                   </div>
                   <div
                     id="excluded-apps-list"
@@ -359,6 +389,48 @@
                 hidden
                 class="btn-ghost"
                 data-permission-open-settings="accessibility"
+                data-i18n="settings.permission.openSystemSettings"
+              >
+                Open System Settings
+              </button>
+            </div>
+          </li>
+          <li
+            class="health-card"
+            data-settings-unit
+            data-capability="notifications"
+            data-usage="required"
+            data-status="unavailable"
+          >
+            <div class="health-head">
+              <p data-i18n="settings.permission.notifications.why">
+                Needed for Notification Center banners
+              </p>
+              <p
+                class="pill"
+                data-status="unavailable"
+                data-i18n="settings.permission.status.unavailable"
+              >
+                Unavailable
+              </p>
+            </div>
+            <p class="muted" data-i18n="settings.permission.notifications.alternative">
+              The in-app notice still appears
+            </p>
+            <div class="toolbar">
+              <button
+                type="button"
+                hidden
+                data-permission-allow-notifications
+                data-i18n="settings.permission.notifications.allow"
+              >
+                Allow notifications
+              </button>
+              <button
+                type="button"
+                hidden
+                class="btn-ghost"
+                data-permission-open-settings="notifications"
                 data-i18n="settings.permission.openSystemSettings"
               >
                 Open System Settings
