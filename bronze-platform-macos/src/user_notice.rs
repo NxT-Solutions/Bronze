@@ -146,6 +146,8 @@ mod user_notice_tests {
         assert!(helper.contains("noticePayload"));
         assert!(helper.contains("-psn_"));
         assert!(helper.contains("NSApp.activate"));
+        assert!(helper.contains("Notifications-Settings.extension"));
+        assert!(!helper.contains("/tmp/"));
         assert!(!helper.contains("osascript"));
         assert!(!helper.contains("display notification"));
         assert!(!helper.contains("URLSession"));

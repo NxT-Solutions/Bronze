@@ -80,11 +80,13 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
                     if granted {
                         self.post(UNUserNotificationCenter.current())
                     } else {
+                        self.openNotificationSettings()
                         self.quit()
                     }
                 }
             }
         default:
+            openNotificationSettings()
             quit()
         }
     }
@@ -116,6 +118,15 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
                 self.quit()
             }
         }
+    }
+
+    /// Denied cannot show another sheet; Notifications Settings is the enable path.
+    @MainActor
+    private func openNotificationSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") else {
+            return
+        }
+        NSWorkspace.shared.open(url)
     }
 
     private func quit() {
