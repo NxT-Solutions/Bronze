@@ -209,6 +209,7 @@ Each row includes status, why needed, last test, Retest, Open System Settings/he
 
 - Input Monitoring: global modifier event tap.
 - Accessibility: AX selection and synthetic fallback.
+- Notifications: Notification Center banners. Status comes from `notification_authorization_status` (never auto-request from the queue WebView). Allow calls `request_notification_authorization` only while `not_requested`. Denied shows Open System Settings (`open_privacy_settings` notifications). Unbundled `tauri dev` reports `unavailable` and hides Allow; banners still go through the signed `BronzeNotice.app` helper.
 - Launch at Login: optional service registration.
 - Automation: absent P0 unless a later feature requires it.
 - Screen Recording: explicitly “Not used.”
