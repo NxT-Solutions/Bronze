@@ -136,31 +136,30 @@ private func postUserNotice(
 /// A sibling BronzeNotice.app (same logo, UN banners) posts instead so
 /// Accessibility / Input Monitoring on this binary stay put.
 private func postLegacyNotice(title: String, body: String) {
-    guard let exe = noticeHelperExecutable() else {
+    guard let app = noticeHelperApp() else {
         return
     }
     let task = Process()
-    task.executableURL = exe
-    task.arguments = [title, body]
+    task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+    task.arguments = ["-n", "-g", app.path, "--args", title, body]
     task.standardOutput = FileHandle.nullDevice
     task.standardError = FileHandle.nullDevice
     try? task.run()
 }
 
-private func noticeHelperExecutable() -> URL? {
+private func noticeHelperApp() -> URL? {
     if let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
         try? FileManager.default.removeItem(
             at: support.appendingPathComponent("Bronze/BronzeNotice.app")
         )
     }
     let exe = Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0])
-    let helper = exe
-        .deletingLastPathComponent()
-        .appendingPathComponent("BronzeNotice.app/Contents/MacOS/BronzeNotice")
+    let app = exe.deletingLastPathComponent().appendingPathComponent("BronzeNotice.app")
+    let helper = app.appendingPathComponent("Contents/MacOS/BronzeNotice")
     guard FileManager.default.isExecutableFile(atPath: helper.path) else {
         return nil
     }
-    return helper
+    return app
 }
 
 private func announceNotice(_ body: String) {

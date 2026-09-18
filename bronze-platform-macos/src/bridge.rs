@@ -723,6 +723,7 @@ mod tests {
             "osascript",
             "BronzeNotice",
             "display notification",
+            "/usr/bin/open",
             "URLSession",
             "LanguageModel",
         ] {

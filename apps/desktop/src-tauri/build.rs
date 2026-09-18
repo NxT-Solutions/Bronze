@@ -109,6 +109,23 @@ fn wrap_notice_helper(swift_bin: &Path, dest_dir: &Path, icon: &Path) {
     if icon.is_file() {
         std::fs::copy(icon, resources.join("AppIcon.icns")).expect("BronzeNotice icon");
     }
+    std::fs::write(app.join("Contents/PkgInfo"), "APPL????").expect("BronzeNotice PkgInfo");
+    let signed = Command::new("/usr/bin/codesign")
+        .args([
+            "--force",
+            "--deep",
+            "--sign",
+            "-",
+            "--identifier",
+            "app.bronze.desktop.notice",
+        ])
+        .arg(&app)
+        .status()
+        .expect("codesign BronzeNotice.app");
+    assert!(
+        signed.success(),
+        "codesign must bind Info.plist onto BronzeNotice.app"
+    );
 }
 
 const NOTICE_HELPER_PLIST: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -124,6 +141,10 @@ const NOTICE_HELPER_PLIST: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
   <string>BronzeNotice</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
+  <key>CFBundleVersion</key>
+  <string>0.0.0</string>
+  <key>CFBundleShortVersionString</key>
+  <string>0.0.0</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleInfoDictionaryVersion</key>

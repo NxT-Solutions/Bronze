@@ -123,7 +123,8 @@ mod user_notice_tests {
         assert!(swift.contains("pathExtension == \"app\""));
         assert!(swift.contains("postLegacyNotice"));
         assert!(swift.contains("BronzeNotice.app"));
-        assert!(swift.contains("noticeHelperExecutable"));
+        assert!(swift.contains("noticeHelperApp"));
+        assert!(swift.contains("/usr/bin/open"));
         assert!(!swift.contains("display notification"));
         assert!(!swift.contains("osascript"));
         assert!(!swift.contains("NSUserNotificationCenter"));
@@ -156,5 +157,6 @@ mod user_notice_tests {
         assert!(!tap.contains("osascript"));
         assert!(!tap.contains("BronzeNotice"));
         assert!(!tap.contains("display notification"));
+        assert!(!tap.contains("/usr/bin/open"));
     }
 }

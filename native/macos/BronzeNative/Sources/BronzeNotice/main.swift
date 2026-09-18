@@ -44,6 +44,9 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
     }
 
     func applicationDidFinishLaunching(_: Notification) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
+            self.quit()
+        }
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         center.getNotificationSettings { settings in
@@ -70,6 +73,9 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .list])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.quit()
+        }
     }
 
     private func post(_ center: UNUserNotificationCenter) {
@@ -82,8 +88,8 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
             content: content,
             trigger: nil
         )
-        center.add(request) { _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+        center.add(request) { error in
+            if error != nil {
                 self.quit()
             }
         }
