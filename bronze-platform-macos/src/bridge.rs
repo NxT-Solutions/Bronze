@@ -720,6 +720,9 @@ mod tests {
             "NSUserNotification",
             "UNUserNotificationCenter",
             "UserNotifications",
+            "osascript",
+            "BronzeNotice",
+            "display notification",
             "URLSession",
             "LanguageModel",
         ] {

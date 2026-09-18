@@ -132,14 +132,35 @@ private func postUserNotice(
     center.add(request, withCompletionHandler: nil)
 }
 
+/// Unbundled cargo-run cannot call UNUserNotificationCenter in-process.
+/// A sibling BronzeNotice.app (same logo, UN banners) posts instead so
+/// Accessibility / Input Monitoring on this binary stay put.
 private func postLegacyNotice(title: String, body: String) {
-    let notice = NSUserNotification()
-    notice.title = title
-    notice.informativeText = body
-    notice.soundName = nil
-    let center = NSUserNotificationCenter.default
-    center.delegate = BronzeLegacyNoticeCenter.shared
-    center.deliver(notice)
+    guard let exe = noticeHelperExecutable() else {
+        return
+    }
+    let task = Process()
+    task.executableURL = exe
+    task.arguments = [title, body]
+    task.standardOutput = FileHandle.nullDevice
+    task.standardError = FileHandle.nullDevice
+    try? task.run()
+}
+
+private func noticeHelperExecutable() -> URL? {
+    if let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+        try? FileManager.default.removeItem(
+            at: support.appendingPathComponent("Bronze/BronzeNotice.app")
+        )
+    }
+    let exe = Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0])
+    let helper = exe
+        .deletingLastPathComponent()
+        .appendingPathComponent("BronzeNotice.app/Contents/MacOS/BronzeNotice")
+    guard FileManager.default.isExecutableFile(atPath: helper.path) else {
+        return nil
+    }
+    return helper
 }
 
 private func announceNotice(_ body: String) {
@@ -167,16 +188,5 @@ private final class BronzeNoticeCenter: NSObject, UNUserNotificationCenterDelega
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .list])
-    }
-}
-
-private final class BronzeLegacyNoticeCenter: NSObject, NSUserNotificationCenterDelegate, @unchecked Sendable {
-    nonisolated(unsafe) static let shared = BronzeLegacyNoticeCenter()
-
-    func userNotificationCenter(
-        _ center: NSUserNotificationCenter,
-        shouldPresent notification: NSUserNotification
-    ) -> Bool {
-        true
     }
 }

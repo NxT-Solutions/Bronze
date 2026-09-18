@@ -121,11 +121,29 @@ mod user_notice_tests {
         assert!(swift.contains("announcementRequested"));
         assert!(swift.contains("bundledNotificationCenter"));
         assert!(swift.contains("pathExtension == \"app\""));
-        assert!(swift.contains("NSUserNotification"));
         assert!(swift.contains("postLegacyNotice"));
+        assert!(swift.contains("BronzeNotice.app"));
+        assert!(swift.contains("noticeHelperExecutable"));
+        assert!(!swift.contains("display notification"));
+        assert!(!swift.contains("osascript"));
+        assert!(!swift.contains("NSUserNotificationCenter"));
+        assert!(!swift.contains("NSUserNotification()"));
         assert!(!swift.contains("URLSession"));
         assert!(!swift.contains("http://"));
         assert!(!swift.contains("https://"));
+        let helper = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../native/macos/BronzeNative/Sources/BronzeNotice/main.swift"
+        ));
+        assert!(helper.contains("UNUserNotificationCenter"));
+        assert!(helper.contains("requestAuthorization"));
+        assert!(helper.contains("willPresent"));
+        assert!(helper.contains("isSafeNoticeText"));
+        assert!(!helper.contains("osascript"));
+        assert!(!helper.contains("display notification"));
+        assert!(!helper.contains("URLSession"));
+        assert!(!helper.contains("http://"));
+        assert!(!helper.contains("https://"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
@@ -135,5 +153,8 @@ mod user_notice_tests {
         assert!(!tap.contains("UNUserNotificationCenter"));
         assert!(!tap.contains("UserNotifications"));
         assert!(!tap.contains("NSUserNotification"));
+        assert!(!tap.contains("osascript"));
+        assert!(!tap.contains("BronzeNotice"));
+        assert!(!tap.contains("display notification"));
     }
 }

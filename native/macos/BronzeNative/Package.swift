@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v13)],
     products: [
         .library(name: "BronzeNative", type: .static, targets: ["BronzeNative"]),
+        .executable(name: "BronzeNotice", targets: ["BronzeNotice"]),
     ],
     targets: [
         .target(
@@ -13,6 +14,13 @@ let package = Package(
             publicHeadersPath: "include",
             linkerSettings: [
                 .linkedFramework("NaturalLanguage"),
+                .linkedFramework("AppKit"),
+                .linkedFramework("UserNotifications"),
+            ]
+        ),
+        .executableTarget(
+            name: "BronzeNotice",
+            linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("UserNotifications"),
             ]

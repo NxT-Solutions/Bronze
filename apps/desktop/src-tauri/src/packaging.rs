@@ -66,5 +66,12 @@ mod packaging_tests {
         let info = fs::read_to_string(manifest.join("Info.plist")).unwrap();
         assert!(info.contains("NSUserNotificationsUsageDescription"));
         assert!(info.contains("local banner"));
+        assert!(manifest.join("icons/icon.icns").is_file());
+        let build = fs::read_to_string(manifest.join("build.rs")).unwrap();
+        assert!(build.contains("wrap_notice_helper"));
+        assert!(build.contains("BronzeNotice.app"));
+        assert!(build.contains("AppIcon.icns"));
+        assert!(build.contains("NSUserNotificationsUsageDescription"));
+        assert!(!build.contains("externalBin"));
     }
 }
