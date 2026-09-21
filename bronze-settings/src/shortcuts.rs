@@ -1,6 +1,8 @@
 //! Shortcut registry and recorder policy (story 7.2, SET-002, CAP-001, CAP-002).
 
-use crate::schema::{ShortcutActionId, ShortcutBinding, TestedState, TriggerKind, SCHEMA_VERSION};
+use crate::schema::{
+    KeyMode, Modifier, ShortcutActionId, ShortcutBinding, TestedState, TriggerKind, SCHEMA_VERSION,
+};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -8,6 +10,107 @@ pub enum RegisterError {
     NativeRejected,
     Duplicate,
     AlternativesRequired,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ShortcutScope {
+    Global,
+    AppLocal,
+}
+
+pub fn shortcut_scope(action: ShortcutActionId) -> ShortcutScope {
+    match action {
+        ShortcutActionId::AppTogglePanel | ShortcutActionId::CaptureSelection => {
+            ShortcutScope::Global
+        }
+        _ => ShortcutScope::AppLocal,
+    }
+}
+
+pub fn default_shortcut_binding(action: ShortcutActionId) -> ShortcutBinding {
+    match action {
+        ShortcutActionId::CaptureSelection => crate::schema::default_standard_chord(),
+        ShortcutActionId::AppTogglePanel => accelerator(action, vec![Modifier::Option], " "),
+        ShortcutActionId::CaptureNewNote => accelerator(action, vec![Modifier::Command], "n"),
+        ShortcutActionId::QueueCopy => accelerator(action, vec![Modifier::Command], "c"),
+        ShortcutActionId::QueueCopyWithProfile => {
+            accelerator(action, vec![Modifier::Command, Modifier::Shift], "c")
+        }
+        ShortcutActionId::QueueCopyAndAdvance => {
+            accelerator(action, vec![Modifier::Command, Modifier::Shift], "Enter")
+        }
+        ShortcutActionId::QueueComplete => accelerator(action, Vec::new(), " "),
+        ShortcutActionId::QueueEdit => accelerator(action, Vec::new(), "Enter"),
+        ShortcutActionId::QueueMoveUp => {
+            accelerator(action, vec![Modifier::Option, Modifier::Command], "ArrowUp")
+        }
+        ShortcutActionId::QueueMoveDown => accelerator(
+            action,
+            vec![Modifier::Option, Modifier::Command],
+            "ArrowDown",
+        ),
+        ShortcutActionId::QueueSearch => accelerator(action, vec![Modifier::Command], "f"),
+        ShortcutActionId::QueueUndo => accelerator(action, vec![Modifier::Command], "z"),
+        ShortcutActionId::WindowSettings => accelerator(action, vec![Modifier::Command], ","),
+    }
+}
+
+pub fn is_default_binding(binding: &ShortcutBinding) -> bool {
+    let default = default_shortcut_binding(binding.action);
+    same_assigned_chord(binding, &default) && binding.enabled == default.enabled
+}
+
+fn accelerator(action: ShortcutActionId, modifiers: Vec<Modifier>, key: &str) -> ShortcutBinding {
+    ShortcutBinding {
+        action,
+        trigger: TriggerKind::Accelerator,
+        modifiers,
+        key_mode: Some(KeyMode::Logical),
+        physical_code: None,
+        logical_key: Some(key.into()),
+        modifier_side: None,
+        gap_ms: None,
+        max_hold_ms: None,
+        enabled: true,
+        schema_version: SCHEMA_VERSION,
+        revision: 1,
+        tested: Some(TestedState::Untested),
+    }
+}
+
+fn is_factory_placeholder(binding: &ShortcutBinding) -> bool {
+    binding.revision == 1 && !binding.enabled && binding.trigger == TriggerKind::Disabled
+}
+
+pub fn logical_key_allowed(key: &str) -> bool {
+    if key.len() > 16 || key.contains('/') || key.contains('\\') || key.contains('\0') {
+        return false;
+    }
+    matches!(
+        key,
+        " " | "Enter"
+            | "Escape"
+            | "Tab"
+            | "ArrowUp"
+            | "ArrowDown"
+            | "ArrowLeft"
+            | "ArrowRight"
+            | "Backspace"
+            | "Delete"
+            | ","
+            | "."
+            | ";"
+            | "'"
+            | "["
+            | "]"
+            | "`"
+            | "-"
+            | "="
+    ) || (key.len() == 1 && key.chars().all(|ch| ch.is_ascii_alphanumeric()))
+        || key
+            .strip_prefix('F')
+            .and_then(|rest| rest.parse::<u8>().ok())
+            .is_some_and(|n| (1..=19).contains(&n))
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -126,6 +229,9 @@ impl ShortcutRegistry {
             binding.action = action;
             binding.enabled = *enabled;
             binding.revision = *revision;
+            if is_factory_placeholder(&binding) {
+                continue;
+            }
             registry.bindings.insert(action, binding);
         }
         if registry.bindings.len() != ShortcutActionId::ALL.len() {
@@ -171,35 +277,33 @@ impl ShortcutRegistry {
             }
         }
     }
+
+    pub fn restore_default(
+        &mut self,
+        action: ShortcutActionId,
+        registrar: &mut impl NativeRegistrar,
+        alternatives: CaptureAlternatives,
+    ) -> Result<(), RegisterError> {
+        self.register(default_shortcut_binding(action), registrar, alternatives)
+    }
 }
 
 fn default_binding(action: ShortcutActionId) -> ShortcutBinding {
-    if action == ShortcutActionId::CaptureSelection {
-        return crate::schema::default_standard_chord();
-    }
-    ShortcutBinding {
-        action,
-        trigger: TriggerKind::Disabled,
-        modifiers: Vec::new(),
-        key_mode: None,
-        physical_code: None,
-        logical_key: None,
-        modifier_side: None,
-        gap_ms: None,
-        max_hold_ms: None,
-        enabled: false,
-        schema_version: SCHEMA_VERSION,
-        revision: 1,
-        tested: Some(TestedState::Untested),
-    }
+    default_shortcut_binding(action)
 }
 
 fn same_chord(left: &ShortcutBinding, right: &ShortcutBinding) -> bool {
+    same_assigned_chord(left, right) && left.trigger != TriggerKind::Disabled
+}
+
+fn same_assigned_chord(left: &ShortcutBinding, right: &ShortcutBinding) -> bool {
     left.trigger == right.trigger
         && left.modifiers == right.modifiers
         && left.logical_key == right.logical_key
         && left.physical_code == right.physical_code
-        && left.trigger != TriggerKind::Disabled
+        && left.modifier_side == right.modifier_side
+        && left.gap_ms == right.gap_ms
+        && left.max_hold_ms == right.max_hold_ms
 }
 
 #[cfg(test)]
@@ -332,5 +436,111 @@ mod shortcuts_tests {
         let mut binding = chord(ShortcutActionId::QueueCopy, "c");
         skip_test_marks_untested(&mut binding);
         assert_eq!(binding.tested, Some(TestedState::Skipped));
+    }
+
+    #[test]
+    fn shortcuts_seed_docs_05_defaults_and_upgrade_factory_placeholders() {
+        let registry = ShortcutRegistry::seeded();
+        assert!(registry.get(ShortcutActionId::AppTogglePanel).enabled);
+        assert_eq!(
+            registry
+                .get(ShortcutActionId::AppTogglePanel)
+                .logical_key
+                .as_deref(),
+            Some(" ")
+        );
+        assert_eq!(
+            registry.get(ShortcutActionId::AppTogglePanel).modifiers,
+            vec![Modifier::Option]
+        );
+        assert_eq!(
+            shortcut_scope(ShortcutActionId::AppTogglePanel),
+            ShortcutScope::Global
+        );
+        assert_eq!(
+            shortcut_scope(ShortcutActionId::CaptureSelection),
+            ShortcutScope::Global
+        );
+        assert_eq!(
+            shortcut_scope(ShortcutActionId::QueueCopy),
+            ShortcutScope::AppLocal
+        );
+        assert_eq!(
+            registry
+                .get(ShortcutActionId::QueueCopy)
+                .logical_key
+                .as_deref(),
+            Some("c")
+        );
+        assert_eq!(
+            registry
+                .get(ShortcutActionId::QueueCopyWithProfile)
+                .modifiers,
+            vec![Modifier::Command, Modifier::Shift]
+        );
+        assert_eq!(
+            registry
+                .get(ShortcutActionId::WindowSettings)
+                .logical_key
+                .as_deref(),
+            Some(",")
+        );
+        assert!(is_default_binding(registry.standard_chord()));
+        let placeholder = ShortcutBinding {
+            action: ShortcutActionId::QueueSearch,
+            trigger: TriggerKind::Disabled,
+            modifiers: Vec::new(),
+            key_mode: None,
+            physical_code: None,
+            logical_key: None,
+            modifier_side: None,
+            gap_ms: None,
+            max_hold_ms: None,
+            enabled: false,
+            schema_version: SCHEMA_VERSION,
+            revision: 1,
+            tested: Some(TestedState::Untested),
+        };
+        let json = serde_json::to_string(&placeholder).expect("json");
+        let restored = ShortcutRegistry::from_rows(&[("queue.search".into(), json, false, 1)])
+            .expect("upgrade");
+        assert!(restored.get(ShortcutActionId::QueueSearch).enabled);
+        assert_eq!(
+            restored
+                .get(ShortcutActionId::QueueSearch)
+                .logical_key
+                .as_deref(),
+            Some("f")
+        );
+        let mut custom = registry;
+        let mut registrar = FakeRegistrar { fail: false };
+        custom
+            .register(
+                chord(ShortcutActionId::QueueSearch, "k"),
+                &mut registrar,
+                CaptureAlternatives {
+                    chord: true,
+                    menu: true,
+                    manual: true,
+                },
+            )
+            .expect("custom");
+        assert!(!is_default_binding(
+            custom.get(ShortcutActionId::QueueSearch)
+        ));
+        custom
+            .restore_default(
+                ShortcutActionId::QueueSearch,
+                &mut registrar,
+                CaptureAlternatives {
+                    chord: true,
+                    menu: true,
+                    manual: true,
+                },
+            )
+            .expect("restore");
+        assert!(is_default_binding(
+            custom.get(ShortcutActionId::QueueSearch)
+        ));
     }
 }

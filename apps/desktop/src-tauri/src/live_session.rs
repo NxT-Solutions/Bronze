@@ -16,7 +16,12 @@ use bronze_capture::{ax_capture, FakeAxTree};
 use bronze_domain::{
     default_output_profile, ComposerChord, OutputFormat, OutputProfile, PostCopyAction,
 };
-use bronze_settings::{search_settings, SettingsGroup, SettingsV1};
+use bronze_settings::{
+    default_shortcut_binding, is_default_binding, logical_key_allowed, search_settings,
+    shortcut_scope, skip_test_marks_untested, CaptureAlternatives, Modifier, NativeRegistrar,
+    RegisterError, SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, ShortcutRegistry,
+    ShortcutScope, TestedState, TriggerKind,
+};
 use bronze_storage::{
     ComposerDraft, ImportStrategy, NoopBackup, Overwrite, PathLocator, QueueAction, QueueItemRow,
     Store, ADR_018_STATUS, QUE_007_COMPLETE,
@@ -298,6 +303,83 @@ pub struct UiCatalogDto {
     pub messages: std::collections::BTreeMap<String, String>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShortcutRowDto {
+    pub action: String,
+    pub trigger: String,
+    pub modifiers: Vec<String>,
+    pub logical_key: Option<String>,
+    pub enabled: bool,
+    pub is_default: bool,
+    pub scope: String,
+    pub tested: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShortcutRecordInput {
+    pub action: String,
+    pub trigger: String,
+    pub modifiers: Vec<String>,
+    pub logical_key: Option<String>,
+    pub skip_test: bool,
+}
+
+struct SessionRegistrar;
+
+impl NativeRegistrar for SessionRegistrar {
+    fn try_register(&mut self, binding: &ShortcutBinding) -> Result<(), RegisterError> {
+        if !binding.enabled || binding.trigger == TriggerKind::Disabled {
+            return Ok(());
+        }
+        match shortcut_scope(binding.action) {
+            ShortcutScope::AppLocal => {
+                if binding.trigger != TriggerKind::Accelerator {
+                    return Err(RegisterError::NativeRejected);
+                }
+                logical_key_ok(binding)
+            }
+            ShortcutScope::Global => match binding.trigger {
+                TriggerKind::ModifierDoubleTap => {
+                    if binding.action == ShortcutActionId::CaptureSelection
+                        && binding.modifiers == [Modifier::Shift]
+                    {
+                        Ok(())
+                    } else {
+                        Err(RegisterError::NativeRejected)
+                    }
+                }
+                TriggerKind::Accelerator => logical_key_ok(binding),
+                TriggerKind::Disabled => Ok(()),
+            },
+        }
+    }
+}
+
+fn logical_key_ok(binding: &ShortcutBinding) -> Result<(), RegisterError> {
+    match binding.logical_key.as_deref() {
+        Some(key) if logical_key_allowed(key) => Ok(()),
+        _ => Err(RegisterError::NativeRejected),
+    }
+}
+
+fn keep_menu_manual() -> CaptureAlternatives {
+    CaptureAlternatives {
+        chord: true,
+        menu: true,
+        manual: true,
+    }
+}
+
+fn register_error_code(err: RegisterError) -> String {
+    match err {
+        RegisterError::NativeRejected => "shortcut_rejected".into(),
+        RegisterError::Duplicate => "shortcut_duplicate".into(),
+        RegisterError::AlternativesRequired => "shortcut_alternatives_required".into(),
+    }
+}
+
 pub fn capture_notice_catalog_key(terminal: &str, reason: &str) -> &'static str {
     if terminal == "saved" {
         return "capture.announce.saved";
@@ -344,6 +426,7 @@ pub fn named_output_profile(name: &str) -> OutputProfile {
 pub struct LiveSession {
     store: Store,
     settings: SettingsV1,
+    shortcuts: ShortcutRegistry,
     data_dir: PathBuf,
 }
 
@@ -354,11 +437,18 @@ impl LiveSession {
             path: data_dir.join("bronze.sqlite"),
         };
         let mut backup = NoopBackup;
-        let store = Store::open(&locator, &mut backup).map_err(|_| "store_open_failed")?;
+        let mut store = Store::open(&locator, &mut backup).map_err(|_| "store_open_failed")?;
         let settings = load_settings_file(&data_dir)?;
+        let shortcuts = store
+            .load_shortcuts()
+            .map_err(|_| "shortcuts_load_failed")?;
+        store
+            .persist_shortcuts(&shortcuts)
+            .map_err(|_| "shortcuts_persist_failed")?;
         let session = Self {
             store,
             settings,
+            shortcuts,
             data_dir,
         };
         let now = now_ms();
@@ -677,8 +767,13 @@ impl LiveSession {
 
     pub fn replace_settings(&mut self, next: SettingsV1) -> Result<SettingsV1, String> {
         next.validate().map_err(|_| "settings_invalid")?;
+        let chord = next.capture.standard_chord.clone();
         self.settings = next;
         persist_settings_file(&self.data_dir, &self.settings)?;
+        self.shortcuts
+            .register(chord, &mut SessionRegistrar, keep_menu_manual())
+            .map_err(register_error_code)?;
+        self.sync_standard_chord()?;
         Ok(self.settings.clone())
     }
 
@@ -686,21 +781,81 @@ impl LiveSession {
         self.settings
             .reset_field(field_id)
             .map_err(|_| "settings_unknown_field")?;
-        persist_settings_file(&self.data_dir, &self.settings)?;
+        if field_id == "capture.standardChord" {
+            self.shortcuts
+                .restore_default(
+                    ShortcutActionId::CaptureSelection,
+                    &mut SessionRegistrar,
+                    keep_menu_manual(),
+                )
+                .map_err(register_error_code)?;
+        }
+        self.sync_standard_chord()?;
         Ok(self.settings.clone())
     }
 
     pub fn reset_group(&mut self, group: &str) -> Result<SettingsV1, String> {
         let parsed = parse_group(group)?;
         self.settings.reset_group(parsed);
-        persist_settings_file(&self.data_dir, &self.settings)?;
+        if parsed == SettingsGroup::Capture {
+            self.shortcuts
+                .restore_default(
+                    ShortcutActionId::CaptureSelection,
+                    &mut SessionRegistrar,
+                    keep_menu_manual(),
+                )
+                .map_err(register_error_code)?;
+        }
+        self.sync_standard_chord()?;
         Ok(self.settings.clone())
     }
 
     pub fn reset_all(&mut self) -> Result<SettingsV1, String> {
         self.settings.reset_all_preserving_content();
-        persist_settings_file(&self.data_dir, &self.settings)?;
+        self.shortcuts = ShortcutRegistry::seeded();
+        self.sync_standard_chord()?;
         Ok(self.settings.clone())
+    }
+
+    pub fn list_shortcuts(&self) -> Vec<ShortcutRowDto> {
+        ShortcutActionId::ALL
+            .iter()
+            .copied()
+            .map(|action| shortcut_row(self.shortcuts.get(action)))
+            .collect()
+    }
+
+    pub fn record_shortcut(
+        &mut self,
+        input: ShortcutRecordInput,
+    ) -> Result<Vec<ShortcutRowDto>, String> {
+        let action = ShortcutActionId::parse(&input.action).map_err(|_| "unknown_shortcut")?;
+        let mut candidate = binding_from_record(&input, self.shortcuts.get(action).revision + 1)?;
+        if input.skip_test {
+            skip_test_marks_untested(&mut candidate);
+        }
+        self.shortcuts
+            .register(candidate, &mut SessionRegistrar, keep_menu_manual())
+            .map_err(register_error_code)?;
+        self.sync_standard_chord()?;
+        Ok(self.list_shortcuts())
+    }
+
+    pub fn restore_shortcut(&mut self, action: &str) -> Result<Vec<ShortcutRowDto>, String> {
+        let action = ShortcutActionId::parse(action).map_err(|_| "unknown_shortcut")?;
+        self.shortcuts
+            .restore_default(action, &mut SessionRegistrar, keep_menu_manual())
+            .map_err(register_error_code)?;
+        self.sync_standard_chord()?;
+        Ok(self.list_shortcuts())
+    }
+
+    fn sync_standard_chord(&mut self) -> Result<(), String> {
+        self.settings.capture.standard_chord = self.shortcuts.standard_chord().clone();
+        persist_settings_file(&self.data_dir, &self.settings)?;
+        self.store
+            .persist_shortcuts(&self.shortcuts)
+            .map_err(|_| "shortcuts_persist_failed".into())
     }
 
     pub fn backup_now(&self) -> Result<String, String> {
@@ -768,6 +923,93 @@ fn parse_action(action: &str) -> Result<QueueAction, String> {
         "moveDown" => Ok(QueueAction::MoveDown),
         _ => Err("unknown_action".into()),
     }
+}
+
+fn shortcut_row(binding: &ShortcutBinding) -> ShortcutRowDto {
+    let trigger = match binding.trigger {
+        TriggerKind::Accelerator => "accelerator",
+        TriggerKind::ModifierDoubleTap => "modifier_double_tap",
+        TriggerKind::Disabled => "disabled",
+    };
+    let tested = binding.tested.map(|state| match state {
+        TestedState::Tested => "tested".into(),
+        TestedState::Untested => "untested".into(),
+        TestedState::Skipped => "skipped".into(),
+    });
+    let scope = match shortcut_scope(binding.action) {
+        ShortcutScope::Global => "global",
+        ShortcutScope::AppLocal => "appLocal",
+    };
+    ShortcutRowDto {
+        action: binding.action.as_str().into(),
+        trigger: trigger.into(),
+        modifiers: binding.modifiers.iter().map(modifier_name).collect(),
+        logical_key: binding.logical_key.clone(),
+        enabled: binding.enabled,
+        is_default: is_default_binding(binding),
+        scope: scope.into(),
+        tested,
+    }
+}
+
+fn modifier_name(modifier: &Modifier) -> String {
+    match modifier {
+        Modifier::Command => "Command".into(),
+        Modifier::Option => "Option".into(),
+        Modifier::Control => "Control".into(),
+        Modifier::Shift => "Shift".into(),
+        Modifier::Fn => "Fn".into(),
+    }
+}
+
+fn parse_trigger(raw: &str) -> Result<TriggerKind, String> {
+    match raw {
+        "accelerator" => Ok(TriggerKind::Accelerator),
+        "modifier_double_tap" => Ok(TriggerKind::ModifierDoubleTap),
+        "disabled" => Ok(TriggerKind::Disabled),
+        _ => Err("invalid_shortcut_trigger".into()),
+    }
+}
+
+fn parse_modifier(raw: &str) -> Result<Modifier, String> {
+    match raw {
+        "Command" => Ok(Modifier::Command),
+        "Option" => Ok(Modifier::Option),
+        "Control" => Ok(Modifier::Control),
+        "Shift" => Ok(Modifier::Shift),
+        "Fn" => Ok(Modifier::Fn),
+        _ => Err("invalid_shortcut_modifier".into()),
+    }
+}
+
+fn binding_from_record(
+    input: &ShortcutRecordInput,
+    revision: u32,
+) -> Result<ShortcutBinding, String> {
+    let action = ShortcutActionId::parse(&input.action).map_err(|_| "unknown_shortcut")?;
+    let trigger = parse_trigger(&input.trigger)?;
+    let modifiers = input
+        .modifiers
+        .iter()
+        .map(|raw| parse_modifier(raw))
+        .collect::<Result<Vec<_>, _>>()?;
+    if let Some(key) = input.logical_key.as_deref() {
+        if !logical_key_allowed(key) {
+            return Err("invalid_shortcut_key".into());
+        }
+    }
+    let mut binding = default_shortcut_binding(action);
+    binding.trigger = trigger;
+    binding.modifiers = modifiers;
+    binding.logical_key = input.logical_key.clone();
+    binding.enabled = trigger != TriggerKind::Disabled;
+    binding.revision = revision;
+    if trigger != TriggerKind::ModifierDoubleTap {
+        binding.gap_ms = None;
+        binding.max_hold_ms = None;
+        binding.modifier_side = None;
+    }
+    Ok(binding)
 }
 
 fn parse_group(group: &str) -> Result<SettingsGroup, String> {
@@ -965,6 +1207,32 @@ pub fn search_settings_fields(query: String) -> Vec<String> {
         .into_iter()
         .map(|field| field.id.to_string())
         .collect()
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn list_shortcuts(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+) -> Result<Vec<ShortcutRowDto>, String> {
+    Ok(lock_session(&session)?.list_shortcuts())
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn record_shortcut(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+    input: ShortcutRecordInput,
+) -> Result<Vec<ShortcutRowDto>, String> {
+    lock_session(&session)?.record_shortcut(input)
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn restore_shortcut(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+    action: String,
+) -> Result<Vec<ShortcutRowDto>, String> {
+    lock_session(&session)?.restore_shortcut(&action)
 }
 
 #[cfg(target_os = "macos")]
@@ -1175,6 +1443,70 @@ mod live_session_tests {
             "webview_path_rejected"
         );
         assert!(reject_webview_path(Some("/tmp/out".into())).is_err());
+        let shortcuts = session.list_shortcuts();
+        assert_eq!(
+            shortcuts.len(),
+            bronze_settings::ShortcutActionId::ALL.len()
+        );
+        let toggle = shortcuts
+            .iter()
+            .find(|row| row.action == "app.togglePanel")
+            .expect("toggle");
+        assert!(toggle.is_default);
+        assert_eq!(toggle.logical_key.as_deref(), Some(" "));
+        assert_eq!(toggle.scope, "global");
+        let recorded = session
+            .record_shortcut(ShortcutRecordInput {
+                action: "queue.search".into(),
+                trigger: "accelerator".into(),
+                modifiers: vec!["Command".into()],
+                logical_key: Some("k".into()),
+                skip_test: true,
+            })
+            .expect("record");
+        let search = recorded
+            .iter()
+            .find(|row| row.action == "queue.search")
+            .expect("search");
+        assert!(!search.is_default);
+        assert_eq!(search.tested.as_deref(), Some("skipped"));
+        assert!(
+            session
+                .restore_shortcut("queue.search")
+                .expect("restore")
+                .iter()
+                .find(|row| row.action == "queue.search")
+                .expect("search default")
+                .is_default
+        );
+        assert_eq!(
+            session
+                .record_shortcut(ShortcutRecordInput {
+                    action: "queue.search".into(),
+                    trigger: "accelerator".into(),
+                    modifiers: vec!["Command".into()],
+                    logical_key: Some("../etc".into()),
+                    skip_test: false,
+                })
+                .unwrap_err(),
+            "invalid_shortcut_key"
+        );
+        assert_eq!(
+            session
+                .record_shortcut(ShortcutRecordInput {
+                    action: "queue.search".into(),
+                    trigger: "accelerator".into(),
+                    modifiers: vec!["Command".into()],
+                    logical_key: Some("c".into()),
+                    skip_test: false,
+                })
+                .unwrap_err(),
+            "shortcut_duplicate"
+        );
+        assert_eq!(
+            session.settings().capture.standard_chord.action,
+            bronze_settings::ShortcutActionId::CaptureSelection
+        );
         let snapshot = session
             .latest_export_snapshot()
             .expect("name")

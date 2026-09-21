@@ -18,11 +18,13 @@ pub use health::{
 };
 pub use permission::{PermissionSnapshot, PermissionState};
 pub use schema::{
-    persisted_locale_allowed, search_settings, BackupSchedule, SchemaError, SettingsField,
-    SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, PERSISTED_LOCALE_TAGS,
-    SCHEMA_VERSION, SETTINGS_FIELDS,
+    persisted_locale_allowed, search_settings, BackupSchedule, Modifier, SchemaError,
+    SettingsField, SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, TestedState,
+    TriggerKind, PERSISTED_LOCALE_TAGS, SCHEMA_VERSION, SETTINGS_FIELDS,
 };
 pub use shortcuts::{
-    capture_alternatives_ok, recorder_swallows, skip_test_marks_untested, CaptureAlternatives,
+    capture_alternatives_ok, default_shortcut_binding, is_default_binding, logical_key_allowed,
+    recorder_swallows, shortcut_scope, skip_test_marks_untested, CaptureAlternatives,
     FakeRegistrar, NativeRegistrar, RecorderEvent, RecorderIgnore, RegisterError, ShortcutRegistry,
+    ShortcutScope,
 };

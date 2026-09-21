@@ -30,6 +30,9 @@ pub fn run() {
                 live_session::reset_settings_group,
                 live_session::reset_settings_all,
                 live_session::search_settings_fields,
+                live_session::list_shortcuts,
+                live_session::record_shortcut,
+                live_session::restore_shortcut,
                 live_session::list_installed_apps,
                 live_session::pick_installed_app,
                 live_session::app_icon_data_url,
@@ -854,6 +857,9 @@ mod tests {
         assert!(lib.contains("WebviewWindowBuilder"));
         assert!(lib.contains(r#"WebviewWindowBuilder::new(app, "quick""#));
         assert!(lib.contains("list_overview_items"));
+        assert!(lib.contains("list_shortcuts"));
+        assert!(lib.contains("record_shortcut"));
+        assert!(lib.contains("restore_shortcut"));
         assert!(lib.contains("menu.status.capture"));
         assert!(lib.contains("help.title"));
         assert!(lib.contains("event_tap_set_enabled"));
