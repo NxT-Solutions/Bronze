@@ -44,11 +44,27 @@ export function recorderSwallows(event: {
   return !event.isComposing && !event.isVoiceOverReserved && !event.isRepeat;
 }
 
+export const DEFAULT_SHORTCUT_CHORDS: Record<ShortcutActionId, string> = {
+  "app.togglePanel": "Option+Space",
+  "capture.selection": "Shift-double-tap",
+  "capture.newNote": "Command+N",
+  "queue.copy": "Command+C",
+  "queue.copyWithProfile": "Command+Shift+C",
+  "queue.copyAndAdvance": "Command+Shift+Enter",
+  "queue.complete": "Space",
+  "queue.edit": "Enter",
+  "queue.moveUp": "Option+Command+ArrowUp",
+  "queue.moveDown": "Option+Command+ArrowDown",
+  "queue.search": "Command+F",
+  "queue.undo": "Command+Z",
+  "window.settings": "Command+,",
+};
+
 export function seedShortcutRegistry(): ShortcutBinding[] {
   return SHORTCUT_ACTION_IDS.map((action) => ({
     action,
-    chord: "",
-    enabled: action === "capture.selection",
+    chord: DEFAULT_SHORTCUT_CHORDS[action],
+    enabled: true,
   }));
 }
 

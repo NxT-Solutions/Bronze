@@ -114,11 +114,20 @@ export const MessageIds = {
   "settings.shortcuts.title": "settings.shortcuts.title",
   "settings.shortcuts.record": "settings.shortcuts.record",
   "settings.shortcuts.skipTest": "settings.shortcuts.skipTest",
+  "settings.shortcuts.cancel": "settings.shortcuts.cancel",
+  "settings.shortcuts.restore": "settings.shortcuts.restore",
+  "settings.shortcuts.recording": "settings.shortcuts.recording",
+  "settings.shortcuts.rejected": "settings.shortcuts.rejected",
+  "settings.shortcuts.duplicate": "settings.shortcuts.duplicate",
   "settings.shortcuts.alternatives": "settings.shortcuts.alternatives",
   "settings.shortcuts.live": "settings.shortcuts.live",
   "settings.shortcuts.unassigned": "settings.shortcuts.unassigned",
   "settings.shortcuts.chord.shiftDoubleTap":
     "settings.shortcuts.chord.shiftDoubleTap",
+  "settings.shortcuts.key.space": "settings.shortcuts.key.space",
+  "settings.shortcuts.key.enter": "settings.shortcuts.key.enter",
+  "settings.shortcuts.key.arrowUp": "settings.shortcuts.key.arrowUp",
+  "settings.shortcuts.key.arrowDown": "settings.shortcuts.key.arrowDown",
   "settings.shortcuts.action.app.togglePanel":
     "settings.shortcuts.action.app.togglePanel",
   "settings.shortcuts.action.capture.selection":

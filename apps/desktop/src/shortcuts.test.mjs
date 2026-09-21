@@ -3,9 +3,19 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import {
+  bindShortcutRegistry,
+  chordFromKeyboardEvent,
+  formatShortcutChord,
+  isGlobalShortcutAction,
+  recorderIgnores,
+  shortcutFailureKey,
+} from "./shortcuts.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "settings.html"), "utf8");
+const live = readFileSync(join(root, "settings-live.mjs"), "utf8");
+const registry = readFileSync(join(root, "shortcuts.mjs"), "utf8");
 const en = JSON.parse(
   readFileSync(
     join(root, "../../../packages/i18n/locales/en/app.json"),
@@ -34,10 +44,319 @@ test("shortcut recorder lists every action and keeps capture.selection as standa
   assert.match(html, /data-standard-chord="capture.selection"/);
   for (const action of actions) {
     assert.match(html, new RegExp(`data-action="${action}"`));
+    assert.match(
+      html,
+      new RegExp(`data-i18n="settings.shortcuts.action.${action}"`),
+    );
   }
+  assert.match(html, /data-shortcut-record/);
+  assert.match(html, /data-shortcut-restore/);
+  assert.match(html, /data-shortcut-record-bar/);
   assert.match(html, /data-i18n="settings.shortcuts.skipTest"/);
+  assert.match(html, /data-i18n="settings.shortcuts.restore"/);
   assert.doesNotMatch(html, />app\.togglePanel</);
   assert.match(html, /data-i18n="settings.shortcuts.action.app.togglePanel"/);
+  assert.doesNotMatch(html, /data-i18n="settings.shortcuts.unassigned"/);
   assert.equal(en["settings.shortcuts.record"], "Record shortcut");
   assert.equal(en["settings.shortcuts.action.queue.copy"], "Copy");
+  assert.equal(
+    en["settings.shortcuts.live"],
+    "Record a row to replace that action’s default.",
+  );
+  assert.match(html, /⌥Space/);
+  assert.match(html, /⌘C/);
+  assert.match(html, /shortcut-assign/);
+  assert.match(html, /id="settings-shortcuts-record"/);
+  assert.equal(
+    html.match(/data-i18n="settings.shortcuts.live"[^>]*>\s*([^<]+?)\s*</)?.[1],
+    en["settings.shortcuts.live"],
+  );
+  assert.equal(
+    html.match(
+      /data-i18n="settings.shortcuts.record"[^>]*>\s*([^<]+?)\s*</,
+    )?.[1],
+    en["settings.shortcuts.record"],
+  );
+  assert.equal(
+    html.match(
+      /data-i18n="settings.shortcuts.recording"[^>]*>\s*([^<]+?)\s*</,
+    )?.[1],
+    en["settings.shortcuts.recording"],
+  );
+  assert.equal(
+    html.match(
+      /data-i18n="settings.shortcuts.restore"[^>]*>\s*([^<]+?)\s*</,
+    )?.[1],
+    en["settings.shortcuts.restore"],
+  );
+  assert.equal(
+    html.match(
+      /data-i18n="settings.shortcuts.cancel"[^>]*>\s*([^<]+?)\s*</,
+    )?.[1],
+    en["settings.shortcuts.cancel"],
+  );
+  assert.match(live, /bindShortcutRegistry/);
+  assert.match(registry, /list_shortcuts/);
+  assert.match(registry, /record_shortcut/);
+  assert.match(registry, /restore_shortcut/);
+});
+
+test("shortcut formatter and recorder keep IME out and reject path keys", () => {
+  assert.equal(isGlobalShortcutAction("app.togglePanel"), true);
+  assert.equal(isGlobalShortcutAction("queue.copy"), false);
+  assert.equal(
+    formatShortcutChord({
+      enabled: true,
+      trigger: "accelerator",
+      modifiers: ["Option"],
+      logicalKey: " ",
+    }),
+    "⌥Space",
+  );
+  assert.equal(
+    formatShortcutChord({
+      enabled: true,
+      trigger: "modifier_double_tap",
+    }),
+    "Shift double-tap",
+  );
+  assert.equal(recorderIgnores({ isComposing: true, repeat: false }), true);
+  assert.deepEqual(
+    chordFromKeyboardEvent({
+      key: "k",
+      metaKey: true,
+      altKey: false,
+      ctrlKey: false,
+      shiftKey: false,
+      isComposing: false,
+      repeat: false,
+    }),
+    { trigger: "accelerator", modifiers: ["Command"], logicalKey: "k" },
+  );
+  assert.equal(
+    chordFromKeyboardEvent({
+      key: "Escape",
+      isComposing: false,
+      repeat: false,
+    }).cancel,
+    true,
+  );
+  assert.equal(
+    shortcutFailureKey("shortcut_duplicate"),
+    "settings.shortcuts.duplicate",
+  );
+  assert.equal(
+    shortcutFailureKey("shortcut_rejected"),
+    "settings.shortcuts.rejected",
+  );
+});
+
+function fakeEl(attrs = {}, kids = []) {
+  const listeners = {};
+  const node = {
+    attrs: { ...attrs },
+    children: kids,
+    parent: null,
+    hidden: Boolean(attrs.hidden),
+    value: "",
+    textContent: attrs.textContent ?? "",
+    disabled: false,
+    dataset: {},
+    id: attrs.id ?? "",
+    getAttribute(name) {
+      if (name in this.attrs) {
+        return this.attrs[name];
+      }
+      return null;
+    },
+    setAttribute(name, value) {
+      this.attrs[name] = String(value);
+    },
+    removeAttribute(name) {
+      delete this.attrs[name];
+    },
+    addEventListener(type, fn) {
+      if (!listeners[type]) {
+        listeners[type] = [];
+      }
+      listeners[type].push(fn);
+    },
+    focus() {},
+    contains(other) {
+      return (
+        this === other || this.children.some((child) => child.contains(other))
+      );
+    },
+    closest(sel) {
+      let current = this;
+      while (current) {
+        if (matchSel(current, sel)) {
+          return current;
+        }
+        current = current.parent;
+      }
+      return null;
+    },
+    querySelector(sel) {
+      return this.querySelectorAll(sel)[0] ?? null;
+    },
+    querySelectorAll(sel) {
+      return collect(this, sel);
+    },
+    emit(type, event) {
+      for (const fn of listeners[type] ?? []) {
+        fn(event);
+      }
+    },
+  };
+  for (const child of kids) {
+    child.parent = node;
+  }
+  return node;
+}
+
+function matchAttr(sel) {
+  const raw = sel.slice(1, -1);
+  const eq = raw.indexOf("=");
+  if (eq === -1) {
+    return (node) => node.getAttribute(raw) !== null || raw in node.attrs;
+  }
+  const key = raw.slice(0, eq);
+  const value = raw.slice(eq + 1).replaceAll(/['"]/g, "");
+  return (node) => node.getAttribute(key) === value;
+}
+
+function matchSel(node, sel) {
+  if (sel.startsWith("#")) {
+    return node.id === sel.slice(1);
+  }
+  if (sel.startsWith("[")) {
+    return matchAttr(sel)(node);
+  }
+  return false;
+}
+
+function walk(node) {
+  return node.children.flatMap((child) => [child, ...walk(child)]);
+}
+
+function collect(root, sel) {
+  const parts = sel.split(/\s+/);
+  let nodes = walk(root);
+  if (root.parent === null) {
+    nodes = [root, ...nodes];
+  }
+  if (parts.length === 1) {
+    return nodes.filter((node) => matchSel(node, parts[0]));
+  }
+  const hosts = nodes.filter((node) => matchSel(node, parts[0]));
+  return hosts.flatMap((host) =>
+    walk(host).filter((node) => matchSel(node, parts[1])),
+  );
+}
+
+test("shortcut registry paints defaults, records a custom chord, and restores", async () => {
+  const liveStatus = fakeEl({ "data-shortcut-live": "" });
+  const input = fakeEl({ id: "shortcut-record" });
+  const skip = fakeEl({ "data-shortcut-skip": "" });
+  const cancel = fakeEl({ "data-shortcut-cancel": "" });
+  const bar = fakeEl({ "data-shortcut-record-bar": "" }, [input, skip, cancel]);
+  bar.hidden = true;
+  const chord = fakeEl({ "data-slot": "shortcut-chord", textContent: "⌘F" });
+  const recordBtn = fakeEl({ "data-shortcut-record": "" }, [chord]);
+  const restore = fakeEl({ "data-shortcut-restore": "" });
+  restore.hidden = true;
+  const item = fakeEl({ "data-action": "queue.search" }, [recordBtn, restore]);
+  const list = fakeEl({ "data-shortcut-registry": "" }, [item]);
+  const root = fakeEl({}, [liveStatus, bar, list]);
+
+  const calls = [];
+  const rows = [
+    {
+      action: "queue.search",
+      trigger: "accelerator",
+      modifiers: ["Command"],
+      logicalKey: "f",
+      enabled: true,
+      isDefault: true,
+    },
+  ];
+  const invokeFn = async (cmd, args) => {
+    calls.push({ cmd, args });
+    if (cmd === "record_shortcut") {
+      rows[0] = {
+        ...rows[0],
+        logicalKey: args.input.logicalKey,
+        modifiers: args.input.modifiers,
+        isDefault: false,
+      };
+    }
+    if (cmd === "restore_shortcut") {
+      rows[0] = {
+        ...rows[0],
+        logicalKey: "f",
+        modifiers: ["Command"],
+        isDefault: true,
+      };
+    }
+    return rows;
+  };
+
+  await bindShortcutRegistry(root, invokeFn);
+  assert.equal(chord.textContent, "⌘F");
+  assert.equal(restore.hidden, true);
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  assert.equal(bar.hidden, false);
+  assert.equal(bar.dataset.recordingAction, "queue.search");
+  assert.equal(item.dataset.recording, "true");
+
+  input.emit("keydown", {
+    key: "k",
+    metaKey: true,
+    altKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+  });
+  await Promise.resolve();
+  assert.equal(calls.at(-1).cmd, "record_shortcut");
+  assert.deepEqual(calls.at(-1).args.input, {
+    action: "queue.search",
+    trigger: "accelerator",
+    modifiers: ["Command"],
+    logicalKey: "k",
+    skipTest: true,
+  });
+  assert.equal(chord.textContent, "⌘K");
+  assert.equal(restore.hidden, false);
+  assert.equal(bar.hidden, true);
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return null;
+        if (sel === "[data-shortcut-restore]") return restore;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(calls.at(-1).cmd, "restore_shortcut");
+  assert.equal(calls.at(-1).args.action, "queue.search");
+  assert.equal(chord.textContent, "⌘F");
+  assert.equal(restore.hidden, true);
 });

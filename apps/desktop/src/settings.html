@@ -476,73 +476,157 @@
         >
           Shortcuts
         </h2>
-        <p class="muted" role="status" data-shortcut-live data-i18n="settings.shortcuts.live">
-          Only Shift double-tap is live among seeded shortcuts.
+        <p
+          class="muted"
+          id="shortcuts-live"
+          role="status"
+          data-shortcut-live
+          data-i18n="settings.shortcuts.live"
+        >
+          Record a row to replace that action’s default.
         </p>
-        <div class="field-block" data-settings-unit>
-          <label for="shortcut-record" data-i18n="settings.shortcuts.record">
-            Record shortcut
+        <span
+          id="settings-shortcuts-record"
+          class="visually-hidden"
+          data-i18n="settings.shortcuts.record"
+        >Record shortcut</span>
+        <div class="shortcut-record-bar" data-shortcut-record-bar hidden>
+          <label for="shortcut-record" data-i18n="settings.shortcuts.recording">
+            Type the new shortcut (Escape cancels).
           </label>
           <div class="field-row">
-            <input id="shortcut-record" type="text" />
-            <button type="button" class="btn-ghost" data-i18n="settings.shortcuts.skipTest">
+            <input
+              id="shortcut-record"
+              type="text"
+              autocomplete="off"
+              aria-describedby="shortcuts-live"
+            />
+            <button type="button" class="btn-ghost" data-shortcut-skip data-i18n="settings.shortcuts.skipTest">
               Skip test
+            </button>
+            <button type="button" class="btn-ghost" data-shortcut-cancel data-i18n="settings.shortcuts.cancel">
+              Cancel
             </button>
           </div>
         </div>
         <p data-standard-chord="capture.selection"></p>
         <ul class="shortcut-list" data-shortcut-registry>
           <li data-settings-unit data-action="app.togglePanel">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.app.togglePanel">Toggle panel</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-toggle-panel" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.app.togglePanel">Toggle panel</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-toggle-panel" aria-pressed="false">
+                <kbd id="shortcut-chord-toggle-panel" data-slot="shortcut-chord">⌥Space</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-toggle-panel">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="capture.selection">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.capture.selection">Capture selection</span>
-            <kbd data-i18n="settings.shortcuts.chord.shiftDoubleTap">Shift double-tap</kbd>
+            <span id="shortcut-name-capture-selection" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.capture.selection">Capture selection</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-capture-selection" aria-pressed="false">
+                <kbd id="shortcut-chord-capture-selection" data-slot="shortcut-chord">Shift double-tap</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-capture-selection">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="capture.newNote">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.capture.newNote">New note</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-capture-new-note" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.capture.newNote">New note</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-capture-new-note" aria-pressed="false">
+                <kbd id="shortcut-chord-capture-new-note" data-slot="shortcut-chord">⌘N</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-capture-new-note">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.copy">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copy">Copy</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-copy" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copy">Copy</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-copy" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-copy" data-slot="shortcut-chord">⌘C</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-copy">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.copyWithProfile">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copyWithProfile">Copy with profile</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-copy-profile" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copyWithProfile">Copy with profile</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-copy-profile" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-copy-profile" data-slot="shortcut-chord">⇧⌘C</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-copy-profile">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.copyAndAdvance">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copyAndAdvance">Copy and advance</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-copy-advance" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.copyAndAdvance">Copy and advance</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-copy-advance" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-copy-advance" data-slot="shortcut-chord">⇧⌘Return</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-copy-advance">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.complete">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.complete">Complete</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-complete" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.complete">Complete</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-complete" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-complete" data-slot="shortcut-chord">Space</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-complete">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.edit">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.edit">Edit</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-edit" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.edit">Edit</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-edit" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-edit" data-slot="shortcut-chord">Return</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-edit">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.moveUp">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.moveUp">Move up</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-move-up" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.moveUp">Move up</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-move-up" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-move-up" data-slot="shortcut-chord">⌥⌘↑</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-move-up">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.moveDown">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.moveDown">Move down</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-move-down" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.moveDown">Move down</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-move-down" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-move-down" data-slot="shortcut-chord">⌥⌘↓</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-move-down">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.search">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.search">Search</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-search" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.search">Search</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-search" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-search" data-slot="shortcut-chord">⌘F</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-search">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="queue.undo">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.undo">Undo</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-queue-undo" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.queue.undo">Undo</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-queue-undo" aria-pressed="false">
+                <kbd id="shortcut-chord-queue-undo" data-slot="shortcut-chord">⌘Z</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-queue-undo">Restore Default</button>
+            </span>
           </li>
           <li data-settings-unit data-action="window.settings">
-            <span data-slot="shortcut-name" data-i18n="settings.shortcuts.action.window.settings">Settings</span>
-            <span data-slot="shortcut-meta" data-i18n="settings.shortcuts.unassigned">Not assigned</span>
+            <span id="shortcut-name-window-settings" data-slot="shortcut-name" data-i18n="settings.shortcuts.action.window.settings">Settings</span>
+            <span class="shortcut-row-meta">
+              <button type="button" class="btn-ghost shortcut-assign" data-shortcut-record aria-labelledby="settings-shortcuts-record shortcut-chord-window-settings" aria-pressed="false">
+                <kbd id="shortcut-chord-window-settings" data-slot="shortcut-chord">⌘,</kbd>
+              </button>
+              <button type="button" class="btn-ghost" data-shortcut-restore hidden data-i18n="settings.shortcuts.restore" aria-describedby="shortcut-name-window-settings">Restore Default</button>
+            </span>
           </li>
         </ul>
       </section>

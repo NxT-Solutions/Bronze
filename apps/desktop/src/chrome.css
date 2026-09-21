@@ -1468,12 +1468,44 @@ fieldset > span {
 }
 
 .shortcut-list kbd,
-.shortcut-list [data-slot="shortcut-meta"] {
+.shortcut-list [data-slot="shortcut-meta"],
+.shortcut-list [data-slot="shortcut-chord"] {
   flex: 0 0 auto;
   font-family: var(--font-mono);
   font-size: var(--text-micro);
   font-weight: 400;
   color: var(--muted-foreground);
+}
+
+.shortcut-row-meta {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+}
+
+.shortcut-row-meta .btn-ghost {
+  min-height: 1.75rem;
+  padding-inline: 0.55rem;
+}
+
+.shortcut-assign {
+  min-width: 1.75rem;
+  padding-inline: 0.45rem;
+}
+
+.shortcut-list li[data-recording="true"] {
+  background: var(--muted);
+}
+
+.shortcut-record-bar {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.shortcut-record-bar[hidden] {
+  display: none;
 }
 
 .page-shell .card,

@@ -5,6 +5,7 @@ import {
 } from "./apply-locale.mjs";
 import { runBusy } from "./control.mjs";
 import { sourceIconSrc } from "./item-view.mjs";
+import { bindShortcutRegistry } from "./shortcuts.mjs";
 import { showChromeWindow, tauriInvoke } from "./tauri-bridge.mjs";
 
 const SWITCHER_LOCALES = ["en", "nl", "fr", "de", "es", "it"];
@@ -421,6 +422,7 @@ export async function bindSettingsLive(
   await applySavedLocale(root, settings, invokeFn);
   await refreshExcludedIcons(root, invokeFn);
   bindExcludedPicker(root, invokeFn, () => persist());
+  const refreshShortcuts = await bindShortcutRegistry(root, invokeFn);
 
   async function persist() {
     const before = settings?.general?.locale;
@@ -429,6 +431,7 @@ export async function bindSettingsLive(
     });
     await applySavedLocale(root, settings, invokeFn);
     await refreshExcludedIcons(root, invokeFn);
+    await refreshShortcuts?.();
     if (settings?.general?.locale !== before) {
       await emitUiLocaleChanged({ locale: settings.general.locale });
     }
@@ -445,6 +448,7 @@ export async function bindSettingsLive(
         settings = await invokeFn("reset_settings_field", { fieldId });
         await applySavedLocale(root, settings, invokeFn);
         await refreshExcludedIcons(root, invokeFn);
+        await refreshShortcuts?.();
         if (settings?.general?.locale !== before) {
           await emitUiLocaleChanged({ locale: settings.general.locale });
         }
@@ -459,6 +463,7 @@ export async function bindSettingsLive(
       settings = await invokeFn("reset_settings_group", { group });
       await applySavedLocale(root, settings, invokeFn);
       await refreshExcludedIcons(root, invokeFn);
+      await refreshShortcuts?.();
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }
@@ -471,6 +476,7 @@ export async function bindSettingsLive(
       settings = await invokeFn("reset_settings_all");
       await applySavedLocale(root, settings, invokeFn);
       await refreshExcludedIcons(root, invokeFn);
+      await refreshShortcuts?.();
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }

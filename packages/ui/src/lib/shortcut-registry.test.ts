@@ -13,6 +13,10 @@ describe("shortcut registry (SET-002)", () => {
     const seeded = seedShortcutRegistry();
     expect(seeded.map((row) => row.action)).toEqual([...SHORTCUT_ACTION_IDS]);
     expect(standardChordAction()).toBe("capture.selection");
+    expect(seeded.find((row) => row.action === "app.togglePanel")?.chord).toBe(
+      "Option+Space",
+    );
+    expect(seeded.every((row) => row.enabled)).toBe(true);
   });
 
   it("retains the old chord when native registration fails", () => {

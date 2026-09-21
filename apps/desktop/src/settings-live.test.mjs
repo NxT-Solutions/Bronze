@@ -84,6 +84,7 @@ test("excluded app picker searches installed apps and keeps many ids", () => {
   assert.match(html, /settings.field.excludedBundleIds.help/);
   assert.doesNotMatch(html, /name="excludedBundleIds"/);
   assert.doesNotMatch(html, /id="excluded-bundle-ids"/);
+  assert.match(live, /bindShortcutRegistry/);
   assert.match(live, /list_installed_apps/);
   assert.match(live, /pick_installed_app/);
   assert.match(live, /app_icon_data_url/);
