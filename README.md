@@ -51,7 +51,7 @@ Hand-test in the **native** window only:
 
 Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**.
 
-**Still stub / backlog.** The other twelve seeded `ShortcutActionId` rows stay **disabled**. File and image attachments are out until a new ADR and threat-model update (ADR-001). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
+**Still stub / backlog.** Event-tap live fire is `capture.selection` Shift double-tap; other seeded defaults persist without a live OS grab, and Quick Panel keydown still uses hardcoded composer chords. File and image attachments are out until a new ADR and threat-model update (ADR-001). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
 
 **Permissions (macOS).** On native start, Bronze requests **Accessibility** and **Input Monitoring** when they are not already granted (real OS dialogs). The first capture path requests once more if still ungranted. Settings → permission health **Retest** re-attempts those prompts; if macOS will not show another dialog, use **Open System Settings** after that attempt (not instead of it).
 
@@ -61,7 +61,7 @@ Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**
 
 See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a grant, quit and relaunch (`requires_relaunch` is a real permission state). Input Monitoring often prompts only once per TCC identity; a later Retest may be silent. A `tauri dev` rebuild can receive a new TCC identity.
 
-**Triggers in this build.** Status extra: left-click Show; menu is latest five overview items, Capture, Help, Quit. Bronze app menu still offers Show, Capture, Settings, Library, Help, Quit. `SettingsV1.capture.standardChord` is the settings view of `capture.selection` and ships as Shift double-tap (either side, gap 250 ms, max hold 400 ms). The other twelve seeded `ShortcutActionId` rows stay disabled. Library search is substring-only (`QUE_007_COMPLETE=false`).
+**Triggers in this build.** Status extra: left-click Show; menu is latest five overview items, Capture, Help, Quit. Bronze app menu still offers Show, Capture, Settings, Library, Help, Quit. Every seeded `ShortcutActionId` has an enabled default (`docs/12` §4). `SettingsV1.capture.standardChord` is the settings view of `capture.selection` and ships as Shift double-tap (either side, gap 250 ms, max hold 400 ms). Event-tap live fire is that capture chord. Other globals persist without an OS grab. App-local chords persist in Settings; Quick Panel keydown still uses hardcoded composer chords. Library search is substring-only (`QUE_007_COMPLETE=false`).
 
 **Stop.** In the `tauri dev` terminal: `Ctrl+C`. Then quit Bronze from the Dock / Force Quit if the process stays resident.
 

@@ -70,16 +70,21 @@ Core panel defaults, user-remappable where marked:
 
 | Action | Default | Notes |
 | --- | --- | --- |
-| Summon/hide | `⌥Space` proposal | register/test before commit; avoid Spotlight conflict |
-| Capture selection | Shift double-tap (either side; 250/400 ms) | only enabled seeded `ShortcutActionId`; menu Capture remains |
+| Summon/hide | `⌥Space` | `app.togglePanel`; global; persist/register before commit |
+| Capture selection | Shift double-tap (either side; 250/400 ms) | `capture.selection`; only live event-tap chord; menu Capture remains |
+| New note | `⌘N` | `capture.newNote`; app-local |
 | Add composer | `⌘Enter` | never fires during IME composition |
-| Copy selected/focused | `⌘C` | native text selection wins when editor focused |
-| Copy as profile | `⇧⌘C` | only if no global conflict; configurable |
-| Edit focused item | `Return` | explicit focused-row context |
-| Complete | `Space` | only when row focus, never while editing |
-| Search | `⌘F` | moves focus and announces results |
+| Copy selected/focused | `⌘C` | `queue.copy`; native text selection wins when editor focused |
+| Copy as profile | `⇧⌘C` | `queue.copyWithProfile` |
+| Copy and advance | `⇧⌘Return` | `queue.copyAndAdvance` |
+| Edit focused item | `Return` | `queue.edit`; explicit focused-row context |
+| Complete | `Space` | `queue.complete`; only when row focus, never while editing |
+| Move item up | `⌥⌘↑` | `queue.moveUp` |
+| Move item down | `⌥⌘↓` | `queue.moveDown` |
+| Search | `⌘F` | `queue.search`; moves focus and announces results |
+| Undo | `⌘Z` | `queue.undo` |
+| Settings | `⌘,` | `window.settings` |
 | Select all items | `⌘A` | editor selection wins while editing |
-| Move item | Move menu + optional chord | no keyboard chord required for conformance |
 | Close/hide | `Escape` | preserves draft and restores prior focus where possible |
 
 Do not intercept VoiceOver, system, text editing, or IME chords. Shortcut resolver orders contexts: text editing → open modal/menu → focused component → app-local → global.

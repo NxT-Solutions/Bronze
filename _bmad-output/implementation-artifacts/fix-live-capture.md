@@ -17,7 +17,7 @@ The listen-only tap is created on the `bronze.event-tap` run-loop thread. While 
 
 The AX walk queries `AXSelectedText`, then `AXSelectedTextRange` plus `AXStringForRange`, on allowed roles including `AXComboBox`. Persist emits `capture-result` `{ terminal, reason }` for every outcome and `queue-changed` only on Saved. The inbox `#capture-status` copies catalog `capture.announce.saved|rejected|denied|protected|failed`. Capture-only does not reveal or focus the panel.
 
-`capture.selection` is the only enabled seeded chord: Shift double-tap, either side, gap 250 ms, max hold 400 ms. The other twelve `ShortcutActionId` rows stay disabled. Clipboard fallback stays `manual`.
+Every `ShortcutActionId` ships an enabled default (`docs/12` §4). Event-tap live fire is `capture.selection` Shift double-tap, either side, gap 250 ms, max hold 400 ms. Clipboard fallback stays `manual`.
 
 ## File list
 

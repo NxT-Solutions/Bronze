@@ -158,21 +158,44 @@ queue.undo
 window.settings
 ```
 
-Global actions use native/Tauri registry. App-local resolver uses semantic contexts. An in-panel shortcut must never share same chord with global capture if both can fire.
+Global scope is only `app.togglePanel` and `capture.selection`. Every other action is app-local and must not grab an OS-wide chord. An in-panel shortcut must never share the same chord with global capture if both can fire.
+
+Seeded defaults (all enabled):
+
+| Action | Default | Scope |
+| --- | --- | --- |
+| `app.togglePanel` | Option+Space | global |
+| `capture.selection` | Shift double-tap, either side, gap 250 ms, max hold 400 ms | global |
+| `capture.newNote` | Command+N | app-local |
+| `queue.copy` | Command+C | app-local |
+| `queue.copyWithProfile` | Command+Shift+C | app-local |
+| `queue.copyAndAdvance` | Command+Shift+Enter | app-local |
+| `queue.complete` | Space | app-local |
+| `queue.edit` | Return | app-local |
+| `queue.moveUp` | Option+Command+ArrowUp | app-local |
+| `queue.moveDown` | Option+Command+ArrowDown | app-local |
+| `queue.search` | Command+F | app-local |
+| `queue.undo` | Command+Z | app-local |
+| `window.settings` | Command+Comma | app-local |
+
+There is no `queue.paste`. Factory-disabled seed rows (revision 1, trigger disabled, not enabled) load as these defaults. User customizations stay. `SettingsV1.capture.standardChord` remains the settings view of `capture.selection` (ADR-016).
+
+Event-tap live fire is `capture.selection` Shift double-tap. Other seeded globals persist through native registration without an OS grab. App-local chords persist for the UI resolver; Quick Panel keydown still uses hardcoded composer chords.
 
 ## 5. Recorder interaction
 
-1. Activate “Record shortcut” button.
-2. Dialog explains Escape cancel, Delete clear, and reserved assistive/system combinations.
-3. Live region/spoken text reports modifiers and key.
-4. Recorder captures next complete chord on key release; modifier-only requires explicit gesture mode.
-5. Normalize left/right only according to action schema.
-6. Validate syntax and internal duplicate.
-7. Attempt native registration without unregistering old binding.
-8. If successful, offer user-ended/adjustable test mode with Stop/Skip and no motor-timing requirement; atomically swap registration + setting. Skipped test saves explicit untested status.
-9. If failed, retain old value, announce reason and alternatives.
+Settings Shortcuts lists every action with its current chord. The assignment control (catalog Record shortcut) starts the recorder for that row. Restore Default is visible only when the row is not the seeded default.
 
-Recorder ignores composition, key repeat, lone character without modifier for global action, and VoiceOver/system-reserved chord where detectable. Provide typed/manual chooser for AT users who cannot use recorder.
+1. Activate the assignment control on that row.
+2. The recording bar takes the next complete chord. Escape or Cancel leaves the old binding.
+3. Live region reports recording, reject, or duplicate from the catalog. No sentence concatenation.
+4. Normalize left/right only according to action schema.
+5. Validate syntax and internal duplicate.
+6. Attempt native registration without unregistering the old binding.
+7. Persist only after native registration succeeds or the operator skips the test. A skipped test stores explicit untested status.
+8. If registration fails, retain the old value and announce the catalog reason.
+
+Recorder ignores composition, key repeat, a lone character without a modifier for a global action, and a VoiceOver/system-reserved chord where detectable. Provide a typed/manual chooser for AT users who cannot use the recorder.
 
 ## 6. Conflict model
 

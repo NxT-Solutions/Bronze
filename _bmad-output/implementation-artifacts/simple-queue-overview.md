@@ -16,7 +16,7 @@ The Quick Panel is the inbox: composer, active items (`queued` / `copied` / `act
 
 Menu-bar status extra left-click is Show. The status menu lists the latest five overview items (click copies), then Capture, Help, and Quit. The Bronze app menu still offers Show, Capture, Settings, Library, Help, and Quit. Capture reads AX selected text from the last non-Bronze PID and writes the same SQLite store as the composer. Capture does not steal source focus and does not force-show the panel. Show reveals the panel and recreates it if it was closed. Closed Settings / Library / Help windows recreate on the next open.
 
-`capture.selection` ships as Shift double-tap; the other twelve seeded `ShortcutActionId` rows stay disabled. Search stays substring-only (`QUE_007_COMPLETE=false`). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog.
+Every `ShortcutActionId` ships an enabled default (`docs/12` §4). Event-tap live fire is `capture.selection` Shift double-tap. Search stays substring-only (`QUE_007_COMPLETE=false`). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog.
 
 ## File list
 
