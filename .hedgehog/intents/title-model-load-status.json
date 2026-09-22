@@ -1,0 +1,59 @@
+{
+  "id": "title-model-load-status",
+  "goal": "Expose title-engine lifecycle to Settings so a local GGUF switch shows loading versus ready, missing, or failed without blocking capture.",
+  "outcome": "Settings Title engine shows a semantic spinner and an aria-live polite status while the bronze-title-model worker loads, hashes, or fails. Extractive stays idle with no spinner. Missing weights keep the existing vendor-command copy. Ready text is a catalog string. Failed reasons are safe catalog strings (missing_weights, bad_hash, timeout, unreadable) with no huge paths. Status comes from existing bronze-title stages via Tauri event title-engine-status and a title_engine_status snapshot. Focus stays on the select. Reduce Motion stops decorative spin and still updates text. ADR-019 stays Proposed. No prompt.rs edits, no runtime Hub, no new default engine, Settings only.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-RULE-1",
+      "kind": "rule",
+      "statement": "Emit lifecycle from bronze-title stages already logged: switch scheduled, weights resolved, hash ok, model loaded, missing_weights, and load fallbacks bad_hash, timeout, unreadable. Do not change refine prompt or prompt.rs. Do not block capture. Do not put this on the event-tap thread."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-RULE-2",
+      "kind": "rule",
+      "statement": "Phases: idle (extractive, no file needed, no spinner); missing (existing vendored-file-missing plus vendor command, no spinner); loading or hashing (spinner plus catalog Loading {engine} or a short checking string); ready (no spinner, Ready / Loaded — will title the next capture); failed (no spinner, safe reason string, vendor command OK, no huge paths)."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-RULE-3",
+      "kind": "rule",
+      "statement": "Wire Settings only via Tauri event title-engine-status and command title_engine_status. Live switch already reloads without relaunch; status must update during that reload. Capture never waits on load."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-RULE-4",
+      "kind": "rule",
+      "statement": "Spinner is semantic (progress or aria-busy on the status), visible next to Title engine. role=status or aria-live polite. Focus stays on the select when switching. prefers-reduced-motion and data-reduce-motion stop decorative spin; text still updates. No clickable div."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string is a locale catalog key (en, nl, fr, de, es, it). No sentence concatenation. HTML fallback matches en. Pseudo locales regenerate from en."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-RULE-6",
+      "kind": "rule",
+      "statement": "ADR-017 stays Accepted: no runtime network, Hugging Face Hub, or download. No Needle/Qwen as a new default. TitleABI.swift stays a compile-only stub. No llama in Swift. ADR-019 stays Proposed. Never silently accept ADR-002, ADR-009, or ADR-018."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-RULE-7",
+      "kind": "rule",
+      "statement": "Do not claim QUEUE-ATTACHMENTS-RUST. Do not resume bmad-loop 6a79. Do not run full-stack-app, pwa-app, or landing-page cores. Do not fight an in-flight title-prompt-summarize edit to prompt.rs."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "observe/status mapping: switch scheduled → loading; weights resolved or hash ok → hashing; model loaded → ready; extractive → idle; missing_weights → missing; bad_hash, timeout, or unreadable during load → failed. Refine logs do not flip a ready engine to failed."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "Settings shows loading vs ready vs missing: spinner plus Loading {engine} while loading; no spinner and ready/loaded copy when loaded; no spinner and existing vendor-command missing copy when weights are absent."
+    },
+    {
+      "id": "TITLE-MODEL-LOAD-STATUS-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "ADR-019 status remains Proposed. No WCAG, VoiceOver, or notarization claim without docs/evidence."
+    }
+  ],
+  "depends_on": []
+}
