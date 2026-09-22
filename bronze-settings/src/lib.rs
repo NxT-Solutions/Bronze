@@ -25,7 +25,8 @@ pub use schema::{
 };
 pub use shortcuts::{
     apply_recorded_double_tap_timing, capture_alternatives_ok, default_shortcut_binding,
-    is_default_binding, logical_key_allowed, recorded_double_tap_allowed, recorder_swallows,
-    shortcut_scope, skip_test_marks_untested, CaptureAlternatives, FakeRegistrar, NativeRegistrar,
-    RecorderEvent, RecorderIgnore, RegisterError, ShortcutRegistry, ShortcutScope,
+    effective_tap_count, is_default_binding, logical_key_allowed, recorded_double_tap_allowed,
+    recorder_swallows, shortcut_scope, skip_test_marks_untested, CaptureAlternatives,
+    FakeRegistrar, NativeRegistrar, RecorderEvent, RecorderIgnore, RegisterError, ShortcutRegistry,
+    ShortcutScope, MAX_MODIFIER_TAPS,
 };

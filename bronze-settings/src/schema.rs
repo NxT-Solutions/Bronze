@@ -150,6 +150,8 @@ pub struct ShortcutBinding {
     pub gap_ms: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_hold_ms: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tap_count: Option<u32>,
     pub enabled: bool,
     pub schema_version: u32,
     pub revision: u32,
@@ -676,6 +678,7 @@ pub fn default_standard_chord() -> ShortcutBinding {
         modifier_side: Some(ModifierSide::Either),
         gap_ms: Some(DEFAULT_GAP_MS),
         max_hold_ms: Some(DEFAULT_MAX_HOLD_MS),
+        tap_count: Some(2),
         enabled: true,
         schema_version: SCHEMA_VERSION,
         revision: 1,

@@ -61,11 +61,21 @@ pub fn is_default_binding(binding: &ShortcutBinding) -> bool {
     same_assigned_chord(binding, &default) && binding.enabled == default.enabled
 }
 
+pub const MAX_MODIFIER_TAPS: u32 = 8;
+
+pub fn effective_tap_count(binding: &ShortcutBinding) -> Option<u32> {
+    if binding.trigger != TriggerKind::ModifierDoubleTap {
+        return None;
+    }
+    Some(binding.tap_count.unwrap_or(2).clamp(2, MAX_MODIFIER_TAPS))
+}
+
 pub fn apply_recorded_double_tap_timing(binding: &mut ShortcutBinding) {
     if binding.trigger != TriggerKind::ModifierDoubleTap {
         binding.gap_ms = None;
         binding.max_hold_ms = None;
         binding.modifier_side = None;
+        binding.tap_count = None;
         return;
     }
     binding.logical_key = None;
@@ -80,6 +90,7 @@ pub fn apply_recorded_double_tap_timing(binding: &mut ShortcutBinding) {
     if binding.modifier_side.is_none() {
         binding.modifier_side = Some(ModifierSide::Either);
     }
+    binding.tap_count = effective_tap_count(binding);
 }
 
 pub fn recorded_double_tap_allowed(binding: &ShortcutBinding) -> bool {
@@ -87,6 +98,7 @@ pub fn recorded_double_tap_allowed(binding: &ShortcutBinding) -> bool {
         && binding.enabled
         && binding.logical_key.is_none()
         && binding.modifiers.len() == 1
+        && effective_tap_count(binding).is_some()
 }
 
 fn accelerator(action: ShortcutActionId, modifiers: Vec<Modifier>, key: &str) -> ShortcutBinding {
@@ -100,6 +112,7 @@ fn accelerator(action: ShortcutActionId, modifiers: Vec<Modifier>, key: &str) ->
         modifier_side: None,
         gap_ms: None,
         max_hold_ms: None,
+        tap_count: None,
         enabled: true,
         schema_version: SCHEMA_VERSION,
         revision: 1,
@@ -333,6 +346,7 @@ fn same_assigned_chord(left: &ShortcutBinding, right: &ShortcutBinding) -> bool 
         && left.modifier_side == right.modifier_side
         && left.gap_ms == right.gap_ms
         && left.max_hold_ms == right.max_hold_ms
+        && effective_tap_count(left) == effective_tap_count(right)
 }
 
 #[cfg(test)]
@@ -351,6 +365,7 @@ mod shortcuts_tests {
             modifier_side: None,
             gap_ms: None,
             max_hold_ms: None,
+            tap_count: None,
             enabled: true,
             schema_version: SCHEMA_VERSION,
             revision: 2,
@@ -525,6 +540,7 @@ mod shortcuts_tests {
             modifier_side: None,
             gap_ms: None,
             max_hold_ms: None,
+            tap_count: None,
             enabled: false,
             schema_version: SCHEMA_VERSION,
             revision: 1,
@@ -584,14 +600,29 @@ mod shortcuts_tests {
         assert_eq!(binding.gap_ms, Some(DEFAULT_GAP_MS));
         assert_eq!(binding.max_hold_ms, Some(DEFAULT_MAX_HOLD_MS));
         assert_eq!(binding.modifier_side, Some(ModifierSide::Either));
+        assert_eq!(binding.tap_count, Some(2));
         assert!(recorded_double_tap_allowed(&binding));
         binding.modifiers.clear();
         assert!(!recorded_double_tap_allowed(&binding));
+        let mut triple = default_shortcut_binding(ShortcutActionId::QueueComplete);
+        triple.trigger = TriggerKind::ModifierDoubleTap;
+        triple.modifiers = vec![Modifier::Option];
+        triple.logical_key = None;
+        triple.tap_count = Some(3);
+        apply_recorded_double_tap_timing(&mut triple);
+        assert_eq!(triple.tap_count, Some(3));
+        assert!(recorded_double_tap_allowed(&triple));
+        assert_ne!(effective_tap_count(&binding), effective_tap_count(&triple));
+        let mut missing = triple.clone();
+        missing.tap_count = None;
+        apply_recorded_double_tap_timing(&mut missing);
+        assert_eq!(effective_tap_count(&missing), Some(2));
         let mut accelerator = default_shortcut_binding(ShortcutActionId::CaptureSelection);
         accelerator.trigger = TriggerKind::Accelerator;
         apply_recorded_double_tap_timing(&mut accelerator);
         assert_eq!(accelerator.gap_ms, None);
         assert_eq!(accelerator.max_hold_ms, None);
         assert_eq!(accelerator.modifier_side, None);
+        assert_eq!(accelerator.tap_count, None);
     }
 }

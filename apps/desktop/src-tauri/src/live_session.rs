@@ -17,11 +17,11 @@ use bronze_domain::{
     default_output_profile, ComposerChord, OutputFormat, OutputProfile, PostCopyAction,
 };
 use bronze_settings::{
-    apply_recorded_double_tap_timing, default_shortcut_binding, is_default_binding,
-    logical_key_allowed, recorded_double_tap_allowed, search_settings, shortcut_scope,
-    skip_test_marks_untested, CaptureAlternatives, Modifier, NativeRegistrar, RegisterError,
-    SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, ShortcutRegistry, ShortcutScope,
-    TestedState, TriggerKind,
+    apply_recorded_double_tap_timing, default_shortcut_binding, effective_tap_count,
+    is_default_binding, logical_key_allowed, recorded_double_tap_allowed, search_settings,
+    shortcut_scope, skip_test_marks_untested, CaptureAlternatives, Modifier, NativeRegistrar,
+    RegisterError, SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, ShortcutRegistry,
+    ShortcutScope, TestedState, TriggerKind, MAX_MODIFIER_TAPS,
 };
 use bronze_storage::{
     ComposerDraft, ImportStrategy, NoopBackup, Overwrite, PathLocator, QueueAction, QueueItemRow,
@@ -311,6 +311,8 @@ pub struct ShortcutRowDto {
     pub trigger: String,
     pub modifiers: Vec<String>,
     pub logical_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tap_count: Option<u32>,
     pub enabled: bool,
     pub is_default: bool,
     pub scope: String,
@@ -324,6 +326,8 @@ pub struct ShortcutRecordInput {
     pub trigger: String,
     pub modifiers: Vec<String>,
     pub logical_key: Option<String>,
+    #[serde(default)]
+    pub tap_count: Option<u32>,
     pub skip_test: bool,
 }
 
@@ -936,6 +940,7 @@ fn shortcut_row(binding: &ShortcutBinding) -> ShortcutRowDto {
         trigger: trigger.into(),
         modifiers: binding.modifiers.iter().map(modifier_name).collect(),
         logical_key: binding.logical_key.clone(),
+        tap_count: effective_tap_count(binding),
         enabled: binding.enabled,
         is_default: is_default_binding(binding),
         scope: scope.into(),
@@ -989,10 +994,16 @@ fn binding_from_record(
             return Err("invalid_shortcut_key".into());
         }
     }
+    if let Some(count) = input.tap_count {
+        if !(2..=MAX_MODIFIER_TAPS).contains(&count) {
+            return Err("invalid_shortcut_tap_count".into());
+        }
+    }
     let mut binding = default_shortcut_binding(action);
     binding.trigger = trigger;
     binding.modifiers = modifiers;
     binding.logical_key = input.logical_key.clone();
+    binding.tap_count = input.tap_count;
     binding.enabled = trigger != TriggerKind::Disabled;
     binding.revision = revision;
     apply_recorded_double_tap_timing(&mut binding);
@@ -1442,12 +1453,20 @@ mod live_session_tests {
         assert!(toggle.is_default);
         assert_eq!(toggle.logical_key.as_deref(), Some(" "));
         assert_eq!(toggle.scope, "global");
+        assert_eq!(toggle.tap_count, None);
+        let capture = shortcuts
+            .iter()
+            .find(|row| row.action == "capture.selection")
+            .expect("capture");
+        assert_eq!(capture.trigger, "modifier_double_tap");
+        assert_eq!(capture.tap_count, Some(2));
         let recorded = session
             .record_shortcut(ShortcutRecordInput {
                 action: "queue.search".into(),
                 trigger: "accelerator".into(),
                 modifiers: vec!["Command".into()],
                 logical_key: Some("k".into()),
+                tap_count: None,
                 skip_test: true,
             })
             .expect("record");
@@ -1473,6 +1492,7 @@ mod live_session_tests {
                     trigger: "accelerator".into(),
                     modifiers: vec!["Command".into()],
                     logical_key: Some("../etc".into()),
+                    tap_count: None,
                     skip_test: false,
                 })
                 .unwrap_err(),
@@ -1485,6 +1505,7 @@ mod live_session_tests {
                     trigger: "accelerator".into(),
                     modifiers: vec!["Command".into()],
                     logical_key: Some("c".into()),
+                    tap_count: None,
                     skip_test: false,
                 })
                 .unwrap_err(),
@@ -1547,6 +1568,7 @@ mod live_session_tests {
                     trigger: "modifier_double_tap".into(),
                     modifiers: vec!["Shift".into()],
                     logical_key: None,
+                    tap_count: None,
                     skip_test: true,
                 })
                 .unwrap_err(),
@@ -1558,6 +1580,7 @@ mod live_session_tests {
                 trigger: "modifier_double_tap".into(),
                 modifiers: vec!["Option".into()],
                 logical_key: Some("o".into()),
+                tap_count: None,
                 skip_test: true,
             })
             .expect("option double-tap");
@@ -1568,6 +1591,7 @@ mod live_session_tests {
         assert_eq!(search.trigger, "modifier_double_tap");
         assert_eq!(search.modifiers, vec!["Option".to_string()]);
         assert_eq!(search.logical_key, None);
+        assert_eq!(search.tap_count, Some(2));
         assert!(!search.is_default);
         assert_eq!(
             session
@@ -1576,6 +1600,7 @@ mod live_session_tests {
                     trigger: "modifier_double_tap".into(),
                     modifiers: vec!["Option".into()],
                     logical_key: None,
+                    tap_count: None,
                     skip_test: true,
                 })
                 .unwrap_err(),
@@ -1587,6 +1612,7 @@ mod live_session_tests {
                 trigger: "accelerator".into(),
                 modifiers: vec!["Command".into()],
                 logical_key: Some("k".into()),
+                tap_count: None,
                 skip_test: true,
             })
             .expect("move capture off shift double-tap");
@@ -1596,6 +1622,7 @@ mod live_session_tests {
                 trigger: "modifier_double_tap".into(),
                 modifiers: vec!["Shift".into()],
                 logical_key: None,
+                tap_count: None,
                 skip_test: true,
             })
             .expect("shift double-tap on complete");
@@ -1605,6 +1632,7 @@ mod live_session_tests {
             .expect("complete");
         assert_eq!(complete.trigger, "modifier_double_tap");
         assert_eq!(complete.modifiers, vec!["Shift".to_string()]);
+        assert_eq!(complete.tap_count, Some(2));
         assert!(!complete.is_default);
         assert_eq!(
             session
@@ -1613,10 +1641,82 @@ mod live_session_tests {
                     trigger: "modifier_double_tap".into(),
                     modifiers: Vec::new(),
                     logical_key: None,
+                    tap_count: None,
                     skip_test: true,
                 })
                 .unwrap_err(),
             "shortcut_rejected"
+        );
+    }
+
+    #[test]
+    fn record_shortcut_persists_option_triple_as_distinct_from_double() {
+        let mut session = open_session();
+        let triple_rows = session
+            .record_shortcut(ShortcutRecordInput {
+                action: "queue.search".into(),
+                trigger: "modifier_double_tap".into(),
+                modifiers: vec!["Option".into()],
+                logical_key: None,
+                tap_count: Some(3),
+                skip_test: true,
+            })
+            .expect("option triple");
+        let search = triple_rows
+            .iter()
+            .find(|row| row.action == "queue.search")
+            .expect("search");
+        assert_eq!(search.trigger, "modifier_double_tap");
+        assert_eq!(search.modifiers, vec!["Option".to_string()]);
+        assert_eq!(search.tap_count, Some(3));
+        session
+            .record_shortcut(ShortcutRecordInput {
+                action: "app.togglePanel".into(),
+                trigger: "modifier_double_tap".into(),
+                modifiers: vec!["Option".into()],
+                logical_key: None,
+                tap_count: None,
+                skip_test: true,
+            })
+            .expect("option double distinct from triple");
+        assert_eq!(
+            session
+                .record_shortcut(ShortcutRecordInput {
+                    action: "queue.complete".into(),
+                    trigger: "modifier_double_tap".into(),
+                    modifiers: vec!["Option".into()],
+                    logical_key: None,
+                    tap_count: Some(3),
+                    skip_test: true,
+                })
+                .unwrap_err(),
+            "shortcut_duplicate"
+        );
+        assert_eq!(
+            session
+                .record_shortcut(ShortcutRecordInput {
+                    action: "queue.edit".into(),
+                    trigger: "modifier_double_tap".into(),
+                    modifiers: vec!["Option".into()],
+                    logical_key: None,
+                    tap_count: Some(1),
+                    skip_test: true,
+                })
+                .unwrap_err(),
+            "invalid_shortcut_tap_count"
+        );
+        assert_eq!(
+            session
+                .record_shortcut(ShortcutRecordInput {
+                    action: "queue.edit".into(),
+                    trigger: "modifier_double_tap".into(),
+                    modifiers: vec!["Option".into()],
+                    logical_key: None,
+                    tap_count: Some(9),
+                    skip_test: true,
+                })
+                .unwrap_err(),
+            "invalid_shortcut_tap_count"
         );
     }
 
