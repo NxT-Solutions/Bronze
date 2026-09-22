@@ -180,18 +180,18 @@ Seeded defaults (all enabled):
 
 There is no `queue.paste`. Factory-disabled seed rows (revision 1, trigger disabled, not enabled) load as these defaults. User customizations stay. `SettingsV1.capture.standardChord` remains the settings view of `capture.selection` (ADR-016).
 
-Event-tap live fire is `capture.selection` Shift double-tap. Other seeded globals persist through native registration without an OS grab. App-local chords persist for the UI resolver; Quick Panel keydown still uses hardcoded composer chords.
+Event-tap live fire is `capture.selection` Shift double-tap. Other seeded globals persist through native registration without an OS grab. App-local chords and recorded modifier double-taps persist for the UI resolver; Quick Panel keydown still uses hardcoded composer chords.
 
 ## 5. Recorder interaction
 
 Settings Shortcuts lists every action with its current chord. The assignment control (catalog Record shortcut) starts the recorder for that row. Restore Default is visible only when the row is not the seeded default.
 
-1. Activate the assignment control on that row. Recording stays on the row; no extra field is inserted above the list.
-2. The next complete chord is captured inline, including multi-modifier combinations. Option+letter uses the physical key (ø from Option+O binds as O). Escape leaves the old binding.
-3. Live region reports recording, reject, or duplicate from the catalog. No sentence concatenation.
+1. Activate the assignment control on that row. Recording stays on the row; no extra field is inserted above the list. The assignment control shows Recording… until a chord is saved or Escape cancels.
+2. The next complete accelerator is captured inline, including multi-modifier combinations. Option+letter uses the physical key (ø from Option+O binds as O). Two taps of the same modifier (Shift, Option, Command, Control, or Fn) within 500 ms record `modifier_double_tap` for that modifier, with gap 250 ms, max hold 400 ms, and either side. Escape leaves the old binding.
+3. Live region reports recording, reject, or duplicate from the catalog. The painted chord for a double-tap is that modifier plus “double-tap”. No sentence concatenation.
 4. Normalize left/right only according to action schema.
-5. Validate syntax and internal duplicate.
-6. Attempt native registration without unregistering the old binding.
+5. Validate syntax and internal duplicate. Two actions may not share the same double-tap modifier.
+6. Attempt native registration without unregistering the old binding. App-local double-tap must not OS-grab.
 7. Persist only after native registration succeeds or the operator skips the test. A skipped test stores explicit untested status.
 8. If registration fails, retain the old value and announce the catalog reason.
 
