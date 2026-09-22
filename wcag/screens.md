@@ -20,6 +20,9 @@ Purpose: capture in, act on the current item.
 - Edit is a modal `<dialog>` with name, Escape, and focus restore.
   No `window.prompt`.
 - Move up / Move down replace drag (2.5.7).
+- Complete, Skip, Move, and Trash do not require motion to understand.
+  Reduce Motion / `data-reduce-motion` updates the list immediately
+  (2.3.3). This is not a WCAG claim.
 
 ## Settings — `apps/desktop/src/settings.html`
 

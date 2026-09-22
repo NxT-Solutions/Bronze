@@ -13,7 +13,17 @@ Purpose: capture in, act on the current item.
   icon → Copy (filled) + compact icon row (Complete, Skip, Edit, Move
   up, Move down, Trash).
 - Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
-- Enter animation is opacity only.
+- Enter animation is opacity only (`bronze-enter`, `--ease`).
+- Complete / Skip / Trash leave the list: height collapse
+  (`grid-template-rows` 1fr→0fr) plus fade, then the node is removed.
+  Complete slides slightly up. Skip fades. Trash shrinks. Tokens are
+  `--duration` and `--ease`.
+- Move up / down is one FLIP `translateY` shot on the card and
+  neighbors (`--duration`, `--ease-out`). Copy, Edit, and icon hover
+  do not move.
+- Reduce Motion (`prefers-reduced-motion: reduce` or
+  `data-reduce-motion`) skips slide and collapse. The list updates
+  immediately. Motion is never required to understand the action.
 
 ## Settings — `apps/desktop/src/settings.html`
 
