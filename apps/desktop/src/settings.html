@@ -490,25 +490,10 @@
           class="visually-hidden"
           data-i18n="settings.shortcuts.record"
         >Record shortcut</span>
-        <div class="shortcut-record-bar" data-shortcut-record-bar hidden>
-          <label for="shortcut-record" data-i18n="settings.shortcuts.recording">
-            Type the new shortcut (Escape cancels).
-          </label>
-          <div class="field-row">
-            <input
-              id="shortcut-record"
-              type="text"
-              autocomplete="off"
-              aria-describedby="shortcuts-live"
-            />
-            <button type="button" class="btn-ghost" data-shortcut-skip data-i18n="settings.shortcuts.skipTest">
-              Skip test
-            </button>
-            <button type="button" class="btn-ghost" data-shortcut-cancel data-i18n="settings.shortcuts.cancel">
-              Cancel
-            </button>
-          </div>
-        </div>
+        <span
+          class="visually-hidden"
+          data-i18n="settings.shortcuts.recording"
+        >Type the new shortcut (Escape cancels).</span>
         <p data-standard-chord="capture.selection"></p>
         <ul class="shortcut-list" data-shortcut-registry>
           <li data-settings-unit data-action="app.togglePanel">

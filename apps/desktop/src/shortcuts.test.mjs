@@ -51,8 +51,8 @@ test("shortcut recorder lists every action and keeps capture.selection as standa
   }
   assert.match(html, /data-shortcut-record/);
   assert.match(html, /data-shortcut-restore/);
-  assert.match(html, /data-shortcut-record-bar/);
-  assert.match(html, /data-i18n="settings.shortcuts.skipTest"/);
+  assert.doesNotMatch(html, /data-shortcut-record-bar/);
+  assert.doesNotMatch(html, /id="shortcut-record"/);
   assert.match(html, /data-i18n="settings.shortcuts.restore"/);
   assert.doesNotMatch(html, />app\.togglePanel</);
   assert.match(html, /data-i18n="settings.shortcuts.action.app.togglePanel"/);
@@ -88,12 +88,6 @@ test("shortcut recorder lists every action and keeps capture.selection as standa
       /data-i18n="settings.shortcuts.restore"[^>]*>\s*([^<]+?)\s*</,
     )?.[1],
     en["settings.shortcuts.restore"],
-  );
-  assert.equal(
-    html.match(
-      /data-i18n="settings.shortcuts.cancel"[^>]*>\s*([^<]+?)\s*</,
-    )?.[1],
-    en["settings.shortcuts.cancel"],
   );
   assert.match(live, /bindShortcutRegistry/);
   assert.match(registry, /list_shortcuts/);
@@ -132,6 +126,41 @@ test("shortcut formatter and recorder keep IME out and reject path keys", () => 
       repeat: false,
     }),
     { trigger: "accelerator", modifiers: ["Command"], logicalKey: "k" },
+  );
+  assert.deepEqual(
+    chordFromKeyboardEvent({
+      key: "ø",
+      code: "KeyO",
+      metaKey: false,
+      altKey: true,
+      ctrlKey: false,
+      shiftKey: true,
+      isComposing: false,
+      repeat: false,
+    }),
+    {
+      trigger: "accelerator",
+      modifiers: ["Option", "Shift"],
+      logicalKey: "o",
+    },
+  );
+  assert.equal(
+    formatShortcutChord({
+      enabled: true,
+      trigger: "accelerator",
+      modifiers: ["Option", "Shift"],
+      logicalKey: "o",
+    }),
+    "⌥⇧O",
+  );
+  assert.equal(
+    chordFromKeyboardEvent({
+      key: "Backspace",
+      code: "Backspace",
+      isComposing: false,
+      repeat: false,
+    }),
+    null,
   );
   assert.equal(
     chordFromKeyboardEvent({
@@ -257,18 +286,13 @@ function collect(root, sel) {
 
 test("shortcut registry paints defaults, records a custom chord, and restores", async () => {
   const liveStatus = fakeEl({ "data-shortcut-live": "" });
-  const input = fakeEl({ id: "shortcut-record" });
-  const skip = fakeEl({ "data-shortcut-skip": "" });
-  const cancel = fakeEl({ "data-shortcut-cancel": "" });
-  const bar = fakeEl({ "data-shortcut-record-bar": "" }, [input, skip, cancel]);
-  bar.hidden = true;
   const chord = fakeEl({ "data-slot": "shortcut-chord", textContent: "⌘F" });
   const recordBtn = fakeEl({ "data-shortcut-record": "" }, [chord]);
   const restore = fakeEl({ "data-shortcut-restore": "" });
   restore.hidden = true;
   const item = fakeEl({ "data-action": "queue.search" }, [recordBtn, restore]);
   const list = fakeEl({ "data-shortcut-registry": "" }, [item]);
-  const root = fakeEl({}, [liveStatus, bar, list]);
+  const root = fakeEl({}, [liveStatus, list]);
 
   const calls = [];
   const rows = [
@@ -316,16 +340,16 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
       },
     },
   });
-  assert.equal(bar.hidden, false);
-  assert.equal(bar.dataset.recordingAction, "queue.search");
+  assert.equal(list.dataset.recordingAction, "queue.search");
   assert.equal(item.dataset.recording, "true");
 
-  input.emit("keydown", {
-    key: "k",
-    metaKey: true,
-    altKey: false,
+  list.emit("keydown", {
+    key: "ø",
+    code: "KeyO",
+    metaKey: false,
+    altKey: true,
     ctrlKey: false,
-    shiftKey: false,
+    shiftKey: true,
     isComposing: false,
     repeat: false,
     preventDefault() {},
@@ -335,13 +359,13 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   assert.deepEqual(calls.at(-1).args.input, {
     action: "queue.search",
     trigger: "accelerator",
-    modifiers: ["Command"],
-    logicalKey: "k",
+    modifiers: ["Option", "Shift"],
+    logicalKey: "o",
     skipTest: true,
   });
-  assert.equal(chord.textContent, "⌘K");
+  assert.equal(chord.textContent, "⌥⇧O");
   assert.equal(restore.hidden, false);
-  assert.equal(bar.hidden, true);
+  assert.equal(list.dataset.recordingAction, undefined);
 
   list.emit("click", {
     target: {

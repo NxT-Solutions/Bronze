@@ -29,6 +29,29 @@ export function isGlobalShortcutAction(action) {
   return action === "app.togglePanel" || action === "capture.selection";
 }
 
+const CODE_KEYS = {
+  Space: " ",
+  Enter: "Enter",
+  NumpadEnter: "Enter",
+  Escape: "Escape",
+  Tab: "Tab",
+  ArrowUp: "ArrowUp",
+  ArrowDown: "ArrowDown",
+  ArrowLeft: "ArrowLeft",
+  ArrowRight: "ArrowRight",
+  Backspace: "Backspace",
+  Delete: "Delete",
+  Comma: ",",
+  Period: ".",
+  Semicolon: ";",
+  Quote: "'",
+  BracketLeft: "[",
+  BracketRight: "]",
+  Backquote: "`",
+  Minus: "-",
+  Equal: "=",
+};
+
 export function normalizeLogicalKey(key) {
   if (key === " ") {
     return " ";
@@ -57,6 +80,34 @@ export function normalizeLogicalKey(key) {
   return "";
 }
 
+export function logicalKeyFromCode(code) {
+  if (!code) {
+    return "";
+  }
+  if (/^Key[A-Z]$/.test(code)) {
+    return code.slice(3).toLowerCase();
+  }
+  if (/^Digit[0-9]$/.test(code)) {
+    return code.slice(5);
+  }
+  if (CODE_KEYS[code]) {
+    return CODE_KEYS[code];
+  }
+  if (/^F([1-9]|1[0-9])$/.test(code)) {
+    return code;
+  }
+  return "";
+}
+
+export function logicalKeyFromEvent(event) {
+  const fromKey = normalizeLogicalKey(event?.key ?? "");
+  if (fromKey && !event?.altKey) {
+    return fromKey;
+  }
+  // Option remaps letters to symbols (ø); physical code keeps the letter.
+  return logicalKeyFromCode(event?.code) || fromKey;
+}
+
 export function recorderIgnores(event) {
   return Boolean(
     event?.isComposing ||
@@ -69,13 +120,13 @@ export function chordFromKeyboardEvent(event) {
   if (recorderIgnores(event)) {
     return null;
   }
-  if (event.key === "Escape") {
+  if (event.key === "Escape" || event.code === "Escape") {
     return { cancel: true };
   }
   if (["Meta", "Alt", "Control", "Shift", "Fn"].includes(event.key)) {
     return null;
   }
-  const logicalKey = normalizeLogicalKey(event.key);
+  const logicalKey = logicalKeyFromEvent(event);
   if (!logicalKey) {
     return null;
   }
@@ -91,6 +142,12 @@ export function chordFromKeyboardEvent(event) {
   }
   if (event.shiftKey) {
     modifiers.push("Shift");
+  }
+  if (
+    modifiers.length === 0 &&
+    (logicalKey === "Backspace" || logicalKey === "Delete")
+  ) {
+    return null;
   }
   return { trigger: "accelerator", modifiers, logicalKey };
 }
@@ -221,53 +278,34 @@ function setRecordingRow(root, action) {
 }
 
 function closeRecorder(root) {
-  const bar = root.querySelector("[data-shortcut-record-bar]");
-  const input = root.querySelector("#shortcut-record");
-  if (bar) {
-    bar.hidden = true;
-    delete bar.dataset.recordingAction;
-    delete bar.dataset.pendingChord;
-  }
-  if (input) {
-    input.value = "";
+  const list = root.querySelector("[data-shortcut-registry]");
+  if (list) {
+    delete list.dataset.recordingAction;
   }
   setRecordingRow(root, "");
 }
 
-function pendingChord(bar) {
-  try {
-    const chord = JSON.parse(bar?.dataset.pendingChord || "");
-    if (chord?.trigger && typeof chord.logicalKey === "string") {
-      return chord;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function stageChord(bar, input, chord) {
-  if (!bar) {
+function previewChord(root, action, chord) {
+  const item = root.querySelector(
+    `[data-shortcut-registry] [data-action="${action}"]`,
+  );
+  const slot = item?.querySelector("[data-slot='shortcut-chord']");
+  if (!slot) {
     return;
   }
-  bar.dataset.pendingChord = JSON.stringify(chord);
-  if (input) {
-    input.value = formatShortcutChord(
-      {
-        enabled: true,
-        trigger: chord.trigger,
-        modifiers: chord.modifiers,
-        logicalKey: chord.logicalKey,
-      },
-      catalog(),
-    );
-  }
+  slot.textContent = formatShortcutChord(
+    {
+      enabled: true,
+      trigger: chord.trigger,
+      modifiers: chord.modifiers,
+      logicalKey: chord.logicalKey,
+    },
+    catalog(),
+  );
 }
 
 export async function bindShortcutRegistry(root, invokeFn) {
   const list = root.querySelector("[data-shortcut-registry]");
-  const bar = root.querySelector("[data-shortcut-record-bar]");
-  const input = root.querySelector("#shortcut-record");
   if (!list || !invokeFn) {
     return;
   }
@@ -286,6 +324,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
   const record = async (action, chord, skipTest) => {
     if (isGlobalShortcutAction(action) && chord.modifiers.length === 0) {
       setLive(root, "settings.shortcuts.rejected", REJECTED_FALLBACK);
+      await refresh();
       return;
     }
     try {
@@ -305,6 +344,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
       setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
     } catch (error) {
       setLive(root, shortcutFailureKey(error), REJECTED_FALLBACK);
+      await refresh();
     }
   };
 
@@ -331,52 +371,35 @@ export async function bindShortcutRegistry(root, invokeFn) {
       });
       return;
     }
-    if (recordButton && bar && input) {
-      bar.hidden = false;
-      bar.dataset.recordingAction = action;
-      delete bar.dataset.pendingChord;
-      input.value = "";
+    if (recordButton) {
+      list.dataset.recordingAction = action;
       setRecordingRow(root, action);
-      input.focus();
+      recordButton.focus();
       setLive(root, "settings.shortcuts.recording", RECORDING_FALLBACK);
     }
   });
 
-  input?.addEventListener("keydown", (event) => {
-    const action = bar?.dataset.recordingAction;
+  list.addEventListener("keydown", (event) => {
+    const action = list.dataset.recordingAction;
     if (!action) {
       return;
     }
+    if (recorderIgnores(event)) {
+      return;
+    }
     const chord = chordFromKeyboardEvent(event);
+    event.preventDefault();
     if (!chord) {
       return;
     }
-    event.preventDefault();
     if (chord.cancel) {
       closeRecorder(root);
       setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
       return;
     }
-    stageChord(bar, input, chord);
+    previewChord(root, action, chord);
     record(action, chord, true);
   });
-
-  root.querySelector("[data-shortcut-skip]")?.addEventListener("click", () => {
-    const action = bar?.dataset.recordingAction;
-    const chord = pendingChord(bar);
-    if (action && chord) {
-      record(action, chord, true);
-      return;
-    }
-    closeRecorder(root);
-    setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
-  });
-  root
-    .querySelector("[data-shortcut-cancel]")
-    ?.addEventListener("click", () => {
-      closeRecorder(root);
-      setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
-    });
 
   await refresh();
   return refresh;
