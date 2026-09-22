@@ -111,19 +111,32 @@
         </li>
       </template>
       <footer class="library-dock">
-        <div class="toolbar toolbar-secondary">
-          <button type="button" class="btn-ghost" data-i18n="library.archive">Archive</button>
-          <button type="button" class="btn-ghost" data-i18n="library.paginate">Next page</button>
-          <button type="button" class="btn-ghost" data-i18n="library.backup.now">Back Up Now</button>
-          <button type="button" class="btn-ghost" data-i18n="library.export">Export…</button>
-          <button type="button" class="btn-ghost" data-i18n="library.import">Import…</button>
+        <div class="library-dock-tools">
+          <button type="button" class="btn-ghost" hidden data-i18n="library.archive">
+            Archive
+          </button>
+          <button type="button" class="btn-ghost" hidden data-i18n="library.paginate">
+            Next page
+          </button>
+          <button type="button" class="btn-ghost" data-i18n="library.backup.now">
+            Back Up Now
+          </button>
+          <button
+            type="button"
+            class="btn-ghost"
+            data-i18n="library.export"
+            aria-describedby="library-export-secret"
+          >
+            Export…
+          </button>
+          <button type="button" class="btn-ghost" data-i18n="library.import">
+            Import…
+          </button>
         </div>
-        <p class="muted" data-restore-preview data-i18n="library.restore.preview">
-          Restore preview
-        </p>
+        <p class="library-dock-status" data-restore-preview hidden></p>
         <p
-          class="muted"
-          role="status"
+          id="library-export-secret"
+          class="visually-hidden"
           data-export-secret-warning
           data-i18n="export.preview.secretBodies"
         >

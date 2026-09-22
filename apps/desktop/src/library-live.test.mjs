@@ -139,4 +139,10 @@ test("library empty copy names the next action for each section", () => {
   assert.match(html, /data-empty-message/);
   assert.match(html, /Export…/);
   assert.match(html, /Import…/);
+  assert.match(html, /class="library-dock-tools"/);
+  assert.doesNotMatch(
+    html,
+    /data-restore-preview[^>]*data-i18n="library.restore.preview"/,
+  );
+  assert.match(html, /aria-describedby="library-export-secret"/);
 });

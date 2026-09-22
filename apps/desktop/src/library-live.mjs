@@ -176,30 +176,33 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
     });
   }
 
+  function showDockStatus(text) {
+    if (!status) {
+      return;
+    }
+    const next = String(text ?? "").trim();
+    status.textContent = next;
+    status.hidden = next.length === 0;
+  }
+
   bindBusyClick("[data-i18n='library.backup.now']", async () => {
     const path = await invokeFn("backup_library_now", {
       requestedPath: null,
     });
-    if (status) {
-      status.textContent = path;
-    }
+    showDockStatus(path);
   });
   bindBusyClick("[data-i18n='library.export']", async () => {
     const path = await invokeFn("export_library_archive", {
       requestedPath: null,
     });
-    if (status) {
-      status.textContent = path;
-    }
+    showDockStatus(path);
   });
   bindBusyClick("[data-i18n='library.import']", async () => {
     const imported = await invokeFn("import_library_archive", {
       snapshot: null,
       requestedPath: null,
     });
-    if (status) {
-      status.textContent = announceCount(imported);
-    }
+    showDockStatus(announceCount(imported));
     await refresh(search?.value ?? "");
   });
 
