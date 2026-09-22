@@ -160,6 +160,22 @@ test("shortcut formatter and recorder keep IME out and reject path keys", () => 
     null,
   );
   assert.equal(recorderIgnores({ isComposing: true, repeat: false }), true);
+  assert.equal(
+    recorderIgnores({ isComposing: true, key: "Alt", repeat: false }),
+    false,
+  );
+  assert.deepEqual(
+    doubleTapFromModifierEvents(
+      { modifier: "Option", at: 100 },
+      { key: "Alt", code: "AltLeft", isComposing: true },
+      280,
+    ).chord,
+    {
+      trigger: "modifier_double_tap",
+      modifiers: ["Option"],
+      logicalKey: null,
+    },
+  );
   assert.deepEqual(
     chordFromKeyboardEvent({
       key: "k",
@@ -338,8 +354,10 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   const item = fakeEl({ "data-action": "queue.search" }, [recordBtn, restore]);
   const list = fakeEl({ "data-shortcut-registry": "" }, [item]);
   const root = fakeEl({}, [liveStatus, list]);
+  list.ownerDocument = root;
 
   const calls = [];
+  let rejectNext = false;
   const rows = [
     {
       action: "queue.search",
@@ -352,6 +370,10 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   ];
   const invokeFn = async (cmd, args) => {
     calls.push({ cmd, args });
+    if (cmd === "record_shortcut" && rejectNext) {
+      rejectNext = false;
+      throw new Error("shortcut_rejected");
+    }
     if (cmd === "record_shortcut") {
       rows[0] = {
         ...rows[0],
@@ -397,7 +419,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   );
   assert.equal(liveStatus.dataset.recording, "true");
 
-  list.emit("keydown", {
+  root.emit("keydown", {
     key: "Escape",
     code: "Escape",
     isComposing: false,
@@ -423,7 +445,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   });
   assert.equal(chord.textContent, "Recording…");
 
-  list.emit("keydown", {
+  root.emit("keydown", {
     key: "ø",
     code: "KeyO",
     metaKey: false,
@@ -459,7 +481,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   });
   assert.equal(chord.textContent, "Recording…");
   assert.equal(restore.hidden, false);
-  list.emit("keydown", {
+  root.emit("keydown", {
     key: "Escape",
     code: "Escape",
     isComposing: false,
@@ -496,20 +518,90 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
       },
     },
   });
+  root.emit("keydown", {
+    key: "Meta",
+    code: "MetaLeft",
+    metaKey: true,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  root.emit("keydown", {
+    key: "c",
+    code: "KeyC",
+    metaKey: true,
+    altKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  await Promise.resolve();
+  assert.equal(calls.at(-1).cmd, "record_shortcut");
+  assert.deepEqual(calls.at(-1).args.input, {
+    action: "queue.search",
+    trigger: "accelerator",
+    modifiers: ["Command"],
+    logicalKey: "c",
+    skipTest: true,
+  });
+  assert.equal(chord.textContent, "⌘C");
+  root.emit("keyup", {
+    key: "Meta",
+    code: "MetaLeft",
+    timeStamp: 40,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+  });
+  assert.equal(calls.at(-1).cmd, "record_shortcut");
+  assert.equal(calls.at(-1).args.input.trigger, "accelerator");
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
   const beforeDoubleTap = calls.length;
-  list.emit("keydown", {
+  root.emit("keydown", {
     key: "Shift",
     code: "ShiftLeft",
     timeStamp: 100,
     isComposing: false,
     repeat: false,
     preventDefault() {},
+    stopPropagation() {},
+  });
+  root.emit("keyup", {
+    key: "Shift",
+    code: "ShiftLeft",
+    timeStamp: 160,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
   });
   assert.equal(calls.length, beforeDoubleTap);
-  list.emit("keydown", {
+  root.emit("keydown", {
     key: "Shift",
     code: "ShiftLeft",
     timeStamp: 280,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  root.emit("keyup", {
+    key: "Shift",
+    code: "ShiftLeft",
+    timeStamp: 340,
     isComposing: false,
     repeat: false,
     preventDefault() {},
@@ -525,4 +617,101 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   });
   assert.equal(chord.textContent, "Shift double-tap");
   assert.equal(restore.hidden, false);
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  const optionTap = (timeStamp, type) => ({
+    key: "Alt",
+    code: "AltLeft",
+    timeStamp,
+    altKey: type === "keydown",
+    isComposing: true,
+    repeat: false,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  root.emit("keydown", optionTap(400, "keydown"));
+  root.emit("keyup", optionTap(460, "keyup"));
+  root.emit("keydown", optionTap(520, "keydown"));
+  root.emit("keyup", optionTap(580, "keyup"));
+  await Promise.resolve();
+  assert.equal(calls.at(-1).cmd, "record_shortcut");
+  assert.deepEqual(calls.at(-1).args.input, {
+    action: "queue.search",
+    trigger: "modifier_double_tap",
+    modifiers: ["Option"],
+    logicalKey: null,
+    skipTest: true,
+  });
+  assert.equal(chord.textContent, "Option double-tap");
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  rejectNext = true;
+  root.emit("keydown", {
+    key: "Meta",
+    code: "MetaLeft",
+    metaKey: true,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  root.emit("keydown", {
+    key: "c",
+    code: "KeyC",
+    metaKey: true,
+    altKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  const rejected = calls.findLast((entry) => entry.cmd === "record_shortcut");
+  assert.deepEqual(rejected.args.input, {
+    action: "queue.search",
+    trigger: "accelerator",
+    modifiers: ["Command"],
+    logicalKey: "c",
+    skipTest: true,
+  });
+  assert.equal(list.dataset.recordingAction, "queue.search");
+  assert.equal(liveStatus.textContent, "Could not save that shortcut.");
+  assert.equal(chord.textContent, "Recording…");
+  const recordsAfterReject = calls.filter(
+    (entry) => entry.cmd === "record_shortcut",
+  ).length;
+  root.emit("keyup", {
+    key: "Meta",
+    code: "MetaLeft",
+    timeStamp: 700,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+  });
+  assert.equal(
+    calls.filter((entry) => entry.cmd === "record_shortcut").length,
+    recordsAfterReject,
+  );
+  assert.equal(list.dataset.recordingAction, "queue.search");
 });

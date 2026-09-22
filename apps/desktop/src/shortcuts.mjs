@@ -108,9 +108,37 @@ export function logicalKeyFromEvent(event) {
   return logicalKeyFromCode(event?.code) || fromKey;
 }
 
+export const MODIFIER_DOUBLE_TAP_GAP_MS = 500;
+
+const KEY_MODIFIERS = {
+  Meta: "Command",
+  Alt: "Option",
+  Control: "Control",
+  Shift: "Shift",
+  Fn: "Fn",
+};
+
+const CODE_MODIFIERS = {
+  MetaLeft: "Command",
+  MetaRight: "Command",
+  AltLeft: "Option",
+  AltRight: "Option",
+  ControlLeft: "Control",
+  ControlRight: "Control",
+  ShiftLeft: "Shift",
+  ShiftRight: "Shift",
+};
+
+export function modifierNameFromEvent(event) {
+  if (!event) {
+    return "";
+  }
+  return KEY_MODIFIERS[event.key] || CODE_MODIFIERS[event.code] || "";
+}
+
 export function recorderIgnores(event) {
   return Boolean(
-    event?.isComposing ||
+    (event?.isComposing && !modifierNameFromEvent(event)) ||
       event?.repeat ||
       (event?.code === "F5" && event?.ctrlKey),
   );
@@ -123,7 +151,7 @@ export function chordFromKeyboardEvent(event) {
   if (event.key === "Escape" || event.code === "Escape") {
     return { cancel: true };
   }
-  if (["Meta", "Alt", "Control", "Shift", "Fn"].includes(event.key)) {
+  if (modifierNameFromEvent(event)) {
     return null;
   }
   const logicalKey = logicalKeyFromEvent(event);
@@ -171,27 +199,6 @@ export function formatShortcutKey(logicalKey, catalog = {}) {
   return logicalKey.length === 1 ? logicalKey.toUpperCase() : logicalKey;
 }
 
-export const MODIFIER_DOUBLE_TAP_GAP_MS = 500;
-
-const KEY_MODIFIERS = {
-  Meta: "Command",
-  Alt: "Option",
-  Control: "Control",
-  Shift: "Shift",
-  Fn: "Fn",
-};
-
-const CODE_MODIFIERS = {
-  MetaLeft: "Command",
-  MetaRight: "Command",
-  AltLeft: "Option",
-  AltRight: "Option",
-  ControlLeft: "Control",
-  ControlRight: "Control",
-  ShiftLeft: "Shift",
-  ShiftRight: "Shift",
-};
-
 const DOUBLE_TAP_KEYS = {
   Shift: "settings.shortcuts.chord.shiftDoubleTap",
   Option: "settings.shortcuts.chord.optionDoubleTap",
@@ -207,13 +214,6 @@ const DOUBLE_TAP_FALLBACK = {
   Control: "Control double-tap",
   Fn: "Fn double-tap",
 };
-
-export function modifierNameFromEvent(event) {
-  if (!event) {
-    return "";
-  }
-  return KEY_MODIFIERS[event.key] || CODE_MODIFIERS[event.code] || "";
-}
 
 export function doubleTapFromModifierEvents(previous, event, now) {
   if (recorderIgnores(event)) {
@@ -433,6 +433,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
   };
 
   let modifierTap = null;
+  let usedModifierWithKey = false;
 
   const record = async (action, chord, skipTest) => {
     if (isGlobalShortcutAction(action) && chord.modifiers.length === 0) {
@@ -489,6 +490,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
     if (recordButton) {
       modifierTap = null;
+      usedModifierWithKey = false;
       list.dataset.recordingAction = action;
       setRecordingRow(root, action);
       recordButton.focus();
@@ -496,7 +498,12 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
   });
 
-  list.addEventListener("keydown", (event) => {
+  const eventNow = (event) =>
+    typeof event.timeStamp === "number" && event.timeStamp > 0
+      ? event.timeStamp
+      : Date.now();
+
+  const onKeyDown = (event) => {
     const action = list.dataset.recordingAction;
     if (!action) {
       return;
@@ -506,30 +513,48 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
     const chord = chordFromKeyboardEvent(event);
     event.preventDefault();
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
     if (chord?.cancel) {
       modifierTap = null;
+      usedModifierWithKey = false;
       closeRecorder(root);
       setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
-      return;
-    }
-    if (!chord && modifierNameFromEvent(event)) {
-      const now =
-        typeof event.timeStamp === "number" && event.timeStamp > 0
-          ? event.timeStamp
-          : Date.now();
-      const tapped = doubleTapFromModifierEvents(modifierTap, event, now);
-      modifierTap = tapped.previous;
-      if (tapped.chord) {
-        record(action, tapped.chord, true);
-      }
       return;
     }
     if (!chord) {
       return;
     }
+    usedModifierWithKey = true;
     modifierTap = null;
     record(action, chord, true);
-  });
+  };
+
+  const onKeyUp = (event) => {
+    const action = list.dataset.recordingAction;
+    if (!action || recorderIgnores(event) || !modifierNameFromEvent(event)) {
+      return;
+    }
+    event.preventDefault();
+    if (usedModifierWithKey) {
+      usedModifierWithKey = false;
+      return;
+    }
+    const tapped = doubleTapFromModifierEvents(
+      modifierTap,
+      event,
+      eventNow(event),
+    );
+    modifierTap = tapped.previous;
+    if (tapped.chord) {
+      record(action, tapped.chord, true);
+    }
+  };
+
+  const host = list.ownerDocument ?? list;
+  host.addEventListener("keydown", onKeyDown, true);
+  host.addEventListener("keyup", onKeyUp, true);
 
   await refresh();
   return refresh;
