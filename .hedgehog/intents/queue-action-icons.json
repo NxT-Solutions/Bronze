@@ -1,0 +1,64 @@
+{
+  "id": "queue-action-icons",
+  "goal": "Replace the queue card More actions dropdown with a compact icon row, keeping Copy unchanged.",
+  "outcome": "Each queue card keeps the filled Copy button in place. Complete, Skip, Edit, Move up, Move down, and Trash are real icon buttons in a super-small row at the bottom, with catalog aria-labels and hover plus focus-visible tooltips. Trash stays destructive. Existing apply_queue_item_action / edit / copy handlers stay. No overflow menu on the card. Composer Add is untouched. IPC names do not change. ADR-002, ADR-009, and ADR-018 stay Proposed.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "QUEUE-ACTION-ICONS-RULE-1",
+      "kind": "rule",
+      "statement": "Copy stays filled, labeled, placed, and wired as today. Do not restyle or move it."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-RULE-2",
+      "kind": "rule",
+      "statement": "Card overflow menu is gone. Complete, Skip, Edit, Move up, Move down, and Trash are real button icon controls in one compact row at the bottom of the card. Fit the row on the 400px panel; wrap only if min target width forces it."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-RULE-3",
+      "kind": "rule",
+      "statement": "Icon buttons use existing Bronze btn-icon size tokens, not 32px marketing icons. Hover background from HIG tokens. Hover and focus-visible tooltips. Accessible name is catalog aria-label, not title-only. Tooltip text may match the name."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-RULE-4",
+      "kind": "rule",
+      "statement": "Trash stays destructive (danger color token). Do not add or drop a confirm; single-item trash has no confirm today. Empty-trash confirm is unchanged."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-RULE-5",
+      "kind": "rule",
+      "statement": "Every user-facing string belongs in the locale catalog. No sentence concatenation. HTML fallback matches en. Shipped catalogs stay en, nl, fr, de, es, it plus generated en-XA / ar-XB."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-RULE-6",
+      "kind": "rule",
+      "statement": "Semantic HTML. Real buttons. Visible :focus-visible. prefers-reduced-motion and data-reduce-motion win. Reuse in-repo or simple local SVG. No Cooper/Copper assets or trade dress. No network, telemetry, or remote fonts."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-RULE-7",
+      "kind": "rule",
+      "statement": "Do not change apply_queue_item_action, copy_queue_items, or edit_queue_item IPC names. Do not claim QUEUE-ATTACHMENTS-RUST. Do not take title-prompt-summarize, title-model-load-status, or similar in-flight title-model work. ADR-002, ADR-009, and ADR-018 stay Proposed."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-RULE-8",
+      "kind": "rule",
+      "statement": "Composer Add card stays untouched except shared CSS tokens. Human stories 3.9, 3.10, 5.5, 9.3 stay backlog. Do not claim WCAG, VoiceOver, or notarization without docs/evidence."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Queue item template has no More actions details/menu. Copy remains a filled btn-primary with copy.action.copy."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "Complete, Skip, Edit, Move up, Move down, and Trash are labeled icon buttons (data-queue-action plus catalog aria-label) and still fire the existing handlers."
+    },
+    {
+      "id": "QUEUE-ACTION-ICONS-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "No unlabeled icon button. Tooltips show on hover and :focus-visible and are dismissible. Trash uses the destructive token."
+    }
+  ],
+  "depends_on": []
+}
