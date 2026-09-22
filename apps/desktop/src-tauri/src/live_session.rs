@@ -16,12 +16,18 @@ use bronze_capture::{ax_capture, FakeAxTree};
 use bronze_domain::{
     default_output_profile, ComposerChord, OutputFormat, OutputProfile, PostCopyAction,
 };
+use bronze_platform_macos::{
+    accept_settings_file_path, read_settings_import_bytes, try_pick_settings_export_path,
+    try_pick_settings_import_path, PickSettingsFile, SettingsFileError,
+};
 use bronze_settings::{
     apply_recorded_double_tap_timing, default_shortcut_binding, effective_tap_count,
-    is_default_binding, logical_key_allowed, recorded_double_tap_allowed, search_settings,
-    shortcut_scope, skip_test_marks_untested, CaptureAlternatives, Modifier, NativeRegistrar,
-    RegisterError, SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, ShortcutRegistry,
-    ShortcutScope, TestedState, TriggerKind, MAX_MODIFIER_TAPS,
+    export_settings_document, is_default_binding, logical_key_allowed, parse_settings_import,
+    recorded_double_tap_allowed, search_settings, shortcut_scope, skip_test_marks_untested,
+    CaptureAlternatives, Modifier, NativeRegistrar, RegisterError, SettingsExportPreview,
+    SettingsGroup, SettingsImportError, SettingsV1, ShortcutActionId, ShortcutBinding,
+    ShortcutRegistry, ShortcutScope, TestedState, TriggerKind, MAX_MODIFIER_TAPS,
+    SETTINGS_EXPORT_FORMAT, SETTINGS_EXPORT_VERSION,
 };
 use bronze_storage::{
     ComposerDraft, ImportStrategy, NoopBackup, Overwrite, PathLocator, QueueAction, QueueItemRow,
@@ -377,6 +383,30 @@ pub struct ShortcutRecordInput {
     #[serde(default)]
     pub tap_count: Option<u32>,
     pub skip_test: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingsExportPreviewDto {
+    pub format: String,
+    pub version: u32,
+    pub included_categories: Vec<String>,
+    pub included_fields: Vec<String>,
+    pub sensitive_literal_keys: Vec<String>,
+    pub excluded_keys: Vec<String>,
+}
+
+impl SettingsExportPreviewDto {
+    fn from_preview(preview: SettingsExportPreview) -> Self {
+        Self {
+            format: SETTINGS_EXPORT_FORMAT.into(),
+            version: SETTINGS_EXPORT_VERSION,
+            included_categories: preview.included_categories,
+            included_fields: preview.included_fields,
+            sensitive_literal_keys: preview.sensitive_literal_keys,
+            excluded_keys: preview.excluded_keys,
+        }
+    }
 }
 
 struct SessionRegistrar;
@@ -973,6 +1003,77 @@ impl LiveSession {
         names.sort();
         Ok(names.pop())
     }
+
+    pub fn preview_settings_export(&self) -> Result<SettingsExportPreviewDto, String> {
+        Ok(SettingsExportPreviewDto::from_preview(
+            self.settings_export_preview()?,
+        ))
+    }
+
+    pub fn export_settings_to_path(&self, dest: &Path) -> Result<String, String> {
+        let accepted = accept_settings_file_path(dest.to_str().unwrap_or_default())
+            .map_err(|_| "settings_path_invalid")?;
+        accept_native_path(
+            PathSource::RustPicker,
+            accepted.to_str().ok_or("settings_path_invalid")?,
+        )
+        .map_err(|_| "webview_path_rejected")?;
+        if let Some(parent) = accepted.parent() {
+            fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+        }
+        let preview = self.settings_export_preview()?;
+        let raw = serde_json::to_string_pretty(&preview.payload).map_err(|_| "settings_invalid")?;
+        fs::write(&accepted, raw).map_err(|err| err.to_string())?;
+        Ok(accepted
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("bronze-settings.json")
+            .to_string())
+    }
+
+    pub fn import_settings_from_path(&mut self, path: &Path) -> Result<SettingsV1, String> {
+        let accepted = accept_settings_file_path(path.to_str().unwrap_or_default())
+            .map_err(|_| "settings_path_invalid")?;
+        accept_native_path(
+            PathSource::RustPicker,
+            accepted.to_str().ok_or("settings_path_invalid")?,
+        )
+        .map_err(|_| "webview_path_rejected")?;
+        let bytes = read_settings_import_bytes(&accepted).map_err(settings_file_error_code)?;
+        let raw = String::from_utf8(bytes).map_err(|_| "settings_invalid")?;
+        let document = parse_settings_import(&raw).map_err(settings_import_error_code)?;
+        self.replace_settings(document.settings)?;
+        if let Some(shortcuts) = document.shortcuts {
+            for binding in shortcuts {
+                let _ = self
+                    .shortcuts
+                    .register(binding, &mut SessionRegistrar, keep_menu_manual());
+            }
+            self.sync_standard_chord()?;
+        }
+        if let Some(profiles) = document.profiles {
+            self.store
+                .replace_output_profiles(&profiles)
+                .map_err(|_| "settings_profiles_invalid")?;
+        }
+        debug_assert_eq!(ADR_018_STATUS, "Proposed");
+        Ok(self.settings.clone())
+    }
+
+    fn settings_export_preview(&self) -> Result<SettingsExportPreview, String> {
+        let profiles = self
+            .store
+            .list_output_profiles()
+            .map_err(|_| "settings_profiles_invalid")?;
+        export_settings_document(
+            &self.settings,
+            &self.shortcuts.all_bindings(),
+            &profiles,
+            &std::collections::BTreeMap::new(),
+            &rfc3339_utc(now_ms()),
+        )
+        .map_err(|_| "settings_invalid".to_string())
+    }
 }
 
 fn parse_action(action: &str) -> Result<QueueAction, String> {
@@ -1129,6 +1230,46 @@ fn now_ms() -> i64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as i64)
         .unwrap_or(0)
+}
+
+fn rfc3339_utc(ms: i64) -> String {
+    let secs = ms.div_euclid(1000);
+    let days = secs.div_euclid(86_400);
+    let tod = secs.rem_euclid(86_400);
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    let hour = tod / 3600;
+    let min = (tod % 3600) / 60;
+    let sec = tod % 60;
+    format!("{y:04}-{m:02}-{d:02}T{hour:02}:{min:02}:{sec:02}Z")
+}
+
+fn settings_file_error_code(err: SettingsFileError) -> String {
+    match err {
+        SettingsFileError::TooLarge => "settings_import_too_large".into(),
+        SettingsFileError::NotJson => "settings_import_not_json".into(),
+        SettingsFileError::Invalid => "settings_path_invalid".into(),
+    }
+}
+
+fn settings_import_error_code(err: SettingsImportError) -> String {
+    match err {
+        SettingsImportError::UnknownVersion => "settings_unknown_version".into(),
+        SettingsImportError::WrongFormat => "settings_wrong_format".into(),
+        SettingsImportError::TooLarge => "settings_import_too_large".into(),
+        SettingsImportError::ForbiddenContent => "settings_forbidden".into(),
+        SettingsImportError::InvalidSchema | SettingsImportError::InvalidJson => {
+            "settings_invalid".into()
+        }
+    }
 }
 
 fn copy_err(err: CopyError) -> String {
@@ -1391,6 +1532,44 @@ pub fn import_library_archive(
     live.import_library(&name)
 }
 
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn preview_settings_export(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+) -> Result<SettingsExportPreviewDto, String> {
+    lock_session(&session)?.preview_settings_export()
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn export_settings_file(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+    requested_path: Option<String>,
+) -> Result<String, String> {
+    reject_webview_path(requested_path)?;
+    let dest = match try_pick_settings_export_path() {
+        PickSettingsFile::Picked(path) => path,
+        PickSettingsFile::Cancelled => return Err("picker_cancelled".into()),
+        PickSettingsFile::Unavailable => return Err("picker_unavailable".into()),
+    };
+    lock_session(&session)?.export_settings_to_path(&dest)
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn import_settings_file(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+    requested_path: Option<String>,
+) -> Result<SettingsV1, String> {
+    reject_webview_path(requested_path)?;
+    let src = match try_pick_settings_import_path() {
+        PickSettingsFile::Picked(path) => path,
+        PickSettingsFile::Cancelled => return Err("picker_cancelled".into()),
+        PickSettingsFile::Unavailable => return Err("picker_unavailable".into()),
+    };
+    lock_session(&session)?.import_settings_from_path(&src)
+}
+
 fn reject_webview_path(requested_path: Option<String>) -> Result<(), String> {
     if requested_path
         .as_deref()
@@ -1596,6 +1775,98 @@ mod live_session_tests {
         assert_eq!(effective_ui_locale(Some("nl-BE")), "nl");
         assert_eq!(effective_ui_locale(Some("zz")), "en");
         assert!(!search_settings("backup").is_empty());
+    }
+
+    #[test]
+    fn settings_export_import_round_trip_rejects_webview_and_keeps_adr_018() {
+        let mut session = open_session();
+        let mut settings = session.settings();
+        settings.general.locale = "nl".into();
+        settings
+            .privacy
+            .excluded_bundle_ids
+            .push("com.bank.app".into());
+        session.replace_settings(settings).expect("save");
+        session
+            .record_shortcut(ShortcutRecordInput {
+                action: "queue.search".into(),
+                trigger: "accelerator".into(),
+                modifiers: vec!["Command".into()],
+                logical_key: Some("k".into()),
+                tap_count: None,
+                skip_test: true,
+            })
+            .expect("record");
+        let preview = session.preview_settings_export().expect("preview");
+        assert_eq!(preview.format, "bronze-settings");
+        assert_eq!(preview.version, 1);
+        assert!(preview
+            .sensitive_literal_keys
+            .contains(&"privacy.excludedBundleIds".into()));
+        assert!(preview
+            .sensitive_literal_keys
+            .contains(&"shortcuts.queue.search".into()));
+        assert!(preview.included_categories.contains(&"privacy".into()));
+        let dest = std::env::temp_dir().join(format!(
+            "bronze-settings-roundtrip-{}-{}.json",
+            now_ms(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let name = session.export_settings_to_path(&dest).expect("export");
+        assert_eq!(name, dest.file_name().unwrap().to_string_lossy());
+        let raw = fs::read_to_string(&dest).expect("read");
+        assert!(raw.contains("bronze-settings"));
+        assert!(raw.contains("com.bank.app"));
+        assert!(raw.contains("\"nl\""));
+        assert!(!raw.contains("permissionToken"));
+        assert!(!raw.contains("/Users/"));
+        let mut other = open_session();
+        other.import_settings_from_path(&dest).expect("import");
+        assert_eq!(other.settings().general.locale, "nl");
+        assert_eq!(
+            other.settings().privacy.excluded_bundle_ids,
+            vec!["com.bank.app"]
+        );
+        let search = other
+            .list_shortcuts()
+            .into_iter()
+            .find(|row| row.action == "queue.search")
+            .expect("search");
+        assert!(!search.is_default);
+        assert_eq!(search.logical_key.as_deref(), Some("k"));
+        assert_eq!(ADR_018_STATUS, "Proposed");
+        assert!(!QUE_007_COMPLETE);
+        assert!(other.search_library("cafe").expect("ascii").0.is_empty());
+        assert_eq!(
+            session
+                .import_settings_from_path(Path::new("../etc/settings.json"))
+                .unwrap_err(),
+            "settings_path_invalid"
+        );
+        fs::write(
+            &dest,
+            r#"{"format":"bronze-export","version":1,"settings":{}}"#,
+        )
+        .expect("archive");
+        assert_eq!(
+            session.import_settings_from_path(&dest).unwrap_err(),
+            "settings_wrong_format"
+        );
+        fs::write(&dest, r#"{"format":"bronze-settings","version":2}"#).expect("version");
+        assert_eq!(
+            session.import_settings_from_path(&dest).unwrap_err(),
+            "settings_unknown_version"
+        );
+        assert!(reject_webview_path(Some("/tmp/settings.json".into())).is_err());
+        let used = include_str!("../permissions/used-permissions.toml");
+        assert!(used.contains("preview_settings_export"));
+        assert!(used.contains("export_settings_file"));
+        assert!(used.contains("import_settings_file"));
+        let src = include_str!("live_session.rs");
+        assert!(src.contains("pub fn preview_settings_export"));
+        assert!(src.contains("pub fn export_settings_file"));
+        assert!(src.contains("pub fn import_settings_file"));
+        let _ = fs::remove_file(&dest);
     }
 
     #[test]
@@ -1964,6 +2235,9 @@ mod live_session_tests {
         assert!(used.contains("list_installed_apps"));
         assert!(used.contains("pick_installed_app"));
         assert!(used.contains("app_icon_data_url"));
+        assert!(used.contains("preview_settings_export"));
+        assert!(used.contains("export_settings_file"));
+        assert!(used.contains("import_settings_file"));
         assert!(src.contains("pub fn pick_installed_app()"));
         assert!(src.contains("picker_cancelled"));
         assert!(src.contains("picker_unavailable"));

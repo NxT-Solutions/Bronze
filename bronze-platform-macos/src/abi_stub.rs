@@ -651,6 +651,16 @@ pub extern "C" fn bronze_native_pick_installed_app(_out: *mut BronzeNativeUtf8Vi
 }
 
 #[no_mangle]
+pub extern "C" fn bronze_native_pick_settings_export_path(_out: *mut BronzeNativeUtf8View) -> u32 {
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_pick_settings_import_path(_out: *mut BronzeNativeUtf8View) -> u32 {
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
 pub extern "C" fn bronze_native_deliver_user_notice(
     title: BronzeNativeUtf8View,
     body: BronzeNativeUtf8View,

@@ -64,6 +64,9 @@ commands.allow = [
   "list_installed_apps",
   "pick_installed_app",
   "app_icon_data_url",
+  "preview_settings_export",
+  "export_settings_file",
+  "import_settings_file",
   "ui_locale",
   "ui_catalog",
 ]

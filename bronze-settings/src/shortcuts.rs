@@ -260,6 +260,14 @@ impl ShortcutRegistry {
         self.get(ShortcutActionId::CaptureSelection)
     }
 
+    pub fn all_bindings(&self) -> Vec<ShortcutBinding> {
+        ShortcutActionId::ALL
+            .iter()
+            .copied()
+            .map(|action| self.get(action).clone())
+            .collect()
+    }
+
     pub fn persist_rows(&self) -> Vec<(String, String, bool, u32)> {
         self.bindings
             .values()

@@ -7,8 +7,10 @@ mod schema;
 mod shortcuts;
 
 pub use export::{
-    export_flags_sensitive_key, export_settings, settings_key_exportable,
-    value_looks_like_machine_path, SettingsExportPreview,
+    export_flags_sensitive_key, export_settings, export_settings_document, parse_settings_import,
+    settings_json_looks_like_json, settings_key_exportable, value_looks_like_machine_path,
+    SettingsExportDocument, SettingsExportPreview, SettingsImportError, SettingsProfileExport,
+    SETTINGS_EXPORT_FORMAT, SETTINGS_EXPORT_MAX_BYTES, SETTINGS_EXPORT_VERSION,
 };
 pub use health::{
     capabilities_independent, health_rows, manual_composer_available, privacy_settings_url,

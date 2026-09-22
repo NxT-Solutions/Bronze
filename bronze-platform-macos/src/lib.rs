@@ -12,6 +12,7 @@ mod display_prefs;
 mod installed_apps;
 mod pasteboard;
 mod permission;
+mod settings_file;
 mod source_icon;
 mod status_item;
 mod title;
@@ -49,6 +50,10 @@ pub use permission::MacosPreflightHost;
 pub use permission::{
     prompt_used_permissions, snapshot_from_preflight, PermissionRequestHost, PreflightError,
     PreflightHost, PromptAttempt, PromptReason,
+};
+pub use settings_file::{
+    accept_settings_file_path, read_settings_import_bytes, try_pick_settings_export_path,
+    try_pick_settings_import_path, PickSettingsFile, SettingsFileError,
 };
 pub use source_icon::{native_app_icon_png, native_bundle_id_for_pid};
 pub use status_item::{

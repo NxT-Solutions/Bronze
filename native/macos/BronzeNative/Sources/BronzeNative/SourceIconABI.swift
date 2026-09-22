@@ -220,6 +220,72 @@ public func bronze_native_pick_installed_app(
     }
 }
 
+private let settingsPathCap = 4096
+
+@_silgen_name("bronze_native_pick_settings_export_path")
+public func bronze_native_pick_settings_export_path(
+    _ out: UnsafeMutablePointer<bronze_native_utf8_view>?
+) -> UInt32 {
+    guard let out else {
+        return BRONZE_STATUS_NOT_FOUND
+    }
+    let outBox = BronzeOutViewBox(out)
+    return bronzeOnAppKitModal {
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.allowedFileTypes = ["json"]
+        panel.nameFieldStringValue = "bronze-settings.json"
+        let response = panel.runModal()
+        guard response == .OK else {
+            return BRONZE_STATUS_CANCELLED
+        }
+        return copyPickedSettingsPath(panel.url, to: outBox.ptr)
+    }
+}
+
+@_silgen_name("bronze_native_pick_settings_import_path")
+public func bronze_native_pick_settings_import_path(
+    _ out: UnsafeMutablePointer<bronze_native_utf8_view>?
+) -> UInt32 {
+    guard let out else {
+        return BRONZE_STATUS_NOT_FOUND
+    }
+    let outBox = BronzeOutViewBox(out)
+    return bronzeOnAppKitModal {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedFileTypes = ["json"]
+        let response = panel.runModal()
+        guard response == .OK else {
+            return BRONZE_STATUS_CANCELLED
+        }
+        return copyPickedSettingsPath(panel.url, to: outBox.ptr)
+    }
+}
+
+private func copyPickedSettingsPath(
+    _ url: URL?,
+    to out: UnsafeMutablePointer<bronze_native_utf8_view>
+) -> UInt32 {
+    guard let url, url.isFileURL else {
+        return BRONZE_STATUS_DEGRADED
+    }
+    let path = url.path
+    guard !path.isEmpty, !path.contains("\0"), path.hasSuffix(".json") || path.lowercased().hasSuffix(".json") else {
+        return BRONZE_STATUS_DEGRADED
+    }
+    let bytes = Array(path.utf8)
+    guard bytes.count <= settingsPathCap else {
+        return BRONZE_STATUS_DEGRADED
+    }
+    return bytes.withUnsafeBufferPointer { buf in
+        let src = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(bytes.count))
+        return bronze_native_utf8_owned_copy(src, out)
+    }
+}
+
 private func installedAppRow(from url: URL) -> (String, String)? {
     guard url.pathExtension.caseInsensitiveCompare("app") == .orderedSame,
           let bundle = Bundle(url: url),

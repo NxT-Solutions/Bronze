@@ -42,6 +42,9 @@ pub fn run() {
                 live_session::backup_library_now,
                 live_session::export_library_archive,
                 live_session::import_library_archive,
+                live_session::preview_settings_export,
+                live_session::export_settings_file,
+                live_session::import_settings_file,
             ])
             .setup(|app| {
                 use tauri::Manager;

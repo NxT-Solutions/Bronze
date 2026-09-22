@@ -4,6 +4,7 @@ mod backup;
 mod composer;
 mod export;
 mod migrate;
+mod profiles;
 mod queue;
 mod receipts;
 mod search;
@@ -22,6 +23,7 @@ pub use migrate::{
     BackupBeforeMigration, MigrateError, Migration, NoopBackup, OpenError, PathLocator, Store,
     StoreLocator, StoreMode, SCHEMA_V1_SQL, SCHEMA_V2_SQL,
 };
+pub use profiles::ProfileStoreError;
 pub use queue::{
     queue_action_key, QueueAction, QueueError, QueueItemRow, DRAG_REQUIRED, QUEUE_COMPLETE_KEY,
     QUEUE_EDIT_KEY, QUEUE_MOVE_DOWN_KEY, QUEUE_MOVE_UP_KEY, QUEUE_SKIP_KEY, QUEUE_TRASH_KEY,
