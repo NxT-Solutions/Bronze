@@ -146,10 +146,10 @@ Exported settings always exclude app credentials, permission tokens, diagnostic 
 
 Panel must remain usable under 200% text resize and 400% WebView zoom/reflow at 320 CSS px:
 
-- one-column content; the card icon row wraps; composer stays in document flow;
+- one-column content; Copy and the icon row stay on one line; composer stays in document flow;
 - no horizontal scroll for controls at 320 CSS px viewport width;
 - content may scroll vertically while composer and status remain reachable;
-- card actions stay as Copy plus the wrapping icon row; primary Copy remains available;
+- card actions stay as Copy plus the icon row beside it; primary Copy remains available;
 - user content wraps by default; code can horizontally scroll inside bounded region;
 - OS text-size preference maps to application scale presets without layout break.
 

@@ -62,6 +62,7 @@ Do not paint live chrome with DESIGN.md `#f7f4ef` / `#8c6239`.
   2.4.7, 2.4.11, 1.4.11, and 2.4.13.
 - Interactive controls use `min-height` and `min-width` of
   `--control-h` (32px) — above 2.5.8’s 24px, below 2.5.5’s 44px.
+  Queue icon-row and chip `.btn-icon` stay `1.5rem` (24px).
 - Status pills are `<p>`, not targets.
 
 ## Skip, headings, live regions

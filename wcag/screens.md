@@ -15,7 +15,8 @@ Purpose: capture in, act on the current item.
   copy feedback is the action tip on the button (1.4.13).
 - Empty state is a sentence that names the next action.
 - Item: title → body (pre-wrap) → source + decorative icon → Copy +
-  More actions. Overflow is labeled buttons, not `role="menu"`.
+  icon row. Each icon is a real `button` with catalog `aria-label`;
+  the tip is `aria-hidden` and matches. Not `role="menu"`.
 - Edit is a modal `<dialog>` with name, Escape, and focus restore.
   No `window.prompt`.
 - Move up / Move down replace drag (2.5.7).

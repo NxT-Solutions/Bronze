@@ -10,7 +10,8 @@ Purpose: capture in, act on the current item.
 - Composer first: labeled textarea, one filled Add.
 - Empty state names the next action (capture or type).
 - Item: title (15/590) → body (13, pre-wrap, lists) → source + official
-  icon → Copy (filled) + More actions (ghost + compact menu).
+  icon → Copy (filled) + compact icon row (Complete, Skip, Edit, Move
+  up, Move down, Trash).
 - Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
 - Enter animation is opacity only.
 

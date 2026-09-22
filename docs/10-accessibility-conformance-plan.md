@@ -92,7 +92,7 @@ Each journey must pass keyboard-only, VoiceOver, Voice Control, and Switch Contr
 ## 6. Visual, reflow, and motion
 
 - Text contrast: 4.5:1 normal, 3:1 large; UI/non-text and focus 3:1. Measure actual rendered tokens in light/dark/high-contrast.
-- Test 200% text resize; WebView zoom/reflow at 400% and 320 CSS px width. No two-dimensional scroll for ordinary UI. Queue card actions are Copy plus a wrapping icon row (`data-slot=action-icons`); the composer stays in document flow. Automated layout tests are not a public WCAG claim (A11Y-003).
+- Test 200% text resize; WebView zoom/reflow at 400% and 320 CSS px width. No two-dimensional scroll for ordinary UI. Queue card actions are Copy plus an icon row beside it (`data-slot=action-icons`); the composer stays in document flow. Automated layout tests are not a public WCAG claim (A11Y-003).
 - Text spacing override does not clip or hide content.
 - Targets meet WCAG 2.2 2.5.8 AA 24×24 CSS px or valid spacing/exception; aim 44×44 where panel density permits.
 - Status never color-only. Icons include text/accessible state.

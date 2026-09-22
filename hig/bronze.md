@@ -63,8 +63,9 @@ rectangles.
 
 - Filled: Add, Copy, Export support bundle — one per view.
 - Ghost: Reset, Skip test, Show more, Library archive/import, Help
-  opener, More actions.
-- Overflow: compact column menu, dismiss on outside click and Escape.
+  opener.
+- Queue card extras: compact `.btn-icon` row under Copy, not a second
+  filled toolbar. Hover uses the muted mix; Trash uses `--destructive`.
 - Copy feedback: tip on the control. `#action-status` is a visually
   hidden live region (docs/05). Never dump status into the composer.
 
