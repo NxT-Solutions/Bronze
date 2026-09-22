@@ -834,6 +834,8 @@ article [data-slot="title"] {
   letter-spacing: 0;
   word-spacing: normal;
   white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
   overflow-wrap: break-word;
 }
 

@@ -127,6 +127,20 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /article \[data-slot="title"\][\s\S]*font-weight:\s*590/,
   );
+  const titleRule = chrome.match(/article \[data-slot="title"\]\s*\{[^}]+\}/);
+  assert.ok(titleRule, "queue card title rule");
+  assert.match(titleRule[0], /text-overflow:\s*clip/);
+  assert.match(titleRule[0], /white-space:\s*normal/);
+  assert.doesNotMatch(titleRule[0], /text-overflow:\s*ellipsis/);
+  assert.doesNotMatch(titleRule[0], /-webkit-line-clamp/);
+  assert.match(
+    chrome,
+    /article \[data-slot="source"\][\s\S]*text-overflow:\s*ellipsis/,
+  );
+  assert.match(
+    chrome,
+    /article:not\(\.is-expanded\) \[data-slot="body"\][\s\S]*max-height/,
+  );
   assert.match(
     chrome,
     /article \[data-slot="body"\][\s\S]*font-size:\s*var\(--text-caption\)/,

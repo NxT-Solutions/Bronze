@@ -218,6 +218,18 @@ test("fillItemChrome sets a visible title and sanitizes the body", () => {
   assert.match(body.textContent, /<script>alert\(1\)<\/script>/);
 });
 
+test("fillItemChrome shows a stored title in full without an ellipsis glyph", () => {
+  const doc = createDocument();
+  const article = articleFixture(doc);
+  const labels = readExpandLabels(article);
+  const title = "Migration timeout is the real bug in";
+  fillItemChrome(article, { title, body: "plain" }, labels);
+  const heading = article.querySelector("[data-slot=title]");
+  assert.equal(heading.hidden, false);
+  assert.equal(heading.textContent, title);
+  assert.doesNotMatch(heading.textContent, /…|\.\.\./);
+});
+
 test("missing or blank titles stay hidden and are not invented", () => {
   const doc = createDocument();
   const article = articleFixture(doc);
