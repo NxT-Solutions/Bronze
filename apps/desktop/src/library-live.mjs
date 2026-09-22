@@ -52,14 +52,16 @@ export function librarySection(hash) {
   return "archive";
 }
 
+export function libraryListMode(hash, query) {
+  if (String(query ?? "").trim()) {
+    return "search";
+  }
+  return librarySection(hash) === "trash" ? "trash" : "archive";
+}
+
 export function syncLibraryNav(root, hash) {
   const current = librarySection(hash ?? root.location?.hash);
-  const href =
-    current === "trash"
-      ? "#trash"
-      : current === "search"
-        ? "#search"
-        : "#archive";
+  const href = current === "trash" ? "#trash" : "#archive";
   const links = root.querySelectorAll?.(".segment a") ?? [];
   for (const link of links) {
     if (link.getAttribute("href") === href) {
@@ -69,6 +71,27 @@ export function syncLibraryNav(root, hash) {
     }
   }
   return current;
+}
+
+function bindSearchClear(root) {
+  const wrap = root.querySelector?.(".chrome-search");
+  const input = wrap?.querySelector?.("input[type='search']");
+  const clear = wrap?.querySelector?.("[data-search-clear]");
+  if (!wrap || !input || !clear) {
+    return;
+  }
+  const sync = () => {
+    const filled = String(input.value ?? "").trim().length > 0;
+    clear.hidden = !filled;
+    wrap.classList.toggle("is-filled", filled);
+  };
+  input.addEventListener("input", sync);
+  clear.addEventListener("click", () => {
+    input.value = "";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.focus();
+  });
+  sync();
 }
 
 export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
@@ -81,10 +104,13 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
 
   async function refresh(query) {
     const section = syncLibraryNav(root);
+    const mode = libraryListMode(root.location?.hash ?? "", query);
     const includeTrash = section === "trash";
     let items;
-    if (section === "search" && query) {
-      items = await invokeFn("search_library_items", { query });
+    if (mode === "search") {
+      items = await invokeFn("search_library_items", {
+        query: String(query ?? "").trim(),
+      });
     } else {
       items = await invokeFn("list_queue_items", {
         includeTrashed: includeTrash,
@@ -93,7 +119,7 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
     if (count) {
       count.textContent = announceCount(items.length);
     }
-    applyLibraryEmptyCopy(root, section);
+    applyLibraryEmptyCopy(root, mode);
     if (empty) {
       empty.hidden = items.length > 0;
     }
@@ -121,15 +147,9 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
     return items;
   }
 
+  bindSearchClear(root);
+
   search?.addEventListener("input", () => {
-    if (
-      search.value &&
-      root.location &&
-      librarySection(root.location.hash) !== "search"
-    ) {
-      root.location.hash = "#search";
-      return;
-    }
     refresh(search.value).catch(() => {
       if (count) {
         count.textContent = announceCount(0);
@@ -141,10 +161,8 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
     const section = syncLibraryNav(root);
     if (section === "search") {
       search?.focus();
-    } else if (search) {
-      search.value = "";
     }
-    refresh(section === "search" ? (search?.value ?? "") : "").catch(() => {
+    refresh(search?.value ?? "").catch(() => {
       if (count) {
         count.textContent = announceCount(0);
       }

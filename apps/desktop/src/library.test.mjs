@@ -31,7 +31,11 @@ test("library window paginates and archives; quick cannot import export backup",
   assert.match(library, /data-i18n="library.archive"/);
   assert.match(library, /data-i18n="library.paginate"/);
   assert.match(library, /<search\b/);
+  assert.match(library, /class="chrome-search"/);
+  assert.match(library, /class="library-toolbar"/);
+  assert.doesNotMatch(library, /href="#search"/);
   assert.equal(en["library.title"], "Library");
+  assert.equal(en["library.search.label"], "Search library");
   assert.equal(en["library.archive"], "Archive");
   assert.equal(en["library.paginate"], "Next page");
 });

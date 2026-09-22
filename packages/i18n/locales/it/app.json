@@ -52,7 +52,7 @@
   "library.nav.archive": "Archivio",
   "library.nav.trash": "Cestino",
   "library.nav.search": "Cerca",
-  "library.search.label": "Cerca",
+  "library.search.label": "Cerca nella libreria",
   "library.archive": "Archivio",
   "library.paginate": "Pagina successiva",
   "library.backup.now": "Esegui backup ora",

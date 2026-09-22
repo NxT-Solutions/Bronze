@@ -222,6 +222,9 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /#library-queue/);
   assert.match(chrome, /\.page-shell \.card[\s\S]*gap:\s*var\(--space-4\)/);
   assert.match(chrome, /\.library-dock/);
+  assert.match(chrome, /\.library-toolbar/);
+  assert.match(chrome, /#library\.page-shell/);
+  assert.match(chrome, /#library \.library-empty/);
   assert.match(chrome, /\[data-standard-chord\]:empty/);
   assert.match(chrome, /--radius-control:\s*8px/);
   assert.match(

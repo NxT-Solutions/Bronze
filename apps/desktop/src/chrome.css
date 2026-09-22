@@ -1128,6 +1128,42 @@ menu {
   gap: var(--space-2);
 }
 
+#library.page-shell {
+  gap: var(--space-4);
+}
+
+.library-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.library-toolbar .segment {
+  flex: 0 1 auto;
+}
+
+.library-toolbar [data-search-count] {
+  margin: 0;
+  font-size: var(--text-caption);
+}
+
+#library .library-empty {
+  justify-items: center;
+  padding: var(--space-8) var(--space-4);
+  border: none;
+  background: transparent;
+  text-align: center;
+}
+
+#library .library-empty h2 {
+  max-width: 22rem;
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1145,11 +1181,19 @@ menu {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--stroke);
 }
 
 .library-dock .toolbar {
   margin: 0;
+}
+
+.library-dock .muted {
+  margin: 0;
+  font-size: var(--text-micro);
 }
 
 [data-standard-chord]:empty {

@@ -8,6 +8,7 @@ import {
   announceCount,
   applyLibraryEmptyCopy,
   libraryEmptyKey,
+  libraryListMode,
   librarySection,
   QUE_007_COMPLETE,
   syncLibraryNav,
@@ -41,8 +42,20 @@ test("library items sanitize markdown and keep a title plus expand reader", () =
   assert.match(live, /runBusy/);
   assert.match(live, /is-entering/);
   assert.match(live, /hashchange/);
-  assert.match(live, /section === "search" && query/);
+  assert.match(live, /libraryListMode/);
+  assert.match(live, /mode === "search"/);
+  assert.match(html, /class="chrome-search"/);
+  assert.match(html, /data-search-clear/);
+  assert.doesNotMatch(html, /href="#search"/);
   assert.match(html, /aria-current="page"/);
+});
+
+test("library list mode is query-first, not a third search page", () => {
+  assert.equal(libraryListMode("#archive", ""), "archive");
+  assert.equal(libraryListMode("#trash", ""), "trash");
+  assert.equal(libraryListMode("#archive", "billing"), "search");
+  assert.equal(libraryListMode("#trash", "  cpu  "), "search");
+  assert.equal(libraryListMode("#search", ""), "archive");
 });
 
 test("library segment follows the hash and marks the current page", () => {
