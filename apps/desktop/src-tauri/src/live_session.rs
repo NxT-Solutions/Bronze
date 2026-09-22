@@ -2452,6 +2452,7 @@ mod live_session_tests {
         assert!(used.contains("export_settings_file"));
         assert!(used.contains("import_settings_file"));
         assert!(used.contains("list_title_models"));
+        assert!(used.contains("title_engine_status"));
         assert!(src.contains("pub fn pick_installed_app()"));
         assert!(src.contains("picker_cancelled"));
         assert!(src.contains("picker_unavailable"));

@@ -47,6 +47,7 @@ pub fn run() {
                 live_session::export_settings_file,
                 live_session::import_settings_file,
                 live_session::list_title_models,
+                title_refine::title_engine_status,
             ])
             .setup(|app| {
                 use tauri::Manager;
@@ -59,6 +60,7 @@ pub fn run() {
                 let data_dir = app.path().app_data_dir()?;
                 let session = live_session::LiveSession::open(data_dir)?;
                 app.manage(std::sync::Mutex::new(session));
+                title_refine::attach_title_engine_status(app.handle());
                 title_refine::warmup();
                 install_chrome_menu(app.handle())?;
                 install_status_item(app.handle())?;

@@ -2,6 +2,7 @@
 
 mod infer;
 mod prompt;
+mod status;
 mod tiers;
 mod weights;
 
@@ -11,6 +12,9 @@ pub use infer::{
 };
 pub use prompt::{
     clean_title, format_prompt, title_is_grounded, MAX_INPUT_CHARS, MAX_NEW_TOKENS, PROMPT_VERSION,
+};
+pub use status::{
+    apply_diag, current_status, observe_diag, subscribe_status, EnginePhase, TitleEngineStatus,
 };
 pub use tiers::{auto_pick_title_tier, TierSpec, TitleTier, GGUF_TIERS};
 pub use weights::{
@@ -22,4 +26,5 @@ pub use weights::{
 
 pub fn emit_diag(message: &str) {
     eprintln!("bronze-title: {message}");
+    observe_diag(message);
 }

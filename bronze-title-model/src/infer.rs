@@ -243,6 +243,11 @@ fn worker_loop(rx: Receiver<Job>) {
 
 fn apply_tier(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackReason> {
     if state.loaded == Some(tier) && (tier == TitleTier::Extractive || state.model.is_some()) {
+        if tier == TitleTier::Extractive {
+            crate::emit_diag("fallback reason=extractive");
+        } else {
+            crate::emit_diag("model loaded");
+        }
         return Ok(());
     }
     state.model = None;
@@ -476,7 +481,11 @@ mod infer_tests {
             .split("#[cfg(test)]")
             .next()
             .expect("prod");
-        for src in [infer, weights, prompt, lib, tiers] {
+        let status = include_str!("status.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("prod");
+        for src in [infer, weights, prompt, lib, tiers, status] {
             let lower = src.to_ascii_lowercase();
             for needle in [
                 "huggingface.co",

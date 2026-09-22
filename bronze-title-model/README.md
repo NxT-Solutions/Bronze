@@ -38,7 +38,7 @@ First load may use up to 45 s. Generate after load stays 8 s. Hash is checked on
 
 Local stderr only. Lines start with `bronze-title:` and never include captured text.
 
-Stages: `weights resolved source={bundle|override|env|vendor|workspace|exe|resources}`, `hash ok`, `model loaded`, `switch scheduled tier=`, `refine scheduled chars=N`, `refine attempted`, `refine generated`, `refine applied`.
+Stages: `weights resolved source={bundle|override|env|vendor|workspace|exe|resources}`, `hash ok`, `model loaded`, `switch scheduled tier=`, `refine scheduled chars=N`, `refine attempted`, `refine generated`, `refine applied`. Those load stages also update `title_engine_status` / the `title-engine-status` event (`idle`, `loading`, `hashing`, `ready`, `missing`, `failed`).
 
 Fallback reasons: `missing_weights`, `bad_hash`, `unreadable`, `timeout`, `short_body`, `ungrounded`, `empty`, `stale_body`, `extractive`.
 
