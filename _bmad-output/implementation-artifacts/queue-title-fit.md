@@ -6,7 +6,7 @@ Status: done
 
 Queue, library, and status-card titles are a short descriptive line that displays in full with no ellipsis.
 
-**ADRs:** ADR-019 stays Proposed (`compact_title` first, optional hash-pinned SmolLM2 refine). Term-frequency best-sentence scoring is unchanged. ADR-002, ADR-009, and ADR-018 stay Proposed.
+**ADRs:** ADR-019 stays Proposed (`compact_title` first, selectable offline GGUF refine). Term-frequency best-sentence scoring is unchanged. ADR-002, ADR-009, and ADR-018 stay Proposed.
 **Human gates:** stories 3.9, 3.10, 5.5, and 9.3 stay backlog. No WCAG, VoiceOver, or notarization claim.
 
 ## Overview

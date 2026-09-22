@@ -147,11 +147,18 @@ def check_title_adr() -> list[str]:
     if "Status: Accepted" in section:
         errors.append("ADR-019 must not be Accepted")
     for needle in (
+        "SmolLM2-135M-Instruct",
         "SmolLM2-360M-Instruct",
+        "Qwen2.5-0.5B-Instruct",
         "llama-cpp-2",
         "compact_title",
         "Q4_K_M",
+        "general.titleModel",
+        "extractive",
+        "Title:",
+        "2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d",
         "2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2",
+        "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
     ):
         if needle not in section:
             errors.append(f"ADR-019 missing {needle}")
@@ -165,10 +172,20 @@ def check_title_adr() -> list[str]:
             errors.append("T-10 must still forbid Private Cloud Compute")
         if "hash-pinned" not in t10 and "SHA-256-pinned" not in t10:
             errors.append("T-10 missing hash-pinned carve-out")
+        if "allow-list" not in t10:
+            errors.append("T-10 missing GGUF allow-list")
+        if "SmolLM2-135M-Instruct-Q4_K_M.gguf" not in t10:
+            errors.append("T-10 missing 135M filename")
+        if "2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d" not in t10:
+            errors.append("T-10 missing 135M hash")
         if "SmolLM2-360M-Instruct-Q4_K_M.gguf" not in t10:
             errors.append("T-10 missing 360M filename")
         if "2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2" not in t10:
             errors.append("T-10 missing 360M hash")
+        if "qwen2.5-0.5b-instruct-q4_k_m.gguf" not in t10:
+            errors.append("T-10 missing Qwen filename")
+        if "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db" not in t10:
+            errors.append("T-10 missing Qwen hash")
         if "no bundled GGUF" in t10:
             errors.append("T-10 still bans bundled GGUF without carve-out")
     return errors

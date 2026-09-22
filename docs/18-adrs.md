@@ -39,7 +39,7 @@ An ADR change must name affected PRD IDs, migration impact, tests, distribution/
 | ADR-016 | Semantic configurable-shortcut schema | Accepted | CAP-001, CAP-002, SET-001, SET-002, I18N-004 |
 | ADR-017 | Packaged local UI with zero runtime network by default | Accepted | SEC-001, SEC-004, G-05 |
 | ADR-018 | Locale-aware search/tokenizer semantics | Proposed | QUE-007, G-06, I18N-003 |
-| ADR-019 | Portable local item titles (compact_title first, optional hash-pinned SmolLM2 refine) | Proposed | QUE-002, SEC-004, G-05 |
+| ADR-019 | Portable local item titles (compact_title first, selectable offline GGUF refine) | Proposed | QUE-002, SEC-004, G-05 |
 
 ## ADR-001: Local selection-to-action queue
 
@@ -756,14 +756,14 @@ Raw item content remains unchanged. Search diagnostics never store query/body. P
 - Migration/rebuild/purge and corruption recovery tests.
 - Threat review for duplicated sensitive FTS data.
 
-## ADR-019: Portable local item titles (compact_title first, optional hash-pinned SmolLM2 refine)
+## ADR-019: Portable local item titles (compact_title first, selectable offline GGUF refine)
 
 Status: Proposed  
 Planning gate: TITLE-01
 
 ### Context
 
-Captured bodies can be long. The inbox and status-menu overview need a title that is not the first sentence by policy. First-sentence-only is not the shipped title. Hosted AI, Private Cloud Compute, and a runtime Hugging Face Hub download violate ADR-017 and SEC-004. An OS-AI entitlement (`SystemLanguageModel`, NLEmbedding, Foundation Models) is not portable to Linux or Windows. T-10 allows only an offline vendored SHA-256-pinned GGUF; it does not allow hosted AI, PCC, or runtime fetch. ADR-017 remains Accepted. ADR-002, ADR-009, and ADR-018 remain Proposed.
+Captured bodies can be long. The inbox and status-menu overview need a title that is not the first sentence by policy. First-sentence-only is not the shipped title. Hosted AI, Private Cloud Compute, and a runtime Hugging Face Hub download violate ADR-017 and SEC-004. An OS-AI entitlement (`SystemLanguageModel`, NLEmbedding, Foundation Models) is not portable to Linux or Windows. T-10 allows only an offline SHA-256-pinned GGUF allow-list plus extractive `compact_title`; it does not allow hosted AI, PCC, or runtime fetch. ADR-017 remains Accepted. ADR-002, ADR-009, and ADR-018 remain Proposed.
 
 ### Decision gate
 
@@ -772,24 +772,31 @@ Do not mark Accepted until the operator formally accepts this title contract. Th
 Candidate path:
 
 - Persist `compact_title` first: term-frequency best sentence over significant terms, 40-character word-boundary clamp, markup stripped, no ellipsis glyph. Not first-sentence-only. The clamp fits one title row in the 400px Quick Panel card at `--text-body` 0.9375rem. Composer add and body edit write the same function before any refine.
-- After persist (and after composer add / body edit), a Rust `llama-cpp-2` 0.1.156 worker on thread `bronze-item-title` may refine the stored title. Inference is not on AppKit main and not in the event-tap. `TitleABI.swift` stays a compile-only stub (`BRONZE_STATUS_DEGRADED`). Linux and Windows call the same Rust function.
-- Weights are HuggingFaceTB/SmolLM2-360M-Instruct, bartowski `SmolLM2-360M-Instruct-Q4_K_M.gguf`, revision `ab928a97ee49f3a015f35194879f68211291d6ca`, SHA-256 `2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2` (~271 MB, Apache-2.0). Developer or CI vendors once with `bronze-title-model/scripts/vendor-gguf.sh`. Load only that verified path (`set_weights_path`, else `BRONZE_TITLE_WEIGHTS`, else crate `vendor/`, else exe-relative `models/`). Never `-hf`. Never Hub at capture or runtime. Never a WebView path (SEC-003). Weights are not user-writable via the app. This is the only default GGUF.
-- Inference: lazy load once per process (first load may use 45 s); generate after load is 8 s; truncate input to 2048 characters; `max_new_tokens` 16; greedy; stop on newline; clamp with the same 40-character word-boundary function; English prompt v2 (“3-8 word title naming the topic. Do not copy a sentence”). Skip refine when the body is already at most 40 characters, or when the candidate shares no 3+ character term with the body. A refine can still copy a source sentence; groundedness only rejects titles with no shared 3+ character term.
-- Missing file, hash mismatch, first-load or generate timeout, empty output, load failure, or an ungrounded candidate keeps `compact_title`. Capture ID and terminal result are never dropped.
+- After persist (and after composer add / body edit), a Rust `llama-cpp-2` 0.1.156 worker on thread `bronze-title-model` / `bronze-item-title` may refine the stored title. Inference is not on AppKit main and not in the event-tap. `TitleABI.swift` stays a compile-only stub (`BRONZE_STATUS_DEGRADED`). Linux and Windows call the same Rust function.
+- Settings `general.titleModel` is a schema-valid, exportable, non-secret id: `extractive` | `smol-135` | `smol-360` | `qwen-05`. `extractive` uses `compact_title` only (no GGUF). A Settings change unloads the previous llama context and loads the chosen file on that worker for the next refine; capture never waits on the load. Reload failure stays on `compact_title` and surfaces the fallback reason. No app relaunch is required when load succeeds.
+- Auto-pick runs only when `general.titleModel` is missing or empty (first install / setup). It does not overwrite a stored user value. Rust reads physical RAM locally with no telemetry. Bands: missing RAM, `< 8 GiB`, or no GGUF on disk → `extractive`; `8–16 GiB` → `smol-135` if present else extractive; `16–32 GiB` → `smol-360` if present else the next smaller present file; `≥ 32 GiB` → `qwen-05` if present else the next smaller present file. Most fit is the largest tier the RAM band can hold whose file is already on disk. Bronze never downloads to honor the recommendation. The resolved id is persisted so the Settings picker shows it.
+- Allow-listed weights, each vendorable with `bronze-title-model/scripts/vendor-gguf.sh <id>` (or `all`). Load only a verified path (`set_weights_dir` / `set_weights_path`, else `BRONZE_TITLE_WEIGHTS`, else crate `vendor/`, else exe-relative `models/`). Never `-hf`. Never Hub at capture, first launch, or Settings switch. Never a WebView path (SEC-003). Weights are not user-writable via the app.
+  - `smol-135`: HuggingFaceTB/SmolLM2-135M-Instruct, bartowski `SmolLM2-135M-Instruct-Q4_K_M.gguf`, revision `09816acd5d99df7be770d85ea30822623dab342c`, SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d` (~105 MB, Apache-2.0).
+  - `smol-360`: HuggingFaceTB/SmolLM2-360M-Instruct, bartowski `SmolLM2-360M-Instruct-Q4_K_M.gguf`, revision `ab928a97ee49f3a015f35194879f68211291d6ca`, SHA-256 `2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2` (~271 MB, Apache-2.0).
+  - `qwen-05`: official `Qwen/Qwen2.5-0.5B-Instruct-GGUF` `qwen2.5-0.5b-instruct-q4_k_m.gguf`, revision `9217f5db79a29953eb74d5343926648285ec7e67`, SHA-256 `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db` (~491 MB, Apache-2.0). Not Qwen3 thinking mode.
+- Inference: greedy / low temperature; truncate input to 2048 characters; `max_new_tokens` 16; no tools; stop on newline; clamp with the same 40-character word-boundary function; English prompt v3 (short topic, no sentence copy, no `Title:` prefix). `clean_title` strips a leading `Title:` / `title:` (optional space) and surrounding quotes before clamp and groundedness. Skip refine when the body is already at most 40 characters, or when the candidate shares no 3+ character term with the body. A refine can still copy a source sentence; groundedness only rejects titles with no shared 3+ character term.
+- Missing file, hash mismatch, first-load or generate timeout, empty output, load failure, or an ungrounded candidate keeps `compact_title`. Missing weights log `bronze-title: missing_weights`. Settings marks that tier unavailable and shows the vendor command; there is no download button. Capture ID and terminal result are never dropped.
 - CPU path only (`n_gpu_layers=0`). No `allow-jit` or `allow-unsigned-executable-memory` entitlement. `llama-cpp-2` may still compile Metal on Apple Silicon; the worker does not offload.
-- No Needle, Qwen, Llama 1B, Gemma, hosted AI, Private Cloud Compute, `SystemLanguageModel`, NLEmbedding, URLSession, or OpenAI on the title path.
+- No Needle, Gemma, Llama 1B, Qwen3-thinking, hosted AI, Private Cloud Compute, `SystemLanguageModel`, NLEmbedding, URLSession, or OpenAI on the title path.
 
 ### Consequences while Proposed
 
 - Persist, composer add, and edit always store `compact_title` before any refine.
 - Refine is best-effort and local. Failure leaves the extractive title in place.
 - Private Cloud Compute remains forbidden. Release copy must not treat this as an Accepted inference contract.
-- Queue chrome does not show Apple Intelligence or model-status copy. Titles clip without an ellipsis glyph.
+- Queue chrome does not show Apple Intelligence or model-status copy. Titles clip without an ellipsis glyph. A leaked `Title:` label is stripped before the card shows the heading.
 
 ### Verification
 
 - `compact_title` tests: a middle content-bearing sentence wins over a greeting; the clamp is 40 characters without an ellipsis glyph.
 - Persist writes `compact_title` even when the GGUF is missing, the hash mismatches, or the worker fails.
+- `clean_title` turns `Title: Landing Page Change Hasimproved` into `Landing Page Change Hasimproved` before clamp and groundedness.
+- Auto-pick does not overwrite a stored `general.titleModel`. Missing `qwen-05` does not fetch.
 - Title-worker sources have no runtime network. Capture ID and terminal result are never dropped.
 - Swift source-scan of `TitleABI.swift`: no `PrivateCloudCompute`, `URLSession`, `openai`, `llama`, `gguf`, `SystemLanguageModel`, or `NLEmbedding`.
 - Packaging asserts no `allow-jit` or `allow-unsigned-executable-memory`.
