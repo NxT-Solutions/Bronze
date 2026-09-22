@@ -148,6 +148,12 @@
                   Qwen2.5 0.5B — about 491 MB, 32 GB RAM
                 </option>
               </select>
+              <span
+                class="title-engine-spinner"
+                data-title-model-spinner
+                hidden
+                aria-hidden="true"
+              ></span>
               <button
                 type="button"
                 class="btn-ghost"
@@ -161,6 +167,7 @@
               id="title-model-status"
               class="muted field-help"
               role="status"
+              aria-live="polite"
               data-title-model-status
             ></p>
           </div>

@@ -6,10 +6,12 @@ import { fileURLToPath } from "node:url";
 import {
   applySettingsForm,
   applySettingsSearch,
+  applyTitleEngineLifecycle,
   applyTitleModelStatus,
   exportCategoryLabel,
   exportSensitiveLabel,
   filterInstalledApps,
+  formatTitleEngineLifecycle,
   formatTitleModelStatus,
   isSafeBundleId,
   isSafeDisplayName,
@@ -25,7 +27,9 @@ import {
   settingsSearchNeedle,
   settingsUnitHaystack,
   switcherLocale,
+  TITLE_ENGINE_STATUS_EVENT,
   TITLE_MODEL_IDS,
+  titleEngineBusy,
 } from "./settings-live.mjs";
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
@@ -443,11 +447,13 @@ test("title model status shows present vs vendor command and never fetches", asy
     ),
     "Title engines could not be listed.",
   );
-  const status = { textContent: "" };
+  const status = { textContent: "", setAttribute() {}, removeAttribute() {} };
+  const spinner = { hidden: true };
   const select = { value: "qwen-05" };
   const root = {
     querySelector(sel) {
       if (sel === "[data-title-model-status]") return status;
+      if (sel === "[data-title-model-spinner]") return spinner;
       if (sel === "#title-model") return select;
       return null;
     },
@@ -460,6 +466,9 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.match(status.textContent, /vendor-gguf\.sh qwen-05/);
   assert.doesNotMatch(status.textContent, /Title:/);
   const listed = await refreshTitleModelStatus(root, async (cmd) => {
+    if (cmd === "title_engine_status") {
+      return { tier: "qwen-05", phase: "missing", reason: "missing_weights" };
+    }
     assert.equal(cmd, "list_title_models");
     return [
       { id: "extractive", present: true, vendorCommand: "" },
@@ -472,10 +481,52 @@ test("title model status shows present vs vendor command and never fetches", asy
   });
   assert.equal(listed?.[1]?.present, false);
   assert.match(status.textContent, /Vendored file missing/);
+  assert.equal(spinner.hidden, true);
+  assert.equal(
+    formatTitleEngineLifecycle({ tier: "qwen-05", phase: "loading" }),
+    "Loading Qwen2.5 0.5B…",
+  );
+  assert.equal(
+    formatTitleEngineLifecycle({ tier: "qwen-05", phase: "hashing" }),
+    "Checking Qwen2.5 0.5B…",
+  );
+  assert.equal(
+    formatTitleEngineLifecycle({ tier: "qwen-05", phase: "ready" }),
+    "Loaded — will title the next capture",
+  );
+  assert.equal(titleEngineBusy("loading"), true);
+  assert.equal(titleEngineBusy("ready"), false);
+  applyTitleEngineLifecycle(
+    root,
+    { tier: "qwen-05", phase: "loading" },
+    { id: "qwen-05", present: true },
+  );
+  assert.match(status.textContent, /Loading Qwen2\.5 0\.5B/);
+  assert.equal(spinner.hidden, false);
+  applyTitleEngineLifecycle(
+    root,
+    { tier: "qwen-05", phase: "ready" },
+    { id: "qwen-05", present: true },
+  );
+  assert.equal(status.textContent, "Loaded — will title the next capture");
+  assert.equal(spinner.hidden, true);
+  applyTitleEngineLifecycle(
+    root,
+    { tier: "qwen-05", phase: "missing", reason: "missing_weights" },
+    {
+      id: "qwen-05",
+      present: false,
+      vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+    },
+  );
+  assert.match(status.textContent, /Vendored file missing/);
+  assert.equal(spinner.hidden, true);
   assert.match(html, /id="title-model"/);
   assert.match(html, /name="titleModel"/);
   assert.match(html, /data-reset-field="general.titleModel"/);
   assert.match(html, /data-title-model-status/);
+  assert.match(html, /data-title-model-spinner/);
+  assert.match(html, /aria-live="polite"/);
   assert.match(html, /role="status"/);
   assert.match(html, /value="extractive"/);
   assert.match(html, /value="smol-135"/);
@@ -484,7 +535,10 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.doesNotMatch(html, /download/i);
   assert.doesNotMatch(html, /huggingface/i);
   assert.match(live, /list_title_models/);
+  assert.match(live, /title_engine_status/);
+  assert.match(live, /title-engine-status/);
   assert.match(live, /#title-model/);
+  assert.equal(TITLE_ENGINE_STATUS_EVENT, "title-engine-status");
   assert.doesNotMatch(live, /huggingface/i);
   assert.doesNotMatch(live, /https:\/\//);
 });

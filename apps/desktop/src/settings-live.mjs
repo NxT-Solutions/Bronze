@@ -7,7 +7,7 @@ import {
 import { runBusy } from "./control.mjs";
 import { sourceIconSrc } from "./item-view.mjs";
 import { bindShortcutRegistry } from "./shortcuts.mjs";
-import { showChromeWindow, tauriInvoke } from "./tauri-bridge.mjs";
+import { showChromeWindow, tauriInvoke, tauriListen } from "./tauri-bridge.mjs";
 
 const SWITCHER_LOCALES = ["en", "nl", "fr", "de", "es", "it"];
 
@@ -24,11 +24,43 @@ const TITLE_MODEL_VENDOR = {
   "qwen-05": "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
 };
 
+export const TITLE_ENGINE_STATUS_EVENT = "title-engine-status";
+
+const TITLE_ENGINE_PHASES = Object.freeze([
+  "idle",
+  "loading",
+  "hashing",
+  "ready",
+  "missing",
+  "failed",
+]);
+
 const TITLE_MODEL_STATUS_FALLBACK = {
   extractive: "Extractive titles use no model file.",
   present: "This file is on this Mac and can title the next capture.",
   missing: "Vendored file missing; keep extractive titles and run {command}",
   unavailable: "Title engines could not be listed.",
+  loading: "Loading {engine}…",
+  hashing: "Checking {engine}…",
+  ready: "Ready",
+  loaded: "Loaded — will title the next capture",
+  "failed.bad_hash":
+    "This file did not match the expected hash, so titles stay extractive.",
+  "failed.timeout": "Loading timed out, so titles stay extractive.",
+  "failed.unreadable":
+    "This file could not be read, so titles stay extractive.",
+};
+
+const TITLE_ENGINE_NAME_KEYS = {
+  "smol-135": "settings.field.titleModel.engine.smol135",
+  "smol-360": "settings.field.titleModel.engine.smol360",
+  "qwen-05": "settings.field.titleModel.engine.qwen05",
+};
+
+const TITLE_ENGINE_NAME_FALLBACK = {
+  "smol-135": "SmolLM2 135M",
+  "smol-360": "SmolLM2 360M",
+  "qwen-05": "Qwen2.5 0.5B",
 };
 
 export function parseTitleModelId(raw) {
@@ -73,6 +105,105 @@ export function applyTitleModelStatus(root, row, options = {}) {
   status.textContent = formatTitleModelStatus(row, options);
 }
 
+export function parseTitleEnginePhase(raw) {
+  const phase = String(raw ?? "").trim();
+  return TITLE_ENGINE_PHASES.includes(phase) ? phase : "";
+}
+
+export function titleEngineBusy(phase) {
+  return phase === "loading" || phase === "hashing";
+}
+
+function titleEngineName(id) {
+  const key = TITLE_ENGINE_NAME_KEYS[id];
+  if (!key) {
+    return TITLE_ENGINE_NAME_FALLBACK[id] || id;
+  }
+  return catalogMessage(key) || TITLE_ENGINE_NAME_FALLBACK[id] || id;
+}
+
+function formatLifecycleTemplate(key, fallbackKey, engine) {
+  const template =
+    catalogMessage(key) || TITLE_MODEL_STATUS_FALLBACK[fallbackKey];
+  return template.replaceAll("{engine}", engine);
+}
+
+export function formatTitleEngineLifecycle(status, row, options = {}) {
+  const phase = parseTitleEnginePhase(status?.phase);
+  const id =
+    parseTitleModelId(status?.tier) ||
+    parseTitleModelId(row?.id) ||
+    "extractive";
+  const engine = titleEngineName(id);
+  if (phase === "loading") {
+    return formatLifecycleTemplate(
+      "settings.field.titleModel.loading",
+      "loading",
+      engine,
+    );
+  }
+  if (phase === "hashing") {
+    return formatLifecycleTemplate(
+      "settings.field.titleModel.hashing",
+      "hashing",
+      engine,
+    );
+  }
+  if (phase === "ready") {
+    return (
+      catalogMessage("settings.field.titleModel.loaded") ||
+      TITLE_MODEL_STATUS_FALLBACK.loaded
+    );
+  }
+  if (phase === "failed") {
+    const reason = String(status?.reason ?? "");
+    if (reason === "missing_weights") {
+      return formatTitleModelStatus({ id, present: false, ...row }, options);
+    }
+    const fallbackKey = `failed.${reason}`;
+    return (
+      catalogMessage(`settings.field.titleModel.failed.${reason}`) ||
+      TITLE_MODEL_STATUS_FALLBACK[fallbackKey] ||
+      catalogMessage("settings.field.titleModel.failed.unreadable") ||
+      TITLE_MODEL_STATUS_FALLBACK["failed.unreadable"]
+    );
+  }
+  if (phase === "missing") {
+    return formatTitleModelStatus({ id, present: false, ...row }, options);
+  }
+  return formatTitleModelStatus({ id, ...row }, options);
+}
+
+export function applyTitleEngineLifecycle(root, status, row, options = {}) {
+  const node = root.querySelector("[data-title-model-status]");
+  const spinner = root.querySelector("[data-title-model-spinner]");
+  if (!node) {
+    return;
+  }
+  node.textContent = formatTitleEngineLifecycle(status, row, options);
+  node.setAttribute("aria-live", "polite");
+  const busy = titleEngineBusy(parseTitleEnginePhase(status?.phase));
+  if (busy) {
+    node.setAttribute("aria-busy", "true");
+  } else {
+    node.removeAttribute("aria-busy");
+  }
+  if (spinner) {
+    spinner.hidden = !busy;
+  }
+}
+
+export function bindTitleEngineStatus(root, listenFn = tauriListen) {
+  return listenFn(TITLE_ENGINE_STATUS_EVENT, (event) => {
+    const payload = event?.payload ?? event;
+    const id = parseTitleModelId(payload?.tier) || "extractive";
+    applyTitleEngineLifecycle(root, payload, {
+      id,
+      vendorCommand: TITLE_MODEL_VENDOR[id] || "",
+    });
+  });
+}
+
 export async function refreshTitleModelStatus(root, invokeFn, settings) {
   const selected = parseTitleModelId(
     root.querySelector("#title-model")?.value || settings?.general?.titleModel,
@@ -85,10 +216,21 @@ export async function refreshTitleModelStatus(root, invokeFn, settings) {
   } catch {
     rows = null;
   }
+  let engine = null;
+  try {
+    engine = await invokeFn("title_engine_status");
+  } catch {
+    engine = null;
+  }
   const row = rows?.find((item) => item?.id === id) ?? { id, present: false };
-  applyTitleModelStatus(root, row, {
+  const options = {
     unavailable: rows === null && id !== "extractive",
-  });
+  };
+  if (engine && parseTitleEnginePhase(engine.phase)) {
+    applyTitleEngineLifecycle(root, engine, row, options);
+  } else {
+    applyTitleModelStatus(root, row, options);
+  }
   return rows;
 }
 
@@ -671,6 +813,7 @@ export async function bindSettingsLive(
     appSearch.disabled = appsUnavailable;
   }
   await applySavedLocale(root, settings, invokeFn);
+  bindTitleEngineStatus(root);
   await refreshExcludedIcons(root, invokeFn);
   bindExcludedPicker(root, invokeFn, () => persist());
   const refreshShortcuts = await bindShortcutRegistry(root, invokeFn);

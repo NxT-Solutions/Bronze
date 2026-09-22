@@ -68,6 +68,8 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\[data-capture-message\]\[hidden\]/);
   assert.match(chrome, /cursor:\s*pointer/);
   assert.match(chrome, /\[aria-busy="true"\]/);
+  assert.match(chrome, /\.title-engine-spinner/);
+  assert.match(chrome, /prefers-reduced-motion:\s*reduce/);
   assert.match(
     chrome,
     /button\.btn-primary:hover:not\(:disabled\)[\s\S]*--primary-foreground/,

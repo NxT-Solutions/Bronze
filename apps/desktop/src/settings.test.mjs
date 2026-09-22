@@ -122,6 +122,14 @@ test("settings window is searchable grouped with daily weekly backup and export 
     en["settings.field.titleModel.missing"],
     "Vendored file missing; keep extractive titles and run {command}",
   );
+  assert.equal(en["settings.field.titleModel.loading"], "Loading {engine}…");
+  assert.equal(en["settings.field.titleModel.hashing"], "Checking {engine}…");
+  assert.equal(
+    en["settings.field.titleModel.loaded"],
+    "Loaded — will title the next capture",
+  );
+  assert.match(html, /data-title-model-spinner/);
+  assert.match(html, /aria-live="polite"/);
   assert.doesNotMatch(html, /Title:/);
   assert.doesNotMatch(html, /download/i);
 });

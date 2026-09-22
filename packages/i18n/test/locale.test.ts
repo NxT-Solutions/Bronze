@@ -61,6 +61,9 @@ describe("i18n ICU plural", () => {
     expect(tfr("settings.field.locale")).toBe("Langue");
     expect(tfr("settings.field.titleModel")).toBe("Moteur de titre");
     expect(
+      tfr("settings.field.titleModel.loading", { engine: "Qwen2.5 0.5B" }),
+    ).toBe("Chargement de Qwen2.5 0.5B…");
+    expect(
       tfr("settings.field.titleModel.missing", {
         command: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
       }),

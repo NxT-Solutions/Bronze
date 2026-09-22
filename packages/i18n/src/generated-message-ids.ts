@@ -98,6 +98,22 @@ export const MessageIds = {
   "settings.field.titleModel.missing": "settings.field.titleModel.missing",
   "settings.field.titleModel.unavailable":
     "settings.field.titleModel.unavailable",
+  "settings.field.titleModel.engine.smol135":
+    "settings.field.titleModel.engine.smol135",
+  "settings.field.titleModel.engine.smol360":
+    "settings.field.titleModel.engine.smol360",
+  "settings.field.titleModel.engine.qwen05":
+    "settings.field.titleModel.engine.qwen05",
+  "settings.field.titleModel.loading": "settings.field.titleModel.loading",
+  "settings.field.titleModel.hashing": "settings.field.titleModel.hashing",
+  "settings.field.titleModel.ready": "settings.field.titleModel.ready",
+  "settings.field.titleModel.loaded": "settings.field.titleModel.loaded",
+  "settings.field.titleModel.failed.bad_hash":
+    "settings.field.titleModel.failed.bad_hash",
+  "settings.field.titleModel.failed.timeout":
+    "settings.field.titleModel.failed.timeout",
+  "settings.field.titleModel.failed.unreadable":
+    "settings.field.titleModel.failed.unreadable",
   "settings.field.excludedBundleIds": "settings.field.excludedBundleIds",
   "settings.field.excludedBundleIds.help":
     "settings.field.excludedBundleIds.help",

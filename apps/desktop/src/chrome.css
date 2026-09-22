@@ -1252,6 +1252,20 @@ menu {
   flex: 0 0 auto;
 }
 
+.title-engine-spinner {
+  flex: 0 0 auto;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--muted-foreground);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: bronze-spin 0.6s linear infinite;
+}
+
+.title-engine-spinner[hidden] {
+  display: none;
+}
+
 .app-picker-field {
   display: grid;
   gap: var(--space-2);
