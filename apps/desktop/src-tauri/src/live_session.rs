@@ -874,6 +874,7 @@ impl LiveSession {
     pub fn replace_settings(&mut self, next: SettingsV1) -> Result<SettingsV1, String> {
         next.validate().map_err(|_| "settings_invalid")?;
         let mut next = next;
+        next.sync_motion_fields();
         let _ = resolve_title_model(&mut next);
         let chord = next.capture.standard_chord.clone();
         self.settings = next;

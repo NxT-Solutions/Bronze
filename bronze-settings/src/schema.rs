@@ -366,11 +366,48 @@ pub enum DifferentiatePref {
     Always,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub enum MotionPref {
+    #[default]
+    #[serde(rename = "system")]
     System,
-    Reduce,
+    #[serde(rename = "on", alias = "reduce")]
+    On,
+    #[serde(rename = "off")]
+    Off,
+}
+
+impl MotionPref {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::On => "on",
+            Self::Off => "off",
+        }
+    }
+
+    pub fn parse(raw: &str) -> Result<Self, SchemaError> {
+        match raw.trim() {
+            "system" => Ok(Self::System),
+            "on" | "reduce" => Ok(Self::On),
+            "off" => Ok(Self::Off),
+            _ => Err(SchemaError::UnknownMotion),
+        }
+    }
+
+    pub const fn dataset_value(self, system_reduce: bool) -> &'static str {
+        match self {
+            Self::Off => "full",
+            Self::On => "reduce",
+            Self::System => {
+                if system_reduce {
+                    "reduce"
+                } else {
+                    "full"
+                }
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -389,6 +426,8 @@ pub struct GeneralSettings {
     pub start_view: StartView,
     #[serde(default, skip_serializing_if = "TitleModelId::is_unset")]
     pub title_model: TitleModelId,
+    #[serde(default)]
+    pub reduce_motion: MotionPref,
 }
 
 pub const PERSISTED_LOCALE_TAGS: &[&str] = &[
@@ -498,6 +537,7 @@ pub enum SchemaError {
     UnknownField,
     UnknownLocale,
     UnknownTitleModel,
+    UnknownMotion,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -567,6 +607,11 @@ pub const SETTINGS_FIELDS: &[SettingsField] = &[
         id: "general.titleModel",
         group: SettingsGroup::General,
         tokens: &["title", "model", "smol", "qwen"],
+    },
+    SettingsField {
+        id: "general.reduceMotion",
+        group: SettingsGroup::General,
+        tokens: &["motion", "reduce", "animation"],
     },
     SettingsField {
         id: "capture.standardChord",
@@ -749,6 +794,7 @@ impl SettingsV1 {
                 locale: "system".into(),
                 start_view: StartView::Last,
                 title_model: TitleModelId::Unset,
+                reduce_motion: MotionPref::System,
             },
             capture: CaptureSettings {
                 standard_chord: default_standard_chord(),
@@ -836,6 +882,21 @@ impl SettingsV1 {
         Ok(())
     }
 
+    fn parse_motion_node(node: &serde_json::Value) -> Result<(), SchemaError> {
+        match node {
+            serde_json::Value::String(raw) => {
+                MotionPref::parse(raw)?;
+                Ok(())
+            }
+            serde_json::Value::Null => Ok(()),
+            _ => Err(SchemaError::UnknownMotion),
+        }
+    }
+
+    pub fn sync_motion_fields(&mut self) {
+        self.accessibility.motion = self.general.reduce_motion;
+    }
+
     pub fn from_json(raw: &str) -> Result<Self, SchemaError> {
         let value: serde_json::Value =
             serde_json::from_str(raw).map_err(|_| SchemaError::UnknownVersion)?;
@@ -856,15 +917,37 @@ impl SettingsV1 {
                 _ => return Err(SchemaError::UnknownTitleModel),
             }
         }
-        let parsed: Self =
+        if let Some(node) = value
+            .get("general")
+            .and_then(|general| general.get("reduceMotion"))
+        {
+            Self::parse_motion_node(node)?;
+        }
+        if let Some(node) = value
+            .get("accessibility")
+            .and_then(|accessibility| accessibility.get("motion"))
+        {
+            Self::parse_motion_node(node)?;
+        }
+        let reduce_motion_present = value
+            .get("general")
+            .and_then(|general| general.get("reduceMotion"))
+            .is_some();
+        let mut parsed: Self =
             serde_json::from_value(value).map_err(|_| SchemaError::UnknownVersion)?;
+        if !reduce_motion_present {
+            parsed.general.reduce_motion = parsed.accessibility.motion;
+        }
+        parsed.sync_motion_fields();
         parsed.validate()?;
         Ok(parsed)
     }
 
     pub fn to_json(&self) -> Result<String, SchemaError> {
         self.validate()?;
-        serde_json::to_string(self).map_err(|_| SchemaError::UnknownVersion)
+        let mut out = self.clone();
+        out.sync_motion_fields();
+        serde_json::to_string(&out).map_err(|_| SchemaError::UnknownVersion)
     }
 
     pub fn reset_field(&mut self, field_id: &str) -> Result<(), SchemaError> {
@@ -877,6 +960,10 @@ impl SettingsV1 {
             "general.locale" => self.general.locale = defaults.general.locale,
             "general.startView" => self.general.start_view = defaults.general.start_view,
             "general.titleModel" => self.general.title_model = defaults.general.title_model,
+            "general.reduceMotion" => {
+                self.general.reduce_motion = defaults.general.reduce_motion;
+                self.sync_motion_fields();
+            }
             "capture.standardChord" => {
                 self.capture.standard_chord = defaults.capture.standard_chord
             }
@@ -931,7 +1018,10 @@ impl SettingsV1 {
                 self.accessibility.differentiate_without_color =
                     defaults.accessibility.differentiate_without_color
             }
-            "accessibility.motion" => self.accessibility.motion = defaults.accessibility.motion,
+            "accessibility.motion" => {
+                self.accessibility.motion = defaults.accessibility.motion;
+                self.general.reduce_motion = self.accessibility.motion;
+            }
             "accessibility.transparency" => {
                 self.accessibility.transparency = defaults.accessibility.transparency
             }
@@ -945,13 +1035,19 @@ impl SettingsV1 {
     pub fn reset_group(&mut self, group: SettingsGroup) {
         let defaults = Self::defaults();
         match group {
-            SettingsGroup::General => self.general = defaults.general,
+            SettingsGroup::General => {
+                self.general = defaults.general;
+                self.sync_motion_fields();
+            }
             SettingsGroup::Capture => self.capture = defaults.capture,
             SettingsGroup::Panel => self.panel = defaults.panel,
             SettingsGroup::Copy => self.copy = defaults.copy,
             SettingsGroup::Privacy => self.privacy = defaults.privacy,
             SettingsGroup::Data => self.data = defaults.data,
-            SettingsGroup::Accessibility => self.accessibility = defaults.accessibility,
+            SettingsGroup::Accessibility => {
+                self.accessibility = defaults.accessibility;
+                self.general.reduce_motion = self.accessibility.motion;
+            }
         }
     }
 
@@ -1179,5 +1275,72 @@ mod tests {
         assert!(!privacy.excludes_bundle("com.apple.Notes"));
         assert!(!privacy.excludes_bundle(""));
         assert!(!privacy.excludes_bundle("   "));
+    }
+
+    #[test]
+    fn reduce_motion_defaults_system_and_round_trips() {
+        let settings = SettingsV1::defaults();
+        assert_eq!(settings.general.reduce_motion, MotionPref::System);
+        assert_eq!(settings.accessibility.motion, MotionPref::System);
+        assert_eq!(settings.general.reduce_motion.dataset_value(true), "reduce");
+        assert_eq!(settings.general.reduce_motion.dataset_value(false), "full");
+        let json = settings.to_json().expect("json");
+        assert!(json.contains("\"reduceMotion\":\"system\""));
+        assert_eq!(
+            SettingsV1::from_json(&json)
+                .expect("parse")
+                .general
+                .reduce_motion,
+            MotionPref::System
+        );
+
+        for (pref, token, system_reduce, dataset) in [
+            (MotionPref::On, "on", false, "reduce"),
+            (MotionPref::Off, "off", true, "full"),
+        ] {
+            let mut next = SettingsV1::defaults();
+            next.general.reduce_motion = pref;
+            let raw = next.to_json().expect("json");
+            assert!(raw.contains(&format!("\"reduceMotion\":\"{token}\"")));
+            let parsed = SettingsV1::from_json(&raw).expect("parse");
+            assert_eq!(parsed.general.reduce_motion, pref);
+            assert_eq!(parsed.accessibility.motion, pref);
+            assert_eq!(
+                parsed.general.reduce_motion.dataset_value(system_reduce),
+                dataset
+            );
+        }
+
+        let mut legacy_value: serde_json::Value =
+            serde_json::from_str(&SettingsV1::defaults().to_json().expect("defaults"))
+                .expect("value");
+        legacy_value
+            .get_mut("general")
+            .and_then(serde_json::Value::as_object_mut)
+            .expect("general")
+            .remove("reduceMotion");
+        legacy_value
+            .pointer_mut("/accessibility/motion")
+            .map(|node| *node = serde_json::Value::String("reduce".into()));
+        let legacy = legacy_value.to_string();
+        let migrated = SettingsV1::from_json(&legacy).expect("legacy reduce");
+        assert_eq!(migrated.general.reduce_motion, MotionPref::On);
+        assert_eq!(migrated.accessibility.motion, MotionPref::On);
+
+        let mut bad = SettingsV1::defaults().to_json().expect("raw");
+        bad = bad.replace("\"reduceMotion\":\"system\"", "\"reduceMotion\":\"always\"");
+        assert_eq!(
+            SettingsV1::from_json(&bad).unwrap_err(),
+            SchemaError::UnknownMotion
+        );
+
+        let mut reset = SettingsV1::defaults();
+        reset.general.reduce_motion = MotionPref::Off;
+        reset.reset_field("general.reduceMotion").expect("reset");
+        assert_eq!(reset.general.reduce_motion, MotionPref::System);
+        assert_eq!(reset.accessibility.motion, MotionPref::System);
+        assert!(search_settings("motion")
+            .iter()
+            .any(|field| field.id == "general.reduceMotion"));
     }
 }

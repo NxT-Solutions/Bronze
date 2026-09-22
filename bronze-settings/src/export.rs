@@ -103,7 +103,9 @@ pub fn export_settings_document(
     exported_at: &str,
 ) -> Result<SettingsExportPreview, SchemaError> {
     settings.validate()?;
-    let typed = serde_json::to_value(settings).map_err(|_| SchemaError::UnknownVersion)?;
+    let mut synced = settings.clone();
+    synced.sync_motion_fields();
+    let typed = serde_json::to_value(&synced).map_err(|_| SchemaError::UnknownVersion)?;
     let mut settings_map = match typed {
         Value::Object(map) => map,
         _ => Map::new(),
@@ -407,6 +409,10 @@ mod tests {
             .included_fields
             .iter()
             .any(|field| field == "general.titleModel"));
+        assert!(preview
+            .included_fields
+            .iter()
+            .any(|field| field == "general.reduceMotion"));
     }
 
     #[test]
@@ -487,6 +493,7 @@ mod tests {
         let mut settings = SettingsV1::defaults();
         settings.general.locale = "nl".into();
         settings.general.title_model = crate::schema::TitleModelId::Smol360;
+        settings.general.reduce_motion = crate::schema::MotionPref::Off;
         settings
             .privacy
             .excluded_bundle_ids
@@ -505,6 +512,10 @@ mod tests {
         assert_eq!(
             parsed.settings.general.title_model,
             crate::schema::TitleModelId::Smol360
+        );
+        assert_eq!(
+            parsed.settings.general.reduce_motion,
+            crate::schema::MotionPref::Off
         );
         assert_eq!(
             parsed.settings.privacy.excluded_bundle_ids,
