@@ -106,6 +106,43 @@ impl CaptureResultDto {
 
 pub struct LiveAxHost;
 
+pub struct LiveCaptureHost {
+    pub own: Option<crate::own_selection::OwnSelection>,
+}
+
+impl SelectionHost for LiveCaptureHost {
+    fn peek_bundle_id(&self) -> Option<String> {
+        if matches!(
+            self.own,
+            Some(crate::own_selection::OwnSelection::Text(_))
+                | Some(crate::own_selection::OwnSelection::TooLarge)
+        ) {
+            bronze_platform_macos::native_bundle_id_for_pid(std::process::id() as i32)
+        } else {
+            LiveAxHost.peek_bundle_id()
+        }
+    }
+
+    fn read(&self) -> (AxOutcome, Option<CapturedText>) {
+        match &self.own {
+            Some(crate::own_selection::OwnSelection::Text(text)) => (
+                AxOutcome::Captured { len: text.len() },
+                Some(CapturedText {
+                    text: text.clone(),
+                    source_app_name: Some(crate::own_selection::OWN_SELECTION_SOURCE_NAME.into()),
+                    source_bundle_id: bronze_platform_macos::native_bundle_id_for_pid(
+                        std::process::id() as i32,
+                    ),
+                }),
+            ),
+            Some(crate::own_selection::OwnSelection::TooLarge) => {
+                (AxOutcome::SelectionTooLarge, None)
+            }
+            None => LiveAxHost.read(),
+        }
+    }
+}
+
 impl SelectionHost for LiveAxHost {
     fn peek_bundle_id(&self) -> Option<String> {
         if bronze_platform_macos::bronze_is_frontmost() {
@@ -1903,6 +1940,23 @@ mod live_session_tests {
             .add_captured("from bronze".into(), Some("Bronze".into()), None)
             .expect("self capture");
         assert_eq!(from_self.source_app_name.as_deref(), Some("Bronze"));
+        let own_host = LiveCaptureHost {
+            own: Some(crate::own_selection::OwnSelection::Text(
+                "inside bronze".into(),
+            )),
+        };
+        let (own_outcome, own_text) = own_host.read();
+        assert!(matches!(own_outcome, AxOutcome::Captured { .. }));
+        let own_captured = own_text.expect("own");
+        assert_eq!(own_captured.text, "inside bronze");
+        assert_eq!(own_captured.source_app_name.as_deref(), Some("Bronze"));
+        assert!(!format!("{own_captured:?}").contains("inside"));
+        let too_large = LiveCaptureHost {
+            own: Some(crate::own_selection::OwnSelection::TooLarge),
+        };
+        assert!(matches!(too_large.read().0, AxOutcome::SelectionTooLarge));
+        let fallback = LiveCaptureHost { own: None };
+        let _ = fallback.peek_bundle_id();
         let used = include_str!("../permissions/used-permissions.toml");
         assert!(used.contains("list_shortcuts"));
         assert!(used.contains("record_shortcut"));
@@ -1913,6 +1967,27 @@ mod live_session_tests {
         assert!(src.contains("pub fn pick_installed_app()"));
         assert!(src.contains("picker_cancelled"));
         assert!(src.contains("picker_unavailable"));
+    }
+
+    #[test]
+    fn own_webview_selection_persists_as_bronze() {
+        use bronze_capture::FakeAnnouncer;
+        let mut session = open_session();
+        let host = LiveCaptureHost {
+            own: Some(crate::own_selection::OwnSelection::Text(
+                "from the queue".into(),
+            )),
+        };
+        let mut announce = FakeAnnouncer::default();
+        let persisted = session
+            .persist_selection(&host, &mut announce, false)
+            .expect("persist own");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert_eq!(persisted.reason, "ok");
+        let overview = session.list_overview().expect("overview");
+        assert_eq!(overview.len(), 1);
+        assert_eq!(overview[0].body, "from the queue");
+        assert_eq!(overview[0].source_app_name.as_deref(), Some("Bronze"));
     }
 
     #[test]

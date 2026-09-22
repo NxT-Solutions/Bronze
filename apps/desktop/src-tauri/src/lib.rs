@@ -1,5 +1,6 @@
 mod capture_permissions;
 mod live_session;
+mod own_selection;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -527,12 +528,30 @@ fn handle_menu_id(app: &tauri::AppHandle, id: &str) {
 
 #[cfg(target_os = "macos")]
 pub fn on_capture_requested(app: &tauri::AppHandle) {
-    use bronze_capture::FakeAnnouncer;
-    use bronze_capture::Terminal;
-    use live_session::{CaptureResultDto, LiveAxHost};
-    use tauri::{Emitter, Manager};
     bronze_platform_macos::note_external_focus();
     let _ = capture_permissions::prompt_on_first_capture_path();
+    if bronze_platform_macos::bronze_is_frontmost() {
+        let handle = app.clone();
+        let _ = std::thread::Builder::new()
+            .name("bronze-own-selection".into())
+            .spawn(move || {
+                let own = own_selection::read_own_webview_selection(&handle);
+                let app = handle.clone();
+                let _ = handle.run_on_main_thread(move || {
+                    persist_capture_request(&app, own);
+                });
+            });
+        return;
+    }
+    persist_capture_request(app, None);
+}
+
+#[cfg(target_os = "macos")]
+fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::OwnSelection>) {
+    use bronze_capture::FakeAnnouncer;
+    use bronze_capture::Terminal;
+    use live_session::{CaptureResultDto, LiveCaptureHost};
+    use tauri::{Emitter, Manager};
     let visible = app
         .get_webview_window("quick")
         .and_then(|window| window.is_visible().ok())
@@ -543,7 +562,7 @@ pub fn on_capture_requested(app: &tauri::AppHandle) {
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     let mut announce = FakeAnnouncer::default();
     let catalog = session.ui_catalog();
-    let persisted = session.persist_selection(&LiveAxHost, &mut announce, visible);
+    let persisted = session.persist_selection(&LiveCaptureHost { own }, &mut announce, visible);
     let refine = persisted.as_ref().ok().and_then(|outcome| {
         if outcome.terminal == Terminal::Saved {
             outcome.item_id.as_ref().and_then(|id| {
@@ -928,8 +947,28 @@ mod tests {
             snapshot_at < prompt_at,
             "frontmost PID must be snapshotted before a permission prompt"
         );
-        assert!(capture_fn.contains("deliver_capture_user_notice"));
-        assert!(capture_fn.contains("capture-result"));
+        assert!(capture_fn.contains("read_own_webview_selection"));
+        assert!(capture_fn.contains("bronze_is_frontmost"));
+        assert!(capture_fn.contains("persist_capture_request"));
+        assert!(lib.contains("fn persist_capture_request"));
+        assert!(lib.contains("LiveCaptureHost"));
+        assert!(
+            lib.contains("eval_with_callback")
+                || include_str!("own_selection.rs").contains("eval_with_callback")
+        );
+        assert!(!pump[..pump_end].contains("eval_with_callback"));
+        assert!(!pump[..pump_end].contains("read_own_webview_selection"));
+        assert!(include_str!("own_selection.rs").contains("OWN_SELECTION_JS"));
+        assert!(include_str!("own_selection.rs").contains("password"));
+        assert!(!include_str!(
+            "../../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        )
+        .contains("eval_with_callback"));
+        assert!(
+            capture_fn.contains("deliver_capture_user_notice")
+                || lib.contains("deliver_capture_user_notice")
+        );
+        assert!(lib.contains("capture-result"));
         assert!(!use_system_focused_fallback(Some(42)));
         assert!(use_system_focused_fallback(None));
     }
