@@ -1,4 +1,6 @@
-use crate::prompt::{clean_title, format_prompt, title_is_grounded, MAX_NEW_TOKENS};
+use crate::prompt::{
+    accept_refined_title, clean_title, format_prompt, title_is_grounded, MAX_NEW_TOKENS,
+};
 use crate::tiers::TitleTier;
 use crate::weights::{verified_weights_for, WeightsError};
 use llama_cpp_2::context::params::LlamaContextParams;
@@ -335,14 +337,10 @@ fn infer_once(
             .map_err(|_| FallbackReason::Empty)?;
         ctx.decode(&mut batch).map_err(|_| FallbackReason::Empty)?;
     }
-    let Some(title) = clean_title(&raw) else {
-        return Err(FallbackReason::Empty);
-    };
-    if title_is_grounded(body, &title) {
-        Ok(title)
-    } else {
-        Err(FallbackReason::Ungrounded)
-    }
+    accept_refined_title(body, &raw).ok_or_else(|| match clean_title(&raw) {
+        Some(title) if !title_is_grounded(body, &title) => FallbackReason::Ungrounded,
+        _ => FallbackReason::Empty,
+    })
 }
 
 #[cfg(test)]
@@ -444,6 +442,7 @@ mod infer_tests {
             "fn persist_selection() { let title = compact_title(body); store.insert(title); }",
             "Park me",
             "The local title model is in. Capture still saves compact_title immediately; a Rust worker then tries SmolLM2 offline and only replaces the title if the body is unchanged and the title is grounded.",
+            "The landing page change did most of the work for the Follo billing investigation. Query performance impact from D7CEC1E versus the previous plan still needs a number before we sign off. Invoice review on Thursday is the remaining close item.",
         ];
         for body in samples {
             let started = std::time::Instant::now();

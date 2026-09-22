@@ -2,7 +2,8 @@ use bronze_domain::clamp_title;
 
 pub const MAX_INPUT_CHARS: usize = 2048;
 pub const MAX_NEW_TOKENS: i32 = 16;
-pub const PROMPT_VERSION: &str = "v3";
+pub const PROMPT_VERSION: &str = "v4";
+pub const SYSTEM_PROMPT: &str = "Summarize the selected text as a 5-8 word topic headline. Name the subject and the change or problem. Reuse concrete nouns already in the text, especially product names, commit ids, and metrics. Do not copy or clip the first sentence. Do not write Overview, Notes, or Text. Output only the headline. No Title: prefix, no quotes, no hyphen slugs, no trailing period.";
 
 pub fn truncate_input(body: &str) -> String {
     let trimmed = body.trim();
@@ -15,7 +16,7 @@ pub fn truncate_input(body: &str) -> String {
 pub fn format_prompt(body: &str) -> String {
     let body = truncate_input(body);
     format!(
-        "<|im_start|>system\nWrite a 3-8 word title naming the topic. Do not copy a sentence. No quotes. Do not prefix with Title:.<|im_end|>\n<|im_start|>user\n{body}<|im_end|>\n<|im_start|>assistant\n"
+        "<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n<|im_start|>user\nSelected text:\n{body}\n\nTopic headline for the whole selection (not the first sentence):<|im_end|>\n<|im_start|>assistant\n"
     )
 }
 
@@ -31,11 +32,26 @@ pub fn clean_title(raw: &str) -> Option<String> {
         .filter(|ch| *ch != '"' && *ch != '`')
         .collect();
     let stripped = strip_title_prefix(stripped.trim());
+    let stripped = strip_headline_punct(stripped);
+    let stripped = expand_hyphen_slug(stripped);
+    let stripped = strip_dangling_tail(&stripped);
+    if is_generic_headline(stripped) {
+        return None;
+    }
     let clamped = clamp_title(stripped);
-    if clamped.is_empty() || clamped.contains('…') {
+    if clamped.is_empty() || clamped.contains('…') || is_generic_headline(&clamped) {
         None
     } else {
         Some(clamped)
+    }
+}
+
+pub fn accept_refined_title(body: &str, raw: &str) -> Option<String> {
+    let title = clean_title(raw)?;
+    if title_is_grounded(body, &title) && !title_echoes_opening(body, &title) {
+        Some(title)
+    } else {
+        None
     }
 }
 
@@ -54,6 +70,57 @@ fn strip_title_prefix(line: &str) -> &str {
     }
 }
 
+fn strip_headline_punct(text: &str) -> &str {
+    text.trim_end_matches(['.', '!', '?', ',', ';']).trim()
+}
+
+fn expand_hyphen_slug(text: &str) -> String {
+    if text.contains(' ') || text.matches('-').count() < 2 {
+        text.to_string()
+    } else {
+        text.replace('-', " ")
+    }
+}
+
+fn strip_dangling_tail(text: &str) -> &str {
+    let mut slice = text.trim_end();
+    loop {
+        let Some(last) = slice.split_whitespace().last() else {
+            return "";
+        };
+        if !is_dangling_word(last) {
+            return slice;
+        }
+        slice = slice[..slice.len() - last.len()].trim_end();
+    }
+}
+
+fn is_dangling_word(word: &str) -> bool {
+    matches!(
+        word.to_ascii_lowercase().as_str(),
+        "by" | "of"
+            | "the"
+            | "a"
+            | "an"
+            | "to"
+            | "for"
+            | "with"
+            | "in"
+            | "on"
+            | "and"
+            | "or"
+            | "from"
+            | "vs"
+    )
+}
+
+fn is_generic_headline(title: &str) -> bool {
+    matches!(
+        title.to_ascii_lowercase().as_str(),
+        "overview" | "notes" | "text"
+    )
+}
+
 pub fn title_is_grounded(body: &str, title: &str) -> bool {
     let body_terms = significant_terms(body);
     if body_terms.is_empty() {
@@ -62,6 +129,34 @@ pub fn title_is_grounded(body: &str, title: &str) -> bool {
     significant_terms(title)
         .iter()
         .any(|term| body_terms.iter().any(|body| terms_overlap(body, term)))
+}
+
+pub fn title_echoes_opening(body: &str, title: &str) -> bool {
+    let title_words = opening_words(title);
+    let opening = opening_words(opening_span(body));
+    if title_words.len() < 3 || opening.len() < 3 {
+        return false;
+    }
+    if title_words.len() >= 4 && title_words[..3] == opening[..3] {
+        return true;
+    }
+    title_words.len() >= 5
+        && (opening.starts_with(title_words.as_slice())
+            || title_words.starts_with(opening.as_slice()))
+}
+
+fn opening_span(body: &str) -> &str {
+    let trimmed = body.trim();
+    let end = trimmed.find(['.', '!', '?', '\n']).unwrap_or(trimmed.len());
+    trimmed[..end].trim()
+}
+
+fn opening_words(text: &str) -> Vec<String> {
+    text.split(|ch: char| !ch.is_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(|part| part.to_ascii_lowercase())
+        .filter(|part| !matches!(part.as_str(), "the" | "a" | "an"))
+        .collect()
 }
 
 fn terms_overlap(body: &str, title: &str) -> bool {
@@ -80,14 +175,22 @@ fn significant_terms(text: &str) -> Vec<String> {
 mod prompt_tests {
     use super::*;
 
+    const FOLLO_BODY: &str = "The landing page change did most of the work for the Follo billing investigation. Query performance impact from D7CEC1E versus the previous plan still needs a number before we sign off. Invoice review on Thursday is the remaining close item.";
+
     #[test]
-    fn prompt_is_fixed_english_v2() {
+    fn prompt_is_fixed_english_v4() {
         let prompt = format_prompt("The migration timeout is the real bug.");
-        assert!(prompt.contains("3-8 word title"));
-        assert!(prompt.contains("Do not copy a sentence"));
-        assert!(prompt.contains("Do not prefix with Title:"));
+        assert!(prompt.contains(SYSTEM_PROMPT));
+        assert!(prompt.contains("Summarize the selected text as a 5-8 word topic headline"));
+        assert!(prompt.contains("Name the subject and the change or problem"));
+        assert!(prompt.contains("Do not copy or clip the first sentence"));
+        assert!(prompt.contains("Selected text:"));
+        assert!(prompt.contains("Topic headline for the whole selection (not the first sentence):"));
+        assert!(prompt.contains("product names, commit ids, and metrics"));
         assert!(prompt.contains("The migration timeout is the real bug."));
-        assert_eq!(PROMPT_VERSION, "v3");
+        assert!(!prompt.contains("Write a 3-8 word title"));
+        assert!(!prompt.contains("Write a title"));
+        assert_eq!(PROMPT_VERSION, "v4");
         assert_eq!(MAX_NEW_TOKENS, 16);
     }
 
@@ -116,12 +219,75 @@ mod prompt_tests {
             Some("Landing Page Change Hasimproved")
         );
         assert_eq!(clean_title("Title:Foo Bar").as_deref(), Some("Foo Bar"));
+        assert_eq!(
+            clean_title("Title: The landing page change did most of the.").as_deref(),
+            Some("The landing page change did most")
+        );
+        assert_eq!(
+            clean_title("Follo billing query D7CEC1E.").as_deref(),
+            Some("Follo billing query D7CEC1E")
+        );
+        assert_eq!(
+            clean_title("Migrate-Timeout-Is-Real-Bug-In-Persist").as_deref(),
+            Some("Migrate Timeout Is Real Bug In Persist")
+        );
+        assert_eq!(
+            clean_title("Finance should review invoices by.").as_deref(),
+            Some("Finance should review invoices")
+        );
+        assert_eq!(clean_title("Overview"), None);
+        assert_eq!(clean_title("Notes"), None);
+        assert_eq!(clean_title("Text"), None);
         let inner = clean_title("The topic is \"Persistence of Selection").expect("inner");
         assert!(!inner.contains('"'));
         assert!(quoted.to_ascii_lowercase().contains("migration"));
         let long = clean_title(&"word ".repeat(40)).expect("clamped");
         assert!(long.chars().count() <= 40);
         assert!(!long.contains('…'));
+    }
+
+    #[test]
+    fn accept_refined_title_summarizes_instead_of_opening_echo() {
+        assert_eq!(
+            accept_refined_title(
+                FOLLO_BODY,
+                "Title: The landing page change did most of the."
+            ),
+            None
+        );
+        assert_eq!(
+            accept_refined_title(FOLLO_BODY, "The landing page change did most of the"),
+            None
+        );
+        assert_eq!(
+            accept_refined_title(FOLLO_BODY, "Landing page change significantly"),
+            None
+        );
+        assert_eq!(accept_refined_title(FOLLO_BODY, "Overview"), None);
+        assert_eq!(
+            accept_refined_title(FOLLO_BODY, "Quantum photon lattice"),
+            None
+        );
+        assert_eq!(
+            accept_refined_title(FOLLO_BODY, "Follo billing query D7CEC1E."),
+            Some("Follo billing query D7CEC1E".into())
+        );
+        assert_eq!(
+            accept_refined_title(FOLLO_BODY, "Query performance impact D7CEC1E"),
+            Some("Query performance impact D7CEC1E".into())
+        );
+        assert!(title_echoes_opening(
+            FOLLO_BODY,
+            "The landing page change did most of the"
+        ));
+        assert!(title_echoes_opening(
+            FOLLO_BODY,
+            "Landing page change significantly"
+        ));
+        assert!(!title_echoes_opening(
+            FOLLO_BODY,
+            "Follo billing query D7CEC1E"
+        ));
     }
 
     #[test]
@@ -134,6 +300,7 @@ mod prompt_tests {
             "We should move the invoice review to Thursday so finance can close the books before Friday.",
             "Financial close"
         ));
+        assert!(title_is_grounded(FOLLO_BODY, "Follo billing query D7CEC1E"));
         assert!(!title_is_grounded("Park me", "The Power of the Sun"));
     }
 }
