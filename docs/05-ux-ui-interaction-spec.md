@@ -71,7 +71,7 @@ Core panel defaults, user-remappable where marked:
 | Action | Default | Notes |
 | --- | --- | --- |
 | Summon/hide | `⌥Space` | `app.togglePanel`; global; persist/register before commit |
-| Capture selection | Shift double-tap (either side; 250/400 ms) | `capture.selection`; only live event-tap chord; menu Capture remains |
+| Capture selection | Shift double-tap (either side; 250/400 ms; `tapCount` 2) | `capture.selection`; live event-tap is Shift N-tap from the saved binding; non-Shift remaps disable that engine; menu Capture remains |
 | New note | `⌘N` | `capture.newNote`; app-local |
 | Add composer | `⌘Enter` | never fires during IME composition |
 | Copy selected/focused | `⌘C` | `queue.copy`; native text selection wins when editor focused |
