@@ -2,6 +2,7 @@ import {
   applyHandTestLocale,
   catalogMessage,
   emitUiLocaleChanged,
+  LOCALE_APPLIED_EVENT,
 } from "./apply-locale.mjs";
 import { runBusy } from "./control.mjs";
 import { sourceIconSrc } from "./item-view.mjs";
@@ -297,6 +298,159 @@ export function applySettingsSearch(root, rawQuery) {
   }
 }
 
+const EXPORT_CATEGORY_FALLBACK = {
+  general: "General",
+  capture: "Capture",
+  panel: "Panel",
+  copy: "Copy",
+  privacy: "Privacy",
+  data: "Data",
+  accessibility: "Accessibility",
+  shortcuts: "Shortcuts",
+  profiles: "Profiles",
+};
+
+const EXPORT_SENSITIVE_KEYS = {
+  "privacy.excludedBundleIds": "settings.export.key.excludedApps",
+  "privacy.appPolicies": "settings.export.key.appPolicies",
+  "capture.standardChord": "settings.export.key.captureShortcut",
+  "copy.defaultProfileId": "settings.export.key.defaultProfile",
+};
+
+const EXPORT_SENSITIVE_FALLBACK = {
+  "settings.export.key.excludedApps": "Excluded apps",
+  "settings.export.key.appPolicies": "App policies",
+  "settings.export.key.captureShortcut": "Capture shortcut",
+  "settings.export.key.defaultProfile": "Default profile",
+  "settings.export.key.customShortcut": "Custom shortcut",
+  "settings.export.key.profileLiterals": "Profile literals",
+};
+
+const EXPORT_FAILURE_KEYS = {
+  picker_unavailable: "settings.export.unavailable",
+  settings_invalid: "settings.export.invalid",
+  settings_import_not_json: "settings.export.invalid",
+  settings_path_invalid: "settings.export.invalid",
+  settings_forbidden: "settings.export.forbidden",
+  settings_wrong_format: "settings.export.wrongFormat",
+  settings_unknown_version: "settings.export.unknownVersion",
+  settings_import_too_large: "settings.export.invalid",
+  webview_path_rejected: "settings.export.invalid",
+};
+
+export function settingsExportFailureCode(error) {
+  const text =
+    typeof error === "string" ? error : String(error?.message ?? error ?? "");
+  if (!text || text.includes("picker_cancelled")) {
+    return "";
+  }
+  for (const code of Object.keys(EXPORT_FAILURE_KEYS)) {
+    if (text.includes(code)) {
+      return code;
+    }
+  }
+  return "settings_invalid";
+}
+
+export function exportCategoryLabel(id) {
+  if (id === "shortcuts") {
+    return (
+      catalogMessage("settings.shortcuts.title") ||
+      EXPORT_CATEGORY_FALLBACK.shortcuts
+    );
+  }
+  if (id === "profiles") {
+    return (
+      catalogMessage("settings.export.category.profiles") ||
+      EXPORT_CATEGORY_FALLBACK.profiles
+    );
+  }
+  return (
+    catalogMessage(`settings.group.${id}`) || EXPORT_CATEGORY_FALLBACK[id] || id
+  );
+}
+
+export function exportSensitiveLabel(key) {
+  const mapped = EXPORT_SENSITIVE_KEYS[key];
+  if (mapped) {
+    return catalogMessage(mapped) || EXPORT_SENSITIVE_FALLBACK[mapped] || key;
+  }
+  if (String(key).startsWith("shortcuts.")) {
+    return (
+      catalogMessage("settings.export.key.customShortcut") ||
+      EXPORT_SENSITIVE_FALLBACK["settings.export.key.customShortcut"]
+    );
+  }
+  if (String(key).startsWith("profiles.")) {
+    return (
+      catalogMessage("settings.export.key.profileLiterals") ||
+      EXPORT_SENSITIVE_FALLBACK["settings.export.key.profileLiterals"]
+    );
+  }
+  return key;
+}
+
+export function renderExportPreview(root, preview) {
+  const included = root.querySelector("[data-export-included]");
+  const sensitive = root.querySelector("[data-export-sensitive-list]");
+  if (included) {
+    included.replaceChildren();
+    const categories = [
+      ...new Set(
+        (preview?.includedCategories ?? []).map((id) =>
+          exportCategoryLabel(id),
+        ),
+      ),
+    ].filter(Boolean);
+    for (const label of categories) {
+      const item = globalThis.document.createElement("li");
+      item.textContent = label;
+      included.append(item);
+    }
+  }
+  if (sensitive) {
+    sensitive.replaceChildren();
+    const labels = [
+      ...new Set(
+        (preview?.sensitiveLiteralKeys ?? []).map((key) =>
+          exportSensitiveLabel(key),
+        ),
+      ),
+    ].filter(Boolean);
+    if (labels.length === 0) {
+      const item = globalThis.document.createElement("li");
+      item.textContent =
+        catalogMessage("settings.export.emptySensitive") ||
+        "No extra user-entered literals in this file.";
+      sensitive.append(item);
+      return;
+    }
+    for (const label of labels) {
+      const item = globalThis.document.createElement("li");
+      item.textContent = label;
+      sensitive.append(item);
+    }
+  }
+}
+
+function showExportStatus(root, key) {
+  const status = root.querySelector("[data-export-status]");
+  if (!status) {
+    return;
+  }
+  if (!key) {
+    status.textContent = "";
+    return;
+  }
+  status.textContent =
+    catalogMessage(key) ||
+    (key === "settings.export.done"
+      ? "Exported"
+      : key === "settings.import.done"
+        ? "Imported"
+        : "That settings file is not valid.");
+}
+
 export function applySettingsForm(root, settings) {
   const schedule = root.querySelector("#backup-schedule");
   const locale = root.querySelector("#ui-locale");
@@ -432,10 +586,66 @@ export async function bindSettingsLive(
     await applySavedLocale(root, settings, invokeFn);
     await refreshExcludedIcons(root, invokeFn);
     await refreshShortcuts?.();
+    await refreshExportPreview();
     if (settings?.general?.locale !== before) {
       await emitUiLocaleChanged({ locale: settings.general.locale });
     }
   }
+
+  async function refreshExportPreview() {
+    try {
+      const preview = await invokeFn("preview_settings_export");
+      renderExportPreview(root, preview);
+    } catch {
+      renderExportPreview(root, {
+        includedCategories: [],
+        sensitiveLiteralKeys: [],
+      });
+    }
+  }
+
+  const exportButton = root.querySelector("[data-export-settings]");
+  exportButton?.addEventListener("click", () => {
+    runBusy(exportButton, async () => {
+      try {
+        await invokeFn("export_settings_file", { requestedPath: null });
+        showExportStatus(root, "settings.export.done");
+        await refreshExportPreview();
+      } catch (error) {
+        const code = settingsExportFailureCode(error);
+        showExportStatus(root, code ? EXPORT_FAILURE_KEYS[code] : "");
+      }
+    });
+  });
+
+  const importButton = root.querySelector("[data-import-settings]");
+  importButton?.addEventListener("click", () => {
+    runBusy(importButton, async () => {
+      try {
+        const before = settings?.general?.locale;
+        settings = await invokeFn("import_settings_file", {
+          requestedPath: null,
+        });
+        applySettingsForm(root, settings);
+        await applySavedLocale(root, settings, invokeFn);
+        await refreshExcludedIcons(root, invokeFn);
+        await refreshShortcuts?.();
+        await refreshExportPreview();
+        showExportStatus(root, "settings.import.done");
+        if (settings?.general?.locale !== before) {
+          await emitUiLocaleChanged({ locale: settings.general.locale });
+        }
+      } catch (error) {
+        const code = settingsExportFailureCode(error);
+        showExportStatus(root, code ? EXPORT_FAILURE_KEYS[code] : "");
+      }
+    });
+  });
+
+  root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
+    refreshExportPreview().catch(() => {});
+  });
+  await refreshExportPreview();
 
   root.querySelector("#backup-schedule")?.addEventListener("change", persist);
   root.querySelector("#ui-locale")?.addEventListener("change", persist);
@@ -449,6 +659,7 @@ export async function bindSettingsLive(
         await applySavedLocale(root, settings, invokeFn);
         await refreshExcludedIcons(root, invokeFn);
         await refreshShortcuts?.();
+        await refreshExportPreview();
         if (settings?.general?.locale !== before) {
           await emitUiLocaleChanged({ locale: settings.general.locale });
         }
@@ -464,6 +675,7 @@ export async function bindSettingsLive(
       await applySavedLocale(root, settings, invokeFn);
       await refreshExcludedIcons(root, invokeFn);
       await refreshShortcuts?.();
+      await refreshExportPreview();
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }
@@ -477,6 +689,7 @@ export async function bindSettingsLive(
       await applySavedLocale(root, settings, invokeFn);
       await refreshExcludedIcons(root, invokeFn);
       await refreshShortcuts?.();
+      await refreshExportPreview();
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }

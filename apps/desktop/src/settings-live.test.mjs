@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import {
   applySettingsForm,
   applySettingsSearch,
+  exportCategoryLabel,
+  exportSensitiveLabel,
   filterInstalledApps,
   isSafeBundleId,
   isSafeDisplayName,
@@ -13,7 +15,9 @@ import {
   pickExcludedApp,
   pickerFailureCode,
   readExcludedBundleIds,
+  renderExportPreview,
   resolveExcludedApps,
+  settingsExportFailureCode,
   settingsSearchNeedle,
   settingsUnitHaystack,
   switcherLocale,
@@ -104,6 +108,108 @@ test("excluded app picker searches installed apps and keeps many ids", () => {
   assert.equal(pickerFailureCode("picker_cancelled"), "picker_cancelled");
   assert.equal(pickerFailureCode("picker_unavailable"), "picker_unavailable");
   assert.equal(pickerFailureCode("nope"), "invalid_app");
+  assert.match(live, /preview_settings_export/);
+  assert.match(live, /export_settings_file/);
+  assert.match(live, /import_settings_file/);
+  assert.match(live, /requestedPath: null/);
+  assert.doesNotMatch(live, /export_library_archive/);
+  assert.doesNotMatch(live, /import_library_archive/);
+  assert.equal(settingsExportFailureCode("picker_cancelled"), "");
+  assert.equal(
+    settingsExportFailureCode("picker_unavailable"),
+    "picker_unavailable",
+  );
+  assert.equal(
+    settingsExportFailureCode(new Error("settings_wrong_format")),
+    "settings_wrong_format",
+  );
+  assert.equal(settingsExportFailureCode("nope"), "settings_invalid");
+  assert.equal(exportCategoryLabel("shortcuts"), "Shortcuts");
+  assert.equal(exportCategoryLabel("profiles"), "Profiles");
+  assert.equal(exportCategoryLabel("privacy"), "Privacy");
+  assert.equal(
+    exportSensitiveLabel("privacy.excludedBundleIds"),
+    "Excluded apps",
+  );
+  assert.equal(
+    exportSensitiveLabel("shortcuts.queue.search"),
+    "Custom shortcut",
+  );
+  assert.equal(
+    exportSensitiveLabel("profiles.custom-prompt.name"),
+    "Profile literals",
+  );
+});
+
+test("export preview lists included categories and sensitive leftovers", () => {
+  const included = {
+    children: [],
+    replaceChildren(...nodes) {
+      this.children = nodes;
+    },
+    append(node) {
+      this.children.push(node);
+    },
+  };
+  const sensitive = {
+    children: [],
+    replaceChildren(...nodes) {
+      this.children = nodes;
+    },
+    append(node) {
+      this.children.push(node);
+    },
+  };
+  const root = {
+    querySelector(sel) {
+      if (sel === "[data-export-included]") {
+        return included;
+      }
+      if (sel === "[data-export-sensitive-list]") {
+        return sensitive;
+      }
+      return null;
+    },
+  };
+  const prevDoc = globalThis.document;
+  globalThis.document = {
+    createElement() {
+      return { textContent: "" };
+    },
+  };
+  try {
+    renderExportPreview(root, {
+      includedCategories: ["privacy", "shortcuts", "profiles"],
+      includedFields: ["privacy.excludedBundleIds", "shortcuts"],
+      sensitiveLiteralKeys: [
+        "privacy.excludedBundleIds",
+        "shortcuts.queue.search",
+        "profiles.custom-prompt.name",
+      ],
+    });
+    assert.deepEqual(
+      included.children.map((node) => node.textContent),
+      ["Privacy", "Shortcuts", "Profiles"],
+    );
+    assert.deepEqual(
+      sensitive.children.map((node) => node.textContent),
+      ["Excluded apps", "Custom shortcut", "Profile literals"],
+    );
+    renderExportPreview(root, {
+      includedCategories: ["data"],
+      sensitiveLiteralKeys: [],
+    });
+    assert.deepEqual(
+      included.children.map((node) => node.textContent),
+      ["Data"],
+    );
+    assert.deepEqual(
+      sensitive.children.map((node) => node.textContent),
+      ["No extra user-entered literals in this file."],
+    );
+  } finally {
+    globalThis.document = prevDoc;
+  }
 });
 
 test("finder pick adds a bundle without sending a path", async () => {

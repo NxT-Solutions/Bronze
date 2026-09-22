@@ -636,16 +636,39 @@
         >
           Export preview
         </h2>
-        <output data-export-preview>
+        <div data-export-preview>
+          <p class="muted" data-i18n="settings.export.included">
+            Included in this file
+          </p>
+          <ul data-export-included></ul>
           <p
             class="muted"
-            role="status"
             data-export-sensitive
             data-i18n="settings.export.sensitive"
           >
             User-entered literals may be sensitive
           </p>
-        </output>
+          <ul data-export-sensitive-list></ul>
+        </div>
+        <p class="muted" role="status" data-export-status></p>
+        <p class="settings-export-actions" data-settings-unit>
+          <button
+            type="button"
+            class="btn-primary"
+            data-export-settings
+            data-i18n="settings.export.action"
+          >
+            Export
+          </button>
+          <button
+            type="button"
+            class="btn-ghost"
+            data-import-settings
+            data-i18n="settings.import.action"
+          >
+            Import
+          </button>
+        </p>
       </section>
       <p class="help-launch" data-settings-section>
         <button

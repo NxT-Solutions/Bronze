@@ -31,7 +31,39 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.doesNotMatch(html, /value="off"/);
   assert.doesNotMatch(html, /value="manual"/);
   assert.match(html, /data-export-preview/);
+  assert.match(html, /data-export-included/);
+  assert.match(html, /data-export-sensitive-list/);
+  assert.match(html, /data-export-settings/);
+  assert.match(html, /data-import-settings/);
+  assert.match(html, /class="btn-primary"/);
+  assert.match(html, /data-i18n="settings.export.action"/);
+  assert.match(html, /data-i18n="settings.import.action"/);
+  assert.match(html, />\s*Export\s*</);
+  assert.match(html, />\s*Import\s*</);
+  assert.match(html, /Included in this file/);
+  assert.equal(en["settings.export.action"], "Export");
+  assert.equal(en["settings.import.action"], "Import");
+  assert.equal(en["settings.export.included"], "Included in this file");
+  assert.equal(en["settings.export.preview"], "Export preview");
+  assert.equal(
+    en["settings.export.sensitive"],
+    "User-entered literals may be sensitive",
+  );
+  assert.equal(en["settings.export.done"], "Exported");
+  assert.equal(en["settings.import.done"], "Imported");
+  assert.equal(
+    en["settings.export.emptySensitive"],
+    "No extra user-entered literals in this file.",
+  );
+  assert.equal(en["settings.export.key.excludedApps"], "Excluded apps");
+  assert.equal(en["settings.export.key.appPolicies"], "App policies");
+  assert.equal(en["settings.export.key.customShortcut"], "Custom shortcut");
+  assert.equal(en["settings.export.key.profileLiterals"], "Profile literals");
+  assert.match(html, /class="btn-ghost"\s+data-import-settings/);
+  assert.match(html, /data-export-status/);
+  assert.doesNotMatch(html, /<output data-export-preview>/);
   assert.doesNotMatch(html, /permissionToken|installIdentity|\/Users\//);
+  assert.equal((html.match(/class="btn-primary"/g) || []).length, 1);
   assert.equal(en["settings.title"], "Settings");
   assert.equal(en["settings.backup.daily"], "Daily");
   assert.equal(en["settings.backup.weekly"], "Weekly");
