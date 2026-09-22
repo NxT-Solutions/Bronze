@@ -20,11 +20,15 @@ const xa = JSON.parse(
   ),
 );
 
-test("320 CSS px reflow keeps one-axis scroll, wrapping icon row, and composer", () => {
+test("320 CSS px reflow keeps one-axis scroll, icon row beside Copy, and composer", () => {
   assert.match(chrome, /overflow-x:\s*hidden/);
   assert.match(chrome, /flex-wrap:\s*wrap/);
   assert.match(chrome, /#quick-panel[\s\S]*?flex-wrap:\s*nowrap/);
-  assert.match(chrome, /\.row-action-icons[\s\S]*flex-wrap:\s*wrap/);
+  const iconsRule = chrome.match(/\.row-action-icons\s*\{[^}]+\}/);
+  assert.ok(iconsRule, "queue card icon row rule");
+  assert.match(iconsRule[0], /flex-wrap:\s*nowrap/);
+  assert.doesNotMatch(iconsRule[0], /flex:\s*1 0 100%/);
+  assert.match(html, /data-queue-action="copy"[\s\S]*data-slot="action-icons"/);
   assert.match(chrome, /word-break:\s*normal/);
   assert.match(chrome, /white-space:\s*nowrap/);
   assert.doesNotMatch(chrome, /word-break:\s*break-all/);

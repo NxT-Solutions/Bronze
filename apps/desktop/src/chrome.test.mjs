@@ -82,7 +82,24 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /button\.btn-primary\[aria-busy="true"\][\s\S]*--primary-foreground/,
   );
-  assert.match(chrome, /\.row-action-icons[\s\S]*flex-wrap:\s*wrap/);
+  const rowActionsRule = chrome.match(/\.row-actions\s*\{[^}]+\}/);
+  assert.ok(rowActionsRule, "queue card action row rule");
+  assert.match(rowActionsRule[0], /flex-wrap:\s*nowrap/);
+  assert.match(rowActionsRule[0], /align-items:\s*center/);
+  assert.match(
+    chrome,
+    /\.row-actions > \.btn-primary\s*\{[\s\S]*?flex:\s*0 0 auto/,
+  );
+  const iconsRule = chrome.match(/\.row-action-icons\s*\{[^}]+\}/);
+  assert.ok(iconsRule, "queue card icon row rule");
+  assert.match(iconsRule[0], /flex-wrap:\s*nowrap/);
+  assert.match(iconsRule[0], /flex:\s*0 1 auto/);
+  assert.doesNotMatch(iconsRule[0], /width:\s*100%/);
+  assert.doesNotMatch(iconsRule[0], /flex:\s*1 0 100%/);
+  assert.match(
+    pages[0].html,
+    /data-queue-action="copy"[\s\S]*data-slot="action-icons"/,
+  );
   assert.match(
     chrome,
     /\.row-action-icons \.icon-tip[\s\S]*position:\s*absolute/,

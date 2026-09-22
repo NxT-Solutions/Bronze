@@ -921,12 +921,16 @@ article [data-slot="show-less"][hidden],
   position: relative;
   z-index: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   margin-block-start: var(--space-2);
   min-width: 0;
   overflow: visible;
+}
+
+.row-actions > .btn-primary {
+  flex: 0 0 auto;
 }
 
 .row-actions:has(.row-action-icons .btn-icon:hover),
@@ -1003,13 +1007,11 @@ article [data-slot="show-less"][hidden],
 
 .row-action-icons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.1rem;
-  flex: 1 0 100%;
-  width: 100%;
+  gap: var(--space-1);
+  flex: 0 1 auto;
   min-width: 0;
-  margin-block-start: 0.1rem;
 }
 
 .row-action-icons .icon-tip {
