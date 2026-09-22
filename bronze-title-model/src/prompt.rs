@@ -1,9 +1,13 @@
+use crate::tiers::TitleTier;
 use bronze_domain::clamp_title;
 
 pub const MAX_INPUT_CHARS: usize = 2048;
 pub const MAX_NEW_TOKENS: i32 = 16;
 pub const PROMPT_VERSION: &str = "v4";
 pub const SYSTEM_PROMPT: &str = "Summarize the selected text as a 5-8 word topic headline. Name the subject and the change or problem. Reuse concrete nouns already in the text, especially product names, commit ids, and metrics. Do not copy or clip the first sentence. Do not write Overview, Notes, or Text. Output only the headline. No Title: prefix, no quotes, no hyphen slugs, no trailing period.";
+pub const QWEN_CLOSER: &str =
+    "Topic headline. Start with a later noun or commit id from the text, not the opening words:";
+const SMOL_CLOSER: &str = "Topic headline for the whole selection (not the first sentence):";
 
 pub fn truncate_input(body: &str) -> String {
     let trimmed = body.trim();
@@ -14,10 +18,54 @@ pub fn truncate_input(body: &str) -> String {
 }
 
 pub fn format_prompt(body: &str) -> String {
+    format_prompt_for(TitleTier::Smol360, body)
+}
+
+pub fn format_prompt_for(tier: TitleTier, body: &str) -> String {
     let body = truncate_input(body);
+    let closer = match tier {
+        TitleTier::Qwen05 => QWEN_CLOSER,
+        _ => SMOL_CLOSER,
+    };
     format!(
-        "<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n<|im_start|>user\nSelected text:\n{body}\n\nTopic headline for the whole selection (not the first sentence):<|im_end|>\n<|im_start|>assistant\n"
+        "<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n<|im_start|>user\nSelected text:\n{body}\n\n{closer}<|im_end|>\n<|im_start|>assistant\n"
     )
+}
+
+pub fn take_generated_piece(raw: &mut String, piece: &str) -> bool {
+    let stripped = strip_chat_markup(piece);
+    if stripped.is_empty() {
+        return chat_stop_markup(piece) || !raw.is_empty();
+    }
+    let text = if raw.is_empty() {
+        stripped.trim_start_matches(['\n', '\r', ' ', '\t'])
+    } else {
+        stripped.as_str()
+    };
+    if text.is_empty() {
+        return false;
+    }
+    if let Some((head, _)) = text.split_once('\n') {
+        raw.push_str(head);
+        return true;
+    }
+    raw.push_str(text);
+    chat_stop_markup(piece)
+}
+
+pub fn raw_preview(raw: &str) -> String {
+    raw.chars().filter(|ch| !ch.is_control()).take(40).collect()
+}
+
+fn strip_chat_markup(piece: &str) -> String {
+    piece
+        .replace("<|im_end|>", "")
+        .replace("<|im_start|>", "")
+        .replace("<|endoftext|>", "")
+}
+
+fn chat_stop_markup(piece: &str) -> bool {
+    piece.contains("<|im_end|>") || piece.contains("<|endoftext|>")
 }
 
 pub fn clean_title(raw: &str) -> Option<String> {
@@ -288,6 +336,58 @@ mod prompt_tests {
             FOLLO_BODY,
             "Follo billing query D7CEC1E"
         ));
+    }
+
+    #[test]
+    fn qwen_prompt_asks_for_later_noun_not_opening_words() {
+        let prompt = format_prompt_for(TitleTier::Qwen05, FOLLO_BODY);
+        assert!(prompt.contains("<|im_start|>system"));
+        assert!(prompt.contains("<|im_start|>user"));
+        assert!(prompt.contains("<|im_start|>assistant\n"));
+        assert!(prompt.contains(QWEN_CLOSER));
+        assert!(prompt.contains("later noun or commit id"));
+        assert!(prompt.contains("not the opening words"));
+        assert!(prompt.contains(FOLLO_BODY));
+        assert!(!prompt.contains(SMOL_CLOSER));
+        let smol = format_prompt_for(TitleTier::Smol360, FOLLO_BODY);
+        assert!(smol.contains(SMOL_CLOSER));
+        assert!(!smol.contains(QWEN_CLOSER));
+    }
+
+    #[test]
+    fn leading_newline_does_not_empty_the_title() {
+        let mut raw = String::new();
+        assert!(!take_generated_piece(&mut raw, "\n"));
+        assert!(raw.is_empty());
+        assert!(!take_generated_piece(&mut raw, "Follo billing query"));
+        assert_eq!(raw, "Follo billing query");
+        assert!(take_generated_piece(&mut raw, " D7CEC1E\nmore"));
+        assert_eq!(raw, "Follo billing query D7CEC1E");
+    }
+
+    #[test]
+    fn chat_end_token_stops_without_being_kept() {
+        let mut raw = String::new();
+        assert!(take_generated_piece(&mut raw, "<|im_end|>"));
+        assert!(raw.is_empty());
+        assert!(!take_generated_piece(&mut raw, "Follo billing"));
+        assert!(take_generated_piece(&mut raw, "<|im_end|>"));
+        assert_eq!(raw, "Follo billing");
+        let mut mixed = String::new();
+        assert!(take_generated_piece(&mut mixed, "Follo billing<|im_end|>"));
+        assert_eq!(mixed, "Follo billing");
+    }
+
+    #[test]
+    fn raw_preview_is_short_and_strips_controls() {
+        let preview =
+            raw_preview("Landing page change impact on Follo billing investigation\nsecret");
+        assert_eq!(preview.chars().count(), 40);
+        assert!(!preview.contains('\n'));
+        assert_eq!(
+            raw_preview("Follo\u{0007} billing").as_str(),
+            "Follo billing"
+        );
     }
 
     #[test]

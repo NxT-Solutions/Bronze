@@ -40,10 +40,10 @@ Local stderr only. Lines start with `bronze-title:` and never include captured t
 
 Stages: `weights resolved source={bundle|override|env|vendor|workspace|exe|resources}`, `hash ok`, `model loaded`, `switch scheduled tier=`, `refine scheduled chars=N`, `refine attempted`, `refine generated`, `refine applied`. Those load stages also update `title_engine_status` / the `title-engine-status` event (`idle`, `loading`, `hashing`, `ready`, `missing`, `failed`).
 
-Fallback reasons: `missing_weights`, `bad_hash`, `unreadable`, `timeout`, `short_body`, `ungrounded`, `empty`, `stale_body`, `extractive`.
+Fallback reasons: `missing_weights`, `bad_hash`, `unreadable`, `timeout`, `short_body`, `ungrounded`, `first_sentence`, `empty`, `stale_body`, `extractive`. After a generate attempt that falls back, stderr also logs `fallback raw_len=N raw_preview=` with the first 40 characters of model output (controls stripped, never the capture body). `empty` means no usable cleaned text. `first_sentence` is a v4 opening-echo reject. `ungrounded` means no shared 3+ character term.
 
 In `tauri dev`, grep the cargo/tauri terminal for `bronze-title:`.
 
 ## Fallback
 
-Missing file, hash mismatch, timeout, empty output, load failure, extractive, a body already at most 40 characters, or a title that shares no 3+ character term with the body returns no refine. The stored `compact_title` stays. A leaked `Title:` prefix is stripped before clamp.
+Missing file, hash mismatch, timeout, empty output, first-sentence echo, load failure, extractive, a body already at most 40 characters, or a title that shares no 3+ character term with the body returns no refine. The stored `compact_title` stays. A leaked `Title:` prefix is stripped before clamp.

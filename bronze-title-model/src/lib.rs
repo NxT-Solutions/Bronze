@@ -7,11 +7,12 @@ mod tiers;
 mod weights;
 
 pub use infer::{
-    classify_weights_error, desired_tier, refine_outcome, refine_title, request_tier,
-    should_attempt_refine, warmup, FallbackReason, RefineOutcome,
+    classify_refine_reject, classify_weights_error, desired_tier, refine_outcome, refine_title,
+    request_tier, should_attempt_refine, warmup, FallbackReason, RefineOutcome,
 };
 pub use prompt::{
-    clean_title, format_prompt, title_is_grounded, MAX_INPUT_CHARS, MAX_NEW_TOKENS, PROMPT_VERSION,
+    clean_title, format_prompt, format_prompt_for, raw_preview, take_generated_piece,
+    title_echoes_opening, title_is_grounded, MAX_INPUT_CHARS, MAX_NEW_TOKENS, PROMPT_VERSION,
 };
 pub use status::{
     apply_diag, current_status, observe_diag, subscribe_status, EnginePhase, TitleEngineStatus,

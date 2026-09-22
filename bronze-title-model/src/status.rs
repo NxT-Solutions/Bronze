@@ -188,6 +188,18 @@ mod status_tests {
             apply_diag(ready, "refine attempted").phase,
             EnginePhase::Ready
         );
+        assert_eq!(
+            apply_diag(ready, "fallback reason=first_sentence").phase,
+            EnginePhase::Ready
+        );
+        assert_eq!(
+            apply_diag(ready, "fallback reason=empty").phase,
+            EnginePhase::Ready
+        );
+        assert_eq!(
+            apply_diag(ready, "fallback reason=ungrounded").phase,
+            EnginePhase::Ready
+        );
     }
 
     #[test]

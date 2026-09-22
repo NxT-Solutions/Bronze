@@ -1,5 +1,6 @@
 use crate::prompt::{
-    accept_refined_title, clean_title, format_prompt, title_is_grounded, MAX_NEW_TOKENS,
+    accept_refined_title, clean_title, format_prompt_for, raw_preview, take_generated_piece,
+    title_echoes_opening, title_is_grounded, MAX_NEW_TOKENS,
 };
 use crate::tiers::TitleTier;
 use crate::weights::{verified_weights_for, WeightsError};
@@ -27,6 +28,7 @@ pub enum FallbackReason {
     Timeout,
     ShortBody,
     Ungrounded,
+    FirstSentence,
     Empty,
     Extractive,
 }
@@ -40,6 +42,7 @@ impl FallbackReason {
             Self::Timeout => "timeout",
             Self::ShortBody => "short_body",
             Self::Ungrounded => "ungrounded",
+            Self::FirstSentence => "first_sentence",
             Self::Empty => "empty",
             Self::Extractive => "extractive",
         }
@@ -231,7 +234,8 @@ fn worker_loop(rx: Receiver<Job>) {
                     let _ = reply.send(InferReply::Fallback(FallbackReason::Unreadable));
                     continue;
                 };
-                let out = match infer_once(backend, model, &body) {
+                let loaded = state.loaded.unwrap_or(tier);
+                let out = match infer_once(backend, model, loaded, &body) {
                     Ok(title) => InferReply::Title(title),
                     Err(reason) => InferReply::Fallback(reason),
                 };
@@ -289,12 +293,30 @@ fn load_model(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackRe
     Ok(())
 }
 
+pub fn classify_refine_reject(body: &str, raw: &str) -> FallbackReason {
+    match clean_title(raw) {
+        None => FallbackReason::Empty,
+        Some(title) if !title_is_grounded(body, &title) => FallbackReason::Ungrounded,
+        Some(title) if title_echoes_opening(body, &title) => FallbackReason::FirstSentence,
+        Some(_) => FallbackReason::Empty,
+    }
+}
+
+fn emit_raw_preview(raw: &str) {
+    crate::emit_diag(&format!(
+        "fallback raw_len={} raw_preview={}",
+        raw.chars().count(),
+        raw_preview(raw)
+    ));
+}
+
 fn infer_once(
     backend: &LlamaBackend,
     model: &LlamaModel,
+    tier: TitleTier,
     body: &str,
 ) -> Result<String, FallbackReason> {
-    let prompt = format_prompt(body);
+    let prompt = format_prompt_for(tier, body);
     let ctx_params = LlamaContextParams::default()
         .with_n_ctx(NonZeroU32::new(1024))
         .with_n_threads(2)
@@ -331,21 +353,23 @@ fn infer_once(
         let piece = model
             .token_to_piece(token, &mut decoder, true, None)
             .map_err(|_| FallbackReason::Empty)?;
-        if piece.contains('\n') {
-            raw.push_str(piece.split('\n').next().unwrap_or(""));
+        if take_generated_piece(&mut raw, &piece) {
             break;
         }
-        raw.push_str(&piece);
         batch.clear();
         batch
             .add(token, start + offset, &[0], true)
             .map_err(|_| FallbackReason::Empty)?;
         ctx.decode(&mut batch).map_err(|_| FallbackReason::Empty)?;
     }
-    accept_refined_title(body, &raw).ok_or_else(|| match clean_title(&raw) {
-        Some(title) if !title_is_grounded(body, &title) => FallbackReason::Ungrounded,
-        _ => FallbackReason::Empty,
-    })
+    match accept_refined_title(body, &raw) {
+        Some(title) => Ok(title),
+        None => {
+            let reason = classify_refine_reject(body, &raw);
+            emit_raw_preview(&raw);
+            Err(reason)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -354,8 +378,14 @@ mod infer_tests {
 
     const LONG_BODY: &str = "Thanks for the note.\nThe migration timeout is the real bug in persist.\nPlease take a look when you can.";
 
+    fn hold_desired_tier() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: Mutex<()> = Mutex::new(());
+        LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
     #[test]
     fn missing_weights_records_reason_and_keeps_compact_title() {
+        let _guard = hold_desired_tier();
         request_tier(TitleTier::Qwen05);
         let missing = std::env::temp_dir().join("bronze-absent-title.gguf");
         let _ = std::fs::remove_file(&missing);
@@ -379,6 +409,7 @@ mod infer_tests {
 
     #[test]
     fn extractive_skips_gguf_and_switch_schedules_reload() {
+        let _guard = hold_desired_tier();
         request_tier(TitleTier::Extractive);
         assert_eq!(desired_tier(), TitleTier::Extractive);
         assert_eq!(
@@ -394,6 +425,7 @@ mod infer_tests {
 
     #[test]
     fn vendor_or_fixture_path_attempts_refine() {
+        let _guard = hold_desired_tier();
         request_tier(TitleTier::Smol360);
         let path = crate::weights::vendor_weights_path();
         let weights = crate::weights::verify_weights(&path);
@@ -436,8 +468,75 @@ mod infer_tests {
     }
 
     #[test]
+    fn reject_reasons_distinguish_empty_echo_and_ungrounded() {
+        const FOLLO: &str = "The landing page change did most of the work for the Follo billing investigation. Query performance impact from D7CEC1E versus the previous plan still needs a number before we sign off. Invoice review on Thursday is the remaining close item.";
+        assert_eq!(classify_refine_reject(FOLLO, ""), FallbackReason::Empty);
+        assert_eq!(
+            classify_refine_reject(FOLLO, "   \n"),
+            FallbackReason::Empty
+        );
+        assert_eq!(
+            classify_refine_reject(FOLLO, "Overview"),
+            FallbackReason::Empty
+        );
+        assert_eq!(
+            classify_refine_reject(FOLLO, "The landing page change did most of the"),
+            FallbackReason::FirstSentence
+        );
+        assert_eq!(
+            classify_refine_reject(FOLLO, "Landing page change significantly"),
+            FallbackReason::FirstSentence
+        );
+        assert_eq!(
+            classify_refine_reject(
+                FOLLO,
+                "Landing page change impact on Follo billing investigation"
+            ),
+            FallbackReason::FirstSentence
+        );
+        assert_eq!(
+            classify_refine_reject(FOLLO, "Quantum photon lattice"),
+            FallbackReason::Ungrounded
+        );
+        assert_eq!(
+            accept_refined_title(FOLLO, "Follo billing query D7CEC1E."),
+            Some("Follo billing query D7CEC1E".into())
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn spike_qwen_follo_raw() {
+        let _guard = hold_desired_tier();
+        request_tier(TitleTier::Qwen05);
+        if crate::weights::weights_present_for(TitleTier::Qwen05).is_err() {
+            eprintln!("bronze-title: spike skipped missing qwen weights");
+            return;
+        }
+        warmup();
+        std::thread::sleep(Duration::from_secs(2));
+        let samples = [
+            "The landing page change did most of the work for the Follo billing investigation. Query performance impact from D7CEC1E versus the previous plan still needs a number before we sign off. Invoice review on Thursday is the remaining close item.",
+            "Landing page change did most of the work for the Follo billing investigation. Query performance impact from D7CEC1E versus the previous plan still needs a number before we sign off. Invoice review on Thursday is the remaining close item. Finance still needs the D7CEC1E query count versus last week's plan before anyone signs the Follo close.",
+            "What actually did it change? A landing page change did most of the work: fewer queries fired per visit. The old v3 data source (d7cec1ec) has had zero queries since the fix. We should write down the response-size change after the config rollout before calling the Follo investigation done.",
+        ];
+        for body in samples {
+            let started = std::time::Instant::now();
+            let outcome = refine_outcome(body);
+            eprintln!(
+                "bronze-title: spike chars={} elapsed_ms={} outcome={:?} compact={:?}",
+                body.chars().count(),
+                started.elapsed().as_millis(),
+                outcome,
+                bronze_domain::compact_title(body)
+            );
+        }
+    }
+
+    #[test]
     #[ignore]
     fn spike_smollm2_title_quality() {
+        let _guard = hold_desired_tier();
         request_tier(TitleTier::Smol360);
         warmup();
         std::thread::sleep(Duration::from_secs(2));
