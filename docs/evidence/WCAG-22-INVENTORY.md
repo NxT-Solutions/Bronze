@@ -109,7 +109,7 @@ Results:
 | 2.2.5 Re-authenticating | N/A | No session. |
 | 2.2.6 Timeouts | N/A | No data-loss timeout. |
 | 2.3.2 Three Flashes | Supports | Nothing flashes. |
-| 2.3.3 Animation from Interactions | Supports | Reduce Motion / `data-reduce-motion`. |
+| 2.3.3 Animation from Interactions | Supports | Reduce Motion / `html[data-motion]` / `data-reduce-motion`. |
 | 2.4.8 Location | Partial | Window title plus Library `aria-current`. |
 | 2.4.9 Link Purpose (Link Only) | Supports | Authored links are self-describing. |
 | 2.4.10 Section Headings | Supports | Section `h2` on all four windows. |

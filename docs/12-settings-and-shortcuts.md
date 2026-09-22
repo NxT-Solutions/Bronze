@@ -54,6 +54,7 @@ type SettingsV1 = {
     showDockIcon: boolean
     locale: "system" | "en" | "nl" | "fr" | "de" | "es" | "it" | "en-XA" | "ar-XB"
     titleModel: "extractive" | "smol-135" | "smol-360" | "qwen-05"
+    reduceMotion: "system" | "on" | "off"
     startView: "last" | "activeSection" | "composer"
   }
   capture: {
@@ -105,7 +106,7 @@ type SettingsV1 = {
     appScale: number
     contrast: "system" | "more"
     differentiateWithoutColor: "system" | "always"
-    motion: "system" | "reduce"
+    motion: "system" | "on" | "off" // persist alias "reduce" maps to "on"; kept in sync with general.reduceMotion
     transparency: "system" | "reduce"
     sounds: boolean
     haptics: boolean
@@ -115,7 +116,7 @@ type SettingsV1 = {
 
 Internal safety ceilings (AX timeout, payload size) may be advanced-only or not user-facing. Never let configuration create unbounded waits/memory.
 
-Accessibility overrides are one-way strengthening. Effective Reduce Motion, Reduce Transparency, Increase Contrast, and Differentiate Without Color equal active macOS preference OR stronger Bronze override; no app setting may weaken system request. Native bridge observes display-option changes and updates settings previews and every app window live.
+Accessibility overrides for Increase Contrast, Reduce Transparency, and Differentiate Without Color are one-way strengthening: effective value equals the active macOS preference OR a stronger Bronze override. Native display-option bridge still only strengthens Reduce Motion. WebView motion is `SettingsV1.general.reduceMotion` (`system` | `on` | `off`, default `system`). `system` follows `matchMedia('(prefers-reduced-motion: reduce)')` plus a change listener. `on` always sets `document.documentElement.dataset.motion` to `reduce`. `off` always sets `full` so queue animations play even when macOS Reduce Motion is on (explicit Tools test override, not a silent weaken). Missing `general.reduceMotion` on load maps `accessibility.motion` (`system`, `reduce`, `on`, `off`). Persist copies `general.reduceMotion` onto `accessibility.motion`. Settings apply live; no restart. Persist broadcasts `ui-motion-changed`. Queue first load uses stored settings when `load_settings_v1` is allowed; otherwise it follows system media until that broadcast arrives. `chrome.css` gates with `html[data-motion="reduce"]` (no anim) and `html[data-motion="full"]` (anim). `@media (prefers-reduced-motion: reduce)` is first-paint fallback only and must not win over `data-motion=full`. Existing JS still honors `data-reduce-motion`.
 
 ## 3. Defaults
 
@@ -133,6 +134,7 @@ Shipped defaults:
 | launch at login | off | explicit consent |
 | UI locale | `system` (resolves to **en**) | Settings → General switcher persists en, nl, fr, de, es, or it; unknown tags reject on save; `system` and unknown effective tags map to en |
 | title engine | empty auto-picks among files already on disk; otherwise last persisted `general.titleModel` | extractive uses no GGUF; a change reloads the title worker for the next refine; Settings shows load status (`title-engine-status` / `title_engine_status`) |
+| reduce motion | `system` (follows this Mac) | play motion unless macOS Reduce Motion is on; Settings `on` always reduces; `off` always plays (Tools test) |
 | Dock icon | off/accessory | menu-bar utility; user can enable |
 | panel mode | summon | lowest intrusion |
 | display | frontmost app or pointer, decided by spike | align source context |
@@ -313,7 +315,7 @@ type OutputProfileV1 = {
 - search finds localized synonym and category;
 - reset field/group/all scope correct;
 - exported `bronze-settings` file has no machine paths, diagnostics, app credentials, permission tokens, or internal secrets; preview lists included categories plus user-entered sensitive literals/policies; import rejects WebView paths, `bronze-export` archives, unknown versions, and oversized files; rust-owned save/open panels are not invoked from cargo tests;
-- reduced motion/transparency/contrast/differentiate-without-color system change applies live and cannot be weakened by app override;
+- `general.reduceMotion` defaults to `system` and round-trips `on` / `off` / legacy `reduce`; unknown values reject; reset field returns `system`; export/import include the field; `system` follows `prefers-reduced-motion` live; `on` sets `data-motion=reduce`; `off` sets `data-motion=full` even when the OS requests reduce; Increase Contrast, Reduce Transparency, and Differentiate Without Color still cannot be weakened by app override;
 - locale/RTL switch persists `general.locale`, reapplies the WebView catalog and `html lang`/`dir`, keeps item bodies `lang="und" dir="auto"`, and labels switcher options with endonyms plus option `lang`; native app/status menus follow the persisted locale at launch only;
 - Title engine load status maps `switch scheduled` → loading, `weights resolved` / `hash ok` → hashing, `model loaded` → ready, extractive → idle, `missing_weights` → missing, and load fallbacks `bad_hash` / `timeout` / `unreadable` → failed; Settings shows spinner plus catalog Loading `{engine}` while loading or hashing, ready/loaded copy when ready, and vendor-command copy when missing; event `title-engine-status` and command `title_engine_status` stay Settings-only; capture never waits; focus stays on the select; Reduce Motion stops decorative spin; no WCAG or VoiceOver claim;
 - permission revoke updates state without restart where platform allows.

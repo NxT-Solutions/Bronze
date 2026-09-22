@@ -96,7 +96,7 @@ Each journey must pass keyboard-only, VoiceOver, Voice Control, and Switch Contr
 - Text spacing override does not clip or hide content.
 - Targets meet WCAG 2.2 2.5.8 AA 24×24 CSS px or valid spacing/exception; aim 44×44 where panel density permits.
 - Status never color-only. Icons include text/accessible state.
-- Respect `prefers-reduced-motion`, macOS Reduce Motion, Increase Contrast, Differentiate Without Color, and Reduce Transparency.
+- Respect `prefers-reduced-motion`, macOS Reduce Motion, `html[data-motion]`, Increase Contrast, Differentiate Without Color, and Reduce Transparency. `SettingsV1.general.reduceMotion` `system` follows the OS; `on` always reduces; `off` is the explicit Tools override that sets `data-motion=full`.
 - Opaque fallback guarantees contrast; blur/vibrancy optional.
 - No flashing content or motion needed to understand/reorder.
 
@@ -109,7 +109,7 @@ Each journey must pass keyboard-only, VoiceOver, Voice Control, and Switch Contr
 - App must not suppress platform accessibility services, custom focus, or selection.
 - Use Accessibility Inspector to inspect both WebView and native surfaces.
 - Validate announcement timing: native focus change and WebView live region should not double-speak.
-- Native display bridge reads Reduce Motion, Reduce Transparency, Increase Contrast, and Differentiate Without Color from `NSWorkspace`, observes [`accessibilityDisplayOptionsDidChangeNotification`](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayoptionsdidchangenotification), and updates every visible/hidden window. App overrides may only strengthen active system preferences.
+- Native display bridge reads Reduce Motion, Reduce Transparency, Increase Contrast, and Differentiate Without Color from `NSWorkspace`, observes [`accessibilityDisplayOptionsDidChangeNotification`](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayoptionsdidchangenotification), and updates every visible/hidden window. App overrides for contrast, transparency, and differentiate-without-color may only strengthen active system preferences. WebView `general.reduceMotion=off` is the explicit exception that plays motion when the OS requests reduce.
 
 ## 8. Automated gates
 
