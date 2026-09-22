@@ -17,10 +17,11 @@ use bronze_domain::{
     default_output_profile, ComposerChord, OutputFormat, OutputProfile, PostCopyAction,
 };
 use bronze_settings::{
-    default_shortcut_binding, is_default_binding, logical_key_allowed, search_settings,
-    shortcut_scope, skip_test_marks_untested, CaptureAlternatives, Modifier, NativeRegistrar,
-    RegisterError, SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, ShortcutRegistry,
-    ShortcutScope, TestedState, TriggerKind,
+    apply_recorded_double_tap_timing, default_shortcut_binding, is_default_binding,
+    logical_key_allowed, recorded_double_tap_allowed, search_settings, shortcut_scope,
+    skip_test_marks_untested, CaptureAlternatives, Modifier, NativeRegistrar, RegisterError,
+    SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, ShortcutRegistry, ShortcutScope,
+    TestedState, TriggerKind,
 };
 use bronze_storage::{
     ComposerDraft, ImportStrategy, NoopBackup, Overwrite, PathLocator, QueueAction, QueueItemRow,
@@ -333,26 +334,16 @@ impl NativeRegistrar for SessionRegistrar {
         if !binding.enabled || binding.trigger == TriggerKind::Disabled {
             return Ok(());
         }
-        match shortcut_scope(binding.action) {
-            ShortcutScope::AppLocal => {
-                if binding.trigger != TriggerKind::Accelerator {
-                    return Err(RegisterError::NativeRejected);
+        match binding.trigger {
+            TriggerKind::Disabled => Ok(()),
+            TriggerKind::Accelerator => logical_key_ok(binding),
+            TriggerKind::ModifierDoubleTap => {
+                if recorded_double_tap_allowed(binding) {
+                    Ok(())
+                } else {
+                    Err(RegisterError::NativeRejected)
                 }
-                logical_key_ok(binding)
             }
-            ShortcutScope::Global => match binding.trigger {
-                TriggerKind::ModifierDoubleTap => {
-                    if binding.action == ShortcutActionId::CaptureSelection
-                        && binding.modifiers == [Modifier::Shift]
-                    {
-                        Ok(())
-                    } else {
-                        Err(RegisterError::NativeRejected)
-                    }
-                }
-                TriggerKind::Accelerator => logical_key_ok(binding),
-                TriggerKind::Disabled => Ok(()),
-            },
         }
     }
 }
@@ -1004,11 +995,7 @@ fn binding_from_record(
     binding.logical_key = input.logical_key.clone();
     binding.enabled = trigger != TriggerKind::Disabled;
     binding.revision = revision;
-    if trigger != TriggerKind::ModifierDoubleTap {
-        binding.gap_ms = None;
-        binding.max_hold_ms = None;
-        binding.modifier_side = None;
-    }
+    apply_recorded_double_tap_timing(&mut binding);
     Ok(binding)
 }
 
@@ -1548,6 +1535,89 @@ mod live_session_tests {
         session.reset_field("general.locale").expect("reset");
         assert_eq!(session.ui_locale(), "en");
         assert!(session.ui_catalog().catalog_available);
+    }
+
+    #[test]
+    fn record_shortcut_accepts_modifier_double_tap_and_rejects_duplicate() {
+        let mut session = open_session();
+        assert_eq!(
+            session
+                .record_shortcut(ShortcutRecordInput {
+                    action: "queue.search".into(),
+                    trigger: "modifier_double_tap".into(),
+                    modifiers: vec!["Shift".into()],
+                    logical_key: None,
+                    skip_test: true,
+                })
+                .unwrap_err(),
+            "shortcut_duplicate"
+        );
+        let option_rows = session
+            .record_shortcut(ShortcutRecordInput {
+                action: "queue.search".into(),
+                trigger: "modifier_double_tap".into(),
+                modifiers: vec!["Option".into()],
+                logical_key: Some("o".into()),
+                skip_test: true,
+            })
+            .expect("option double-tap");
+        let search = option_rows
+            .iter()
+            .find(|row| row.action == "queue.search")
+            .expect("search");
+        assert_eq!(search.trigger, "modifier_double_tap");
+        assert_eq!(search.modifiers, vec!["Option".to_string()]);
+        assert_eq!(search.logical_key, None);
+        assert!(!search.is_default);
+        assert_eq!(
+            session
+                .record_shortcut(ShortcutRecordInput {
+                    action: "app.togglePanel".into(),
+                    trigger: "modifier_double_tap".into(),
+                    modifiers: vec!["Option".into()],
+                    logical_key: None,
+                    skip_test: true,
+                })
+                .unwrap_err(),
+            "shortcut_duplicate"
+        );
+        session
+            .record_shortcut(ShortcutRecordInput {
+                action: "capture.selection".into(),
+                trigger: "accelerator".into(),
+                modifiers: vec!["Command".into()],
+                logical_key: Some("k".into()),
+                skip_test: true,
+            })
+            .expect("move capture off shift double-tap");
+        let shift_rows = session
+            .record_shortcut(ShortcutRecordInput {
+                action: "queue.complete".into(),
+                trigger: "modifier_double_tap".into(),
+                modifiers: vec!["Shift".into()],
+                logical_key: None,
+                skip_test: true,
+            })
+            .expect("shift double-tap on complete");
+        let complete = shift_rows
+            .iter()
+            .find(|row| row.action == "queue.complete")
+            .expect("complete");
+        assert_eq!(complete.trigger, "modifier_double_tap");
+        assert_eq!(complete.modifiers, vec!["Shift".to_string()]);
+        assert!(!complete.is_default);
+        assert_eq!(
+            session
+                .record_shortcut(ShortcutRecordInput {
+                    action: "queue.edit".into(),
+                    trigger: "modifier_double_tap".into(),
+                    modifiers: Vec::new(),
+                    logical_key: None,
+                    skip_test: true,
+                })
+                .unwrap_err(),
+            "shortcut_rejected"
+        );
     }
 
     #[test]

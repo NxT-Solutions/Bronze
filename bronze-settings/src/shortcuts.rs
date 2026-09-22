@@ -1,7 +1,8 @@
 //! Shortcut registry and recorder policy (story 7.2, SET-002, CAP-001, CAP-002).
 
 use crate::schema::{
-    KeyMode, Modifier, ShortcutActionId, ShortcutBinding, TestedState, TriggerKind, SCHEMA_VERSION,
+    KeyMode, Modifier, ModifierSide, ShortcutActionId, ShortcutBinding, TestedState, TriggerKind,
+    DEFAULT_GAP_MS, DEFAULT_MAX_HOLD_MS, SCHEMA_VERSION,
 };
 use std::collections::BTreeMap;
 
@@ -58,6 +59,34 @@ pub fn default_shortcut_binding(action: ShortcutActionId) -> ShortcutBinding {
 pub fn is_default_binding(binding: &ShortcutBinding) -> bool {
     let default = default_shortcut_binding(binding.action);
     same_assigned_chord(binding, &default) && binding.enabled == default.enabled
+}
+
+pub fn apply_recorded_double_tap_timing(binding: &mut ShortcutBinding) {
+    if binding.trigger != TriggerKind::ModifierDoubleTap {
+        binding.gap_ms = None;
+        binding.max_hold_ms = None;
+        binding.modifier_side = None;
+        return;
+    }
+    binding.logical_key = None;
+    binding.key_mode = None;
+    binding.physical_code = None;
+    if binding.gap_ms.is_none() {
+        binding.gap_ms = Some(DEFAULT_GAP_MS);
+    }
+    if binding.max_hold_ms.is_none() {
+        binding.max_hold_ms = Some(DEFAULT_MAX_HOLD_MS);
+    }
+    if binding.modifier_side.is_none() {
+        binding.modifier_side = Some(ModifierSide::Either);
+    }
+}
+
+pub fn recorded_double_tap_allowed(binding: &ShortcutBinding) -> bool {
+    binding.trigger == TriggerKind::ModifierDoubleTap
+        && binding.enabled
+        && binding.logical_key.is_none()
+        && binding.modifiers.len() == 1
 }
 
 fn accelerator(action: ShortcutActionId, modifiers: Vec<Modifier>, key: &str) -> ShortcutBinding {
@@ -542,5 +571,27 @@ mod shortcuts_tests {
         assert!(is_default_binding(
             custom.get(ShortcutActionId::QueueSearch)
         ));
+    }
+
+    #[test]
+    fn recorded_double_tap_fills_default_timing_and_rejects_empty_modifiers() {
+        let mut binding = default_shortcut_binding(ShortcutActionId::QueueSearch);
+        binding.trigger = TriggerKind::ModifierDoubleTap;
+        binding.modifiers = vec![Modifier::Option];
+        binding.logical_key = Some("o".into());
+        apply_recorded_double_tap_timing(&mut binding);
+        assert_eq!(binding.logical_key, None);
+        assert_eq!(binding.gap_ms, Some(DEFAULT_GAP_MS));
+        assert_eq!(binding.max_hold_ms, Some(DEFAULT_MAX_HOLD_MS));
+        assert_eq!(binding.modifier_side, Some(ModifierSide::Either));
+        assert!(recorded_double_tap_allowed(&binding));
+        binding.modifiers.clear();
+        assert!(!recorded_double_tap_allowed(&binding));
+        let mut accelerator = default_shortcut_binding(ShortcutActionId::CaptureSelection);
+        accelerator.trigger = TriggerKind::Accelerator;
+        apply_recorded_double_tap_timing(&mut accelerator);
+        assert_eq!(accelerator.gap_ms, None);
+        assert_eq!(accelerator.max_hold_ms, None);
+        assert_eq!(accelerator.modifier_side, None);
     }
 }
