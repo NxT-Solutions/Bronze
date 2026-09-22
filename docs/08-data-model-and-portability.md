@@ -231,6 +231,7 @@ Rules:
 - UTF-8, LF, sorted keys where defined, arrays in semantic order, RFC 3339 UTC. Every exported item preserves `contentLanguage` as canonical BCP 47 or `und`.
 - No machine-specific absolute path, PID, permission database entry/token, app credential, diagnostic payload, or internal secret. Export necessarily contains selected/user-authored item content and enabled provenance, which may themselves contain user secrets; preview and warning state this before write.
 - Settings export includes safe user preferences; excludes install identity and ephemeral state.
+- Settings file export is a distinct document from this queue archive. `format` is `bronze-settings` (not `bronze-export`). The Settings window writes/reads that file through rust-owned save/open panels (`export_settings_file` / `import_settings_file`). Library archive commands stay archive-only. A settings file that claims `bronze-export`, includes credentials, permission tokens, diagnostics, or machine paths, or arrives as a WebView path is rejected (SET-001, SEC-003). Preview of a pending settings write lists included categories and leftover user-entered literals (excluded apps, app policies, custom shortcuts, profile literals) without sending raw payload or filesystem paths to the WebView.
 - Markdown filenames collision-proof by ID; links relative; front matter schema versioned.
 - Write staging directory, fsync/verify checksums, then atomic rename. Existing path requires explicit Replace or new name.
 

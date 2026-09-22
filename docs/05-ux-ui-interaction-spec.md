@@ -139,7 +139,7 @@ Every control has label, short description, current/default value, and reset act
 - clearing data identifies exact counts and recovery window;
 - changing UI language persists `SettingsV1.general.locale` (en, nl, fr, de, es, it) and applies the catalog live in open WebViews, including `html lang`/`dir`. Language options use endonyms with `lang` on each option. Item bodies stay `lang="und" dir="auto"` and are never relabeled. Native app and status menus follow the persisted locale at launch; a live switch does not rebuild the app menu. User content, focus, and the active task stay put.
 
-Exported settings always exclude app credentials, permission tokens, diagnostic events, and machine paths. Diagnostics use separate previewed support-bundle flow. Export preview identifies user-entered profile literals, excluded-app policies, and shortcuts that may themselves be sensitive.
+Exported settings always exclude app credentials, permission tokens, diagnostic events, and machine paths. Diagnostics use separate previewed support-bundle flow. The Settings Export preview card is a live preview of the pending file: it lists included categories, then names leftover user-entered profile literals, excluded-app policies, and custom shortcuts that may themselves be sensitive. Export is the one filled primary on Settings; Import is ghost; Help stays ghost trailing. Both actions open a rust-owned save/open panel. The WebView never supplies a filesystem path. Status after write/read is Exported or Imported (or a catalog failure), not a machine path. This file is not the Library archive.
 
 ## 10. Responsive behavior
 

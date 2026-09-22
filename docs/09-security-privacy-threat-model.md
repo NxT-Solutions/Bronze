@@ -98,6 +98,7 @@ Follow [Tauri security model](https://v2.tauri.app/security/), [capabilities](ht
 - DB directory 0700 and files 0600 where supported; use protected container/Application Support per ADR.
 - Rust derives owned paths from internal IDs; WebView never supplies raw asset path.
 - Native file picker returns operation-scoped token tied to user selection.
+- Settings export/import pickers are rust-owned (`NSSavePanel` / `NSOpenPanel` on the AppKit thread, never from the event-tap callback). Commands reject any WebView `requestedPath` (SEC-003). Import caps the file at 1 MiB, requires `bronze-settings` JSON, and strips/rejects credentials, permission tokens, diagnostics, and machine paths (SET-001). The preview DTO sent to Settings lists category/field keys and sensitive leftover keys only — not the raw payload or a filesystem path.
 - Exports use atomic new output and do not overwrite without explicit selection.
 - Backups inherit same protections; exported files are user-controlled and warning explains they may be unencrypted.
 - P0 does not add custom encryption key management. FileVault is recommended for at-rest device protection. App-level encryption requires separate key-recovery/threat-model ADR.
