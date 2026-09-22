@@ -125,6 +125,14 @@ export const MessageIds = {
   "settings.shortcuts.unassigned": "settings.shortcuts.unassigned",
   "settings.shortcuts.chord.shiftDoubleTap":
     "settings.shortcuts.chord.shiftDoubleTap",
+  "settings.shortcuts.chord.optionDoubleTap":
+    "settings.shortcuts.chord.optionDoubleTap",
+  "settings.shortcuts.chord.commandDoubleTap":
+    "settings.shortcuts.chord.commandDoubleTap",
+  "settings.shortcuts.chord.controlDoubleTap":
+    "settings.shortcuts.chord.controlDoubleTap",
+  "settings.shortcuts.chord.fnDoubleTap":
+    "settings.shortcuts.chord.fnDoubleTap",
   "settings.shortcuts.key.space": "settings.shortcuts.key.space",
   "settings.shortcuts.key.enter": "settings.shortcuts.key.enter",
   "settings.shortcuts.key.arrowUp": "settings.shortcuts.key.arrowUp",

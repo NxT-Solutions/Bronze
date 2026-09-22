@@ -171,14 +171,87 @@ export function formatShortcutKey(logicalKey, catalog = {}) {
   return logicalKey.length === 1 ? logicalKey.toUpperCase() : logicalKey;
 }
 
+export const MODIFIER_DOUBLE_TAP_GAP_MS = 500;
+
+const KEY_MODIFIERS = {
+  Meta: "Command",
+  Alt: "Option",
+  Control: "Control",
+  Shift: "Shift",
+  Fn: "Fn",
+};
+
+const CODE_MODIFIERS = {
+  MetaLeft: "Command",
+  MetaRight: "Command",
+  AltLeft: "Option",
+  AltRight: "Option",
+  ControlLeft: "Control",
+  ControlRight: "Control",
+  ShiftLeft: "Shift",
+  ShiftRight: "Shift",
+};
+
+const DOUBLE_TAP_KEYS = {
+  Shift: "settings.shortcuts.chord.shiftDoubleTap",
+  Option: "settings.shortcuts.chord.optionDoubleTap",
+  Command: "settings.shortcuts.chord.commandDoubleTap",
+  Control: "settings.shortcuts.chord.controlDoubleTap",
+  Fn: "settings.shortcuts.chord.fnDoubleTap",
+};
+
+const DOUBLE_TAP_FALLBACK = {
+  Shift: "Shift double-tap",
+  Option: "Option double-tap",
+  Command: "Command double-tap",
+  Control: "Control double-tap",
+  Fn: "Fn double-tap",
+};
+
+export function modifierNameFromEvent(event) {
+  if (!event) {
+    return "";
+  }
+  return KEY_MODIFIERS[event.key] || CODE_MODIFIERS[event.code] || "";
+}
+
+export function doubleTapFromModifierEvents(previous, event, now) {
+  if (recorderIgnores(event)) {
+    return { previous, chord: null };
+  }
+  const modifier = modifierNameFromEvent(event);
+  if (!modifier) {
+    return { previous: null, chord: null };
+  }
+  if (
+    previous &&
+    previous.modifier === modifier &&
+    now - previous.at <= MODIFIER_DOUBLE_TAP_GAP_MS
+  ) {
+    return {
+      previous: null,
+      chord: {
+        trigger: "modifier_double_tap",
+        modifiers: [modifier],
+        logicalKey: null,
+      },
+    };
+  }
+  return { previous: { modifier, at: now }, chord: null };
+}
+
+export function formatModifierDoubleTap(modifier, catalog = {}) {
+  const key = DOUBLE_TAP_KEYS[modifier];
+  const fallback = DOUBLE_TAP_FALLBACK[modifier] || DOUBLE_TAP_FALLBACK.Shift;
+  return (key && catalog[key]) || fallback;
+}
+
 export function formatShortcutChord(row, catalog = {}) {
   if (!row?.enabled || row.trigger === "disabled") {
     return catalog["settings.shortcuts.unassigned"] || "Not assigned";
   }
   if (row.trigger === "modifier_double_tap") {
-    return (
-      catalog["settings.shortcuts.chord.shiftDoubleTap"] || "Shift double-tap"
-    );
+    return formatModifierDoubleTap(row.modifiers?.[0], catalog);
   }
   const glyphs = (row.modifiers ?? [])
     .map((modifier) => MODIFIER_GLYPH[modifier] ?? "")
@@ -196,7 +269,8 @@ export function shortcutFailureKey(error) {
 }
 
 const LIVE_FALLBACK = "Record a row to replace that action’s default.";
-const RECORDING_FALLBACK = "Type the new shortcut (Escape cancels).";
+const RECORDING_FALLBACK =
+  "Type a shortcut or double-tap a modifier (Escape cancels).";
 const RECORDING_LABEL_FALLBACK = "Recording…";
 const REJECTED_FALLBACK = "Could not save that shortcut.";
 
@@ -213,6 +287,22 @@ function catalog() {
     "settings.shortcuts.chord.shiftDoubleTap": message(
       "settings.shortcuts.chord.shiftDoubleTap",
       "Shift double-tap",
+    ),
+    "settings.shortcuts.chord.optionDoubleTap": message(
+      "settings.shortcuts.chord.optionDoubleTap",
+      "Option double-tap",
+    ),
+    "settings.shortcuts.chord.commandDoubleTap": message(
+      "settings.shortcuts.chord.commandDoubleTap",
+      "Command double-tap",
+    ),
+    "settings.shortcuts.chord.controlDoubleTap": message(
+      "settings.shortcuts.chord.controlDoubleTap",
+      "Control double-tap",
+    ),
+    "settings.shortcuts.chord.fnDoubleTap": message(
+      "settings.shortcuts.chord.fnDoubleTap",
+      "Fn double-tap",
     ),
     "settings.shortcuts.key.space": message(
       "settings.shortcuts.key.space",
@@ -342,12 +432,15 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
   };
 
+  let modifierTap = null;
+
   const record = async (action, chord, skipTest) => {
     if (isGlobalShortcutAction(action) && chord.modifiers.length === 0) {
       setLive(root, "settings.shortcuts.rejected", REJECTED_FALLBACK);
       await refresh();
       return;
     }
+    modifierTap = null;
     delete list.dataset.recordingAction;
     try {
       const rows = await invokeFn("record_shortcut", {
@@ -395,6 +488,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
       return;
     }
     if (recordButton) {
+      modifierTap = null;
       list.dataset.recordingAction = action;
       setRecordingRow(root, action);
       recordButton.focus();
@@ -412,14 +506,28 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
     const chord = chordFromKeyboardEvent(event);
     event.preventDefault();
-    if (!chord) {
-      return;
-    }
-    if (chord.cancel) {
+    if (chord?.cancel) {
+      modifierTap = null;
       closeRecorder(root);
       setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
       return;
     }
+    if (!chord && modifierNameFromEvent(event)) {
+      const now =
+        typeof event.timeStamp === "number" && event.timeStamp > 0
+          ? event.timeStamp
+          : Date.now();
+      const tapped = doubleTapFromModifierEvents(modifierTap, event, now);
+      modifierTap = tapped.previous;
+      if (tapped.chord) {
+        record(action, tapped.chord, true);
+      }
+      return;
+    }
+    if (!chord) {
+      return;
+    }
+    modifierTap = null;
     record(action, chord, true);
   });
 

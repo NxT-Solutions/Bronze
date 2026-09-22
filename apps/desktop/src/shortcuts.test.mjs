@@ -6,8 +6,10 @@ import { fileURLToPath } from "node:url";
 import {
   bindShortcutRegistry,
   chordFromKeyboardEvent,
+  doubleTapFromModifierEvents,
   formatShortcutChord,
   isGlobalShortcutAction,
+  modifierNameFromEvent,
   recorderIgnores,
   shortcutFailureKey,
 } from "./shortcuts.mjs";
@@ -123,6 +125,39 @@ test("shortcut formatter and recorder keep IME out and reject path keys", () => 
       trigger: "modifier_double_tap",
     }),
     "Shift double-tap",
+  );
+  assert.equal(
+    formatShortcutChord({
+      enabled: true,
+      trigger: "modifier_double_tap",
+      modifiers: ["Option"],
+    }),
+    "Option double-tap",
+  );
+  assert.equal(modifierNameFromEvent({ key: "Shift" }), "Shift");
+  assert.equal(
+    doubleTapFromModifierEvents(null, { key: "Shift" }, 100).previous.modifier,
+    "Shift",
+  );
+  assert.deepEqual(
+    doubleTapFromModifierEvents(
+      { modifier: "Shift", at: 100 },
+      { key: "Shift" },
+      300,
+    ).chord,
+    {
+      trigger: "modifier_double_tap",
+      modifiers: ["Shift"],
+      logicalKey: null,
+    },
+  );
+  assert.equal(
+    doubleTapFromModifierEvents(
+      { modifier: "Shift", at: 100 },
+      { key: "Shift" },
+      700,
+    ).chord,
+    null,
   );
   assert.equal(recorderIgnores({ isComposing: true, repeat: false }), true);
   assert.deepEqual(
@@ -320,6 +355,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     if (cmd === "record_shortcut") {
       rows[0] = {
         ...rows[0],
+        trigger: args.input.trigger,
         logicalKey: args.input.logicalKey,
         modifiers: args.input.modifiers,
         isDefault: false,
@@ -328,6 +364,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     if (cmd === "restore_shortcut") {
       rows[0] = {
         ...rows[0],
+        trigger: "accelerator",
         logicalKey: "f",
         modifiers: ["Command"],
         isDefault: true,
@@ -356,7 +393,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   assert.equal(chord.textContent, "Recording…");
   assert.equal(
     liveStatus.textContent,
-    "Type the new shortcut (Escape cancels).",
+    "Type a shortcut or double-tap a modifier (Escape cancels).",
   );
   assert.equal(liveStatus.dataset.recording, "true");
 
@@ -448,4 +485,44 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   assert.equal(calls.at(-1).args.action, "queue.search");
   assert.equal(chord.textContent, "⌘F");
   assert.equal(restore.hidden, true);
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  const beforeDoubleTap = calls.length;
+  list.emit("keydown", {
+    key: "Shift",
+    code: "ShiftLeft",
+    timeStamp: 100,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+  });
+  assert.equal(calls.length, beforeDoubleTap);
+  list.emit("keydown", {
+    key: "Shift",
+    code: "ShiftLeft",
+    timeStamp: 280,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+  });
+  await Promise.resolve();
+  assert.equal(calls.at(-1).cmd, "record_shortcut");
+  assert.deepEqual(calls.at(-1).args.input, {
+    action: "queue.search",
+    trigger: "modifier_double_tap",
+    modifiers: ["Shift"],
+    logicalKey: null,
+    skipTest: true,
+  });
+  assert.equal(chord.textContent, "Shift double-tap");
+  assert.equal(restore.hidden, false);
 });
