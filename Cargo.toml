@@ -11,3 +11,7 @@ members = [
     "bronze-title-model",
     "apps/desktop/src-tauri",
 ]
+
+# llama.cpp debug builds miss the 8s title generate budget.
+[profile.dev.package.llama-cpp-sys-2]
+opt-level = 3

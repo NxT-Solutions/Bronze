@@ -56,6 +56,7 @@ pub fn run() {
                     let weights = dir.join("models").join(bronze_title_model::FILENAME);
                     if weights.is_file() {
                         bronze_title_model::set_weights_path(weights);
+                        bronze_title_model::emit_diag("weights resolved source=bundle");
                     }
                 }
                 title_refine::warmup();

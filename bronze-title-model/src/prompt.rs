@@ -2,7 +2,7 @@ use bronze_domain::clamp_title;
 
 pub const MAX_INPUT_CHARS: usize = 2048;
 pub const MAX_NEW_TOKENS: i32 = 16;
-pub const PROMPT_VERSION: &str = "v1";
+pub const PROMPT_VERSION: &str = "v2";
 
 pub fn truncate_input(body: &str) -> String {
     let trimmed = body.trim();
@@ -15,7 +15,7 @@ pub fn truncate_input(body: &str) -> String {
 pub fn format_prompt(body: &str) -> String {
     let body = truncate_input(body);
     format!(
-        "<|im_start|>system\nWrite a short title, no quotes.<|im_end|>\n<|im_start|>user\n{body}<|im_end|>\n<|im_start|>assistant\n"
+        "<|im_start|>system\nWrite a 3-8 word title naming the topic. Do not copy a sentence. No quotes.<|im_end|>\n<|im_start|>user\n{body}<|im_end|>\n<|im_start|>assistant\n"
     )
 }
 
@@ -25,7 +25,11 @@ pub fn clean_title(raw: &str) -> Option<String> {
         return None;
     }
     let stripped = line.trim_matches(|ch| matches!(ch, '"' | '\'' | '`'));
-    let clamped = clamp_title(stripped);
+    let stripped: String = stripped
+        .chars()
+        .filter(|ch| *ch != '"' && *ch != '`')
+        .collect();
+    let clamped = clamp_title(&stripped);
     if clamped.is_empty() || clamped.contains('…') {
         None
     } else {
@@ -40,7 +44,12 @@ pub fn title_is_grounded(body: &str, title: &str) -> bool {
     }
     significant_terms(title)
         .iter()
-        .any(|term| body_terms.iter().any(|body| body == term))
+        .any(|term| body_terms.iter().any(|body| terms_overlap(body, term)))
+}
+
+fn terms_overlap(body: &str, title: &str) -> bool {
+    body == title
+        || (body.len() >= 4 && title.len() >= 4 && (body.contains(title) || title.contains(body)))
 }
 
 fn significant_terms(text: &str) -> Vec<String> {
@@ -55,11 +64,12 @@ mod prompt_tests {
     use super::*;
 
     #[test]
-    fn prompt_is_fixed_english_v1() {
+    fn prompt_is_fixed_english_v2() {
         let prompt = format_prompt("The migration timeout is the real bug.");
-        assert!(prompt.contains("short title, no quotes"));
+        assert!(prompt.contains("3-8 word title"));
+        assert!(prompt.contains("Do not copy a sentence"));
         assert!(prompt.contains("The migration timeout is the real bug."));
-        assert_eq!(PROMPT_VERSION, "v1");
+        assert_eq!(PROMPT_VERSION, "v2");
         assert_eq!(MAX_NEW_TOKENS, 16);
     }
 
@@ -75,6 +85,8 @@ mod prompt_tests {
         assert_eq!(clean_title("\n"), None);
         let quoted = clean_title("\"Migration timeout\"\nmore").expect("title");
         assert!(!quoted.contains('"'));
+        let inner = clean_title("The topic is \"Persistence of Selection").expect("inner");
+        assert!(!inner.contains('"'));
         assert!(quoted.to_ascii_lowercase().contains("migration"));
         let long = clean_title(&"word ".repeat(40)).expect("clamped");
         assert!(long.chars().count() <= 40);
@@ -86,6 +98,10 @@ mod prompt_tests {
         assert!(title_is_grounded(
             "The migration timeout is the real bug in persist.",
             "Migration timeout"
+        ));
+        assert!(title_is_grounded(
+            "We should move the invoice review to Thursday so finance can close the books before Friday.",
+            "Financial close"
         ));
         assert!(!title_is_grounded("Park me", "The Power of the Sun"));
     }

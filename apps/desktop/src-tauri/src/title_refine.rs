@@ -1,15 +1,18 @@
 use crate::live_session::LiveSession;
+use bronze_title_model::RefineOutcome;
 use tauri::{AppHandle, Emitter, Manager};
 
 pub fn schedule(app: &AppHandle, item_id: String, body: String) {
     if item_id.is_empty() || body.trim().is_empty() {
+        bronze_title_model::emit_diag("fallback reason=empty");
         return;
     }
+    bronze_title_model::emit_diag(&format!("refine scheduled chars={}", body.chars().count()));
     let handle = app.clone();
     let _ = std::thread::Builder::new()
         .name("bronze-item-title".into())
         .spawn(move || {
-            let Some(title) = bronze_title_model::refine_title(&body) else {
+            let RefineOutcome::Title(title) = bronze_title_model::refine_outcome(&body) else {
                 return;
             };
             let Some(state) = handle.try_state::<std::sync::Mutex<LiveSession>>() else {
@@ -24,7 +27,10 @@ pub fn schedule(app: &AppHandle, item_id: String, body: String) {
                     .unwrap_or(false)
             };
             if applied {
+                bronze_title_model::emit_diag("refine applied");
                 let _ = handle.emit("queue-changed", ());
+            } else {
+                bronze_title_model::emit_diag("fallback reason=stale_body");
             }
         });
 }
@@ -55,5 +61,14 @@ mod title_refine_tests {
             "../../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         )
         .contains("refine_title"));
+    }
+
+    #[test]
+    fn schedule_logs_visible_fallback_reasons() {
+        let src = include_str!("title_refine.rs");
+        assert!(src.contains("bronze_title_model::emit_diag"));
+        assert!(src.contains("refine scheduled chars="));
+        assert!(src.contains("fallback reason=empty"));
+        assert!(src.contains("refine applied"));
     }
 }
