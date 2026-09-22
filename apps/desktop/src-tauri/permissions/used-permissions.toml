@@ -31,6 +31,7 @@ commands.allow = [
   "apply_queue_item_action",
   "edit_queue_item",
   "copy_queue_items",
+  "load_settings_v1",
   "ui_locale",
   "ui_catalog",
 ]
@@ -44,6 +45,7 @@ commands.allow = [
   "backup_library_now",
   "export_library_archive",
   "import_library_archive",
+  "load_settings_v1",
   "ui_locale",
   "ui_catalog",
 ]

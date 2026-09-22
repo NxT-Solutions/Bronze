@@ -663,6 +663,18 @@ mod tests {
         serde_json::from_str(&raw).unwrap_or_else(|e| panic!("parse {}: {e}", path.display()))
     }
 
+    fn permission_block(used: &str, identifier: &str) -> String {
+        let marker = format!("identifier = \"{identifier}\"");
+        let rest = used
+            .split_once(&marker)
+            .unwrap_or_else(|| panic!("{identifier} missing"))
+            .1;
+        rest.split("\nidentifier = ")
+            .next()
+            .unwrap_or(rest)
+            .to_string()
+    }
+
     #[test]
     fn forbidden_command_from_fixture_window_fails_closed() {
         let caps_dir = manifest_dir().join("capabilities");
@@ -713,10 +725,21 @@ mod tests {
                     fs::read_to_string(manifest_dir().join("permissions/used-permissions.toml"))
                         .expect("permissions");
                 assert!(used.contains("list_overview_items"));
+                assert!(
+                    permission_block(&used, "allow-queue-live").contains("load_settings_v1"),
+                    "allow-queue-live must include load_settings_v1"
+                );
             } else if name == "library" {
                 assert!(permissions
                     .iter()
                     .any(|permission| permission.as_str() == Some("allow-library-live")));
+                let used =
+                    fs::read_to_string(manifest_dir().join("permissions/used-permissions.toml"))
+                        .expect("permissions");
+                assert!(
+                    permission_block(&used, "allow-library-live").contains("load_settings_v1"),
+                    "allow-library-live must include load_settings_v1"
+                );
             } else if name == "help" {
                 assert_eq!(
                     permissions,
