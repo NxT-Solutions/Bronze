@@ -1449,7 +1449,7 @@ fieldset > span {
 
 .shortcut-list li {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -1463,6 +1463,7 @@ fieldset > span {
 }
 
 .shortcut-list [data-slot="shortcut-name"] {
+  flex: 1 1 8rem;
   min-width: 0;
   font-weight: 400;
 }
@@ -1479,15 +1480,18 @@ fieldset > span {
 
 .shortcut-row-meta {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  margin-inline-start: auto;
 }
 
 .shortcut-row-meta .btn-ghost {
   min-height: 1.75rem;
   padding-inline: 0.55rem;
+  white-space: nowrap;
 }
 
 .shortcut-assign {
@@ -1496,11 +1500,21 @@ fieldset > span {
 }
 
 .shortcut-list li[data-recording="true"] {
-  background: var(--muted);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--card));
 }
 
 .shortcut-list li[data-recording="true"] .shortcut-assign {
   box-shadow: 0 0 0 2px var(--ring);
+}
+
+.shortcut-list li[data-recording="true"] [data-slot="shortcut-chord"] {
+  font-family: var(--font-sans);
+  font-variant-numeric: normal;
+  color: var(--foreground);
+}
+
+[data-shortcut-live][data-recording="true"] {
+  color: var(--foreground);
 }
 
 .page-shell .card,

@@ -117,6 +117,7 @@ export const MessageIds = {
   "settings.shortcuts.cancel": "settings.shortcuts.cancel",
   "settings.shortcuts.restore": "settings.shortcuts.restore",
   "settings.shortcuts.recording": "settings.shortcuts.recording",
+  "settings.shortcuts.recordingLabel": "settings.shortcuts.recordingLabel",
   "settings.shortcuts.rejected": "settings.shortcuts.rejected",
   "settings.shortcuts.duplicate": "settings.shortcuts.duplicate",
   "settings.shortcuts.alternatives": "settings.shortcuts.alternatives",

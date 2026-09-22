@@ -14,6 +14,7 @@ import {
 
 const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "settings.html"), "utf8");
+const css = readFileSync(join(root, "chrome.css"), "utf8");
 const live = readFileSync(join(root, "settings-live.mjs"), "utf8");
 const registry = readFileSync(join(root, "shortcuts.mjs"), "utf8");
 const en = JSON.parse(
@@ -89,10 +90,19 @@ test("shortcut recorder lists every action and keeps capture.selection as standa
     )?.[1],
     en["settings.shortcuts.restore"],
   );
+  assert.equal(en["settings.shortcuts.recordingLabel"], "Recording…");
+  assert.equal(
+    html.match(
+      /data-i18n="settings.shortcuts.recordingLabel"[^>]*>\s*([^<]+?)\s*</,
+    )?.[1],
+    en["settings.shortcuts.recordingLabel"],
+  );
   assert.match(live, /bindShortcutRegistry/);
   assert.match(registry, /list_shortcuts/);
   assert.match(registry, /record_shortcut/);
   assert.match(registry, /restore_shortcut/);
+  assert.match(css, /\.shortcut-list li \{[^}]*flex-wrap: wrap;/);
+  assert.match(css, /\.shortcut-row-meta \{[^}]*flex-wrap: wrap;/);
 });
 
 test("shortcut formatter and recorder keep IME out and reject path keys", () => {
@@ -342,6 +352,39 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   });
   assert.equal(list.dataset.recordingAction, "queue.search");
   assert.equal(item.dataset.recording, "true");
+  assert.equal(recordBtn.getAttribute("aria-pressed"), "true");
+  assert.equal(chord.textContent, "Recording…");
+  assert.equal(
+    liveStatus.textContent,
+    "Type the new shortcut (Escape cancels).",
+  );
+  assert.equal(liveStatus.dataset.recording, "true");
+
+  list.emit("keydown", {
+    key: "Escape",
+    code: "Escape",
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+  });
+  assert.equal(list.dataset.recordingAction, undefined);
+  assert.equal(item.dataset.recording, undefined);
+  assert.equal(recordBtn.getAttribute("aria-pressed"), "false");
+  assert.equal(chord.textContent, "⌘F");
+  assert.equal(restore.hidden, true);
+  assert.equal(liveStatus.dataset.recording, undefined);
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  assert.equal(chord.textContent, "Recording…");
 
   list.emit("keydown", {
     key: "ø",
@@ -366,6 +409,28 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   assert.equal(chord.textContent, "⌥⇧O");
   assert.equal(restore.hidden, false);
   assert.equal(list.dataset.recordingAction, undefined);
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  assert.equal(chord.textContent, "Recording…");
+  assert.equal(restore.hidden, false);
+  list.emit("keydown", {
+    key: "Escape",
+    code: "Escape",
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+  });
+  assert.equal(chord.textContent, "⌥⇧O");
+  assert.equal(restore.hidden, false);
 
   list.emit("click", {
     target: {

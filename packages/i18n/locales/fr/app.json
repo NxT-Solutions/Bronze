@@ -105,6 +105,7 @@
   "settings.shortcuts.cancel": "Annuler",
   "settings.shortcuts.restore": "Rétablir",
   "settings.shortcuts.recording": "Tapez le nouveau raccourci (Escape annule).",
+  "settings.shortcuts.recordingLabel": "Enregistrement…",
   "settings.shortcuts.rejected": "Ce raccourci n’a pas pu être enregistré.",
   "settings.shortcuts.duplicate": "Ce raccourci est déjà utilisé.",
   "settings.shortcuts.alternatives": "Garder un menu ou un chemin manuel",

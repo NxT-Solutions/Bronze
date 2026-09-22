@@ -105,6 +105,7 @@
   "settings.shortcuts.cancel": "Annuleer",
   "settings.shortcuts.restore": "Standaard herstellen",
   "settings.shortcuts.recording": "Typ de nieuwe sneltoets (Escape annuleert).",
+  "settings.shortcuts.recordingLabel": "Opnemen…",
   "settings.shortcuts.rejected": "Die sneltoets kon niet worden opgeslagen.",
   "settings.shortcuts.duplicate": "Die sneltoets is al in gebruik.",
   "settings.shortcuts.alternatives": "Houd een menu- of handmatig pad",

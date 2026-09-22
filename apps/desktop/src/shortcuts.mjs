@@ -197,6 +197,7 @@ export function shortcutFailureKey(error) {
 
 const LIVE_FALLBACK = "Record a row to replace that action’s default.";
 const RECORDING_FALLBACK = "Type the new shortcut (Escape cancels).";
+const RECORDING_LABEL_FALLBACK = "Recording…";
 const REJECTED_FALLBACK = "Could not save that shortcut.";
 
 function message(key, fallback) {
@@ -238,6 +239,34 @@ function setLive(root, key, fallback) {
     return;
   }
   live.textContent = message(key, fallback);
+  if (key === "settings.shortcuts.recording") {
+    live.dataset.recording = "true";
+  } else {
+    delete live.dataset.recording;
+  }
+}
+
+function recordingLabel() {
+  return message("settings.shortcuts.recordingLabel", RECORDING_LABEL_FALLBACK);
+}
+
+function beginRecordingChord(item) {
+  const slot = item.querySelector("[data-slot='shortcut-chord']");
+  if (!slot) {
+    return;
+  }
+  if (item.dataset.idleChord == null) {
+    item.dataset.idleChord = slot.textContent ?? "";
+  }
+  slot.textContent = recordingLabel();
+}
+
+function endRecordingChord(item) {
+  const slot = item.querySelector("[data-slot='shortcut-chord']");
+  if (slot && item.dataset.idleChord != null) {
+    slot.textContent = item.dataset.idleChord;
+  }
+  delete item.dataset.idleChord;
 }
 
 function paintRows(root, rows) {
@@ -251,7 +280,14 @@ function paintRows(root, rows) {
     }
     const chord = item.querySelector("[data-slot='shortcut-chord']");
     if (chord) {
-      chord.textContent = formatShortcutChord(row, labels);
+      const formatted = formatShortcutChord(row, labels);
+      if (item.dataset.recording) {
+        item.dataset.idleChord = formatted;
+        chord.textContent = recordingLabel();
+      } else {
+        delete item.dataset.idleChord;
+        chord.textContent = formatted;
+      }
     }
     const restore = item.querySelector("[data-shortcut-restore]");
     if (restore) {
@@ -268,7 +304,11 @@ function setRecordingRow(root, action) {
       Boolean(action) && item.getAttribute("data-action") === action;
     if (match) {
       item.dataset.recording = "true";
+      beginRecordingChord(item);
     } else {
+      if (item.dataset.recording) {
+        endRecordingChord(item);
+      }
       delete item.dataset.recording;
     }
     item
@@ -283,25 +323,6 @@ function closeRecorder(root) {
     delete list.dataset.recordingAction;
   }
   setRecordingRow(root, "");
-}
-
-function previewChord(root, action, chord) {
-  const item = root.querySelector(
-    `[data-shortcut-registry] [data-action="${action}"]`,
-  );
-  const slot = item?.querySelector("[data-slot='shortcut-chord']");
-  if (!slot) {
-    return;
-  }
-  slot.textContent = formatShortcutChord(
-    {
-      enabled: true,
-      trigger: chord.trigger,
-      modifiers: chord.modifiers,
-      logicalKey: chord.logicalKey,
-    },
-    catalog(),
-  );
 }
 
 export async function bindShortcutRegistry(root, invokeFn) {
@@ -327,6 +348,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
       await refresh();
       return;
     }
+    delete list.dataset.recordingAction;
     try {
       const rows = await invokeFn("record_shortcut", {
         input: {
@@ -343,6 +365,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
       closeRecorder(root);
       setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
     } catch (error) {
+      list.dataset.recordingAction = action;
       setLive(root, shortcutFailureKey(error), REJECTED_FALLBACK);
       await refresh();
     }
@@ -397,7 +420,6 @@ export async function bindShortcutRegistry(root, invokeFn) {
       setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
       return;
     }
-    previewChord(root, action, chord);
     record(action, chord, true);
   });
 

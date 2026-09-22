@@ -105,6 +105,7 @@
   "settings.shortcuts.cancel": "Annulla",
   "settings.shortcuts.restore": "Ripristina",
   "settings.shortcuts.recording": "Digita il nuovo tasto (Escape annulla).",
+  "settings.shortcuts.recordingLabel": "Registrazione…",
   "settings.shortcuts.rejected": "Impossibile salvare quella scorciatoia.",
   "settings.shortcuts.duplicate": "Quella scorciatoia è già in uso.",
   "settings.shortcuts.alternatives": "Mantieni un menu o un percorso manuale",

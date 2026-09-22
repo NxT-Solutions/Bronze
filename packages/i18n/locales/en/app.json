@@ -105,6 +105,7 @@
   "settings.shortcuts.cancel": "Cancel",
   "settings.shortcuts.restore": "Restore Default",
   "settings.shortcuts.recording": "Type the new shortcut (Escape cancels).",
+  "settings.shortcuts.recordingLabel": "Recording…",
   "settings.shortcuts.rejected": "Could not save that shortcut.",
   "settings.shortcuts.duplicate": "That shortcut is already used.",
   "settings.shortcuts.alternatives": "Keep a menu or manual path",

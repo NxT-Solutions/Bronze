@@ -105,6 +105,7 @@
   "settings.shortcuts.cancel": "Abbrechen",
   "settings.shortcuts.restore": "Standard wiederherstellen",
   "settings.shortcuts.recording": "Neuen Kurzbefehl eingeben (Escape bricht ab).",
+  "settings.shortcuts.recordingLabel": "Aufzeichnung…",
   "settings.shortcuts.rejected": "Dieser Kurzbefehl konnte nicht gespeichert werden.",
   "settings.shortcuts.duplicate": "Dieser Kurzbefehl ist bereits vergeben.",
   "settings.shortcuts.alternatives": "Einen Menü- oder manuellen Weg behalten",

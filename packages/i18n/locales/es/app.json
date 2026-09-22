@@ -105,6 +105,7 @@
   "settings.shortcuts.cancel": "Cancelar",
   "settings.shortcuts.restore": "Restablecer",
   "settings.shortcuts.recording": "Escribe el atajo nuevo (Escape cancela).",
+  "settings.shortcuts.recordingLabel": "Grabando…",
   "settings.shortcuts.rejected": "No se pudo guardar ese atajo.",
   "settings.shortcuts.duplicate": "Ese atajo ya está en uso.",
   "settings.shortcuts.alternatives": "Mantén un menú o un camino manual",
