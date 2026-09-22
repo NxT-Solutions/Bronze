@@ -110,6 +110,7 @@
   "settings.shortcuts.duplicate": "Die sneltoets is al in gebruik.",
   "settings.shortcuts.alternatives": "Houd een menu- of handmatig pad",
   "settings.shortcuts.live": "Neem een rij op om de standaard van die actie te vervangen.",
+  "settings.shortcuts.captureLive": "Live vastleggen volgt de opgeslagen Shift-multitik (twee tot acht) voor Vastleggen, en andere toewijzingen schakelen die engine uit.",
   "settings.shortcuts.unassigned": "Niet toegewezen",
   "settings.shortcuts.chord.shiftDoubleTap": "Dubbeltik op Shift",
   "settings.shortcuts.chord.optionDoubleTap": "Dubbeltik op Option",
@@ -175,5 +176,5 @@
   "help.diagnostics.export": "Ondersteuningsbundel exporteren…",
   "help.limitations.humanGates": "Menselijke validatie blijft backlog: verhalen 3.9, 3.10, 5.5 en 9.3.",
   "help.upload.none": "Bronze uploadt diagnostiek nooit automatisch.",
-  "help.capture.composer": "Selecteer tekst en kies Vastleggen in de menubalk, dubbeltik op Shift, of typ in de invoer wanneer vastleggen niet beschikbaar is."
+  "help.capture.composer": "Selecteer tekst in elke app, ook Bronze, en kies Vastleggen in de menubalk, gebruik de Vastleggen-sneltoets uit Instellingen, of typ in de invoer wanneer vastleggen niet beschikbaar is."
 }

@@ -67,6 +67,16 @@ test("shortcut recorder lists every action and keeps capture.selection as standa
     en["settings.shortcuts.live"],
     "Record a row to replace that action’s default.",
   );
+  assert.equal(
+    en["settings.shortcuts.captureLive"],
+    "Live capture fire follows the saved Capture selection Shift multi-tap (two through eight), and other remaps disable that engine.",
+  );
+  assert.equal(
+    html.match(
+      /data-i18n="settings.shortcuts.captureLive"[^>]*>\s*([^<]+?)\s*</,
+    )?.[1],
+    en["settings.shortcuts.captureLive"],
+  );
   assert.match(html, /⌥Space/);
   assert.match(html, /⌘C/);
   assert.match(html, /shortcut-assign/);

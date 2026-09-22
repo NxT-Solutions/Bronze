@@ -110,6 +110,7 @@
   "settings.shortcuts.duplicate": "【TThháatt sshhóorrttçcúutt íiss áallrréeáaddyy úusséedd.】",
   "settings.shortcuts.alternatives": "【KKéeéepp áa mméeñnúu óorr mmáañnúuáall ppáatthh】",
   "settings.shortcuts.live": "【RRéeçcóorrdd áa rróoww ttóo rréepplláaçcée tthháatt áaçcttíióoñn’ss ddéeffáaúulltt.】",
+  "settings.shortcuts.captureLive": "【LLíivvée çcáappttúurrée ffíirrée ffóollllóowwss tthhée ssáavvéedd CCáappttúurrée sséelléeçcttíióoñn SShhíifftt mmúullttíi-ttáapp (ttwwóo tthhrróoúugghh éeíigghhtt), áañndd óotthhéerr rréemmáappss ddíissáabbllée tthháatt éeñnggíiñnée.】",
   "settings.shortcuts.unassigned": "【NNóott áassssíiggñnéedd】",
   "settings.shortcuts.chord.shiftDoubleTap": "【SShhíifftt ddóoúubbllée-ttáapp】",
   "settings.shortcuts.chord.optionDoubleTap": "【ÓOppttíióoñn ddóoúubbllée-ttáapp】",
@@ -175,5 +176,5 @@
   "help.diagnostics.export": "【ÉExxppóorrtt SSúuppppóorrtt BBúuñnddllée…】",
   "help.limitations.humanGates": "【HHúummáañn vváallíiddáattíióoñn rréemmáaíiñnss bbáaçckkllóogg: ssttóorríiéess 3.9, 3.10, 5.5, áañndd 9.3.】",
   "help.upload.none": "【BBrróoñnzzée ñnéevvéerr úuppllóoáaddss ddíiáaggñnóossttíiçcss áaúuttóommáattíiçcáallllyy.】",
-  "help.capture.composer": "【SSéelléeçctt ttéexxtt, tthhéeñn CCáappttúurrée ffrróomm tthhée mméeñnúu bbáarr, ddóoúubbllée-ttáapp SShhíifftt, óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr wwhhéeñn çcáappttúurrée íiss úuñnáavváaíilláabbllée.】"
+  "help.capture.composer": "【SSéelléeçctt ttéexxtt íiñn áañnyy áapppp íiñnçcllúuddíiñngg BBrróoñnzzée, tthhéeñn CCáappttúurrée ffrróomm tthhée mméeñnúu bbáarr, úussée tthhée CCáappttúurrée sséelléeçcttíióoñn sshhóorrttçcúutt ffrróomm SSéettttíiñnggss, óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr wwhhéeñn çcáappttúurrée íiss úuñnáavváaíilláabbllée.】"
 }

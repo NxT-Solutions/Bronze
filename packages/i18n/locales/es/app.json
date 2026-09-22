@@ -110,6 +110,7 @@
   "settings.shortcuts.duplicate": "Ese atajo ya está en uso.",
   "settings.shortcuts.alternatives": "Mantén un menú o un camino manual",
   "settings.shortcuts.live": "Graba una fila para sustituir el atajo predeterminado.",
+  "settings.shortcuts.captureLive": "El disparo en vivo sigue el multi-toque de Mayús guardado para Capturar (de dos a ocho), y otras reasignaciones desactivan ese motor.",
   "settings.shortcuts.unassigned": "Sin asignar",
   "settings.shortcuts.chord.shiftDoubleTap": "Doble toque de Mayús",
   "settings.shortcuts.chord.optionDoubleTap": "Doble toque de Opción",
@@ -175,5 +176,5 @@
   "help.diagnostics.export": "Exportar paquete de soporte…",
   "help.limitations.humanGates": "La validación humana sigue en backlog: historias 3.9, 3.10, 5.5 y 9.3.",
   "help.upload.none": "Bronze nunca sube diagnósticos automáticamente.",
-  "help.capture.composer": "Selecciona texto y luego Capturar en la barra de menús, toca Mayús dos veces o escribe en el campo cuando la captura no esté disponible."
+  "help.capture.composer": "Selecciona texto en cualquier app, incluida Bronze, y luego Capturar en la barra de menús, usa el atajo de Capturar en Ajustes o escribe en el campo cuando la captura no esté disponible."
 }

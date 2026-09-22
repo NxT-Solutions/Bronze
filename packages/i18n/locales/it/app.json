@@ -110,6 +110,7 @@
   "settings.shortcuts.duplicate": "Quella scorciatoia è già in uso.",
   "settings.shortcuts.alternatives": "Mantieni un menu o un percorso manuale",
   "settings.shortcuts.live": "Registra una riga per sostituire il valore predefinito.",
+  "settings.shortcuts.captureLive": "L’attivazione live segue il multi-tocco Maiusc salvato per Cattura (da due a otto), e le altre riassegnazioni disattivano quel motore.",
   "settings.shortcuts.unassigned": "Non assegnata",
   "settings.shortcuts.chord.shiftDoubleTap": "Doppio tocco di Maiusc",
   "settings.shortcuts.chord.optionDoubleTap": "Doppio tocco di Opzione",
@@ -175,5 +176,5 @@
   "help.diagnostics.export": "Esporta pacchetto di supporto…",
   "help.limitations.humanGates": "La convalida umana resta in backlog: storie 3.9, 3.10, 5.5 e 9.3.",
   "help.upload.none": "Bronze non carica mai automaticamente la diagnostica.",
-  "help.capture.composer": "Seleziona testo, poi Cattura dalla barra dei menu, tocca due volte Maiusc oppure digita nel campo quando la cattura non è disponibile."
+  "help.capture.composer": "Seleziona testo in qualsiasi app, incluso Bronze, poi Cattura dalla barra dei menu, usa il collegamento Cattura in Impostazioni oppure digita nel campo quando la cattura non è disponibile."
 }

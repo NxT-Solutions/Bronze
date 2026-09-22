@@ -110,6 +110,7 @@
   "settings.shortcuts.duplicate": "Dieser Kurzbefehl ist bereits vergeben.",
   "settings.shortcuts.alternatives": "Einen Menü- oder manuellen Weg behalten",
   "settings.shortcuts.live": "Zeichne eine Zeile auf, um den Standardkurzbefehl zu ersetzen.",
+  "settings.shortcuts.captureLive": "Live-Erfassen folgt dem gespeicherten Umschalt-Mehrfachtipp für Erfassen (zwei bis acht), und andere Belegungen schalten diese Engine aus.",
   "settings.shortcuts.unassigned": "Nicht zugewiesen",
   "settings.shortcuts.chord.shiftDoubleTap": "Umschalt doppeltippen",
   "settings.shortcuts.chord.optionDoubleTap": "Option doppeltippen",
@@ -175,5 +176,5 @@
   "help.diagnostics.export": "Support-Archiv exportieren…",
   "help.limitations.humanGates": "Menschliche Prüfung bleibt Backlog: Stories 3.9, 3.10, 5.5 und 9.3.",
   "help.upload.none": "Bronze lädt Diagnosen niemals automatisch hoch.",
-  "help.capture.composer": "Text auswählen, dann Erfassen in der Menüleiste, Umschalt doppeltippen oder hier tippen, wenn Erfassen nicht verfügbar ist."
+  "help.capture.composer": "Text in jeder App einschließlich Bronze auswählen, dann Erfassen in der Menüleiste, den Erfassen-Kurzbefehl aus Einstellungen nutzen oder hier tippen, wenn Erfassen nicht verfügbar ist."
 }

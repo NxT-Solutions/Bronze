@@ -30,4 +30,12 @@ test("local help previews redacted diagnostics and lists human gates", () => {
     en["help.upload.none"],
     "Bronze never uploads diagnostics automatically.",
   );
+  assert.equal(
+    en["help.capture.composer"],
+    "Select text in any app including Bronze, then Capture from the menu bar, use the Capture selection shortcut from Settings, or type into the composer when capture is unavailable.",
+  );
+  assert.equal(
+    html.match(/data-i18n="help.capture.composer"[^>]*>\s*([^<]+?)\s*</)?.[1],
+    en["help.capture.composer"],
+  );
 });

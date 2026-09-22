@@ -122,6 +122,7 @@ export const MessageIds = {
   "settings.shortcuts.duplicate": "settings.shortcuts.duplicate",
   "settings.shortcuts.alternatives": "settings.shortcuts.alternatives",
   "settings.shortcuts.live": "settings.shortcuts.live",
+  "settings.shortcuts.captureLive": "settings.shortcuts.captureLive",
   "settings.shortcuts.unassigned": "settings.shortcuts.unassigned",
   "settings.shortcuts.chord.shiftDoubleTap":
     "settings.shortcuts.chord.shiftDoubleTap",

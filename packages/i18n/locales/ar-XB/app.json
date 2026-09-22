@@ -110,6 +110,7 @@
   "settings.shortcuts.duplicate": ".desu ydaerla si tuctrohs tahT",
   "settings.shortcuts.alternatives": "htap launam ro unem a peeK",
   "settings.shortcuts.live": ".tluafed s’noitca taht ecalper ot wor a droceR",
+  "settings.shortcuts.captureLive": ".enigne taht elbasid spamer rehto dna ,)thgie hguorht owt( pat-itlum tfihS noitceles erutpaC devas eht swollof erif erutpac eviL",
   "settings.shortcuts.unassigned": "dengissa toN",
   "settings.shortcuts.chord.shiftDoubleTap": "pat-elbuod tfihS",
   "settings.shortcuts.chord.optionDoubleTap": "pat-elbuod noitpO",
@@ -175,5 +176,5 @@
   "help.diagnostics.export": "…eldnuB troppuS tropxE",
   "help.limitations.humanGates": ".3.9 dna ,5.5 ,01.3 ,9.3 seirots :golkcab sniamer noitadilav namuH",
   "help.upload.none": ".yllacitamotua scitsongaid sdaolpu reven eznorB",
-  "help.capture.composer": ".elbaliavanu si erutpac nehw resopmoc eht otni epyt ro ,tfihS pat-elbuod ,rab unem eht morf erutpaC neht ,txet tceleS"
+  "help.capture.composer": ".elbaliavanu si erutpac nehw resopmoc eht otni epyt ro ,sgnitteS morf tuctrohs noitceles erutpaC eht esu ,rab unem eht morf erutpaC neht ,eznorB gnidulcni ppa yna ni txet tceleS"
 }

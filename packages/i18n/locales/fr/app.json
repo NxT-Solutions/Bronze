@@ -110,6 +110,7 @@
   "settings.shortcuts.duplicate": "Ce raccourci est déjà utilisé.",
   "settings.shortcuts.alternatives": "Garder un menu ou un chemin manuel",
   "settings.shortcuts.live": "Enregistrez une ligne pour remplacer le raccourci par défaut.",
+  "settings.shortcuts.captureLive": "Le déclenchement live suit le multi-appui Maj enregistré pour Capturer (deux à huit), et les autres remplacements désactivent ce moteur.",
   "settings.shortcuts.unassigned": "Non assigné",
   "settings.shortcuts.chord.shiftDoubleTap": "Double appui sur Maj",
   "settings.shortcuts.chord.optionDoubleTap": "Double appui sur Option",
@@ -175,5 +176,5 @@
   "help.diagnostics.export": "Exporter le bundle d’assistance…",
   "help.limitations.humanGates": "La validation humaine reste en backlog : récits 3.9, 3.10, 5.5 et 9.3.",
   "help.upload.none": "Bronze n’envoie jamais les diagnostics automatiquement.",
-  "help.capture.composer": "Sélectionnez du texte, puis Capturer depuis la barre de menus, double-appuyez sur Maj, ou saisissez dans le champ lorsque la capture est indisponible."
+  "help.capture.composer": "Sélectionnez du texte dans n’importe quelle app, y compris Bronze, puis Capturer depuis la barre de menus, utilisez le raccourci Capturer de Réglages, ou saisissez dans le champ lorsque la capture est indisponible."
 }
