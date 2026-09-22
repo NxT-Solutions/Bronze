@@ -1,0 +1,49 @@
+{
+  "id": "queue-card-motion",
+  "goal": "Add tasteful queue-card motion for Complete, Skip, Move up/down, Trash, and other existing list mutations.",
+  "outcome": "Complete, Skip, and Trash collapse and fade the card out of the list (complete slides slightly up, skip fades, trash shrinks) then the node is removed. Move up/down slides the card to its new index with neighbors shifting (FLIP). New captures may fade in with the existing opacity enter. Reduce Motion and data-reduce-motion skip slide/collapse and update immediately (opacity-only at most). Existing duration/easing tokens. No IPC or action-semantics change. Single-item trash confirm stays as today (none). ADR-002, ADR-009, and ADR-018 stay Proposed.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "QUEUE-CARD-MOTION-RULE-1",
+      "kind": "rule",
+      "statement": "Animate around existing handlers. Do not change apply_queue_item_action, copy_queue_items, edit_queue_item, or other IPC names or action semantics."
+    },
+    {
+      "id": "QUEUE-CARD-MOTION-RULE-2",
+      "kind": "rule",
+      "statement": "Complete / Skip / Trash leave the list with a height collapse (grid-template-rows or max-height) plus fade. Complete: slight up slide. Skip: fade. Trash: shrink. Remove the node after transitionend or a timeout matching the motion token. Do not leave spacer holes. If animation fails, still apply the store action."
+    },
+    {
+      "id": "QUEUE-CARD-MOTION-RULE-3",
+      "kind": "rule",
+      "statement": "Move up / down: the card slides to its new index and neighbors shift (FLIP or transform-then-reflow). One shot using existing --duration / --ease (HIG cap 200ms). Prefer transform/opacity; height collapse is OK for exit if contained."
+    },
+    {
+      "id": "QUEUE-CARD-MOTION-RULE-4",
+      "kind": "rule",
+      "statement": "prefers-reduced-motion: reduce and data-reduce-motion skip slide/collapse. Immediate update, or opacity only at most 100ms. Motion is never required to understand the action. No WCAG, VoiceOver, or notarization claim."
+    },
+    {
+      "id": "QUEUE-CARD-MOTION-RULE-5",
+      "kind": "rule",
+      "statement": "Reuse --duration, --ease-out, and --ease. Do not add an npm motion library, CDN, or remote font. Hover on icons and Copy stay unchanged. No new locale sentences unless a string is required (prefer none)."
+    },
+    {
+      "id": "QUEUE-CARD-MOTION-RULE-6",
+      "kind": "rule",
+      "statement": "Trash confirm stays as today (none for single-item). Do not claim QUEUE-ATTACHMENTS-RUST. Do not take in-flight title-model or qwen-empty-title rust. ADR-002, ADR-009, and ADR-018 stay Proposed. No Cooper/Copper assets or trade dress."
+    },
+    {
+      "id": "QUEUE-CARD-MOTION-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Complete, Skip, and Trash apply an exit class and then remove the card; reduced-motion path does not wait and still applies the action."
+    },
+    {
+      "id": "QUEUE-CARD-MOTION-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "Move up / down animates the card to its new index when motion is allowed, and updates immediately under Reduce Motion."
+    }
+  ],
+  "depends_on": []
+}
