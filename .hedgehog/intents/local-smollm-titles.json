@@ -1,0 +1,79 @@
+{
+  "id": "local-smollm-titles",
+  "goal": "Embed a hash-pinned SmolLM2-135M-Instruct Q4_K_M GGUF and refine queue titles locally after persist, with compact_title as the durable fallback.",
+  "outcome": "Persist, composer add, and body edit always write compact_title first. A Rust llama-cpp-2 worker may refine from a vendored local file after persist. Missing file, hash mismatch, timeout, empty, or inference failure keeps compact_title. Capture ID and terminal result are never dropped. TitleABI.swift stays a compile-only stub. ADR-019 stays Proposed with this candidate. T-10 carves out offline vendored hash-pinned weights. Hosted AI, PCC, runtime Hub fetch, Needle, Qwen, and event-tap inference stay forbidden.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-1",
+      "kind": "rule",
+      "statement": "Persist compact_title first (40-character word-boundary clamp, no ellipsis). Model refine runs after persist on a dedicated thread or spawn_blocking — not AppKit main, not the event-tap. Failure keeps compact_title. Never drop a capture ID or terminal result."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-2",
+      "kind": "rule",
+      "statement": "ADR-017 stays Accepted: no runtime network, telemetry, CDN, account, or Hugging Face Hub download. llama-cpp-2 loads a local file only. Never -hf. Never take a path from WebView (SEC-003)."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-3",
+      "kind": "rule",
+      "statement": "T-10 carve-out: offline vendored hash-pinned weights are allowed. Hosted AI and Private Cloud Compute stay forbidden. Do not treat this as a general model-download permission."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-4",
+      "kind": "rule",
+      "statement": "First embed is HuggingFaceTB/SmolLM2-135M-Instruct Q4_K_M GGUF only. If 135M titles are unusable in a spike, stop and report. Do not silently swap to 360M, Gemma, Needle, Qwen, or Llama 1B."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-5",
+      "kind": "rule",
+      "statement": "Inference lives in Rust. TitleABI.swift stays a compile-only stub returning BRONZE_STATUS_DEGRADED. Swift source-scan bans stay: PrivateCloudCompute, URLSession, openai, llama, gguf, SystemLanguageModel, NLEmbedding."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-6",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not touch AX, DB, windows, clipboard, or inference."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-7",
+      "kind": "rule",
+      "statement": "ADR-019 stays Proposed. Rewrite the Proposed candidate to this embed path. Never silently accept ADR-002, ADR-009, ADR-018, or ADR-019."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-8",
+      "kind": "rule",
+      "statement": "Do not silently add hardened-runtime JIT or unsigned-executable-memory entitlements. Prefer a CPU path that needs none. Document Metal/JIT entitlement impact."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-9",
+      "kind": "rule",
+      "statement": "Weights are developer/CI vendored once, SHA-256 pinned, not user-writable via the app. Record HF repo, revision, filename, SHA-256, and Apache-2.0 NOTICE/LICENSE in-tree."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-RULE-10",
+      "kind": "rule",
+      "statement": "No Apple Intelligence or model-status chrome unless a packet requires a locale string. Queue titles keep clip without ellipsis. No Cooper/Copper copy."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Persist always writes compact_title even if the title worker fails, the GGUF is missing, or the hash mismatches."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "The title worker has no runtime network (source or unit). Capture ID and terminal result are never dropped."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "TitleABI.swift still bans llama, gguf, openai, PrivateCloudCompute, URLSession, SystemLanguageModel, and NLEmbedding."
+    },
+    {
+      "id": "LOCAL-SMOLLM-TITLES-ACCEPTANCE-4",
+      "kind": "acceptance",
+      "statement": "ADR-019 Proposed candidate describes SmolLM2-135M-Instruct Q4_K_M + llama-cpp-2 + vendored hash + compact_title fallback. Status stays Proposed. T-10 records the offline-vendored carve-out."
+    }
+  ],
+  "depends_on": []
+}
