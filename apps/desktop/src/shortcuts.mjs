@@ -136,9 +136,19 @@ export function modifierNameFromEvent(event) {
   return KEY_MODIFIERS[event.key] || CODE_MODIFIERS[event.code] || "";
 }
 
+function eventHasModifier(event) {
+  return Boolean(
+    event?.metaKey ||
+      event?.altKey ||
+      event?.ctrlKey ||
+      event?.shiftKey ||
+      modifierNameFromEvent(event),
+  );
+}
+
 export function recorderIgnores(event) {
   return Boolean(
-    (event?.isComposing && !modifierNameFromEvent(event)) ||
+    (event?.isComposing && !eventHasModifier(event)) ||
       event?.repeat ||
       (event?.code === "F5" && event?.ctrlKey),
   );
@@ -552,9 +562,29 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
   };
 
+  const onCopy = (event) => {
+    const action = list.dataset.recordingAction;
+    if (!action) {
+      return;
+    }
+    event.preventDefault();
+    usedModifierWithKey = true;
+    modifierTap = null;
+    record(
+      action,
+      {
+        trigger: "accelerator",
+        modifiers: ["Command"],
+        logicalKey: "c",
+      },
+      true,
+    );
+  };
+
   const host = list.ownerDocument ?? list;
   host.addEventListener("keydown", onKeyDown, true);
   host.addEventListener("keyup", onKeyUp, true);
+  host.addEventListener("copy", onCopy, true);
 
   await refresh();
   return refresh;

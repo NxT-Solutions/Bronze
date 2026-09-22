@@ -164,6 +164,17 @@ test("shortcut formatter and recorder keep IME out and reject path keys", () => 
     recorderIgnores({ isComposing: true, key: "Alt", repeat: false }),
     false,
   );
+  assert.equal(
+    recorderIgnores({
+      isComposing: true,
+      key: "ø",
+      code: "KeyO",
+      altKey: true,
+      shiftKey: true,
+      repeat: false,
+    }),
+    false,
+  );
   assert.deepEqual(
     doubleTapFromModifierEvents(
       { modifier: "Option", at: 100 },
@@ -714,4 +725,28 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     recordsAfterReject,
   );
   assert.equal(list.dataset.recordingAction, "queue.search");
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  rejectNext = false;
+  root.emit("copy", {
+    preventDefault() {},
+  });
+  await Promise.resolve();
+  const copied = calls.findLast((entry) => entry.cmd === "record_shortcut");
+  assert.deepEqual(copied.args.input, {
+    action: "queue.search",
+    trigger: "accelerator",
+    modifiers: ["Command"],
+    logicalKey: "c",
+    skipTest: true,
+  });
 });
