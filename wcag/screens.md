@@ -43,11 +43,12 @@ Purpose: data, privacy, permission truth, shortcut inventory.
 
 Purpose: find and manage stored items.
 
-- Skip link → `#library-nav`.
-- `h1` Library. Segment nav is labelled by that heading.
+- Skip link → `#library-search`.
+- `h1` Library. Segment nav (Archive / Trash) is labelled by that
+  heading.
 - `h2` Items before the list. Empty-state `h2` stays when the list
   is empty.
-- Search field + `role="status"` count.
+- Header search field + toolbar `role="status"` count.
 - Same item chrome as Queue, without row actions.
 - Footer tools are secondary. Export… / Import… use an ellipsis.
 

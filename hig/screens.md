@@ -44,9 +44,11 @@ Purpose: data, privacy, permission truth, shortcut inventory.
 Purpose: find and manage stored items. Read-only archive relative to
 the live queue.
 
-- Segment: Archive / Trash / Search.
-- Search field + count (`N items`).
-- Empty state hidden when the list is non-empty.
+- Header matches Settings: brand + compact `chrome-search` (icon,
+  placeholder, clear). Search is a field, not a third page.
+- Segment: Archive / Trash. Count (`N items`) trails on the same
+  toolbar row.
+- Empty state is a quiet caption, hidden when the list is non-empty.
 - Same item chrome as Queue, without row actions (no silent drop of
   body or source).
 - Footer tools are secondary (ghost). Do not promote five filled pills.
