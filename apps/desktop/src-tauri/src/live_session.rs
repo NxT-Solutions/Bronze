@@ -1768,6 +1768,9 @@ mod live_session_tests {
         assert!(src.contains("peek_bundle_id"));
         assert!(src.contains("app_excluded"));
         let used = include_str!("../permissions/used-permissions.toml");
+        assert!(used.contains("list_shortcuts"));
+        assert!(used.contains("record_shortcut"));
+        assert!(used.contains("restore_shortcut"));
         assert!(used.contains("list_installed_apps"));
         assert!(used.contains("pick_installed_app"));
         assert!(used.contains("app_icon_data_url"));
