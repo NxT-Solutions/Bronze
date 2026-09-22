@@ -28,6 +28,10 @@ test("320 CSS px reflow keeps one-axis scroll, icon row beside Copy, and compose
   assert.ok(iconsRule, "queue card icon row rule");
   assert.match(iconsRule[0], /flex-wrap:\s*nowrap/);
   assert.doesNotMatch(iconsRule[0], /flex:\s*1 0 100%/);
+  const rowActionsRule = chrome.match(/\.row-actions\s*\{[^}]+\}/);
+  assert.ok(rowActionsRule, "queue card action row rule");
+  assert.match(rowActionsRule[0], /justify-content:\s*flex-end/);
+  assert.match(rowActionsRule[0], /margin-inline-start:\s*auto/);
   assert.match(html, /data-queue-action="copy"[\s\S]*data-slot="action-icons"/);
   assert.match(chrome, /word-break:\s*normal/);
   assert.match(chrome, /white-space:\s*nowrap/);

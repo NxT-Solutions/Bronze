@@ -86,6 +86,10 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.ok(rowActionsRule, "queue card action row rule");
   assert.match(rowActionsRule[0], /flex-wrap:\s*nowrap/);
   assert.match(rowActionsRule[0], /align-items:\s*center/);
+  assert.match(rowActionsRule[0], /justify-content:\s*flex-end/);
+  assert.match(rowActionsRule[0], /margin-inline-start:\s*auto/);
+  assert.doesNotMatch(rowActionsRule[0], /justify-content:\s*flex-start/);
+  assert.doesNotMatch(rowActionsRule[0], /\bright:\s/);
   assert.match(
     chrome,
     /\.row-actions > \.btn-primary\s*\{[\s\S]*?flex:\s*0 0 auto/,

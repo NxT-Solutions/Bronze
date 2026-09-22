@@ -923,8 +923,12 @@ article [data-slot="show-less"][hidden],
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-1);
   margin-block-start: var(--space-2);
+  margin-inline-start: auto;
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
   overflow: visible;
 }
