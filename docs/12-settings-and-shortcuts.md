@@ -181,7 +181,7 @@ Seeded defaults (all enabled):
 
 There is no `queue.paste`. Factory-disabled seed rows (revision 1, trigger disabled, not enabled) load as these defaults. User customizations stay. `SettingsV1.capture.standardChord` remains the settings view of `capture.selection` (ADR-016).
 
-Event-tap live fire is `capture.selection` when that binding is Shift N-tap (`tapCount` 2 through 8; absent means 2). The listen-only FSM triggers on the Nth Shift release, not earlier, using gap 250 ms, max hold 400 ms, either side, and refractory 500 ms. Non-Shift or non-multi-tap remaps of `capture.selection` disable the Shift engine. Other seeded globals persist through native registration without an OS grab. App-local chords and recorded Option/Command/Control/Fn multi-taps persist for the UI resolver; Quick Panel keydown still uses hardcoded composer chords.
+Event-tap live fire is `capture.selection` when that binding is Shift N-tap (`tapCount` 2 through 8; absent means 2). The listen-only FSM triggers on the Nth Shift release, not earlier, using gap 250 ms, max hold 400 ms, either side, and refractory 500 ms. Non-Shift or non-multi-tap remaps of `capture.selection` disable the Shift engine. Other seeded globals persist through native registration without an OS grab. App-local chords and recorded Option/Command/Control/Fn multi-taps persist for the UI resolver; Quick Panel keydown still uses hardcoded composer chords. When Bronze is frontmost, that same Capture path persists a WebView highlight from Quick, Settings, Library, or Help (fixed Rust script; password fields excluded) before last-external AX.
 
 ## 5. Recorder interaction
 
