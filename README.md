@@ -33,7 +33,7 @@ pnpm --filter desktop tauri dev
 
 Equivalent from `apps/desktop`: `pnpm tauri dev`. That script is the only desktop start command (`apps/desktop/package.json` → `"tauri": "tauri"`). There is no root `dev` script. `beforeDevCommand` is empty; Tauri serves `apps/desktop/src` as `frontendDist`.
 
-**What you will see in `tauri dev`.** The Quick Panel is a zinc inbox: composer, active items, and a **Copy** button on each row. More actions (complete, skip, trash, edit, move) sit in overflow. Library, Settings, and Help are separate Tauri windows — open them from the **Bronze** app menu or the menu-bar status item. Opening `*.html` in a browser has **no** Tauri invoke.
+**What you will see in `tauri dev`.** The Quick Panel is a zinc inbox: composer, active items, and a **Copy** button on each row. Complete, Skip, Edit, Move up, Move down, and Trash sit in a compact icon row under Copy. Library, Settings, and Help are separate Tauri windows — open them from the **Bronze** app menu or the menu-bar status item. Opening `*.html` in a browser has **no** Tauri invoke.
 
 Hand-test in the **native** window only:
 

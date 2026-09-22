@@ -59,8 +59,8 @@ Each item exposes:
 - optional user-editable content-language metadata, defaulting to unknown rather than guessed;
 - optional provenance row: catalog `capture.source` (`From {appName}`) when Capture stored a focused-process name; a 16px official app icon from the list DTO `sourceAppIcon` (`data:image/png;base64,…` only) sits beside the name when Rust can resolve the `.app` via NSWorkspace; the name stays if the icon is unavailable; no URL or window title in this build; composer rows omit the row;
 - status text (`Queued`, `Copied`, `Done`, etc.);
-- context action button;
-- drag handle only when pointer reordering enabled, with Move Up/Down menu equivalents.
+- context action button (filled **Copy**);
+- compact icon row for Complete, Skip, Edit…, Move up, Move down, and Trash (catalog `aria-label` plus hover/focus-visible tip; Trash uses the destructive token). Move up / Move down replace drag.
 
 The row is not a clickable `div`. Use list/article semantics with actual buttons and checkbox/menu primitives. Focused row can support roving keyboard navigation only if semantics remain clear; ordinary tab order is preferred for MVP.
 
@@ -146,10 +146,10 @@ Exported settings always exclude app credentials, permission tokens, diagnostic 
 
 Panel must remain usable under 200% text resize and 400% WebView zoom/reflow at 320 CSS px:
 
-- one-column content; toolbar wraps into labeled overflow;
+- one-column content; the card icon row wraps; composer stays in document flow;
 - no horizontal scroll for controls at 320 CSS px viewport width;
 - content may scroll vertically while composer and status remain reachable;
-- card actions move to menu but primary lifecycle/copy remain available;
+- card actions stay as Copy plus the wrapping icon row; primary Copy remains available;
 - user content wraps by default; code can horizontally scroll inside bounded region;
 - OS text-size preference maps to application scale presets without layout break.
 

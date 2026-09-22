@@ -39,7 +39,7 @@ Results:
 | 1.4.1 Use of Color | Supports | Status pills include text; Differentiate Without Color underlines status. |
 | 1.4.2 Audio Control | N/A | No autoplay audio. |
 | 2.1.1 Keyboard | Supports | Controls are native buttons, links, fields, dialog. Global capture has menu/composer alternatives. |
-| 2.1.2 No Keyboard Trap | Supports | Escape closes edit sheet and overflow. |
+| 2.1.2 No Keyboard Trap | Supports | Escape closes edit sheet and dismisses icon tips. |
 | 2.1.4 Character Key Shortcuts | Supports | No single-character WebView shortcuts. |
 | 2.2.1 Timing Adjustable | Supports | No timed WebView interaction. Double-tap is optional. |
 | 2.2.2 Pause, Stop, Hide | Supports | Motion is short state feedback; Reduce Motion wins. |
@@ -50,7 +50,7 @@ Results:
 | 2.4.4 Link Purpose (In Context) | Supports | Archive / Trash / Search / Help names. |
 | 2.5.1 Pointer Gestures | Supports | No path-only gesture. |
 | 2.5.2 Pointer Cancellation | Supports | Activation on up. |
-| 2.5.3 Label in Name | Supports | Visible label is the accessible name (`a11y.test.mjs`). |
+| 2.5.3 Label in Name | Supports | Visible text is the accessible name. Queue icon-row names are catalog `aria-label`; tips are `aria-hidden` and match (`a11y.test.mjs`). |
 | 2.5.4 Motion Actuation | Supports | No device-motion actions. |
 | 3.1.1 Language of Page | Supports | `html lang`; `apply-locale` updates lang/dir. |
 | 3.2.1 On Focus | Supports | Focus does not change context. |
@@ -76,13 +76,13 @@ Results:
 | 1.4.10 Reflow | Partial | Column layout and overflow tests exist. 400%/320 human matrix is 9.3. |
 | 1.4.11 Non-text Contrast | Partial | Focus ring ≥3:1. Default grouping is HIG hairline (`#e4e4e7` / 8% mix). Increase Contrast / `prefers-contrast: more` is the 3:1 border path. |
 | 1.4.12 Text Spacing | Partial | Author styles do not clip at default. User-override matrix is 9.3. |
-| 1.4.13 Content on Hover or Focus | Supports | Action tip on the control; dismissible; `#action-status` is SR-only. |
+| 1.4.13 Content on Hover or Focus | Supports | Copy action tip on the control; icon-row tips on hover and `:focus-visible`; Escape dismisses; `#action-status` is SR-only. |
 | 2.4.5 Multiple Ways | Partial | Four windows plus menu bar, not a multi-page site. |
 | 2.4.6 Headings and Labels | Supports | Inbox / Items / Settings groups / Help sections. |
 | 2.4.7 Focus Visible | Supports | 2px `:focus-visible` ring. |
-| 2.4.11 Focus Not Obscured (Minimum) | Supports | Open overflow raises its card. |
+| 2.4.11 Focus Not Obscured (Minimum) | Supports | Hover or focus on a card icon raises that card. |
 | 2.5.7 Dragging Movements | Supports | Move up / Move down. No drag requirement. |
-| 2.5.8 Target Size (Minimum) | Supports | Interactive controls `min 2rem` (32px). Pills are not targets. |
+| 2.5.8 Target Size (Minimum) | Supports | Push buttons `min 2rem` (32px). Queue icon-row and chip `.btn-icon` use `1.5rem` (24px). Pills are not targets. |
 | 3.1.2 Language of Parts | Supports | Chrome follows UI locale. Language switcher options use endonyms and option `lang`. Bodies are `lang="und" dir="auto"`. |
 | 3.2.3 Consistent Navigation | Supports | Shared brand header; Library segments stay put. |
 | 3.2.4 Consistent Identification | Supports | Same actions keep the same names. |
