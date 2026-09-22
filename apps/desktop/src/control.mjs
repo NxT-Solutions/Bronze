@@ -9,6 +9,13 @@ export function motionAllowed(doc) {
   if (!doc) {
     return false;
   }
+  const motion = doc.documentElement?.dataset?.motion;
+  if (motion === "full") {
+    return true;
+  }
+  if (motion === "reduce") {
+    return false;
+  }
   if (doc.documentElement?.hasAttribute("data-reduce-motion")) {
     return false;
   }

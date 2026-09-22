@@ -4,6 +4,11 @@ import {
   emitUiLocaleChanged,
   LOCALE_APPLIED_EVENT,
 } from "./apply-locale.mjs";
+import {
+  applyMotionFromSettings,
+  emitMotionChanged,
+  parseReduceMotion,
+} from "./apply-motion.mjs";
 import { runBusy } from "./control.mjs";
 import { sourceIconSrc } from "./item-view.mjs";
 import { bindShortcutRegistry } from "./shortcuts.mjs";
@@ -702,6 +707,12 @@ export function applySettingsForm(root, settings) {
   if (titleModel && titleId) {
     titleModel.value = titleId;
   }
+  const reduceMotion = root.querySelector("#reduce-motion");
+  if (reduceMotion) {
+    reduceMotion.value = parseReduceMotion(
+      settings?.general?.reduceMotion ?? settings?.accessibility?.motion,
+    );
+  }
 }
 
 export function patchSettingsFromForm(settings, root) {
@@ -726,11 +737,20 @@ export function patchSettingsFromForm(settings, root) {
   if (titleModel) {
     next.general.titleModel = titleModel;
   }
+  const reduceEl = root.querySelector("#reduce-motion")?.value;
+  if (reduceEl === "system" || reduceEl === "on" || reduceEl === "off") {
+    next.general.reduceMotion = reduceEl;
+    if (!next.accessibility) {
+      next.accessibility = {};
+    }
+    next.accessibility.motion = reduceEl;
+  }
   return next;
 }
 
 async function applySavedLocale(root, settings, invokeFn) {
   applySettingsForm(root, settings);
+  applyMotionFromSettings(root, settings);
   try {
     const catalog = await invokeFn("ui_catalog");
     applyHandTestLocale(root, settings?.general?.locale, catalog);
@@ -827,6 +847,9 @@ export async function bindSettingsLive(
     await refreshExcludedIcons(root, invokeFn);
     await refreshShortcuts?.();
     await refreshExportPreview();
+    await emitMotionChanged({
+      reduceMotion: settings?.general?.reduceMotion,
+    });
     if (settings?.general?.locale !== before) {
       await emitUiLocaleChanged({ locale: settings.general.locale });
     }
@@ -872,6 +895,9 @@ export async function bindSettingsLive(
         await refreshShortcuts?.();
         await refreshExportPreview();
         showExportStatus(root, "settings.import.done");
+        await emitMotionChanged({
+          reduceMotion: settings?.general?.reduceMotion,
+        });
         if (settings?.general?.locale !== before) {
           await emitUiLocaleChanged({ locale: settings.general.locale });
         }
@@ -891,6 +917,7 @@ export async function bindSettingsLive(
   root.querySelector("#backup-schedule")?.addEventListener("change", persist);
   root.querySelector("#ui-locale")?.addEventListener("change", persist);
   root.querySelector("#title-model")?.addEventListener("change", persist);
+  root.querySelector("#reduce-motion")?.addEventListener("change", persist);
 
   root.querySelectorAll("[data-reset-field]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -902,6 +929,9 @@ export async function bindSettingsLive(
         await refreshExcludedIcons(root, invokeFn);
         await refreshShortcuts?.();
         await refreshExportPreview();
+        await emitMotionChanged({
+          reduceMotion: settings?.general?.reduceMotion,
+        });
         if (settings?.general?.locale !== before) {
           await emitUiLocaleChanged({ locale: settings.general.locale });
         }
@@ -918,6 +948,9 @@ export async function bindSettingsLive(
       await refreshExcludedIcons(root, invokeFn);
       await refreshShortcuts?.();
       await refreshExportPreview();
+      await emitMotionChanged({
+        reduceMotion: settings?.general?.reduceMotion,
+      });
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }
@@ -932,6 +965,9 @@ export async function bindSettingsLive(
       await refreshExcludedIcons(root, invokeFn);
       await refreshShortcuts?.();
       await refreshExportPreview();
+      await emitMotionChanged({
+        reduceMotion: settings?.general?.reduceMotion,
+      });
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }

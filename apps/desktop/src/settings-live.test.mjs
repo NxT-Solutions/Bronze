@@ -38,20 +38,27 @@ const live = readFileSync(join(rootDir, "settings-live.mjs"), "utf8");
 
 test("settings form patches backup schedule, excluded apps, and locale", () => {
   const settings = {
-    general: { locale: "system", titleModel: "smol-360" },
+    general: {
+      locale: "system",
+      titleModel: "smol-360",
+      reduceMotion: "system",
+    },
     data: { backupSchedule: "daily" },
     privacy: { excludedBundleIds: ["com.example"] },
+    accessibility: { motion: "system" },
   };
   const schedule = { value: "weekly" };
   const excluded = { dataset: { excludedIds: "" } };
   const locale = { value: "en" };
   const titleModel = { value: "extractive" };
+  const reduceMotion = { value: "system" };
   const root = {
     querySelector(sel) {
       if (sel === "#backup-schedule") return schedule;
       if (sel === "#excluded-apps") return excluded;
       if (sel === "#ui-locale") return locale;
       if (sel === "#title-model") return titleModel;
+      if (sel === "#reduce-motion") return reduceMotion;
       return null;
     },
   };
@@ -60,18 +67,24 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   assert.equal(excluded.dataset.excludedIds, "com.example");
   assert.equal(locale.value, "en");
   assert.equal(titleModel.value, "smol-360");
+  assert.equal(reduceMotion.value, "system");
   settings.general.locale = "nl";
+  settings.general.reduceMotion = "off";
   applySettingsForm(root, settings);
   assert.equal(locale.value, "nl");
+  assert.equal(reduceMotion.value, "off");
   schedule.value = "weekly";
   excluded.dataset.excludedIds = "com.one\ncom.two";
   locale.value = "fr";
   titleModel.value = "qwen-05";
+  reduceMotion.value = "on";
   const next = patchSettingsFromForm(settings, root);
   assert.equal(next.data.backupSchedule, "weekly");
   assert.deepEqual(next.privacy.excludedBundleIds, ["com.one", "com.two"]);
   assert.equal(next.general.locale, "fr");
   assert.equal(next.general.titleModel, "qwen-05");
+  assert.equal(next.general.reduceMotion, "on");
+  assert.equal(next.accessibility.motion, "on");
   assert.equal(switcherLocale("system"), "en");
   assert.equal(switcherLocale("de"), "de");
   const preserved = patchSettingsFromForm(
@@ -275,6 +288,9 @@ test("settings language switcher uses endonyms and option lang", () => {
   assert.match(html, /<option value="es" lang="es">🇪🇸 Español<\/option>/);
   assert.match(html, /<option value="it" lang="it">🇮🇹 Italiano<\/option>/);
   assert.match(html, /data-reset-field="general.locale"/);
+  assert.match(html, /data-reset-field="general.reduceMotion"/);
+  assert.match(html, /id="reduce-motion"/);
+  assert.match(live, /emitMotionChanged/);
   assert.match(live, /emitUiLocaleChanged/);
   assert.match(live, /applySettingsSearch/);
   assert.doesNotMatch(live, /search_settings_fields/);

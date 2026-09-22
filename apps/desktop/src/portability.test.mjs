@@ -19,7 +19,10 @@ test("library owns backup export import with secret warning and no off schedule"
   assert.match(library, /data-restore-preview/);
   assert.match(library, /data-export-secret-warning/);
   assert.match(library, /data-i18n="export.preview.secretBodies"/);
-  assert.doesNotMatch(settings, /value="off"/);
+  assert.doesNotMatch(
+    settings,
+    /id="backup-schedule"[\s\S]*?<option value="off"/,
+  );
   assert.equal(en["library.backup.now"], "Back Up Now");
   assert.equal(
     en["export.preview.secretBodies"],

@@ -85,6 +85,11 @@ export const MessageIds = {
   "settings.field.launchAtLogin": "settings.field.launchAtLogin",
   "settings.field.backupSchedule": "settings.field.backupSchedule",
   "settings.field.locale": "settings.field.locale",
+  "settings.field.reduceMotion": "settings.field.reduceMotion",
+  "settings.field.reduceMotion.help": "settings.field.reduceMotion.help",
+  "settings.field.reduceMotion.system": "settings.field.reduceMotion.system",
+  "settings.field.reduceMotion.on": "settings.field.reduceMotion.on",
+  "settings.field.reduceMotion.off": "settings.field.reduceMotion.off",
   "settings.field.titleModel": "settings.field.titleModel",
   "settings.field.titleModel.help": "settings.field.titleModel.help",
   "settings.field.titleModel.extractive":

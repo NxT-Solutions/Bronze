@@ -60,6 +60,7 @@ describe("i18n ICU plural", () => {
     const { t: tfr } = await createI18n({ lng: "fr" });
     expect(tfr("settings.field.locale")).toBe("Langue");
     expect(tfr("settings.field.titleModel")).toBe("Moteur de titre");
+    expect(tfr("settings.field.reduceMotion")).toBe("Réduire les animations");
     expect(
       tfr("settings.field.titleModel.loading", { engine: "Qwen2.5 0.5B" }),
     ).toBe("Chargement de Qwen2.5 0.5B…");

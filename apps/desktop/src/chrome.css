@@ -1708,13 +1708,25 @@ article [data-slot="source-label"],
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  html:not([data-motion="full"]) *,
+  html:not([data-motion="full"]) *::before,
+  html:not([data-motion="full"]) *::after {
     transition: none !important;
     animation: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+html[data-motion="reduce"] *,
+html[data-motion="reduce"] *::before,
+html[data-motion="reduce"] *::after,
+html[data-motion="reduce"] .queue-item.is-leaving-complete,
+html[data-motion="reduce"] .queue-item.is-leaving-skip,
+html[data-motion="reduce"] .queue-item.is-leaving-trash,
+html[data-motion="reduce"] li.is-entering {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
 }
 
 @media (prefers-contrast: more) {

@@ -107,6 +107,51 @@
             </div>
           </div>
           <div class="field-block" data-settings-unit>
+            <label for="reduce-motion" data-i18n="settings.field.reduceMotion">Reduce motion</label>
+            <p
+              id="reduce-motion-help"
+              class="muted field-help"
+              data-i18n="settings.field.reduceMotion.help"
+            >
+              Follows this Mac unless you override it.
+            </p>
+            <div class="field-row">
+              <select
+                id="reduce-motion"
+                name="reduceMotion"
+                aria-describedby="reduce-motion-help"
+              >
+                <option
+                  value="system"
+                  selected
+                  data-i18n="settings.field.reduceMotion.system"
+                >
+                  Follow this Mac
+                </option>
+                <option
+                  value="on"
+                  data-i18n="settings.field.reduceMotion.on"
+                >
+                  Always reduce
+                </option>
+                <option
+                  value="off"
+                  data-i18n="settings.field.reduceMotion.off"
+                >
+                  Play animations
+                </option>
+              </select>
+              <button
+                type="button"
+                class="btn-ghost"
+                data-reset-field="general.reduceMotion"
+                data-i18n="settings.reset.field"
+              >
+                Reset field
+              </button>
+            </div>
+          </div>
+          <div class="field-block" data-settings-unit>
             <label for="title-model" data-i18n="settings.field.titleModel">Title engine</label>
             <p
               id="title-model-help"

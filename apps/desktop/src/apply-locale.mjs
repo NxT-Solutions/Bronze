@@ -1,3 +1,4 @@
+import { bindMotionPreference } from "./apply-motion.mjs";
 import { tauriEmit, tauriInvoke, tauriListen } from "./tauri-bridge.mjs";
 
 export const UI_LOCALE_EVENT = "ui-locale-changed";
@@ -245,4 +246,5 @@ export function listenForLocaleChanges(
 if (globalThis.document?.readyState) {
   bindHandTestLocale();
   listenForLocaleChanges();
+  bindMotionPreference();
 }

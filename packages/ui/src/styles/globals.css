@@ -104,13 +104,21 @@
 
 /* Reduce Motion hook (A11Y-003) */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  html:not([data-motion="full"]) *,
+  html:not([data-motion="full"]) *::before,
+  html:not([data-motion="full"]) *::after {
     transition: none !important;
     animation: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+html[data-motion="reduce"] *,
+html[data-motion="reduce"] *::before,
+html[data-motion="reduce"] *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
 }
 
 /* Increase Contrast hook (A11Y-003) - strengthen borders, ring, no subtle */

@@ -28,7 +28,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /data-reset-field="data.backupSchedule"/);
   assert.match(html, /<option value="daily"/);
   assert.match(html, /<option value="weekly"/);
-  assert.doesNotMatch(html, /value="off"/);
+  assert.doesNotMatch(html, /id="backup-schedule"[\s\S]*?<option value="off"/);
   assert.doesNotMatch(html, /value="manual"/);
   assert.match(html, /data-export-preview/);
   assert.match(html, /data-export-included/);
@@ -90,6 +90,19 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /data-i18n-aria-label="settings.search.clear"/);
   assert.equal(en["settings.search.clear"], "Clear search");
   assert.match(html, /id="title-model"/);
+  assert.match(html, /id="reduce-motion"/);
+  assert.match(html, /data-reset-field="general.reduceMotion"/);
+  assert.match(html, /data-i18n="settings.field.reduceMotion"/);
+  assert.match(html, />\s*Follows this Mac unless you override it\.\s*</);
+  assert.equal(en["settings.field.reduceMotion"], "Reduce motion");
+  assert.equal(
+    en["settings.field.reduceMotion.help"],
+    "Follows this Mac unless you override it.",
+  );
+  assert.equal(en["settings.field.reduceMotion.system"], "Follow this Mac");
+  assert.equal(en["settings.field.reduceMotion.on"], "Always reduce");
+  assert.equal(en["settings.field.reduceMotion.off"], "Play animations");
+  assert.match(html, /<option\s+value="off"/);
   assert.match(html, /data-reset-field="general.titleModel"/);
   assert.match(html, /data-i18n="settings.field.titleModel"/);
   assert.match(html, />\s*Title engine\s*</);
