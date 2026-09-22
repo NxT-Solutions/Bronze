@@ -147,11 +147,11 @@ def check_title_adr() -> list[str]:
     if "Status: Accepted" in section:
         errors.append("ADR-019 must not be Accepted")
     for needle in (
-        "SmolLM2-135M-Instruct",
+        "SmolLM2-360M-Instruct",
         "llama-cpp-2",
         "compact_title",
         "Q4_K_M",
-        "2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d",
+        "2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2",
     ):
         if needle not in section:
             errors.append(f"ADR-019 missing {needle}")
@@ -165,6 +165,10 @@ def check_title_adr() -> list[str]:
             errors.append("T-10 must still forbid Private Cloud Compute")
         if "hash-pinned" not in t10 and "SHA-256-pinned" not in t10:
             errors.append("T-10 missing hash-pinned carve-out")
+        if "SmolLM2-360M-Instruct-Q4_K_M.gguf" not in t10:
+            errors.append("T-10 missing 360M filename")
+        if "2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2" not in t10:
+            errors.append("T-10 missing 360M hash")
         if "no bundled GGUF" in t10:
             errors.append("T-10 still bans bundled GGUF without carve-out")
     return errors
