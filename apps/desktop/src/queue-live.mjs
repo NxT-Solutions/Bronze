@@ -469,6 +469,63 @@ export function applyCaptureResult(root, result) {
   showChromeNotice(root, text, result?.terminal === "saved" ? "ok" : "failed");
 }
 
+export function queueMoveDisabled(index, count) {
+  return {
+    moveUp: count < 1 || index <= 0,
+    moveDown: count < 1 || index >= count - 1,
+  };
+}
+
+function setQueueMoveDisabled(button, disabled) {
+  if (!button || !("disabled" in button)) {
+    return;
+  }
+  button.disabled = disabled;
+}
+
+export function applyQueueMoveAvailability(row, index, count) {
+  const flags = queueMoveDisabled(index, count);
+  setQueueMoveDisabled(
+    row?.querySelector?.('[data-queue-action="moveUp"]'),
+    flags.moveUp,
+  );
+  setQueueMoveDisabled(
+    row?.querySelector?.('[data-queue-action="moveDown"]'),
+    flags.moveDown,
+  );
+}
+
+function queueItemRows(list) {
+  if (!list) {
+    return [];
+  }
+  if (list.children) {
+    return Array.from(list.children);
+  }
+  if (typeof list.querySelectorAll === "function") {
+    return Array.from(list.querySelectorAll(".queue-item"));
+  }
+  return [];
+}
+
+export function syncQueueMoveAvailability(list) {
+  const rows = queueItemRows(list);
+  const count = rows.length;
+  for (const [index, row] of rows.entries()) {
+    applyQueueMoveAvailability(row, index, count);
+  }
+}
+
+function observeQueueOrder(list) {
+  if (!list || typeof MutationObserver !== "function") {
+    return;
+  }
+  const observer = new MutationObserver(() => {
+    syncQueueMoveAvailability(list);
+  });
+  observer.observe(list, { childList: true });
+}
+
 export function renderQueueItems(list, items, template) {
   const labels = readExpandLabels(template.content);
   list.replaceChildren();
@@ -494,6 +551,7 @@ export function renderQueueItems(list, items, template) {
     list.append(node);
     syncExpandVisibility(article);
   }
+  syncQueueMoveAvailability(list);
 }
 
 export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
@@ -511,6 +569,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   bindOverflowDismiss(root);
   bindIconTips(root);
   bindChromeNotice(root);
+  observeQueueOrder(list);
   syncComposerEmpty(editor);
   const submit = form.querySelector("[type=submit]");
   function syncSubmitLabel() {
@@ -637,13 +696,21 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   list.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-queue-action]");
-    if (!(button instanceof HTMLButtonElement)) {
+    if (!(button instanceof HTMLButtonElement) || button.disabled) {
       return;
     }
     const id = button.dataset.itemId;
     const action = button.dataset.queueAction;
     if (!id || !action) {
       return;
+    }
+    if (action === "moveUp" || action === "moveDown") {
+      const row = button.closest("li");
+      const rows = queueItemRows(list);
+      const index = rows.indexOf(row);
+      if (queueMoveDisabled(index, rows.length)[action]) {
+        return;
+      }
     }
     await runBusy(button, async () => {
       if (action === "copy") {

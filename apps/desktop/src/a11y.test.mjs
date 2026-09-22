@@ -14,6 +14,7 @@ test("queue action accessible names contain visible labels", () => {
   assert.match(html, /data-i18n-aria-label="queue.item.moveUp"/);
   assert.match(html, /aria-label="Move up"/);
   assert.match(html, /data-i18n="queue.item.moveUp">Move up</);
+  assert.doesNotMatch(html, /can.?t move|cannot move|can't move/i);
   assert.match(html, /data-i18n-aria-label="queue.item.moveDown"/);
   assert.match(html, /aria-label="Move down"/);
   assert.match(html, /data-i18n="queue.item.moveDown">Move down</);

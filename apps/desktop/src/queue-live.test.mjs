@@ -13,6 +13,8 @@ import {
   composerSubmitLabelKey,
   formatCaptureSource,
   QUE_007_COMPLETE,
+  queueMoveDisabled,
+  syncQueueMoveAvailability,
 } from "./queue-live.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -94,6 +96,8 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(live, /showChromeNotice/);
   assert.match(live, /bindOverflowDismiss/);
   assert.match(live, /bindIconTips/);
+  assert.match(live, /syncQueueMoveAvailability/);
+  assert.match(live, /observeQueueOrder/);
   assert.match(html, /data-slot="action-icons"/);
   assert.match(html, /data-queue-action="complete"/);
   assert.match(html, /data-queue-action="skip"/);
@@ -140,6 +144,76 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(html, /id="edit-sheet"/);
   assert.match(html, /data-edit-dismiss/);
   assert.match(html, /data-i18n="queue.item.edit.save"/);
+});
+
+function fakeMoveButton(action, label) {
+  return {
+    dataset: { queueAction: action },
+    disabled: false,
+    getAttribute(name) {
+      if (name === "aria-label") {
+        return label;
+      }
+      return null;
+    },
+  };
+}
+
+function fakeQueueRow() {
+  const moveUp = fakeMoveButton("moveUp", "Move up");
+  const moveDown = fakeMoveButton("moveDown", "Move down");
+  const copy = fakeMoveButton("copy", "Copy");
+  return {
+    moveUp,
+    moveDown,
+    copy,
+    querySelector(sel) {
+      if (sel === '[data-queue-action="moveUp"]') {
+        return moveUp;
+      }
+      if (sel === '[data-queue-action="moveDown"]') {
+        return moveDown;
+      }
+      if (sel === '[data-queue-action="copy"]') {
+        return copy;
+      }
+      return null;
+    },
+  };
+}
+
+test("move up and down disable at the visible ends and stay named", () => {
+  assert.deepEqual(queueMoveDisabled(0, 3), { moveUp: true, moveDown: false });
+  assert.deepEqual(queueMoveDisabled(1, 3), { moveUp: false, moveDown: false });
+  assert.deepEqual(queueMoveDisabled(2, 3), { moveUp: false, moveDown: true });
+  assert.deepEqual(queueMoveDisabled(0, 1), { moveUp: true, moveDown: true });
+  const first = fakeQueueRow();
+  const middle = fakeQueueRow();
+  const last = fakeQueueRow();
+  const list = { children: [first, middle, last] };
+  syncQueueMoveAvailability(list);
+  assert.equal(first.moveUp.disabled, true);
+  assert.equal(first.moveDown.disabled, false);
+  assert.equal(middle.moveUp.disabled, false);
+  assert.equal(middle.moveDown.disabled, false);
+  assert.equal(last.moveUp.disabled, false);
+  assert.equal(last.moveDown.disabled, true);
+  assert.equal(first.copy.disabled, false);
+  assert.equal(first.moveUp.getAttribute("aria-label"), "Move up");
+  assert.equal(last.moveDown.getAttribute("aria-label"), "Move down");
+  const only = fakeQueueRow();
+  syncQueueMoveAvailability({ children: [only] });
+  assert.equal(only.moveUp.disabled, true);
+  assert.equal(only.moveDown.disabled, true);
+  assert.equal(only.copy.disabled, false);
+  list.children = [last, first, middle];
+  syncQueueMoveAvailability(list);
+  assert.equal(last.moveUp.disabled, true);
+  assert.equal(last.moveDown.disabled, false);
+  assert.equal(first.moveUp.disabled, false);
+  assert.equal(first.moveDown.disabled, false);
+  assert.equal(middle.moveUp.disabled, false);
+  assert.equal(middle.moveDown.disabled, true);
 });
 
 test("composer hotkeys follow common rich-text chords", () => {

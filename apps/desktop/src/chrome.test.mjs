@@ -114,15 +114,23 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\.queue-item[\s\S]*z-index:\s*0/);
   assert.match(
     chrome,
-    /\.queue-item:has\(\.row-action-icons \.btn-icon:hover\)[\s\S]*z-index:\s*3/,
+    /\.queue-item:has\(\.row-action-icons \.btn-icon:hover:not\(:disabled\)\)[\s\S]*z-index:\s*3/,
   );
   assert.match(
     chrome,
-    /\.row-action-icons \.btn-icon:hover \.icon-tip[\s\S]*pointer-events:\s*auto/,
+    /\.row-action-icons \.btn-icon:hover:not\(:disabled\) \.icon-tip[\s\S]*pointer-events:\s*auto/,
   );
   assert.match(
     chrome,
-    /\.row-action-icons \.btn-icon:focus-visible \.icon-tip[\s\S]*pointer-events:\s*auto/,
+    /\.row-action-icons \.btn-icon:focus-visible:not\(:disabled\) \.icon-tip[\s\S]*pointer-events:\s*auto/,
+  );
+  assert.match(
+    chrome,
+    /\.row-action-icons \.btn-icon:disabled \.icon-tip[\s\S]*visibility:\s*hidden/,
+  );
+  assert.match(
+    chrome,
+    /\.row-action-icons \.btn-icon:disabled[\s\S]*cursor:\s*default/,
   );
   assert.match(
     chrome,

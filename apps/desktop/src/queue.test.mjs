@@ -25,6 +25,9 @@ test("queue list uses semantic list article and real buttons", () => {
   assert.doesNotMatch(html, /data-slot="toolbar-overflow"/);
   assert.doesNotMatch(html, /<div\b[^>]*(onclick|role="button")/);
   assert.equal(en["queue.item.moveUp"], "Move up");
+  assert.equal(en["queue.item.moveDown"], "Move down");
+  assert.doesNotMatch(html, /data-queue-action="moveUp"[^>]*\bdisabled\b/);
+  assert.doesNotMatch(html, /data-queue-action="moveDown"[^>]*\bdisabled\b/);
   assert.equal(en["queue.item.complete"], "Complete");
   assert.match(html, /data-i18n="capture.source"/);
   assert.match(html, /<h3\b[^>]*data-slot="title"/);

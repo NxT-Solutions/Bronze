@@ -778,8 +778,8 @@ pre {
   overflow: visible;
 }
 
-.queue-item:has(.row-action-icons .btn-icon:hover),
-.queue-item:has(.row-action-icons .btn-icon:focus-visible),
+.queue-item:has(.row-action-icons .btn-icon:hover:not(:disabled)),
+.queue-item:has(.row-action-icons .btn-icon:focus-visible:not(:disabled)),
 .queue-item:has(.action-tip:not([hidden])) {
   z-index: 3;
 }
@@ -934,8 +934,8 @@ article [data-slot="show-less"][hidden],
   flex: 0 0 auto;
 }
 
-.row-actions:has(.row-action-icons .btn-icon:hover),
-.row-actions:has(.row-action-icons .btn-icon:focus-visible),
+.row-actions:has(.row-action-icons .btn-icon:hover:not(:disabled)),
+.row-actions:has(.row-action-icons .btn-icon:focus-visible:not(:disabled)),
 .row-actions:has(.action-tip:not([hidden])) {
   z-index: 2;
 }
@@ -1049,12 +1049,18 @@ article [data-slot="show-less"][hidden],
   height: 7px;
 }
 
-.row-action-icons .btn-icon:hover .icon-tip,
-.row-action-icons .btn-icon:focus-visible .icon-tip,
-.row-action-icons .btn-icon:has(.icon-tip:hover) .icon-tip {
+.row-action-icons .btn-icon:hover:not(:disabled) .icon-tip,
+.row-action-icons .btn-icon:focus-visible:not(:disabled) .icon-tip,
+.row-action-icons .btn-icon:not(:disabled):has(.icon-tip:hover) .icon-tip {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+}
+
+.row-action-icons .btn-icon:disabled .icon-tip {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .row-action-icons[data-tips-dismissed] .icon-tip {
@@ -1336,9 +1342,13 @@ button.btn-icon:focus-visible:not(.btn-primary) {
   z-index: 1;
 }
 
-.row-action-icons .btn-icon:hover,
-.row-action-icons .btn-icon:focus-visible {
+.row-action-icons .btn-icon:hover:not(:disabled),
+.row-action-icons .btn-icon:focus-visible:not(:disabled) {
   z-index: 6;
+}
+
+.row-action-icons .btn-icon:disabled {
+  cursor: default;
 }
 
 .app-chip .btn-icon {
