@@ -4,11 +4,11 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-pub const FILENAME: &str = "SmolLM2-135M-Instruct-Q4_K_M.gguf";
-pub const SHA256_HEX: &str = "2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d";
-pub const HF_BASE_REPO: &str = "HuggingFaceTB/SmolLM2-135M-Instruct";
-pub const HF_GGUF_REPO: &str = "bartowski/SmolLM2-135M-Instruct-GGUF";
-pub const HF_REVISION: &str = "09816acd5d99df7be770d85ea30822623dab342c";
+pub const FILENAME: &str = "SmolLM2-360M-Instruct-Q4_K_M.gguf";
+pub const SHA256_HEX: &str = "2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2";
+pub const HF_BASE_REPO: &str = "HuggingFaceTB/SmolLM2-360M-Instruct";
+pub const HF_GGUF_REPO: &str = "bartowski/SmolLM2-360M-Instruct-GGUF";
+pub const HF_REVISION: &str = "ab928a97ee49f3a015f35194879f68211291d6ca";
 
 static OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 static VERIFIED: OnceLock<(PathBuf, WeightsSource)> = OnceLock::new();
@@ -269,5 +269,7 @@ mod weights_tests {
         assert!(manifest.contains(HF_GGUF_REPO));
         assert!(manifest.contains(HF_REVISION));
         assert!(manifest.contains("Apache-2.0"));
+        assert!(FILENAME.contains("360M"));
+        assert!(!FILENAME.contains("135M"));
     }
 }

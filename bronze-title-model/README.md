@@ -10,9 +10,9 @@ Developer or CI vendors once:
 sh bronze-title-model/scripts/vendor-gguf.sh
 ```
 
-The script downloads `SmolLM2-135M-Instruct-Q4_K_M.gguf` from the pinned Hugging Face revision and checks SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d`. git-lfs is not required. The GGUF is gitignored. Capture and runtime never fetch.
+The script downloads `SmolLM2-360M-Instruct-Q4_K_M.gguf` from the pinned Hugging Face revision and checks SHA-256 `2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2`. git-lfs is not required. The GGUF is gitignored. Capture and runtime never fetch.
 
-`vendor/MANIFEST`, `vendor/LICENSE`, and `vendor/NOTICE` record HuggingFaceTB/SmolLM2-135M-Instruct (Apache-2.0), the bartowski Q4_K_M file, revision, and hash.
+`vendor/MANIFEST`, `vendor/LICENSE`, and `vendor/NOTICE` record HuggingFaceTB/SmolLM2-360M-Instruct (Apache-2.0), the bartowski Q4_K_M file, revision, and hash.
 
 Load order: `set_weights_path` (Rust setup only, when that file exists), else `BRONZE_TITLE_WEIGHTS`, else `vendor/` next to this crate (`CARGO_MANIFEST_DIR` of `bronze-title-model`), else workspace walk from the crate, cwd, or executable looking for `bronze-title-model/vendor/`, else `models/` beside the executable, else `Resources/models`. A missing override does not hide later candidates. No WebView path.
 
@@ -30,8 +30,8 @@ Stages: `weights resolved source={bundle|override|env|vendor|workspace|exe|resou
 
 Fallback reasons: `missing_weights`, `bad_hash`, `unreadable`, `timeout`, `short_body`, `ungrounded`, `empty`, `stale_body`.
 
-In `tauri dev`, grep the cargo/tauri terminal for `bronze-title:`. Optional: `BRONZE_TITLE_WEIGHTS=/absolute/path/to/SmolLM2-135M-Instruct-Q4_K_M.gguf`.
+In `tauri dev`, grep the cargo/tauri terminal for `bronze-title:`. Optional: `BRONZE_TITLE_WEIGHTS=/absolute/path/to/SmolLM2-360M-Instruct-Q4_K_M.gguf`.
 
 ## Fallback
 
-Missing file, hash mismatch, timeout, empty output, load failure, a body already at most 40 characters, or a title that shares no 3+ character term with the body returns no refine. The stored `compact_title` stays. 135M can invent unrelated titles on short input; those are dropped rather than stored.
+Missing file, hash mismatch, timeout, empty output, load failure, a body already at most 40 characters, or a title that shares no 3+ character term with the body returns no refine. The stored `compact_title` stays. Short input can still produce unrelated titles; those are dropped rather than stored.
