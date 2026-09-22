@@ -53,6 +53,7 @@ type SettingsV1 = {
     launchAtLogin: boolean
     showDockIcon: boolean
     locale: "system" | "en" | "nl" | "fr" | "de" | "es" | "it" | "en-XA" | "ar-XB"
+    titleModel: "extractive" | "smol-135" | "smol-360" | "qwen-05"
     startView: "last" | "activeSection" | "composer"
   }
   capture: {
@@ -131,6 +132,7 @@ Shipped defaults:
 | provenance | none | workflow metadata is sensitive; onboarding may offer opt-in app identity |
 | launch at login | off | explicit consent |
 | UI locale | `system` (resolves to **en**) | Settings → General switcher persists en, nl, fr, de, es, or it; unknown tags reject on save; `system` and unknown effective tags map to en |
+| title engine | empty auto-picks among files already on disk; otherwise last persisted `general.titleModel` | extractive uses no GGUF; a change reloads the title worker for the next refine; Settings shows load status (`title-engine-status` / `title_engine_status`) |
 | Dock icon | off/accessory | menu-bar utility; user can enable |
 | panel mode | summon | lowest intrusion |
 | display | frontmost app or pointer, decided by spike | align source context |
@@ -313,6 +315,7 @@ type OutputProfileV1 = {
 - exported `bronze-settings` file has no machine paths, diagnostics, app credentials, permission tokens, or internal secrets; preview lists included categories plus user-entered sensitive literals/policies; import rejects WebView paths, `bronze-export` archives, unknown versions, and oversized files; rust-owned save/open panels are not invoked from cargo tests;
 - reduced motion/transparency/contrast/differentiate-without-color system change applies live and cannot be weakened by app override;
 - locale/RTL switch persists `general.locale`, reapplies the WebView catalog and `html lang`/`dir`, keeps item bodies `lang="und" dir="auto"`, and labels switcher options with endonyms plus option `lang`; native app/status menus follow the persisted locale at launch only;
+- Title engine load status maps `switch scheduled` → loading, `weights resolved` / `hash ok` → hashing, `model loaded` → ready, extractive → idle, `missing_weights` → missing, and load fallbacks `bad_hash` / `timeout` / `unreadable` → failed; Settings shows spinner plus catalog Loading `{engine}` while loading or hashing, ready/loaded copy when ready, and vendor-command copy when missing; event `title-engine-status` and command `title_engine_status` stay Settings-only; capture never waits; focus stays on the select; Reduce Motion stops decorative spin; no WCAG or VoiceOver claim;
 - permission revoke updates state without restart where platform allows.
 - output-profile CRUD/duplicate/reset/default-delete protection and optimistic revision conflicts;
 - formatter golden/property tests for every option, bounds, Unicode/newlines, prompt delimiting, and exact preview;

@@ -154,6 +154,8 @@ def check_title_adr() -> list[str]:
         "compact_title",
         "Q4_K_M",
         "general.titleModel",
+        "title-engine-status",
+        "title_engine_status",
         "extractive",
         "Title:",
         "2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d",

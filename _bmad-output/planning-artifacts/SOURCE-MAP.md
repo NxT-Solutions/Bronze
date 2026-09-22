@@ -8,7 +8,7 @@ Maps BMAD artifacts, epics, and stories to Bronze source files, requirement IDs,
 | `prds/.../addendum.md` | `docs/06`, `docs/09`, `docs/18` | — | all |
 | `ux-designs/ux-bronze-app-2026-08-27/DESIGN.md` | `docs/05`, `assets/README.md` | A11Y-003 | ADR-012 |
 | `ux-designs/.../EXPERIENCE.md` | `docs/05`, `docs/10`, `docs/11`, `docs/12` | WIN/QUE/A11Y/I18N/SET | ADR-007, ADR-012–016 |
-| `architecture/architecture-bronze-app-2026-08-27/ARCHITECTURE-SPINE.md` | `docs/06`, `docs/18`, `docs/07`, `docs/08`, `docs/09`, `docs/21` | CAP/QUE/WIN/DAT/SEC | ADR-001–017 accepted; 002/009/018 deferred; ADR-019 Proposed (compact_title first, selectable offline GGUF refine) |
+| `architecture/architecture-bronze-app-2026-08-27/ARCHITECTURE-SPINE.md` | `docs/06`, `docs/18`, `docs/07`, `docs/08`, `docs/09`, `docs/21` | CAP/QUE/WIN/DAT/SEC | ADR-001–017 accepted; 002/009/018 deferred; ADR-019 Proposed (compact_title first, selectable offline GGUF refine; Settings `title-engine-status` / `title_engine_status`) |
 | `epics.md` | `docs/14`, `docs/15`, `docs/21` | coverage map in epics.md | as per story |
 | `AGENTS.md` `bmad:context` | `AGENTS.md`, `docs/20` | process | ADR-003 |
 | `docs/21-preimplementation-reconciliation.md` | planning pack | all listed R-01–R-17 | accepted beat stale |

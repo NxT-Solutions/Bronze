@@ -426,6 +426,7 @@ output_profile_upsert(input, expected_revision, command_id) -> OutputProfile
 output_profile_delete(id, replacement_default_id, expected_revision, command_id) -> DeleteResult
 settings_get(group) -> SettingsGroup
 settings_update(patch, expected_revision) -> SettingsGroup
+title_engine_status() -> { tier, phase, reason }
 shortcut_test(candidate) -> ShortcutTest
 permission_snapshot() -> PermissionSnapshot
 permission_request(kind) -> PermissionRequestResult
@@ -446,6 +447,7 @@ Events are scoped and content-minimal:
 - item-created/updated: ID and revision; window refetches authorized entity.
 - permission-changed: capability and status.
 - settings-changed: group and revision.
+- title-engine-status: Settings-only; tier, phase, safe reason (no path).
 
 Captured content must not be broadcast globally. CSP permits self-hosted build assets and required Tauri IPC only; no inline evaluation, frames, objects, or remote origins. Release disables DevTools and navigation away from packaged origin. See [Tauri CSP](https://v2.tauri.app/security/csp/) and [capabilities by window](https://v2.tauri.app/learn/security/capabilities-for-windows-and-platforms/).
 

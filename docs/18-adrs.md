@@ -773,7 +773,7 @@ Candidate path:
 
 - Persist `compact_title` first: term-frequency best sentence over significant terms, 40-character word-boundary clamp, markup stripped, no ellipsis glyph. Not first-sentence-only. The clamp fits one title row in the 400px Quick Panel card at `--text-body` 0.9375rem. Composer add and body edit write the same function before any refine.
 - After persist (and after composer add / body edit), a Rust `llama-cpp-2` 0.1.156 worker on thread `bronze-title-model` / `bronze-item-title` may refine the stored title. Inference is not on AppKit main and not in the event-tap. `TitleABI.swift` stays a compile-only stub (`BRONZE_STATUS_DEGRADED`). Linux and Windows call the same Rust function.
-- Settings `general.titleModel` is a schema-valid, exportable, non-secret id: `extractive` | `smol-135` | `smol-360` | `qwen-05`. `extractive` uses `compact_title` only (no GGUF). A Settings change unloads the previous llama context and loads the chosen file on that worker for the next refine; capture never waits on the load. Reload failure stays on `compact_title` and surfaces the fallback reason. No app relaunch is required when load succeeds.
+- Settings `general.titleModel` is a schema-valid, exportable, non-secret id: `extractive` | `smol-135` | `smol-360` | `qwen-05`. `extractive` uses `compact_title` only (no GGUF). A Settings change unloads the previous llama context and loads the chosen file on that worker for the next refine; capture never waits on the load. Reload failure stays on `compact_title` and surfaces the fallback reason. No app relaunch is required when load succeeds. Existing `bronze-title:` stages (`switch scheduled`, `weights resolved`, `hash ok`, `model loaded`, `missing_weights`, plus load fallbacks `bad_hash` / `timeout` / `unreadable`) map to a Settings-only snapshot. Command `title_engine_status` returns `{ tier, phase, reason }`. Event `title-engine-status` publishes the same DTO from the title worker, never from the event-tap. Phases: idle (extractive), loading, hashing, ready, missing, failed. Refine logs do not flip a ready engine to failed.
 - Auto-pick runs only when `general.titleModel` is missing or empty (first install / setup). It does not overwrite a stored user value. Rust reads physical RAM locally with no telemetry. Bands: missing RAM, `< 8 GiB`, or no GGUF on disk → `extractive`; `8–16 GiB` → `smol-135` if present else extractive; `16–32 GiB` → `smol-360` if present else the next smaller present file; `≥ 32 GiB` → `qwen-05` if present else the next smaller present file. Most fit is the largest tier the RAM band can hold whose file is already on disk. Bronze never downloads to honor the recommendation. The resolved id is persisted so the Settings picker shows it.
 - Allow-listed weights, each vendorable with `bronze-title-model/scripts/vendor-gguf.sh <id>` (or `all`). Load only a verified path (`set_weights_dir` / `set_weights_path`, else `BRONZE_TITLE_WEIGHTS`, else crate `vendor/`, else exe-relative `models/`). Never `-hf`. Never Hub at capture, first launch, or Settings switch. Never a WebView path (SEC-003). Weights are not user-writable via the app.
   - `smol-135`: HuggingFaceTB/SmolLM2-135M-Instruct, bartowski `SmolLM2-135M-Instruct-Q4_K_M.gguf`, revision `09816acd5d99df7be770d85ea30822623dab342c`, SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d` (~105 MB, Apache-2.0).
@@ -790,6 +790,7 @@ Candidate path:
 - Refine is best-effort and local. Failure leaves the extractive title in place.
 - Private Cloud Compute remains forbidden. Release copy must not treat this as an Accepted inference contract.
 - Queue chrome does not show Apple Intelligence or model-status copy. Titles clip without an ellipsis glyph. A leaked `Title:` label is stripped before the card shows the heading.
+- Settings → General Title engine shows a semantic spinner (`span.title-engine-spinner`) next to the select while phase is loading or hashing, and `#title-model-status` (`role=status`, `aria-live=polite`) shows catalog copy. Extractive stays idle with no spinner. Missing weights keep the vendor-command copy. Ready uses catalog `settings.field.titleModel.loaded`. Failed reasons are catalog strings (`bad_hash`, `timeout`, `unreadable`) with no huge paths. Focus stays on the select. Reduce Motion stops decorative spin; text still updates. This is not a WCAG or VoiceOver claim.
 
 ### Verification
 
@@ -801,6 +802,9 @@ Candidate path:
 - Swift source-scan of `TitleABI.swift`: no `PrivateCloudCompute`, `URLSession`, `openai`, `llama`, `gguf`, `SystemLanguageModel`, or `NLEmbedding`.
 - Packaging asserts no `allow-jit` or `allow-unsigned-executable-memory`.
 - Live binary does not link FoundationModels or NaturalLanguage.
+- `apply_diag` maps `switch scheduled` → loading; `weights resolved` / `hash ok` → hashing; `model loaded` → ready; extractive → idle; `missing_weights` → missing; `bad_hash`, `timeout`, or `unreadable` during load → failed.
+- Settings shows spinner plus catalog Loading `{engine}` while loading; no spinner and loaded copy when ready; no spinner and vendor-command copy when missing.
+- Event `title-engine-status` and command `title_engine_status` stay Settings-capability only. Capture never waits on load.
 
 ## 3. Decision-change checklist
 
