@@ -109,6 +109,7 @@ export function logicalKeyFromEvent(event) {
 }
 
 export const MODIFIER_DOUBLE_TAP_GAP_MS = 500;
+export const MAX_MODIFIER_TAPS = 8;
 
 const KEY_MODIFIERS = {
   Meta: "Command",
@@ -240,29 +241,85 @@ export function doubleTapFromModifierEvents(previous, event, now) {
     previous.modifier === modifier &&
     now - previous.at <= MODIFIER_DOUBLE_TAP_GAP_MS
   ) {
+    const taps = Math.min((previous.taps ?? 1) + 1, MAX_MODIFIER_TAPS);
     return {
-      previous: null,
+      previous: { modifier, at: now, taps },
       chord: {
         trigger: "modifier_double_tap",
         modifiers: [modifier],
         logicalKey: null,
+        tapCount: taps,
       },
     };
   }
-  return { previous: { modifier, at: now }, chord: null };
+  return { previous: { modifier, at: now, taps: 1 }, chord: null };
 }
 
-export function formatModifierDoubleTap(modifier, catalog = {}) {
-  const key = DOUBLE_TAP_KEYS[modifier];
-  const fallback = DOUBLE_TAP_FALLBACK[modifier] || DOUBLE_TAP_FALLBACK.Shift;
-  return (key && catalog[key]) || fallback;
+const TRIPLE_TAP_KEYS = {
+  Shift: "settings.shortcuts.chord.shiftTripleTap",
+  Option: "settings.shortcuts.chord.optionTripleTap",
+  Command: "settings.shortcuts.chord.commandTripleTap",
+  Control: "settings.shortcuts.chord.controlTripleTap",
+  Fn: "settings.shortcuts.chord.fnTripleTap",
+};
+
+const TRIPLE_TAP_FALLBACK = {
+  Shift: "Shift triple-tap",
+  Option: "Option triple-tap",
+  Command: "Command triple-tap",
+  Control: "Control triple-tap",
+  Fn: "Fn triple-tap",
+};
+
+const MODIFIER_NAME_KEYS = {
+  Shift: "settings.shortcuts.modifier.shift",
+  Option: "settings.shortcuts.modifier.option",
+  Command: "settings.shortcuts.modifier.command",
+  Control: "settings.shortcuts.modifier.control",
+  Fn: "settings.shortcuts.modifier.fn",
+};
+
+function effectiveTapCount(tapCount) {
+  const count = Number(tapCount);
+  if (!Number.isFinite(count)) {
+    return 2;
+  }
+  return Math.min(MAX_MODIFIER_TAPS, Math.max(2, count));
+}
+
+function formatCatalogTemplate(template, values) {
+  let out = template;
+  for (const [key, value] of Object.entries(values)) {
+    out = out.replaceAll(`{${key}}`, String(value));
+  }
+  return out;
+}
+
+export function formatModifierDoubleTap(modifier, catalog = {}, tapCount = 2) {
+  const count = effectiveTapCount(tapCount);
+  if (count === 2) {
+    const key = DOUBLE_TAP_KEYS[modifier];
+    const fallback = DOUBLE_TAP_FALLBACK[modifier] || DOUBLE_TAP_FALLBACK.Shift;
+    return (key && catalog[key]) || fallback;
+  }
+  if (count === 3) {
+    const key = TRIPLE_TAP_KEYS[modifier];
+    const fallback = TRIPLE_TAP_FALLBACK[modifier] || TRIPLE_TAP_FALLBACK.Shift;
+    return (key && catalog[key]) || fallback;
+  }
+  const nameKey = MODIFIER_NAME_KEYS[modifier];
+  const name = (nameKey && catalog[nameKey]) || modifier || "Shift";
+  const template =
+    catalog["settings.shortcuts.chord.modifierNTap"] ||
+    "{modifier} {count}-tap";
+  return formatCatalogTemplate(template, { modifier: name, count });
 }
 
 export function formatRecordingPreview(partial, labels = {}) {
   const modifiers = partial?.modifiers ?? [];
   const taps = partial?.taps ?? 0;
   if (taps >= 2 && modifiers.length === 1 && !partial?.logicalKey) {
-    return formatModifierDoubleTap(modifiers[0], labels);
+    return formatModifierDoubleTap(modifiers[0], labels, taps);
   }
   const glyphs = modifiers
     .map((modifier) => MODIFIER_GLYPH[modifier] ?? "")
@@ -296,7 +353,7 @@ export function formatShortcutChord(row, catalog = {}) {
     return catalog["settings.shortcuts.unassigned"] || "Not assigned";
   }
   if (row.trigger === "modifier_double_tap") {
-    return formatModifierDoubleTap(row.modifiers?.[0], catalog);
+    return formatModifierDoubleTap(row.modifiers?.[0], catalog, row.tapCount);
   }
   const glyphs = (row.modifiers ?? [])
     .map((modifier) => MODIFIER_GLYPH[modifier] ?? "")
@@ -315,7 +372,7 @@ export function shortcutFailureKey(error) {
 
 const LIVE_FALLBACK = "Record a row to replace that action’s default.";
 const RECORDING_FALLBACK =
-  "Type a shortcut or double-tap a modifier (Escape cancels).";
+  "Type a shortcut or tap a modifier two or more times (Escape cancels).";
 const RECORDING_LABEL_FALLBACK = "Recording…";
 const REJECTED_FALLBACK = "Could not save that shortcut.";
 
@@ -348,6 +405,50 @@ function catalog() {
     "settings.shortcuts.chord.fnDoubleTap": message(
       "settings.shortcuts.chord.fnDoubleTap",
       "Fn double-tap",
+    ),
+    "settings.shortcuts.chord.shiftTripleTap": message(
+      "settings.shortcuts.chord.shiftTripleTap",
+      "Shift triple-tap",
+    ),
+    "settings.shortcuts.chord.optionTripleTap": message(
+      "settings.shortcuts.chord.optionTripleTap",
+      "Option triple-tap",
+    ),
+    "settings.shortcuts.chord.commandTripleTap": message(
+      "settings.shortcuts.chord.commandTripleTap",
+      "Command triple-tap",
+    ),
+    "settings.shortcuts.chord.controlTripleTap": message(
+      "settings.shortcuts.chord.controlTripleTap",
+      "Control triple-tap",
+    ),
+    "settings.shortcuts.chord.fnTripleTap": message(
+      "settings.shortcuts.chord.fnTripleTap",
+      "Fn triple-tap",
+    ),
+    "settings.shortcuts.chord.modifierNTap": message(
+      "settings.shortcuts.chord.modifierNTap",
+      "{modifier} {count}-tap",
+    ),
+    "settings.shortcuts.modifier.shift": message(
+      "settings.shortcuts.modifier.shift",
+      "Shift",
+    ),
+    "settings.shortcuts.modifier.option": message(
+      "settings.shortcuts.modifier.option",
+      "Option",
+    ),
+    "settings.shortcuts.modifier.command": message(
+      "settings.shortcuts.modifier.command",
+      "Command",
+    ),
+    "settings.shortcuts.modifier.control": message(
+      "settings.shortcuts.modifier.control",
+      "Control",
+    ),
+    "settings.shortcuts.modifier.fn": message(
+      "settings.shortcuts.modifier.fn",
+      "Fn",
     ),
     "settings.shortcuts.key.space": message(
       "settings.shortcuts.key.space",
@@ -488,7 +589,7 @@ function closeRecorder(root) {
   setRecordingRow(root, "");
 }
 
-export async function bindShortcutRegistry(root, invokeFn) {
+export async function bindShortcutRegistry(root, invokeFn, clock = globalThis) {
   const list = root.querySelector("[data-shortcut-registry]");
   if (!list || !invokeFn) {
     return;
@@ -508,6 +609,8 @@ export async function bindShortcutRegistry(root, invokeFn) {
   let modifierTap = null;
   let usedModifierWithKey = false;
   let countedPress = false;
+  let pendingTimer = null;
+  let pendingCommit = null;
 
   const recordingItem = (action) =>
     list.querySelector(`[data-action="${action}"]`);
@@ -519,7 +622,16 @@ export async function bindShortcutRegistry(root, invokeFn) {
     );
   };
 
+  const clearPendingTap = () => {
+    if (pendingTimer != null) {
+      clock.clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+    pendingCommit = null;
+  };
+
   const record = async (action, chord, skipTest) => {
+    clearPendingTap();
     if (isGlobalShortcutAction(action) && chord.modifiers.length === 0) {
       setLive(root, "settings.shortcuts.rejected", REJECTED_FALLBACK);
       await refresh();
@@ -528,16 +640,18 @@ export async function bindShortcutRegistry(root, invokeFn) {
     modifierTap = null;
     countedPress = false;
     delete list.dataset.recordingAction;
+    const input = {
+      action,
+      trigger: chord.trigger,
+      modifiers: chord.modifiers,
+      logicalKey: chord.logicalKey,
+      skipTest,
+    };
+    if (chord.trigger === "modifier_double_tap") {
+      input.tapCount = effectiveTapCount(chord.tapCount);
+    }
     try {
-      const rows = await invokeFn("record_shortcut", {
-        input: {
-          action,
-          trigger: chord.trigger,
-          modifiers: chord.modifiers,
-          logicalKey: chord.logicalKey,
-          skipTest,
-        },
-      });
+      const rows = await invokeFn("record_shortcut", { input });
       if (Array.isArray(rows)) {
         paintRows(root, rows);
       }
@@ -548,6 +662,25 @@ export async function bindShortcutRegistry(root, invokeFn) {
       setLive(root, shortcutFailureKey(error), REJECTED_FALLBACK);
       await refresh();
     }
+  };
+
+  const scheduleModifierTapCommit = (action, chord) => {
+    pendingCommit = { action, chord };
+    if (effectiveTapCount(chord.tapCount) >= MAX_MODIFIER_TAPS) {
+      record(action, chord, true);
+      return;
+    }
+    if (pendingTimer != null) {
+      clock.clearTimeout(pendingTimer);
+    }
+    pendingTimer = clock.setTimeout(() => {
+      pendingTimer = null;
+      const next = pendingCommit;
+      pendingCommit = null;
+      if (next) {
+        record(next.action, next.chord, true);
+      }
+    }, MODIFIER_DOUBLE_TAP_GAP_MS);
   };
 
   list.addEventListener("click", (event) => {
@@ -561,6 +694,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
     if (restoreButton) {
       runBusy(restoreButton, async () => {
         try {
+          clearPendingTap();
           const rows = await invokeFn("restore_shortcut", { action });
           if (Array.isArray(rows)) {
             paintRows(root, rows);
@@ -574,6 +708,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
       return;
     }
     if (recordButton) {
+      clearPendingTap();
       modifierTap = null;
       usedModifierWithKey = false;
       countedPress = false;
@@ -587,20 +722,21 @@ export async function bindShortcutRegistry(root, invokeFn) {
   const applyModifierTap = (event, action) => {
     const tapped = doubleTapFromModifierEvents(modifierTap, event, Date.now());
     modifierTap = tapped.previous;
-    if (tapped.chord) {
-      showPreview(action, {
-        modifiers: tapped.chord.modifiers,
-        taps: 2,
-      });
-      record(action, tapped.chord, true);
+    if (!tapped.chord) {
+      clearPendingTap();
+      if (tapped.previous) {
+        showPreview(action, {
+          modifiers: [tapped.previous.modifier],
+          taps: tapped.previous.taps ?? 1,
+        });
+      }
       return;
     }
-    if (tapped.previous) {
-      showPreview(action, {
-        modifiers: [tapped.previous.modifier],
-        taps: 1,
-      });
-    }
+    showPreview(action, {
+      modifiers: tapped.chord.modifiers,
+      taps: tapped.chord.tapCount,
+    });
+    scheduleModifierTapCommit(action, tapped.chord);
   };
 
   const onKeyDown = (event) => {
@@ -617,6 +753,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
       event.stopPropagation();
     }
     if (chord?.cancel) {
+      clearPendingTap();
       modifierTap = null;
       usedModifierWithKey = false;
       countedPress = false;
@@ -628,6 +765,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
       usedModifierWithKey = true;
       countedPress = false;
       modifierTap = null;
+      clearPendingTap();
       showPreview(action, {
         modifiers: chord.modifiers,
         logicalKey: chord.logicalKey,
@@ -642,6 +780,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
     const held = modifiersFromEvent(event);
     if (held.length > 1) {
+      clearPendingTap();
       modifierTap = null;
       countedPress = true;
       showPreview(action, { modifiers: held, taps: 1 });
@@ -678,6 +817,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
     usedModifierWithKey = true;
     countedPress = false;
     modifierTap = null;
+    clearPendingTap();
     showPreview(action, {
       modifiers: ["Command"],
       logicalKey: "c",

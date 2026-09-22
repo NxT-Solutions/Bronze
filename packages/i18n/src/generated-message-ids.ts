@@ -133,6 +133,23 @@ export const MessageIds = {
     "settings.shortcuts.chord.controlDoubleTap",
   "settings.shortcuts.chord.fnDoubleTap":
     "settings.shortcuts.chord.fnDoubleTap",
+  "settings.shortcuts.chord.shiftTripleTap":
+    "settings.shortcuts.chord.shiftTripleTap",
+  "settings.shortcuts.chord.optionTripleTap":
+    "settings.shortcuts.chord.optionTripleTap",
+  "settings.shortcuts.chord.commandTripleTap":
+    "settings.shortcuts.chord.commandTripleTap",
+  "settings.shortcuts.chord.controlTripleTap":
+    "settings.shortcuts.chord.controlTripleTap",
+  "settings.shortcuts.chord.fnTripleTap":
+    "settings.shortcuts.chord.fnTripleTap",
+  "settings.shortcuts.chord.modifierNTap":
+    "settings.shortcuts.chord.modifierNTap",
+  "settings.shortcuts.modifier.shift": "settings.shortcuts.modifier.shift",
+  "settings.shortcuts.modifier.option": "settings.shortcuts.modifier.option",
+  "settings.shortcuts.modifier.command": "settings.shortcuts.modifier.command",
+  "settings.shortcuts.modifier.control": "settings.shortcuts.modifier.control",
+  "settings.shortcuts.modifier.fn": "settings.shortcuts.modifier.fn",
   "settings.shortcuts.key.space": "settings.shortcuts.key.space",
   "settings.shortcuts.key.enter": "settings.shortcuts.key.enter",
   "settings.shortcuts.key.arrowUp": "settings.shortcuts.key.arrowUp",

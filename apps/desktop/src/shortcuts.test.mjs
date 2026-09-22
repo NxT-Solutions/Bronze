@@ -150,6 +150,7 @@ test("shortcut formatter and recorder keep IME out and reject path keys", () => 
       trigger: "modifier_double_tap",
       modifiers: ["Shift"],
       logicalKey: null,
+      tapCount: 2,
     },
   );
   assert.equal(
@@ -172,6 +173,23 @@ test("shortcut formatter and recorder keep IME out and reject path keys", () => 
   assert.equal(
     formatRecordingPreview({ modifiers: ["Option"], taps: 2 }),
     "Option double-tap",
+  );
+  assert.equal(
+    formatRecordingPreview({ modifiers: ["Option"], taps: 3 }),
+    "Option triple-tap",
+  );
+  assert.equal(
+    formatRecordingPreview({ modifiers: ["Option"], taps: 4 }),
+    "Option 4-tap",
+  );
+  assert.equal(
+    formatShortcutChord({
+      enabled: true,
+      trigger: "modifier_double_tap",
+      modifiers: ["Option"],
+      tapCount: 3,
+    }),
+    "Option triple-tap",
   );
   assert.equal(
     formatRecordingPreview({
@@ -207,6 +225,20 @@ test("shortcut formatter and recorder keep IME out and reject path keys", () => 
       trigger: "modifier_double_tap",
       modifiers: ["Option"],
       logicalKey: null,
+      tapCount: 2,
+    },
+  );
+  assert.deepEqual(
+    doubleTapFromModifierEvents(
+      { modifier: "Option", at: 100, taps: 2 },
+      { key: "Alt", code: "AltLeft", isComposing: true },
+      360,
+    ).chord,
+    {
+      trigger: "modifier_double_tap",
+      modifiers: ["Option"],
+      logicalKey: null,
+      tapCount: 3,
     },
   );
   assert.deepEqual(
@@ -378,6 +410,28 @@ function collect(root, sel) {
   );
 }
 
+function createClock() {
+  const pending = new Map();
+  let nextId = 1;
+  return {
+    setTimeout(fn) {
+      const id = nextId++;
+      pending.set(id, fn);
+      return id;
+    },
+    clearTimeout(id) {
+      pending.delete(id);
+    },
+    flush() {
+      const fns = [...pending.values()];
+      pending.clear();
+      for (const fn of fns) {
+        fn();
+      }
+    },
+  };
+}
+
 test("shortcut registry paints defaults, records a custom chord, and restores", async () => {
   const liveStatus = fakeEl({ "data-shortcut-live": "" });
   const chord = fakeEl({ "data-slot": "shortcut-chord", textContent: "⌘F" });
@@ -388,6 +442,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   const list = fakeEl({ "data-shortcut-registry": "" }, [item]);
   const root = fakeEl({}, [liveStatus, list]);
   list.ownerDocument = root;
+  const clock = createClock();
 
   const calls = [];
   let rejectNext = false;
@@ -413,6 +468,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
         trigger: args.input.trigger,
         logicalKey: args.input.logicalKey,
         modifiers: args.input.modifiers,
+        tapCount: args.input.tapCount,
         isDefault: false,
       };
     }
@@ -422,13 +478,14 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
         trigger: "accelerator",
         logicalKey: "f",
         modifiers: ["Command"],
+        tapCount: undefined,
         isDefault: true,
       };
     }
     return rows;
   };
 
-  await bindShortcutRegistry(root, invokeFn);
+  await bindShortcutRegistry(root, invokeFn, clock);
   assert.equal(chord.textContent, "⌘F");
   assert.equal(restore.hidden, true);
 
@@ -448,7 +505,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   assert.equal(chord.textContent, "Recording…");
   assert.equal(
     liveStatus.textContent,
-    "Type a shortcut or double-tap a modifier (Escape cancels).",
+    "Type a shortcut or tap a modifier two or more times (Escape cancels).",
   );
   assert.equal(liveStatus.dataset.recording, "true");
 
@@ -656,12 +713,17 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     stopPropagation() {},
   });
   await Promise.resolve();
+  assert.equal(calls.length, beforeDoubleTap);
+  assert.equal(chord.textContent, "Shift double-tap");
+  clock.flush();
+  await Promise.resolve();
   assert.equal(calls.at(-1).cmd, "record_shortcut");
   assert.deepEqual(calls.at(-1).args.input, {
     action: "queue.search",
     trigger: "modifier_double_tap",
     modifiers: ["Shift"],
     logicalKey: null,
+    tapCount: 2,
     skipTest: true,
   });
   assert.equal(chord.textContent, "Shift double-tap");
@@ -687,10 +749,15 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     preventDefault() {},
     stopPropagation() {},
   });
+  const beforeOptionDouble = calls.length;
   root.emit("keydown", optionTap(400, "keydown"));
   assert.equal(chord.textContent, "⌥");
   root.emit("keyup", optionTap(460, "keyup"));
   root.emit("keydown", optionTap(520, "keydown"));
+  await Promise.resolve();
+  assert.equal(calls.length, beforeOptionDouble);
+  assert.equal(chord.textContent, "Option double-tap");
+  clock.flush();
   await Promise.resolve();
   assert.equal(calls.at(-1).cmd, "record_shortcut");
   assert.deepEqual(calls.at(-1).args.input, {
@@ -698,6 +765,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     trigger: "modifier_double_tap",
     modifiers: ["Option"],
     logicalKey: null,
+    tapCount: 2,
     skipTest: true,
   });
   assert.equal(chord.textContent, "Option double-tap");
@@ -712,6 +780,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
       },
     },
   });
+  const beforeDeadDouble = calls.length;
   root.emit("keydown", optionTap(800, "keydown"));
   assert.equal(chord.textContent, "⌥");
   root.emit("keyup", {
@@ -725,8 +794,56 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   assert.equal(chord.textContent, "⌥");
   root.emit("keydown", optionTap(860, "keydown"));
   await Promise.resolve();
+  assert.equal(calls.length, beforeDeadDouble);
+  assert.equal(chord.textContent, "Option double-tap");
+  clock.flush();
+  await Promise.resolve();
   assert.equal(calls.at(-1).args.input.trigger, "modifier_double_tap");
   assert.equal(calls.at(-1).args.input.modifiers[0], "Option");
+  assert.equal(calls.at(-1).args.input.tapCount, 2);
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  const beforeTriple = calls.length;
+  root.emit("keydown", optionTap(1000, "keydown"));
+  assert.equal(chord.textContent, "⌥");
+  root.emit("keydown", optionTap(1080, "keydown"));
+  assert.equal(chord.textContent, "Option double-tap");
+  assert.equal(calls.length, beforeTriple);
+  root.emit("keydown", optionTap(1160, "keydown"));
+  await Promise.resolve();
+  assert.equal(calls.length, beforeTriple);
+  assert.equal(chord.textContent, "Option triple-tap");
+  clock.flush();
+  await Promise.resolve();
+  assert.equal(calls.at(-1).args.input.tapCount, 3);
+  assert.equal(chord.textContent, "Option triple-tap");
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  const beforeSingleTap = calls.length;
+  root.emit("keydown", optionTap(1400, "keydown"));
+  assert.equal(chord.textContent, "⌥");
+  clock.flush();
+  await Promise.resolve();
+  assert.equal(calls.length, beforeSingleTap);
+  assert.equal(list.dataset.recordingAction, "queue.search");
 
   list.emit("click", {
     target: {
