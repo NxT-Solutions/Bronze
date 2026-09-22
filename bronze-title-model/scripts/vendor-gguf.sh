@@ -2,31 +2,50 @@
 # Build-time / developer vendor only. Never invoked at capture or runtime.
 set -eu
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-MANIFEST="$ROOT/vendor/MANIFEST"
-FILENAME="$(sed -n 's/^filename = //p' "$MANIFEST")"
-SHA="$(sed -n 's/^sha256 = //p' "$MANIFEST")"
-REPO="$(sed -n 's/^gguf_repo = //p' "$MANIFEST")"
-REV="$(sed -n 's/^revision = //p' "$MANIFEST")"
-DEST="$ROOT/vendor/$FILENAME"
-URL="https://huggingface.co/${REPO}/resolve/${REV}/${FILENAME}"
+ID="${1:-smol-360}"
 
-mkdir -p "$ROOT/vendor"
-if [ -f "$DEST" ]; then
-  ACTUAL="$(shasum -a 256 "$DEST" | awk '{print $1}')"
-  if [ "$ACTUAL" = "$SHA" ]; then
-    echo "already vendored: $DEST"
-    exit 0
+vendor_one() {
+  id="$1"
+  manifest="$ROOT/vendor/manifests/$id"
+  if [ ! -f "$manifest" ]; then
+    echo "unknown title tier: $id" >&2
+    echo "usage: $0 [smol-135|smol-360|qwen-05|all]" >&2
+    exit 1
   fi
-  echo "hash mismatch, re-downloading" >&2
-  rm -f "$DEST"
+  filename="$(sed -n 's/^filename = //p' "$manifest")"
+  sha="$(sed -n 's/^sha256 = //p' "$manifest")"
+  repo="$(sed -n 's/^gguf_repo = //p' "$manifest")"
+  rev="$(sed -n 's/^revision = //p' "$manifest")"
+  dest="$ROOT/vendor/$filename"
+  url="https://huggingface.co/${repo}/resolve/${rev}/${filename}"
+
+  mkdir -p "$ROOT/vendor"
+  if [ -f "$dest" ]; then
+    actual="$(shasum -a 256 "$dest" | awk '{print $1}')"
+    if [ "$actual" = "$sha" ]; then
+      echo "already vendored: $dest"
+      return 0
+    fi
+    echo "hash mismatch, re-downloading $id" >&2
+    rm -f "$dest"
+  fi
+
+  curl -L --fail --proto '=https' --tlsv1.2 -o "$dest" "$url"
+  actual="$(shasum -a 256 "$dest" | awk '{print $1}')"
+  if [ "$actual" != "$sha" ]; then
+    echo "SHA-256 mismatch: got $actual want $sha" >&2
+    rm -f "$dest"
+    exit 1
+  fi
+  echo "vendored $dest"
+  echo "sha256 $actual"
+}
+
+if [ "$ID" = "all" ]; then
+  vendor_one smol-135
+  vendor_one smol-360
+  vendor_one qwen-05
+  exit 0
 fi
 
-curl -L --fail --proto '=https' --tlsv1.2 -o "$DEST" "$URL"
-ACTUAL="$(shasum -a 256 "$DEST" | awk '{print $1}')"
-if [ "$ACTUAL" != "$SHA" ]; then
-  echo "SHA-256 mismatch: got $ACTUAL want $SHA" >&2
-  rm -f "$DEST"
-  exit 1
-fi
-echo "vendored $DEST"
-echo "sha256 $ACTUAL"
+vendor_one "$ID"

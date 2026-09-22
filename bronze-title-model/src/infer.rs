@@ -1,5 +1,6 @@
 use crate::prompt::{clean_title, format_prompt, title_is_grounded, MAX_NEW_TOKENS};
-use crate::weights::{verified_weights_path, WeightsError};
+use crate::tiers::TitleTier;
+use crate::weights::{verified_weights_for, WeightsError};
 use llama_cpp_2::context::params::LlamaContextParams;
 use llama_cpp_2::llama_backend::LlamaBackend;
 use llama_cpp_2::llama_batch::LlamaBatch;
@@ -10,7 +11,7 @@ use llama_cpp_2::{send_logs_to_tracing, LogOptions};
 use std::num::NonZeroU32;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
 const GENERATE_TIMEOUT: Duration = Duration::from_millis(8000);
@@ -25,6 +26,7 @@ pub enum FallbackReason {
     ShortBody,
     Ungrounded,
     Empty,
+    Extractive,
 }
 
 impl FallbackReason {
@@ -37,6 +39,7 @@ impl FallbackReason {
             Self::ShortBody => "short_body",
             Self::Ungrounded => "ungrounded",
             Self::Empty => "empty",
+            Self::Extractive => "extractive",
         }
     }
 }
@@ -52,6 +55,9 @@ enum Job {
         body: String,
         reply: Sender<InferReply>,
     },
+    SetModel {
+        tier: TitleTier,
+    },
 }
 
 enum InferReply {
@@ -61,6 +67,7 @@ enum InferReply {
 
 static JOBS: OnceLock<Sender<Job>> = OnceLock::new();
 static ENGINE_READY: AtomicBool = AtomicBool::new(false);
+static DESIRED: Mutex<TitleTier> = Mutex::new(TitleTier::Extractive);
 
 pub fn classify_weights_error(err: WeightsError) -> FallbackReason {
     match err {
@@ -70,10 +77,40 @@ pub fn classify_weights_error(err: WeightsError) -> FallbackReason {
     }
 }
 
+pub fn desired_tier() -> TitleTier {
+    *DESIRED
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+pub fn request_tier(tier: TitleTier) {
+    {
+        let mut desired = DESIRED
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        *desired = tier;
+    }
+    crate::emit_diag(&format!("switch scheduled tier={}", tier.as_str()));
+    if let Some(tx) = JOBS.get() {
+        let _ = tx.send(Job::SetModel { tier });
+    }
+}
+
 pub fn should_attempt_refine(
     body: &str,
     weights: Result<(), WeightsError>,
 ) -> Result<(), FallbackReason> {
+    should_attempt_refine_for(desired_tier(), body, weights)
+}
+
+fn should_attempt_refine_for(
+    tier: TitleTier,
+    body: &str,
+    weights: Result<(), WeightsError>,
+) -> Result<(), FallbackReason> {
+    if tier == TitleTier::Extractive {
+        return Err(FallbackReason::Extractive);
+    }
     if body.trim().chars().count() <= 40 {
         return Err(FallbackReason::ShortBody);
     }
@@ -88,7 +125,10 @@ pub fn refine_title(body: &str) -> Option<String> {
 }
 
 pub fn refine_outcome(body: &str) -> RefineOutcome {
-    if let Err(reason) = should_attempt_refine(body, crate::weights::weights_present()) {
+    let tier = desired_tier();
+    if let Err(reason) =
+        should_attempt_refine_for(tier, body, crate::weights::weights_present_for(tier))
+    {
         crate::emit_diag(&format!("fallback reason={}", reason.as_str()));
         return RefineOutcome::Fallback(reason);
     }
@@ -126,8 +166,14 @@ pub fn refine_outcome(body: &str) -> RefineOutcome {
 }
 
 pub fn warmup() {
-    if crate::weights::any_candidate_file() {
-        let _ = sender();
+    let tier = desired_tier();
+    if tier == TitleTier::Extractive {
+        crate::emit_diag("fallback reason=extractive");
+        return;
+    }
+    if crate::weights::weights_present_for(tier).is_ok() {
+        let tx = sender();
+        let _ = tx.send(Job::SetModel { tier });
     } else {
         crate::emit_diag("fallback reason=missing_weights");
     }
@@ -144,36 +190,46 @@ fn sender() -> Sender<Job> {
     .clone()
 }
 
+struct WorkerState {
+    backend: Option<LlamaBackend>,
+    model: Option<LlamaModel>,
+    loaded: Option<TitleTier>,
+}
+
 fn worker_loop(rx: Receiver<Job>) {
-    let mut engine = match load_engine() {
-        Ok(loaded) => {
-            crate::emit_diag("model loaded");
-            ENGINE_READY.store(true, Ordering::Relaxed);
-            Some(loaded)
-        }
-        Err(_) => None,
+    let mut state = WorkerState {
+        backend: None,
+        model: None,
+        loaded: None,
     };
     while let Ok(job) = rx.recv() {
         match job {
+            Job::SetModel { tier } => {
+                let _ = apply_tier(&mut state, tier);
+            }
             Job::Infer { body, reply } => {
-                if engine.is_none() {
-                    match load_engine() {
-                        Ok(loaded) => {
-                            crate::emit_diag("model loaded");
-                            ENGINE_READY.store(true, Ordering::Relaxed);
-                            engine = Some(loaded);
-                        }
-                        Err(reason) => {
-                            let _ = reply.send(InferReply::Fallback(reason));
-                            continue;
-                        }
-                    }
+                let tier = desired_tier();
+                if apply_tier(&mut state, tier).is_err() {
+                    let reason = match should_attempt_refine_for(
+                        tier,
+                        &body,
+                        crate::weights::weights_present_for(tier),
+                    ) {
+                        Err(reason) => reason,
+                        Ok(()) => FallbackReason::Unreadable,
+                    };
+                    let _ = reply.send(InferReply::Fallback(reason));
+                    continue;
                 }
-                let Some(loaded) = engine.as_ref() else {
+                let Some(model) = state.model.as_ref() else {
+                    let _ = reply.send(InferReply::Fallback(FallbackReason::Extractive));
+                    continue;
+                };
+                let Some(backend) = state.backend.as_ref() else {
                     let _ = reply.send(InferReply::Fallback(FallbackReason::Unreadable));
                     continue;
                 };
-                let out = match infer_once(loaded, &body) {
+                let out = match infer_once(backend, model, &body) {
                     Ok(title) => InferReply::Title(title),
                     Err(reason) => InferReply::Fallback(reason),
                 };
@@ -183,35 +239,63 @@ fn worker_loop(rx: Receiver<Job>) {
     }
 }
 
-fn load_engine() -> Result<Engine, FallbackReason> {
-    let path = verified_weights_path().map_err(classify_weights_error)?;
+fn apply_tier(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackReason> {
+    if state.loaded == Some(tier) && (tier == TitleTier::Extractive || state.model.is_some()) {
+        return Ok(());
+    }
+    state.model = None;
+    state.loaded = Some(tier);
+    ENGINE_READY.store(false, Ordering::Relaxed);
+    if tier == TitleTier::Extractive {
+        crate::emit_diag("fallback reason=extractive");
+        return Ok(());
+    }
+    match load_model(state, tier) {
+        Ok(()) => {
+            crate::emit_diag("model loaded");
+            ENGINE_READY.store(true, Ordering::Relaxed);
+            Ok(())
+        }
+        Err(reason) => {
+            state.model = None;
+            state.loaded = Some(TitleTier::Extractive);
+            crate::emit_diag(&format!("fallback reason={}", reason.as_str()));
+            Err(reason)
+        }
+    }
+}
+
+fn load_model(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackReason> {
+    let path = verified_weights_for(tier).map_err(classify_weights_error)?;
     send_logs_to_tracing(LogOptions::default().with_logs_enabled(false));
-    let backend = LlamaBackend::init().map_err(|_| FallbackReason::Unreadable)?;
+    if state.backend.is_none() {
+        state.backend = Some(LlamaBackend::init().map_err(|_| FallbackReason::Unreadable)?);
+    }
+    let backend = state.backend.as_ref().ok_or(FallbackReason::Unreadable)?;
     // CPU only: do not silently add Metal/JIT entitlements. llama-cpp-2 still
     // compiles Metal on Apple Silicon; n_gpu_layers(0) keeps inference on CPU.
     let params = LlamaModelParams::default().with_n_gpu_layers(0);
-    let model = LlamaModel::load_from_file(&backend, &path, &params)
+    let model = LlamaModel::load_from_file(backend, &path.0, &params)
         .map_err(|_| FallbackReason::Unreadable)?;
-    Ok(Engine { backend, model })
+    state.model = Some(model);
+    state.loaded = Some(tier);
+    Ok(())
 }
 
-struct Engine {
-    backend: LlamaBackend,
-    model: LlamaModel,
-}
-
-fn infer_once(engine: &Engine, body: &str) -> Result<String, FallbackReason> {
+fn infer_once(
+    backend: &LlamaBackend,
+    model: &LlamaModel,
+    body: &str,
+) -> Result<String, FallbackReason> {
     let prompt = format_prompt(body);
     let ctx_params = LlamaContextParams::default()
         .with_n_ctx(NonZeroU32::new(1024))
         .with_n_threads(2)
         .with_n_threads_batch(2);
-    let mut ctx = engine
-        .model
-        .new_context(&engine.backend, ctx_params)
+    let mut ctx = model
+        .new_context(backend, ctx_params)
         .map_err(|_| FallbackReason::Unreadable)?;
-    let tokens = engine
-        .model
+    let tokens = model
         .str_to_token(&prompt, AddBos::Never)
         .map_err(|_| FallbackReason::Empty)?;
     if tokens.is_empty() || tokens.len() > 1000 {
@@ -234,11 +318,10 @@ fn infer_once(engine: &Engine, body: &str) -> Result<String, FallbackReason> {
     for offset in 0..MAX_NEW_TOKENS {
         let token = sampler.sample(&ctx, batch.n_tokens() - 1);
         sampler.accept(token);
-        if engine.model.is_eog_token(token) {
+        if model.is_eog_token(token) {
             break;
         }
-        let piece = engine
-            .model
+        let piece = model
             .token_to_piece(token, &mut decoder, true, None)
             .map_err(|_| FallbackReason::Empty)?;
         if piece.contains('\n') {
@@ -270,6 +353,7 @@ mod infer_tests {
 
     #[test]
     fn missing_weights_records_reason_and_keeps_compact_title() {
+        request_tier(TitleTier::Qwen05);
         let missing = std::env::temp_dir().join("bronze-absent-title.gguf");
         let _ = std::fs::remove_file(&missing);
         assert_eq!(
@@ -277,7 +361,11 @@ mod infer_tests {
             Err(crate::weights::WeightsError::Missing)
         );
         assert_eq!(
-            should_attempt_refine(LONG_BODY, Err(crate::weights::WeightsError::Missing)),
+            should_attempt_refine_for(
+                TitleTier::Qwen05,
+                LONG_BODY,
+                Err(crate::weights::WeightsError::Missing)
+            ),
             Err(FallbackReason::MissingWeights)
         );
         assert_eq!(refine_from_unverified(&missing, LONG_BODY), None);
@@ -287,20 +375,39 @@ mod infer_tests {
     }
 
     #[test]
+    fn extractive_skips_gguf_and_switch_schedules_reload() {
+        request_tier(TitleTier::Extractive);
+        assert_eq!(desired_tier(), TitleTier::Extractive);
+        assert_eq!(
+            should_attempt_refine(LONG_BODY, Ok(())),
+            Err(FallbackReason::Extractive)
+        );
+        let infer = include_str!("infer.rs");
+        assert!(infer.contains("Job::SetModel"));
+        assert!(infer.contains("switch scheduled tier="));
+        request_tier(TitleTier::Smol360);
+        assert_eq!(desired_tier(), TitleTier::Smol360);
+    }
+
+    #[test]
     fn vendor_or_fixture_path_attempts_refine() {
+        request_tier(TitleTier::Smol360);
         let path = crate::weights::vendor_weights_path();
         let weights = crate::weights::verify_weights(&path);
         if path.is_file() {
             assert_eq!(weights, Ok(()));
-            assert_eq!(should_attempt_refine(LONG_BODY, weights), Ok(()));
             assert_eq!(
-                should_attempt_refine("Park me", weights),
+                should_attempt_refine_for(TitleTier::Smol360, LONG_BODY, weights),
+                Ok(())
+            );
+            assert_eq!(
+                should_attempt_refine_for(TitleTier::Smol360, "Park me", weights),
                 Err(FallbackReason::ShortBody)
             );
         } else {
             assert_eq!(weights, Err(crate::weights::WeightsError::Missing));
             assert_eq!(
-                should_attempt_refine(LONG_BODY, weights),
+                should_attempt_refine_for(TitleTier::Smol360, LONG_BODY, weights),
                 Err(FallbackReason::MissingWeights)
             );
         }
@@ -309,7 +416,7 @@ mod infer_tests {
     #[test]
     fn short_body_is_skipped() {
         assert_eq!(
-            should_attempt_refine("Park me", Ok(())),
+            should_attempt_refine_for(TitleTier::Smol360, "Park me", Ok(())),
             Err(FallbackReason::ShortBody)
         );
         assert_eq!(
@@ -328,6 +435,7 @@ mod infer_tests {
     #[test]
     #[ignore]
     fn spike_smollm2_title_quality() {
+        request_tier(TitleTier::Smol360);
         warmup();
         std::thread::sleep(Duration::from_secs(2));
         let samples = [
@@ -365,7 +473,11 @@ mod infer_tests {
             .next()
             .expect("prod");
         let lib = include_str!("lib.rs");
-        for src in [infer, weights, prompt, lib] {
+        let tiers = include_str!("tiers.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("prod");
+        for src in [infer, weights, prompt, lib, tiers] {
             let lower = src.to_ascii_lowercase();
             for needle in [
                 "huggingface.co",

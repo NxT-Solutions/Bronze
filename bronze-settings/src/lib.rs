@@ -22,8 +22,8 @@ pub use permission::{PermissionSnapshot, PermissionState};
 pub use schema::{
     persisted_locale_allowed, search_settings, BackupSchedule, Modifier, ModifierSide, SchemaError,
     SettingsField, SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, TestedState,
-    TriggerKind, DEFAULT_GAP_MS, DEFAULT_MAX_HOLD_MS, PERSISTED_LOCALE_TAGS, SCHEMA_VERSION,
-    SETTINGS_FIELDS,
+    TitleModelId, TriggerKind, DEFAULT_GAP_MS, DEFAULT_MAX_HOLD_MS, PERSISTED_LOCALE_TAGS,
+    SCHEMA_VERSION, SETTINGS_FIELDS,
 };
 pub use shortcuts::{
     apply_recorded_double_tap_timing, capture_alternatives_ok, default_shortcut_binding,

@@ -196,6 +196,51 @@ pub enum StartView {
     Composer,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+pub enum TitleModelId {
+    #[default]
+    #[serde(rename = "")]
+    Unset,
+    #[serde(rename = "extractive")]
+    Extractive,
+    #[serde(rename = "smol-135")]
+    Smol135,
+    #[serde(rename = "smol-360")]
+    Smol360,
+    #[serde(rename = "qwen-05")]
+    Qwen05,
+}
+
+impl TitleModelId {
+    pub const ALL_CHOICES: [Self; 4] =
+        [Self::Extractive, Self::Smol135, Self::Smol360, Self::Qwen05];
+
+    pub const fn is_unset(&self) -> bool {
+        matches!(self, Self::Unset)
+    }
+
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Unset => "",
+            Self::Extractive => "extractive",
+            Self::Smol135 => "smol-135",
+            Self::Smol360 => "smol-360",
+            Self::Qwen05 => "qwen-05",
+        }
+    }
+
+    pub fn parse(raw: &str) -> Result<Self, SchemaError> {
+        match raw.trim() {
+            "" => Ok(Self::Unset),
+            "extractive" => Ok(Self::Extractive),
+            "smol-135" => Ok(Self::Smol135),
+            "smol-360" => Ok(Self::Smol360),
+            "qwen-05" => Ok(Self::Qwen05),
+            _ => Err(SchemaError::UnknownTitleModel),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum PanelMode {
@@ -342,6 +387,8 @@ pub struct GeneralSettings {
     pub show_dock_icon: bool,
     pub locale: String,
     pub start_view: StartView,
+    #[serde(default, skip_serializing_if = "TitleModelId::is_unset")]
+    pub title_model: TitleModelId,
 }
 
 pub const PERSISTED_LOCALE_TAGS: &[&str] = &[
@@ -450,6 +497,7 @@ pub enum SchemaError {
     TimingOutOfBounds,
     UnknownField,
     UnknownLocale,
+    UnknownTitleModel,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -514,6 +562,11 @@ pub const SETTINGS_FIELDS: &[SettingsField] = &[
         id: "general.startView",
         group: SettingsGroup::General,
         tokens: &["start", "view"],
+    },
+    SettingsField {
+        id: "general.titleModel",
+        group: SettingsGroup::General,
+        tokens: &["title", "model", "smol", "qwen"],
     },
     SettingsField {
         id: "capture.standardChord",
@@ -695,6 +748,7 @@ impl SettingsV1 {
                 show_dock_icon: false,
                 locale: "system".into(),
                 start_view: StartView::Last,
+                title_model: TitleModelId::Unset,
             },
             capture: CaptureSettings {
                 standard_chord: default_standard_chord(),
@@ -773,6 +827,12 @@ impl SettingsV1 {
         if !persisted_locale_allowed(&self.general.locale) {
             return Err(SchemaError::UnknownLocale);
         }
+        if self.general.title_model.is_unset() {
+            return Ok(());
+        }
+        if TitleModelId::parse(self.general.title_model.as_str()).is_err() {
+            return Err(SchemaError::UnknownTitleModel);
+        }
         Ok(())
     }
 
@@ -783,6 +843,18 @@ impl SettingsV1 {
         match version {
             Some(1) => {}
             _ => return Err(SchemaError::UnknownVersion),
+        }
+        if let Some(node) = value
+            .get("general")
+            .and_then(|general| general.get("titleModel"))
+        {
+            match node {
+                serde_json::Value::String(raw) => {
+                    TitleModelId::parse(raw)?;
+                }
+                serde_json::Value::Null => {}
+                _ => return Err(SchemaError::UnknownTitleModel),
+            }
         }
         let parsed: Self =
             serde_json::from_value(value).map_err(|_| SchemaError::UnknownVersion)?;
@@ -804,6 +876,7 @@ impl SettingsV1 {
             "general.showDockIcon" => self.general.show_dock_icon = defaults.general.show_dock_icon,
             "general.locale" => self.general.locale = defaults.general.locale,
             "general.startView" => self.general.start_view = defaults.general.start_view,
+            "general.titleModel" => self.general.title_model = defaults.general.title_model,
             "capture.standardChord" => {
                 self.capture.standard_chord = defaults.capture.standard_chord
             }
@@ -1016,8 +1089,35 @@ mod tests {
         assert!(json.contains("\"schemaVersion\":1"));
         assert!(json.contains("\"backupSchedule\":\"daily\""));
         assert!(json.contains("\"standardChord\""));
+        assert!(!json.contains("titleModel"));
         let parsed = SettingsV1::from_json(&json).expect("parse");
         assert_eq!(parsed, original);
+        assert!(parsed.general.title_model.is_unset());
+    }
+
+    #[test]
+    fn title_model_round_trips_and_rejects_unknown() {
+        let mut settings = SettingsV1::defaults();
+        settings.general.title_model = TitleModelId::Qwen05;
+        let json = settings.to_json().expect("json");
+        assert!(json.contains("\"titleModel\":\"qwen-05\""));
+        let parsed = SettingsV1::from_json(&json).expect("parse");
+        assert_eq!(parsed.general.title_model, TitleModelId::Qwen05);
+        settings.general.title_model = TitleModelId::Extractive;
+        let extracted =
+            SettingsV1::from_json(&settings.to_json().expect("extractive")).expect("ok");
+        assert_eq!(extracted.general.title_model, TitleModelId::Extractive);
+        let mut bad = settings.to_json().expect("raw");
+        bad = bad.replace("\"extractive\"", "\"qwen3-thinking\"");
+        assert_eq!(
+            SettingsV1::from_json(&bad).unwrap_err(),
+            SchemaError::UnknownTitleModel
+        );
+        settings.reset_field("general.titleModel").expect("reset");
+        assert!(settings.general.title_model.is_unset());
+        assert!(search_settings("title")
+            .iter()
+            .any(|field| field.id == "general.titleModel"));
     }
 
     #[test]

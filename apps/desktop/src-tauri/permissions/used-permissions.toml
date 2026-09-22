@@ -67,6 +67,7 @@ commands.allow = [
   "preview_settings_export",
   "export_settings_file",
   "import_settings_file",
+  "list_title_models",
   "ui_locale",
   "ui_catalog",
 ]

@@ -26,12 +26,15 @@ use bronze_settings::{
     recorded_double_tap_allowed, search_settings, shortcut_scope, skip_test_marks_untested,
     CaptureAlternatives, Modifier, NativeRegistrar, RegisterError, SettingsExportPreview,
     SettingsGroup, SettingsImportError, SettingsV1, ShortcutActionId, ShortcutBinding,
-    ShortcutRegistry, ShortcutScope, TestedState, TriggerKind, MAX_MODIFIER_TAPS,
+    ShortcutRegistry, ShortcutScope, TestedState, TitleModelId, TriggerKind, MAX_MODIFIER_TAPS,
     SETTINGS_EXPORT_FORMAT, SETTINGS_EXPORT_VERSION,
 };
 use bronze_storage::{
     ComposerDraft, ImportStrategy, NoopBackup, Overwrite, PathLocator, QueueAction, QueueItemRow,
     Store, ADR_018_STATUS, QUE_007_COMPLETE,
+};
+use bronze_title_model::{
+    auto_pick_title_tier, present_gguf_tiers, request_tier, TitleTier, GGUF_TIERS,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -511,7 +514,11 @@ impl LiveSession {
         };
         let mut backup = NoopBackup;
         let mut store = Store::open(&locator, &mut backup).map_err(|_| "store_open_failed")?;
-        let settings = load_settings_file(&data_dir)?;
+        let mut settings = load_settings_file(&data_dir)?;
+        if resolve_title_model(&mut settings) {
+            persist_settings_file(&data_dir, &settings)?;
+        }
+        apply_title_engine(&settings);
         let shortcuts = store
             .load_shortcuts()
             .map_err(|_| "shortcuts_load_failed")?;
@@ -866,9 +873,12 @@ impl LiveSession {
 
     pub fn replace_settings(&mut self, next: SettingsV1) -> Result<SettingsV1, String> {
         next.validate().map_err(|_| "settings_invalid")?;
+        let mut next = next;
+        let _ = resolve_title_model(&mut next);
         let chord = next.capture.standard_chord.clone();
         self.settings = next;
         persist_settings_file(&self.data_dir, &self.settings)?;
+        apply_title_engine(&self.settings);
         self.shortcuts
             .register(chord, &mut SessionRegistrar, keep_menu_manual())
             .map_err(register_error_code)?;
@@ -889,6 +899,10 @@ impl LiveSession {
                 )
                 .map_err(register_error_code)?;
         }
+        if field_id == "general.titleModel" {
+            let _ = resolve_title_model(&mut self.settings);
+        }
+        apply_title_engine(&self.settings);
         self.sync_standard_chord()?;
         Ok(self.settings.clone())
     }
@@ -905,12 +919,18 @@ impl LiveSession {
                 )
                 .map_err(register_error_code)?;
         }
+        if parsed == SettingsGroup::General {
+            let _ = resolve_title_model(&mut self.settings);
+        }
+        apply_title_engine(&self.settings);
         self.sync_standard_chord()?;
         Ok(self.settings.clone())
     }
 
     pub fn reset_all(&mut self) -> Result<SettingsV1, String> {
         self.settings.reset_all_preserving_content();
+        let _ = resolve_title_model(&mut self.settings);
+        apply_title_engine(&self.settings);
         self.shortcuts = ShortcutRegistry::seeded();
         self.sync_standard_chord()?;
         Ok(self.settings.clone())
@@ -1200,6 +1220,57 @@ fn parse_group(group: &str) -> Result<SettingsGroup, String> {
     }
 }
 
+fn physical_ram_bytes() -> Option<u64> {
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("/usr/sbin/sysctl")
+            .args(["-n", "hw.memsize"])
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        String::from_utf8(output.stdout).ok()?.trim().parse().ok()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        None
+    }
+}
+
+fn title_model_from_tier(tier: TitleTier) -> TitleModelId {
+    match tier {
+        TitleTier::Extractive => TitleModelId::Extractive,
+        TitleTier::Smol135 => TitleModelId::Smol135,
+        TitleTier::Smol360 => TitleModelId::Smol360,
+        TitleTier::Qwen05 => TitleModelId::Qwen05,
+    }
+}
+
+fn title_tier_from_model(id: TitleModelId) -> TitleTier {
+    match id {
+        TitleModelId::Unset | TitleModelId::Extractive => TitleTier::Extractive,
+        TitleModelId::Smol135 => TitleTier::Smol135,
+        TitleModelId::Smol360 => TitleTier::Smol360,
+        TitleModelId::Qwen05 => TitleTier::Qwen05,
+    }
+}
+
+fn resolve_title_model(settings: &mut SettingsV1) -> bool {
+    if !settings.general.title_model.is_unset() {
+        return false;
+    }
+    settings.general.title_model = title_model_from_tier(auto_pick_title_tier(
+        physical_ram_bytes(),
+        &present_gguf_tiers(),
+    ));
+    true
+}
+
+fn apply_title_engine(settings: &SettingsV1) {
+    request_tier(title_tier_from_model(settings.general.title_model));
+}
+
 fn load_settings_file(data_dir: &Path) -> Result<SettingsV1, String> {
     let path = data_dir.join("settings.json");
     if !path.exists() {
@@ -1416,6 +1487,39 @@ pub fn reset_settings_all(
     session: tauri::State<std::sync::Mutex<LiveSession>>,
 ) -> Result<SettingsV1, String> {
     lock_session(&session)?.reset_all()
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TitleModelTierDto {
+    pub id: String,
+    pub present: bool,
+    pub filename: String,
+    pub bytes: u64,
+    pub vendor_command: String,
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn list_title_models() -> Vec<TitleModelTierDto> {
+    let present = present_gguf_tiers();
+    let mut rows = vec![TitleModelTierDto {
+        id: TitleTier::Extractive.as_str().into(),
+        present: true,
+        filename: String::new(),
+        bytes: 0,
+        vendor_command: String::new(),
+    }];
+    for spec in GGUF_TIERS {
+        rows.push(TitleModelTierDto {
+            id: spec.tier.as_str().into(),
+            present: present.contains(&spec.tier),
+            filename: spec.filename.into(),
+            bytes: spec.bytes,
+            vendor_command: spec.tier.vendor_command().into(),
+        });
+    }
+    rows
 }
 
 #[cfg(target_os = "macos")]
@@ -1688,6 +1792,32 @@ mod live_session_tests {
     }
 
     #[test]
+    fn title_model_auto_pick_does_not_overwrite_stored_choice() {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("bronze-title-pick-{n}-{}", now_ms()));
+        let first = LiveSession::open(dir.clone()).expect("first");
+        assert!(!first.settings().general.title_model.is_unset());
+        let mut settings = first.settings();
+        settings.general.title_model = TitleModelId::Extractive;
+        drop(first);
+        let mut writer = LiveSession::open(dir.clone()).expect("writer");
+        writer.replace_settings(settings).expect("save extractive");
+        drop(writer);
+        let again = LiveSession::open(dir).expect("again");
+        assert_eq!(
+            again.settings().general.title_model,
+            TitleModelId::Extractive
+        );
+        let rows = list_title_models();
+        assert!(rows.iter().any(|row| row.id == "extractive" && row.present));
+        assert!(rows.iter().any(|row| row.id == "qwen-05"
+            && row.filename == "qwen2.5-0.5b-instruct-q4_k_m.gguf"
+            && row.vendor_command.contains("qwen-05")));
+        assert!(include_str!("live_session.rs").contains("request_tier"));
+        assert!(include_str!("live_session.rs").contains("resolve_title_model"));
+    }
+
+    #[test]
     fn copy_uses_profile_and_search_stays_placeholder() {
         assert!(!QUE_007_COMPLETE);
         assert_eq!(ADR_018_STATUS, "Proposed");
@@ -1911,10 +2041,12 @@ mod live_session_tests {
         assert!(used.contains("preview_settings_export"));
         assert!(used.contains("export_settings_file"));
         assert!(used.contains("import_settings_file"));
+        assert!(used.contains("list_title_models"));
         let src = include_str!("live_session.rs");
         assert!(src.contains("pub fn preview_settings_export"));
         assert!(src.contains("pub fn export_settings_file"));
         assert!(src.contains("pub fn import_settings_file"));
+        assert!(src.contains("pub fn list_title_models"));
         let _ = fs::remove_file(&dest);
     }
 
@@ -2319,6 +2451,7 @@ mod live_session_tests {
         assert!(used.contains("preview_settings_export"));
         assert!(used.contains("export_settings_file"));
         assert!(used.contains("import_settings_file"));
+        assert!(used.contains("list_title_models"));
         assert!(src.contains("pub fn pick_installed_app()"));
         assert!(src.contains("picker_cancelled"));
         assert!(src.contains("picker_unavailable"));

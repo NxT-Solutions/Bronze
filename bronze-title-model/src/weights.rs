@@ -1,8 +1,10 @@
+use crate::tiers::{spec_for_filename, TierSpec, TitleTier, GGUF_TIERS};
 use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
 pub const FILENAME: &str = "SmolLM2-360M-Instruct-Q4_K_M.gguf";
 pub const SHA256_HEX: &str = "2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2";
@@ -11,7 +13,8 @@ pub const HF_GGUF_REPO: &str = "bartowski/SmolLM2-360M-Instruct-GGUF";
 pub const HF_REVISION: &str = "ab928a97ee49f3a015f35194879f68211291d6ca";
 
 static OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
-static VERIFIED: OnceLock<(PathBuf, WeightsSource)> = OnceLock::new();
+static WEIGHTS_DIR: OnceLock<PathBuf> = OnceLock::new();
+static HASH_CACHE: Mutex<Option<HashMap<PathBuf, Result<(), WeightsError>>>> = Mutex::new(None);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WeightsError {
@@ -28,6 +31,7 @@ pub enum WeightsSource {
     Workspace,
     Exe,
     Resources,
+    BundleDir,
 }
 
 impl WeightsSource {
@@ -39,6 +43,7 @@ impl WeightsSource {
             Self::Workspace => "workspace",
             Self::Exe => "exe",
             Self::Resources => "resources",
+            Self::BundleDir => "bundle",
         }
     }
 }
@@ -47,20 +52,49 @@ pub fn set_weights_path(path: PathBuf) {
     let _ = OVERRIDE.set(path);
 }
 
+pub fn set_weights_dir(dir: PathBuf) {
+    let _ = WEIGHTS_DIR.set(dir);
+}
+
 pub fn vendor_weights_path() -> PathBuf {
+    vendor_path_for(FILENAME)
+}
+
+pub fn vendor_path_for(filename: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("vendor")
-        .join(FILENAME)
+        .join(filename)
 }
 
 pub fn any_candidate_file() -> bool {
-    candidate_paths()
-        .into_iter()
-        .any(|(path, _)| path.is_file())
+    !present_gguf_tiers().is_empty()
+}
+
+pub fn present_gguf_tiers() -> Vec<TitleTier> {
+    GGUF_TIERS
+        .iter()
+        .filter(|spec| {
+            candidate_paths_for(spec)
+                .into_iter()
+                .any(|(path, _)| path.is_file())
+        })
+        .map(|spec| spec.tier)
+        .collect()
 }
 
 pub fn weights_present() -> Result<(), WeightsError> {
-    if VERIFIED.get().is_some() || any_candidate_file() {
+    weights_present_for(TitleTier::Smol360)
+}
+
+pub fn weights_present_for(tier: TitleTier) -> Result<(), WeightsError> {
+    if tier == TitleTier::Extractive {
+        return Ok(());
+    }
+    let spec = tier.spec().ok_or(WeightsError::Missing)?;
+    if candidate_paths_for(spec)
+        .into_iter()
+        .any(|(path, _)| path.is_file())
+    {
         Ok(())
     } else {
         Err(WeightsError::Missing)
@@ -68,37 +102,74 @@ pub fn weights_present() -> Result<(), WeightsError> {
 }
 
 pub fn candidate_paths() -> Vec<(PathBuf, WeightsSource)> {
+    TitleTier::Smol360
+        .spec()
+        .map(candidate_paths_for)
+        .unwrap_or_default()
+}
+
+pub fn candidate_paths_for(spec: &TierSpec) -> Vec<(PathBuf, WeightsSource)> {
     let mut out = Vec::new();
-    push_unique(&mut out, OVERRIDE.get().cloned(), WeightsSource::Override);
-    if let Ok(path) = std::env::var("BRONZE_TITLE_WEIGHTS") {
-        if !path.is_empty() {
-            push_unique(&mut out, Some(PathBuf::from(path)), WeightsSource::Env);
+    if let Some(path) = OVERRIDE.get() {
+        if path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name == spec.filename)
+        {
+            push_unique(&mut out, Some(path.clone()), WeightsSource::Override);
         }
     }
-    push_unique(&mut out, Some(vendor_weights_path()), WeightsSource::Vendor);
+    if let Ok(path) = std::env::var("BRONZE_TITLE_WEIGHTS") {
+        if !path.is_empty() {
+            let path = PathBuf::from(path);
+            if path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name == spec.filename)
+            {
+                push_unique(&mut out, Some(path), WeightsSource::Env);
+            }
+        }
+    }
+    if let Some(dir) = WEIGHTS_DIR.get() {
+        push_unique(
+            &mut out,
+            Some(dir.join(spec.filename)),
+            WeightsSource::BundleDir,
+        );
+    }
     push_unique(
         &mut out,
-        walk_vendor_from_manifest(),
+        Some(vendor_path_for(spec.filename)),
+        WeightsSource::Vendor,
+    );
+    push_unique(
+        &mut out,
+        walk_vendor_from_manifest(spec.filename),
         WeightsSource::Workspace,
     );
     if let Ok(cwd) = std::env::current_dir() {
-        push_unique(&mut out, walk_vendor(cwd), WeightsSource::Workspace);
+        push_unique(
+            &mut out,
+            walk_vendor(cwd, spec.filename),
+            WeightsSource::Workspace,
+        );
     }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             push_unique(
                 &mut out,
-                Some(dir.join("models").join(FILENAME)),
+                Some(dir.join("models").join(spec.filename)),
                 WeightsSource::Exe,
             );
             push_unique(
                 &mut out,
-                Some(dir.join("../Resources/models").join(FILENAME)),
+                Some(dir.join("../Resources/models").join(spec.filename)),
                 WeightsSource::Resources,
             );
             push_unique(
                 &mut out,
-                walk_vendor(dir.to_path_buf()),
+                walk_vendor(dir.to_path_buf(), spec.filename),
                 WeightsSource::Workspace,
             );
         }
@@ -111,18 +182,18 @@ pub fn verified_weights_path() -> Result<PathBuf, WeightsError> {
 }
 
 pub fn verified_weights() -> Result<(PathBuf, WeightsSource), WeightsError> {
-    if let Some(found) = VERIFIED.get() {
-        return Ok(found.clone());
-    }
+    verified_weights_for(TitleTier::Smol360)
+}
+
+pub fn verified_weights_for(tier: TitleTier) -> Result<(PathBuf, WeightsSource), WeightsError> {
+    let spec = tier.spec().ok_or(WeightsError::Missing)?;
     let mut saw_mismatch = false;
     let mut saw_unreadable = false;
-    for (path, source) in candidate_paths() {
-        match verify_weights(&path) {
+    for (path, source) in candidate_paths_for(spec) {
+        match cached_verify(&path, spec.sha256_hex) {
             Ok(()) => {
-                if VERIFIED.set((path.clone(), source)).is_ok() {
-                    crate::emit_diag(&format!("weights resolved source={}", source.as_str()));
-                    crate::emit_diag("hash ok");
-                }
+                crate::emit_diag(&format!("weights resolved source={}", source.as_str()));
+                crate::emit_diag("hash ok");
                 return Ok((path, source));
             }
             Err(WeightsError::Missing) => {}
@@ -140,6 +211,38 @@ pub fn verified_weights() -> Result<(PathBuf, WeightsSource), WeightsError> {
 }
 
 pub fn verify_weights(path: &Path) -> Result<(), WeightsError> {
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("");
+    let sha = spec_for_filename(name)
+        .map(|spec| spec.sha256_hex)
+        .unwrap_or(SHA256_HEX);
+    cached_verify(path, sha)
+}
+
+fn cached_verify(path: &Path, sha256_hex: &str) -> Result<(), WeightsError> {
+    {
+        let cache = HASH_CACHE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(map) = cache.as_ref() {
+            if let Some(hit) = map.get(path) {
+                return *hit;
+            }
+        }
+    }
+    let result = hash_file(path, sha256_hex);
+    let mut cache = HASH_CACHE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    cache
+        .get_or_insert_with(HashMap::new)
+        .insert(path.to_path_buf(), result);
+    result
+}
+
+fn hash_file(path: &Path, sha256_hex: &str) -> Result<(), WeightsError> {
     if !path.is_file() {
         return Err(WeightsError::Missing);
     }
@@ -154,31 +257,31 @@ pub fn verify_weights(path: &Path) -> Result<(), WeightsError> {
         hasher.update(&buf[..n]);
     }
     let actual = hex_lower(&hasher.finalize());
-    if actual == SHA256_HEX {
+    if actual == sha256_hex {
         Ok(())
     } else {
         Err(WeightsError::HashMismatch)
     }
 }
 
-fn walk_vendor_from_manifest() -> Option<PathBuf> {
+fn walk_vendor_from_manifest(filename: &str) -> Option<PathBuf> {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
-        .and_then(|root| walk_vendor(root.to_path_buf()))
+        .and_then(|root| walk_vendor(root.to_path_buf(), filename))
 }
 
-fn walk_vendor(mut dir: PathBuf) -> Option<PathBuf> {
+fn walk_vendor(mut dir: PathBuf, filename: &str) -> Option<PathBuf> {
     for _ in 0..10 {
         if dir
             .file_name()
             .is_some_and(|name| name == "bronze-title-model")
         {
-            let direct = dir.join("vendor").join(FILENAME);
+            let direct = dir.join("vendor").join(filename);
             if direct.is_file() {
                 return Some(direct);
             }
         }
-        let nested = dir.join("bronze-title-model").join("vendor").join(FILENAME);
+        let nested = dir.join("bronze-title-model").join("vendor").join(filename);
         if nested.is_file() {
             return Some(nested);
         }
@@ -227,7 +330,7 @@ mod weights_tests {
 
     #[test]
     fn bad_hash_is_mismatch() {
-        let path = std::env::temp_dir().join("bronze-bad-title-weights.gguf");
+        let path = std::env::temp_dir().join("qwen2.5-0.5b-instruct-q4_k_m.gguf");
         let mut file = File::create(&path).expect("create");
         file.write_all(b"not-a-gguf").expect("write");
         drop(file);
@@ -250,7 +353,7 @@ mod weights_tests {
 
     #[test]
     fn workspace_walk_finds_crate_vendor_when_present() {
-        let from_manifest = walk_vendor_from_manifest();
+        let from_manifest = walk_vendor_from_manifest(FILENAME);
         let vendor = vendor_weights_path();
         if vendor.is_file() {
             assert_eq!(from_manifest.as_ref(), Some(&vendor));
@@ -261,15 +364,49 @@ mod weights_tests {
     }
 
     #[test]
-    fn manifest_pins_expected_file() {
+    fn missing_qwen_file_does_not_fetch() {
+        let spec = TitleTier::Qwen05.spec().expect("qwen");
+        if !candidate_paths_for(spec)
+            .into_iter()
+            .any(|(path, _)| path.is_file())
+        {
+            assert_eq!(
+                weights_present_for(TitleTier::Qwen05),
+                Err(WeightsError::Missing)
+            );
+            assert_eq!(
+                verified_weights_for(TitleTier::Qwen05),
+                Err(WeightsError::Missing)
+            );
+        }
+        let infer = include_str!("infer.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("prod");
+        let weights = include_str!("weights.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("prod");
+        for src in [infer, weights] {
+            let lower = src.to_ascii_lowercase();
+            assert!(!lower.contains("huggingface.co"));
+            assert!(!lower.contains("download("));
+        }
+    }
+
+    #[test]
+    fn manifest_pins_allow_list() {
         let manifest = include_str!("../vendor/MANIFEST");
+        assert!(manifest.contains("smol-360"));
         assert!(manifest.contains(FILENAME));
         assert!(manifest.contains(SHA256_HEX));
-        assert!(manifest.contains(HF_BASE_REPO));
-        assert!(manifest.contains(HF_GGUF_REPO));
-        assert!(manifest.contains(HF_REVISION));
-        assert!(manifest.contains("Apache-2.0"));
-        assert!(FILENAME.contains("360M"));
-        assert!(!FILENAME.contains("135M"));
+        let qwen = include_str!("../vendor/manifests/qwen-05");
+        assert!(qwen.contains("qwen2.5-0.5b-instruct-q4_k_m.gguf"));
+        assert!(qwen.contains("74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"));
+        assert!(qwen.contains("Qwen/Qwen2.5-0.5B-Instruct-GGUF"));
+        let smol135 = include_str!("../vendor/manifests/smol-135");
+        assert!(
+            smol135.contains("2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d")
+        );
     }
 }

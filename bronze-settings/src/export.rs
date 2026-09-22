@@ -403,6 +403,10 @@ mod tests {
         assert!(preview.excluded_keys.iter().any(|k| k == "permissionToken"));
         assert!(preview.excluded_keys.iter().any(|k| k == "logPath"));
         assert!(preview.included_categories.contains(&"privacy".into()));
+        assert!(preview
+            .included_fields
+            .iter()
+            .any(|field| field == "general.titleModel"));
     }
 
     #[test]
@@ -482,6 +486,7 @@ mod tests {
     fn settings_import_round_trip_and_rejects_bad_documents() {
         let mut settings = SettingsV1::defaults();
         settings.general.locale = "nl".into();
+        settings.general.title_model = crate::schema::TitleModelId::Smol360;
         settings
             .privacy
             .excluded_bundle_ids
@@ -497,6 +502,10 @@ mod tests {
         let raw = serde_json::to_string(&preview.payload).expect("json");
         let parsed = parse_settings_import(&raw).expect("import");
         assert_eq!(parsed.settings.general.locale, "nl");
+        assert_eq!(
+            parsed.settings.general.title_model,
+            crate::schema::TitleModelId::Smol360
+        );
         assert_eq!(
             parsed.settings.privacy.excluded_bundle_ids,
             vec!["com.bank.app"]

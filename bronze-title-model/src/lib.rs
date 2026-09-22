@@ -1,19 +1,22 @@
-//! Local SmolLM2 title refine. Loads a hash-pinned GGUF only. No hub, no network.
+//! Local title refine. Loads a hash-pinned GGUF allow-list only. No hub, no network.
 
 mod infer;
 mod prompt;
+mod tiers;
 mod weights;
 
 pub use infer::{
-    classify_weights_error, refine_outcome, refine_title, should_attempt_refine, warmup,
-    FallbackReason, RefineOutcome,
+    classify_weights_error, desired_tier, refine_outcome, refine_title, request_tier,
+    should_attempt_refine, warmup, FallbackReason, RefineOutcome,
 };
 pub use prompt::{
     clean_title, format_prompt, title_is_grounded, MAX_INPUT_CHARS, MAX_NEW_TOKENS, PROMPT_VERSION,
 };
+pub use tiers::{auto_pick_title_tier, TierSpec, TitleTier, GGUF_TIERS};
 pub use weights::{
-    any_candidate_file, candidate_paths, set_weights_path, vendor_weights_path, verified_weights,
-    verified_weights_path, verify_weights, weights_present, WeightsError, WeightsSource, FILENAME,
+    any_candidate_file, candidate_paths, present_gguf_tiers, set_weights_dir, set_weights_path,
+    vendor_weights_path, verified_weights, verified_weights_for, verified_weights_path,
+    verify_weights, weights_present, weights_present_for, WeightsError, WeightsSource, FILENAME,
     HF_BASE_REPO, HF_GGUF_REPO, HF_REVISION, SHA256_HEX,
 };
 

@@ -1,8 +1,3 @@
-# Offline GGUF allow-list. Developer vendor only. Never fetched at runtime.
-smol-135 = vendor/manifests/smol-135
-smol-360 = vendor/manifests/smol-360
-qwen-05 = vendor/manifests/qwen-05
-
 id = smol-360
 base_model = HuggingFaceTB/SmolLM2-360M-Instruct
 gguf_repo = bartowski/SmolLM2-360M-Instruct-GGUF

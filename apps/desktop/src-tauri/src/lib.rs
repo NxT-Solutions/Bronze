@@ -46,19 +46,19 @@ pub fn run() {
                 live_session::preview_settings_export,
                 live_session::export_settings_file,
                 live_session::import_settings_file,
+                live_session::list_title_models,
             ])
             .setup(|app| {
                 use tauri::Manager;
+                if let Ok(dir) = app.path().resource_dir() {
+                    let models = dir.join("models");
+                    if models.is_dir() {
+                        bronze_title_model::set_weights_dir(models);
+                    }
+                }
                 let data_dir = app.path().app_data_dir()?;
                 let session = live_session::LiveSession::open(data_dir)?;
                 app.manage(std::sync::Mutex::new(session));
-                if let Ok(dir) = app.path().resource_dir() {
-                    let weights = dir.join("models").join(bronze_title_model::FILENAME);
-                    if weights.is_file() {
-                        bronze_title_model::set_weights_path(weights);
-                        bronze_title_model::emit_diag("weights resolved source=bundle");
-                    }
-                }
                 title_refine::warmup();
                 install_chrome_menu(app.handle())?;
                 install_status_item(app.handle())?;

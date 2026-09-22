@@ -2,7 +2,7 @@ use bronze_domain::clamp_title;
 
 pub const MAX_INPUT_CHARS: usize = 2048;
 pub const MAX_NEW_TOKENS: i32 = 16;
-pub const PROMPT_VERSION: &str = "v2";
+pub const PROMPT_VERSION: &str = "v3";
 
 pub fn truncate_input(body: &str) -> String {
     let trimmed = body.trim();
@@ -15,7 +15,7 @@ pub fn truncate_input(body: &str) -> String {
 pub fn format_prompt(body: &str) -> String {
     let body = truncate_input(body);
     format!(
-        "<|im_start|>system\nWrite a 3-8 word title naming the topic. Do not copy a sentence. No quotes.<|im_end|>\n<|im_start|>user\n{body}<|im_end|>\n<|im_start|>assistant\n"
+        "<|im_start|>system\nWrite a 3-8 word title naming the topic. Do not copy a sentence. No quotes. Do not prefix with Title:.<|im_end|>\n<|im_start|>user\n{body}<|im_end|>\n<|im_start|>assistant\n"
     )
 }
 
@@ -24,16 +24,33 @@ pub fn clean_title(raw: &str) -> Option<String> {
     if line.is_empty() {
         return None;
     }
-    let stripped = line.trim_matches(|ch| matches!(ch, '"' | '\'' | '`'));
+    let stripped = strip_title_prefix(line);
+    let stripped = stripped.trim_matches(|ch| matches!(ch, '"' | '\'' | '`'));
     let stripped: String = stripped
         .chars()
         .filter(|ch| *ch != '"' && *ch != '`')
         .collect();
-    let clamped = clamp_title(&stripped);
+    let stripped = strip_title_prefix(stripped.trim());
+    let clamped = clamp_title(stripped);
     if clamped.is_empty() || clamped.contains('…') {
         None
     } else {
         Some(clamped)
+    }
+}
+
+fn strip_title_prefix(line: &str) -> &str {
+    let trimmed = line.trim();
+    let bytes = trimmed.as_bytes();
+    if bytes.len() >= 6
+        && bytes[5] == b':'
+        && trimmed
+            .get(..5)
+            .is_some_and(|head| head.eq_ignore_ascii_case("title"))
+    {
+        trimmed[6..].trim_start()
+    } else {
+        trimmed
     }
 }
 
@@ -68,8 +85,9 @@ mod prompt_tests {
         let prompt = format_prompt("The migration timeout is the real bug.");
         assert!(prompt.contains("3-8 word title"));
         assert!(prompt.contains("Do not copy a sentence"));
+        assert!(prompt.contains("Do not prefix with Title:"));
         assert!(prompt.contains("The migration timeout is the real bug."));
-        assert_eq!(PROMPT_VERSION, "v2");
+        assert_eq!(PROMPT_VERSION, "v3");
         assert_eq!(MAX_NEW_TOKENS, 16);
     }
 
@@ -85,6 +103,19 @@ mod prompt_tests {
         assert_eq!(clean_title("\n"), None);
         let quoted = clean_title("\"Migration timeout\"\nmore").expect("title");
         assert!(!quoted.contains('"'));
+        assert_eq!(
+            clean_title("Title: Landing Page Change Hasimproved").as_deref(),
+            Some("Landing Page Change Hasimproved")
+        );
+        assert_eq!(
+            clean_title("title: Queue card heading").as_deref(),
+            Some("Queue card heading")
+        );
+        assert_eq!(
+            clean_title("\"Title: Landing Page Change Hasimproved\"").as_deref(),
+            Some("Landing Page Change Hasimproved")
+        );
+        assert_eq!(clean_title("Title:Foo Bar").as_deref(), Some("Foo Bar"));
         let inner = clean_title("The topic is \"Persistence of Selection").expect("inner");
         assert!(!inner.contains('"'));
         assert!(quoted.to_ascii_lowercase().contains("migration"));
