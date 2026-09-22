@@ -155,8 +155,11 @@ Panel must remain usable under 200% text resize and 400% WebView zoom/reflow at 
 
 ## 11. Motion and materials
 
-- Transitions ≤200 ms and not required to understand state.
-- Reorder movement disables under Reduce Motion.
+- Transitions use `--duration` (180ms) and `--ease` / `--ease-out` (`cubic-bezier(0.22, 1, 0.36, 1)`), cap ≤200 ms, and are not required to understand state.
+- Queue card leave (Complete, Skip, Trash): persist `apply_queue_item_action` first, then collapse height (`grid-template-rows` 1fr→0fr plus measured height→0) with fade. Complete adds `translateY(-8px)`; Skip is fade only; Trash adds `scale(0.96)`. Node is removed after `transitionend` or a `--duration` timeout. Single-item Trash has no confirm.
+- Queue card Move up / down: FLIP `translateY` on the moved card and neighbors for one `--duration` shot, then settle. Copy, Edit, and hover stay unanimated.
+- New captures and composer inserts may use the existing `bronze-enter` opacity fade. Locale and edit refreshes replace without motion.
+- `prefers-reduced-motion: reduce` and `data-reduce-motion` skip slide/collapse. The list updates immediately (opacity-only at most). Reorder movement disables under Reduce Motion. Persist still runs if animation fails.
 - Title engine spinner uses `bronze-spin`; Reduce Motion sets `animation: none`. Status text still updates.
 - No parallax, flashing, or auto-moving content.
 - Reduce Transparency uses opaque surface and border.
