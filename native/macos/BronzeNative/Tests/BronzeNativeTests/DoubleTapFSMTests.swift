@@ -108,6 +108,20 @@ final class DoubleTapFSMTests: XCTestCase {
         XCTAssertNil(fsm.liveCandidate.firstDownNs)
     }
 
+    func testFSM_TRIPLE_doesNotTriggerOnSecondUp() {
+        var fsm = DoubleTapFSM(config: enabledConfig(tapCount: 3))
+        XCTAssertEqual(run(validPair(first: .left, second: .left), on: &fsm), 0)
+        XCTAssertEqual(fsm.state, .firstUp)
+        XCTAssertEqual(
+            run([
+                ev(.down, .left, DoubleTapConfig.msToNs(200)),
+                ev(.up, .left, DoubleTapConfig.msToNs(240)),
+            ], on: &fsm),
+            1
+        )
+        XCTAssertEqual(fsm.state, .refractory)
+    }
+
     func testFSM_WINDOW_500_acceptsExactGap() {
         let config = DoubleTapConfig(
             enabled: true, gapMs: 500, maxHoldMs: 400, refractoryMs: 500, side: .either
@@ -427,14 +441,16 @@ final class DoubleTapFSMTests: XCTestCase {
         gapMs: Int = 250,
         maxHoldMs: Int = 400,
         refractoryMs: Int = 500,
-        side: ModifierSidePolicy = .either
+        side: ModifierSidePolicy = .either,
+        tapCount: Int = 2
     ) -> DoubleTapConfig {
         DoubleTapConfig(
             enabled: true,
             gapMs: gapMs,
             maxHoldMs: maxHoldMs,
             refractoryMs: refractoryMs,
-            side: side
+            side: side,
+            tapCount: tapCount
         )!
     }
 

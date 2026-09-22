@@ -22,12 +22,32 @@ pub fn use_system_focused_fallback(last_external: Option<i32>) -> bool {
     last_external.is_none()
 }
 
-pub fn reject_own_system_focus(system_pid: Option<i32>, own_pid: i32, name: Option<&str>) -> bool {
+pub fn reject_own_system_focus(
+    system_pid: Option<i32>,
+    _own_pid: i32,
+    _name: Option<&str>,
+) -> bool {
     match system_pid {
         None => true,
-        Some(pid) if pid <= 0 || pid == own_pid => true,
-        Some(_) => name.is_some_and(is_skipped_process_name),
+        Some(pid) if pid <= 0 => true,
+        Some(_) => false,
     }
+}
+
+pub fn prefer_own_capture(frontmost: i32, own_pid: i32, own_captured: bool) -> bool {
+    frontmost > 0 && frontmost == own_pid && own_captured
+}
+
+#[cfg(target_os = "macos")]
+pub fn bronze_is_frontmost() -> bool {
+    let own = std::process::id() as i32;
+    let front = frontmost_pid();
+    front == own || sys::process_name(front).is_some_and(|name| is_skipped_process_name(&name))
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn bronze_is_frontmost() -> bool {
+    false
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -211,9 +231,6 @@ mod sys {
     pub fn app_name_for_element(element: AxUiElementRef) -> Option<String> {
         let pid = pid_for_element(element)?;
         let raw = process_name(pid)?;
-        if is_own_pid(pid) || super::is_skipped_process_name(&raw) {
-            return None;
-        }
         Some(raw)
     }
 
@@ -698,16 +715,11 @@ pub fn note_external_focus() {
 
 #[cfg(target_os = "macos")]
 pub fn read_selection_for_pid(pid: i32) -> (LiveAxOutcome, Option<String>, Option<String>) {
-    use sys::{
-        is_own_pid, process_name, walk_application, AXUIElementCreateApplication, CFRelease,
-    };
+    use sys::{walk_application, AXUIElementCreateApplication, CFRelease};
     if let Some(denied) = trusted_or_denied() {
         return denied;
     }
-    if pid <= 0 || is_own_pid(pid) {
-        return (LiveAxOutcome::FocusedElementMissing, None, None);
-    }
-    if process_name(pid).is_some_and(|name| is_skipped_process_name(&name)) {
+    if pid <= 0 {
         return (LiveAxOutcome::FocusedElementMissing, None, None);
     }
     let app = unsafe { AXUIElementCreateApplication(pid) };
@@ -727,6 +739,13 @@ pub fn read_focused_selection() -> (LiveAxOutcome, Option<String>, Option<String
 
 #[cfg(target_os = "macos")]
 pub fn read_capture_selection() -> (LiveAxOutcome, Option<String>, Option<String>) {
+    let front = frontmost_pid();
+    if bronze_is_frontmost() {
+        let own_read = read_selection_for_pid(front);
+        if matches!(own_read.0, LiveAxOutcome::Captured { .. }) {
+            return own_read;
+        }
+    }
     if let Some(pid) = last_external_pid() {
         return read_selection_for_pid(pid);
     }
@@ -795,9 +814,19 @@ mod ax_live_tests {
         assert_eq!(last_external_pid(), None);
         assert!(use_system_focused_fallback(None));
         assert!(!use_system_focused_fallback(Some(42)));
-        assert!(reject_own_system_focus(Some(7), 7, Some("Cursor")));
-        assert!(reject_own_system_focus(Some(99), 7, Some("bronze-desktop")));
+        assert!(!reject_own_system_focus(Some(7), 7, Some("Cursor")));
+        assert!(!reject_own_system_focus(
+            Some(99),
+            7,
+            Some("bronze-desktop")
+        ));
         assert!(!reject_own_system_focus(Some(99), 7, Some("TextEdit")));
+        assert!(reject_own_system_focus(None, 7, None));
+        assert!(reject_own_system_focus(Some(0), 7, None));
+        assert!(prefer_own_capture(7, 7, true));
+        assert!(!prefer_own_capture(7, 7, false));
+        assert!(!prefer_own_capture(8, 7, true));
+        let _ = bronze_is_frontmost();
         let src = include_str!("ax_live.rs");
         let start = src
             .find("pub fn read_capture_selection()")
@@ -837,5 +866,8 @@ mod ax_live_tests {
         assert!(!tap.contains("NSOpenPanel"));
         assert!(!tap.contains("bronze_native_bundle_id_for_pid"));
         assert!(!tap.contains("AXAttributedStringForRange"));
+        assert!(tap.contains("setGestureTapCount"));
+        assert!(src.contains("bronze_is_frontmost"));
+        assert!(src.contains("prefer_own_capture"));
     }
 }

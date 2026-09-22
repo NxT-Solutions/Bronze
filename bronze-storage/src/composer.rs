@@ -123,10 +123,7 @@ fn sanitize_source_label(value: Option<&str>, max_chars: usize) -> Option<String
         .take(max_chars)
         .collect();
     let trimmed = cleaned.trim();
-    if trimmed.is_empty()
-        || trimmed.eq_ignore_ascii_case("bronze-desktop")
-        || trimmed.eq_ignore_ascii_case("Bronze")
-    {
+    if trimmed.is_empty() {
         None
     } else {
         Some(trimmed.to_string())
@@ -268,13 +265,17 @@ mod composer_persist_tests {
         store
             .add_from_capture(&draft, Some("Bronze"), None, "s1", "i-self", 13)
             .expect("self");
-        let source: Option<String> = store
+        let (source, app): (Option<String>, String) = store
             .conn
-            .query_row("SELECT source_id FROM items WHERE id='i-self'", [], |row| {
-                row.get(0)
-            })
+            .query_row(
+                "SELECT source_id, (SELECT app_name FROM sources WHERE id = items.source_id)
+                 FROM items WHERE id='i-self'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
             .expect("self source");
-        assert_eq!(source, None);
+        assert_eq!(source.as_deref(), Some("src-i-self"));
+        assert_eq!(app, "Bronze");
     }
 
     #[test]
@@ -328,19 +329,19 @@ mod composer_persist_tests {
                 Some("Notes"),
                 Some("Bronze"),
                 "s1",
-                "i-reject-bundle",
+                "i-bronze-bundle",
                 15,
             )
-            .expect("reject bronze bundle");
-        let rejected: Option<String> = store
+            .expect("bronze bundle");
+        let kept: Option<String> = store
             .conn
             .query_row(
-                "SELECT bundle_id FROM sources WHERE id='src-i-reject-bundle'",
+                "SELECT bundle_id FROM sources WHERE id='src-i-bronze-bundle'",
                 [],
                 |row| row.get(0),
             )
-            .expect("rejected");
-        assert_eq!(rejected, None);
+            .expect("kept");
+        assert_eq!(kept.as_deref(), Some("Bronze"));
         let cols: Vec<String> = store
             .conn
             .prepare("PRAGMA table_info(sources)")

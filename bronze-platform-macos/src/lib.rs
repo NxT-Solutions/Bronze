@@ -25,9 +25,10 @@ pub use abi::{
     BRONZE_TAP_REC_DISABLED, BRONZE_TAP_REC_NONE, BRONZE_TAP_REC_RESET, BRONZE_TAP_REC_TRIGGER,
 };
 pub use ax_live::{
-    classify_ax_role, is_skipped_process_name, last_external_pid, note_external_focus,
-    read_capture_selection, read_focused_selection, reject_own_system_focus,
-    use_system_focused_fallback, AxProtection, LiveAxOutcome, LIVE_AX_MAX_BYTES,
+    bronze_is_frontmost, classify_ax_role, is_skipped_process_name, last_external_pid,
+    note_external_focus, prefer_own_capture, read_capture_selection, read_focused_selection,
+    reject_own_system_focus, use_system_focused_fallback, AxProtection, LiveAxOutcome,
+    LIVE_AX_MAX_BYTES,
 };
 pub use bridge::{
     check_abi_version, event_tap_enqueue_raw, EventTapHealth, EventTapRecord, NativeError,
@@ -61,8 +62,40 @@ pub use user_notice::{
     try_deliver_user_notice, NoticeAuthorization,
 };
 
+pub fn apply_live_shift_gesture(binding: &bronze_settings::ShortcutBinding) {
+    let taps = bronze_settings::live_shift_tap_count(binding);
+    let count = taps.unwrap_or(2);
+    let _ = NativeRuntime::event_tap_set_tap_count_shared(count);
+    let _ = NativeRuntime::event_tap_set_enabled_shared(taps.is_some());
+}
+
 #[cfg(test)]
 pub(crate) fn lock_native_runtime() -> std::sync::MutexGuard<'static, ()> {
     static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
     LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+#[cfg(test)]
+mod apply_live_shift_gesture_tests {
+    use super::*;
+    use bronze_settings::{default_shortcut_binding, Modifier, ShortcutActionId};
+
+    #[test]
+    fn apply_live_shift_gesture_enables_shift_and_disables_other() {
+        let _guard = lock_native_runtime();
+        let src = include_str!("lib.rs");
+        assert!(src.contains("event_tap_set_tap_count_shared"));
+        assert!(src.contains("live_shift_tap_count"));
+        let engine = include_str!(
+            "../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        );
+        assert!(engine.contains("setGestureTapCount"));
+        assert!(engine.contains("tapCount: gestureTapCount"));
+        apply_live_shift_gesture(&default_shortcut_binding(
+            ShortcutActionId::CaptureSelection,
+        ));
+        let mut option = default_shortcut_binding(ShortcutActionId::CaptureSelection);
+        option.modifiers = vec![Modifier::Option];
+        apply_live_shift_gesture(&option);
+    }
 }

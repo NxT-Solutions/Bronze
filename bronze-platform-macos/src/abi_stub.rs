@@ -367,6 +367,11 @@ pub extern "C" fn bronze_native_event_tap_set_enabled(enabled: u32) -> u32 {
 }
 
 #[no_mangle]
+pub extern "C" fn bronze_native_event_tap_set_tap_count(_count: u32) -> u32 {
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
 pub extern "C" fn bronze_native_event_tap_drain(kind: *mut u32, sequence: *mut u64) -> u32 {
     if kind.is_null() || sequence.is_null() {
         return BRONZE_STATUS_NOT_FOUND;

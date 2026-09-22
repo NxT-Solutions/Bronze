@@ -108,8 +108,12 @@ pub struct LiveAxHost;
 
 impl SelectionHost for LiveAxHost {
     fn peek_bundle_id(&self) -> Option<String> {
-        bronze_platform_macos::last_external_pid()
-            .and_then(bronze_platform_macos::native_bundle_id_for_pid)
+        if bronze_platform_macos::bronze_is_frontmost() {
+            bronze_platform_macos::native_bundle_id_for_pid(std::process::id() as i32)
+        } else {
+            bronze_platform_macos::last_external_pid()
+                .and_then(bronze_platform_macos::native_bundle_id_for_pid)
+        }
     }
 
     fn read(&self) -> (AxOutcome, Option<CapturedText>) {
@@ -130,8 +134,15 @@ impl SelectionHost for LiveAxHost {
                 AxOutcome::InvalidTextEncoding
             }
         };
-        let source_bundle_id = bronze_platform_macos::last_external_pid()
-            .and_then(bronze_platform_macos::native_bundle_id_for_pid);
+        let source_bundle_id = if source_app_name
+            .as_deref()
+            .is_some_and(bronze_platform_macos::is_skipped_process_name)
+        {
+            bronze_platform_macos::native_bundle_id_for_pid(std::process::id() as i32)
+        } else {
+            bronze_platform_macos::last_external_pid()
+                .and_then(bronze_platform_macos::native_bundle_id_for_pid)
+        };
         (
             mapped,
             text.map(|body| CapturedText {
@@ -446,12 +457,17 @@ impl LiveSession {
             shortcuts,
             data_dir,
         };
+        session.apply_live_capture_gesture();
         let now = now_ms();
         session
             .store
             .ensure_inbox(now)
             .map_err(|_| "inbox_seed_failed")?;
         Ok(session)
+    }
+
+    pub fn apply_live_capture_gesture(&self) {
+        bronze_platform_macos::apply_live_shift_gesture(self.shortcuts.standard_chord());
     }
 
     pub fn ui_locale(&self) -> &'static str {
@@ -516,6 +532,17 @@ impl LiveSession {
         let (outcome, text) = host.read();
         match (outcome, text) {
             (AxOutcome::Captured { .. }, Some(captured)) => {
+                if captured
+                    .source_bundle_id
+                    .as_deref()
+                    .is_some_and(|bundle| self.settings.privacy.excludes_bundle(bundle))
+                {
+                    return Ok(CapturePersistOutcome {
+                        terminal: Terminal::Rejected,
+                        reason: "app_excluded",
+                        item_id: None,
+                    });
+                }
                 let body = captured.text;
                 let mut saved_id = None;
                 let mut coordinator = CaptureCoordinator::with_hooks(
@@ -850,7 +877,9 @@ impl LiveSession {
         persist_settings_file(&self.data_dir, &self.settings)?;
         self.store
             .persist_shortcuts(&self.shortcuts)
-            .map_err(|_| "shortcuts_persist_failed".into())
+            .map_err(|_| "shortcuts_persist_failed".to_string())?;
+        self.apply_live_capture_gesture();
+        Ok(())
     }
 
     pub fn backup_now(&self) -> Result<String, String> {
@@ -1867,6 +1896,13 @@ mod live_session_tests {
         let src = include_str!("live_session.rs");
         assert!(src.contains("peek_bundle_id"));
         assert!(src.contains("app_excluded"));
+        assert!(src.contains("apply_live_shift_gesture"));
+        assert!(src.contains("apply_live_capture_gesture"));
+        assert!(src.contains("bronze_is_frontmost"));
+        let from_self = session
+            .add_captured("from bronze".into(), Some("Bronze".into()), None)
+            .expect("self capture");
+        assert_eq!(from_self.source_app_name.as_deref(), Some("Bronze"));
         let used = include_str!("../permissions/used-permissions.toml");
         assert!(used.contains("list_shortcuts"));
         assert!(used.contains("record_shortcut"));

@@ -325,6 +325,11 @@ impl NativeRuntime {
         map_status(status)
     }
 
+    pub fn event_tap_set_tap_count_shared(count: u32) -> Result<(), NativeError> {
+        let status = catch_ffi(|| unsafe { abi::bronze_native_event_tap_set_tap_count(count) })?;
+        map_status(status)
+    }
+
     pub fn event_tap_drain(&self) -> Result<Option<EventTapRecord>, NativeError> {
         Self::event_tap_drain_shared()
     }
@@ -697,6 +702,8 @@ mod tests {
         ));
         assert!(frontmost.contains("NSWorkspace"));
         assert!(frontmost.contains("bronze_native_frontmost_pid"));
+        assert!(tap_abi.contains("bronze_native_event_tap_set_tap_count"));
+        assert!(engine.contains("setGestureTapCount"));
         for needle in [
             "AXUIElement",
             "NSPasteboard",

@@ -50,12 +50,15 @@ public struct DoubleTapConfig: Equatable, Sendable {
     public static let refractoryMsAllowed = 100...1_500
     public static let debounceMsDefault = 30
 
+    public static let tapCountAllowed = 2...8
+
     public let enabled: Bool
     public let gapMs: Int
     public let maxHoldMs: Int
     public let debounceMs: Int
     public let refractoryMs: Int
     public let side: ModifierSidePolicy
+    public let tapCount: Int
 
     /// Disabled gesture; gap 250, hold 400, debounce 30, refractory 500, side either.
     public static let defaults = DoubleTapConfig(
@@ -73,13 +76,15 @@ public struct DoubleTapConfig: Equatable, Sendable {
         maxHoldMs: Int,
         refractoryMs: Int,
         side: ModifierSidePolicy,
-        debounceMs: Int = DoubleTapConfig.debounceMsDefault
+        debounceMs: Int = DoubleTapConfig.debounceMsDefault,
+        tapCount: Int = 2
     ) {
         guard debounceMs >= 0 else { return nil }
         let (_, debounceOverflow) = UInt64(debounceMs).multipliedReportingOverflow(by: 1_000_000)
         guard Self.gapMsAllowed.contains(gapMs),
               Self.maxHoldMsAllowed.contains(maxHoldMs),
               Self.refractoryMsAllowed.contains(refractoryMs),
+              Self.tapCountAllowed.contains(tapCount),
               !debounceOverflow
         else {
             return nil
@@ -90,6 +95,7 @@ public struct DoubleTapConfig: Equatable, Sendable {
         self.debounceMs = debounceMs
         self.refractoryMs = refractoryMs
         self.side = side
+        self.tapCount = tapCount
     }
 
     public var gapNs: UInt64 { Self.msToNs(gapMs) }
@@ -173,10 +179,12 @@ public struct DoubleTapFSM: Equatable, Sendable {
     private var lastSide: ModifierSide?
     private var lastTimeNs: UInt64?
     private var refractoryUntilNs: UInt64?
+    private var tapsCompleted: Int
 
     public init(config: DoubleTapConfig = .defaults) {
         self.config = config
         self.state = .idle
+        self.tapsCompleted = 0
     }
 
     /// Current state plus at most the live candidate times/sides. No `[keyCode]`
@@ -261,6 +269,7 @@ public struct DoubleTapFSM: Equatable, Sendable {
 
         case (.firstDown, .up):
             if side == firstSide, intervalOK(from: firstDownNs, to: event.timeNs, limit: config.maxHoldNs) {
+                tapsCompleted = 1
                 enterFirstUp(timeNs: event.timeNs)
                 return DoubleTapOutcome(triggered: false, state: state)
             }
@@ -286,8 +295,13 @@ public struct DoubleTapFSM: Equatable, Sendable {
 
         case (.secondDown, .up):
             if side == secondSide, intervalOK(from: secondDownNs, to: event.timeNs, limit: config.maxHoldNs) {
-                emitTrigger(at: event.timeNs)
-                return DoubleTapOutcome(triggered: true, state: .refractory)
+                tapsCompleted += 1
+                if tapsCompleted >= config.tapCount {
+                    emitTrigger(at: event.timeNs)
+                    return DoubleTapOutcome(triggered: true, state: .refractory)
+                }
+                enterFirstUp(timeNs: event.timeNs)
+                return DoubleTapOutcome(triggered: false, state: state)
             }
             clearToIdle(clearRefractory: true)
             return DoubleTapOutcome(triggered: false, state: .idle)
@@ -310,6 +324,7 @@ public struct DoubleTapFSM: Equatable, Sendable {
 
     private mutating func enterFirstDown(side: ModifierSide, timeNs: UInt64) {
         state = .firstDown
+        tapsCompleted = 0
         firstSide = side
         firstDownNs = timeNs
         firstUpNs = nil
@@ -357,6 +372,7 @@ public struct DoubleTapFSM: Equatable, Sendable {
         lastKind = nil
         lastSide = nil
         lastTimeNs = nil
+        tapsCompleted = 0
         if clearRefractory {
             refractoryUntilNs = nil
         }

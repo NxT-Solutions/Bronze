@@ -101,6 +101,19 @@ pub fn recorded_double_tap_allowed(binding: &ShortcutBinding) -> bool {
         && effective_tap_count(binding).is_some()
 }
 
+pub fn live_shift_tap_count(binding: &ShortcutBinding) -> Option<u32> {
+    if !binding.enabled || binding.action != ShortcutActionId::CaptureSelection {
+        return None;
+    }
+    if binding.trigger != TriggerKind::ModifierDoubleTap {
+        return None;
+    }
+    if binding.modifiers.as_slice() != [Modifier::Shift] {
+        return None;
+    }
+    effective_tap_count(binding)
+}
+
 fn accelerator(action: ShortcutActionId, modifiers: Vec<Modifier>, key: &str) -> ShortcutBinding {
     ShortcutBinding {
         action,
@@ -624,5 +637,25 @@ mod shortcuts_tests {
         assert_eq!(accelerator.max_hold_ms, None);
         assert_eq!(accelerator.modifier_side, None);
         assert_eq!(accelerator.tap_count, None);
+    }
+
+    #[test]
+    fn live_shift_tap_count_follows_capture_selection_binding() {
+        let double = default_shortcut_binding(ShortcutActionId::CaptureSelection);
+        assert_eq!(live_shift_tap_count(&double), Some(2));
+        let mut triple = double.clone();
+        triple.tap_count = Some(3);
+        assert_eq!(live_shift_tap_count(&triple), Some(3));
+        let mut option = triple.clone();
+        option.modifiers = vec![Modifier::Option];
+        assert_eq!(live_shift_tap_count(&option), None);
+        let mut accel = default_shortcut_binding(ShortcutActionId::CaptureSelection);
+        accel.trigger = TriggerKind::Accelerator;
+        accel.logical_key = Some("k".into());
+        accel.tap_count = None;
+        apply_recorded_double_tap_timing(&mut accel);
+        assert_eq!(live_shift_tap_count(&accel), None);
+        let search = default_shortcut_binding(ShortcutActionId::QueueSearch);
+        assert_eq!(live_shift_tap_count(&search), None);
     }
 }

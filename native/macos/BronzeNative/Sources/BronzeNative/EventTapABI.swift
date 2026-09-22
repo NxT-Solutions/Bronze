@@ -23,6 +23,12 @@ public func bronze_native_event_tap_set_enabled(_ enabled: UInt32) -> UInt32 {
     return BRONZE_STATUS_OK
 }
 
+@_cdecl("bronze_native_event_tap_set_tap_count")
+public func bronze_native_event_tap_set_tap_count(_ count: UInt32) -> UInt32 {
+    EventTapRuntime.shared.setGestureTapCount(Int(count))
+    return BRONZE_STATUS_OK
+}
+
 @_silgen_name("bronze_native_event_tap_drain")
 public func bronze_native_event_tap_drain(
     _ kind: UnsafeMutablePointer<UInt32>?,

@@ -27,6 +27,7 @@ public final class EventTapEngine: @unchecked Sendable {
     private var thread: Thread?
     private let ready = DispatchSemaphore(value: 0)
     private var gestureEnabled = false
+    private var gestureTapCount = 2
     private var shiftFlagDown = false
     private var lastShiftSide: ModifierSide = .left
 
@@ -47,6 +48,13 @@ public final class EventTapEngine: @unchecked Sendable {
 
     public func setGestureEnabled(_ enabled: Bool) {
         gestureEnabled = enabled
+        applyConfig()
+    }
+
+    public func setGestureTapCount(_ count: Int) {
+        let clamped = min(DoubleTapConfig.tapCountAllowed.upperBound,
+                          max(DoubleTapConfig.tapCountAllowed.lowerBound, count))
+        gestureTapCount = clamped
         applyConfig()
     }
 
@@ -126,7 +134,8 @@ public final class EventTapEngine: @unchecked Sendable {
             gapMs: 250,
             maxHoldMs: 400,
             refractoryMs: 500,
-            side: .either
+            side: .either,
+            tapCount: gestureTapCount
         ) ?? .defaults
         fsm = DoubleTapFSM(config: config)
         fsm.reset()

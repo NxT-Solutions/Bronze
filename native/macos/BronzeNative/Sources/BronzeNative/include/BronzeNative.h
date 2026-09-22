@@ -101,6 +101,7 @@ uint32_t bronze_native_event_tap_start(void);
 uint32_t bronze_native_event_tap_stop(void);
 uint32_t bronze_native_event_tap_health(void);
 uint32_t bronze_native_event_tap_set_enabled(uint32_t enabled);
+uint32_t bronze_native_event_tap_set_tap_count(uint32_t count);
 uint32_t bronze_native_event_tap_drain(uint32_t *kind, uint64_t *sequence);
 uint32_t bronze_native_event_tap_fsm_state(void);
 

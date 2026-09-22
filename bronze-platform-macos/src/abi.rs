@@ -82,6 +82,7 @@ extern "C" {
     pub fn bronze_native_event_tap_stop() -> u32;
     pub fn bronze_native_event_tap_health() -> u32;
     pub fn bronze_native_event_tap_set_enabled(enabled: u32) -> u32;
+    pub fn bronze_native_event_tap_set_tap_count(count: u32) -> u32;
     pub fn bronze_native_event_tap_drain(kind: *mut u32, sequence: *mut u64) -> u32;
     pub fn bronze_native_event_tap_fsm_state() -> u32;
     pub fn bronze_native_event_tap_test_attach() -> u32;

@@ -210,7 +210,6 @@ fn start_native_or_die() {
             let _ = capture_permissions::prompt_on_native_start();
             let _ = capture_permissions::prompt_notification_if_undetermined();
             let _ = runtime.event_tap_start();
-            let _ = runtime.event_tap_set_enabled(true);
             // Process-lifetime: dropping would shutdown the in-process static lib.
             std::mem::forget(runtime);
         }
@@ -428,6 +427,7 @@ fn copy_overview_item(app: &tauri::AppHandle, id: &str) {
 fn start_capture_pump(app: tauri::AppHandle) {
     use bronze_platform_macos::{EventTapHealth, NativeRuntime, BRONZE_TAP_REC_TRIGGER};
     use std::time::{Duration, Instant};
+    use tauri::Manager;
     std::thread::Builder::new()
         .name("bronze-capture-pump".into())
         .spawn(move || {
@@ -442,7 +442,14 @@ fn start_capture_pump(app: tauri::AppHandle) {
                         .is_some_and(|health| health == EventTapHealth::Listening);
                     if !listening {
                         let _ = NativeRuntime::event_tap_start_shared();
-                        let _ = NativeRuntime::event_tap_set_enabled_shared(true);
+                        if let Some(session) =
+                            app.try_state::<std::sync::Mutex<live_session::LiveSession>>()
+                        {
+                            let session = session
+                                .lock()
+                                .unwrap_or_else(|poisoned| poisoned.into_inner());
+                            session.apply_live_capture_gesture();
+                        }
                     }
                     last_retry = Instant::now();
                 }
@@ -862,9 +869,13 @@ mod tests {
         assert!(lib.contains("restore_shortcut"));
         assert!(lib.contains("menu.status.capture"));
         assert!(lib.contains("help.title"));
-        assert!(lib.contains("event_tap_set_enabled"));
+        assert!(lib.contains("apply_live_capture_gesture"));
         assert!(lib.contains("event_tap_drain_shared"));
         assert!(lib.contains("event_tap_start_shared"));
+        let pump = lib.split("fn start_capture_pump").nth(1).expect("pump");
+        let pump_end = pump.find("\nfn ").unwrap_or(pump.len());
+        assert!(pump[..pump_end].contains("apply_live_capture_gesture"));
+        assert!(!pump[..pump_end].contains("event_tap_set_enabled_shared(true)"));
         assert!(lib.contains("prompt_notification_if_undetermined"));
         assert!(lib.contains("note_external_focus"));
         assert!(lib.contains("capture-result"));
