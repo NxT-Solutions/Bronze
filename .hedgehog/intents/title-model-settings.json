@@ -1,0 +1,74 @@
+{
+  "id": "title-model-settings",
+  "goal": "Let Settings live-switch among present offline title engines (extractive, SmolLM2-135M, SmolLM2-360M, Qwen2.5-0.5B), auto-pick the largest present tier the machine can hold on first install only, and strip a leaked Title: prefix from model output.",
+  "outcome": "general.titleModel is a schema-valid, exportable, non-secret id (extractive | smol-135 | smol-360 | qwen-05). First install or an empty value auto-picks among files already on disk using physical RAM bands and never downloads. A Settings change unloads the previous llama context and loads the new file on the title worker thread for the next refine, without requiring relaunch when load succeeds; load failure stays on compact_title and surfaces the reason. Persist still writes compact_title first. Missing weights log bronze-title: missing_weights and mark the tier unavailable. clean_title strips leading Title:/title: and surrounding quotes before clamp/groundedness. ADR-019 stays Proposed. T-10 allow-list is those three hash-pinned GGUFs plus extractive. No runtime Hub, hosted AI, PCC, Needle, Gemma, Llama 1B, or Qwen3-thinking.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-1",
+      "kind": "rule",
+      "statement": "Tiers: extractive (compact_title only, no GGUF); smol-135 SmolLM2-135M-Instruct Q4_K_M SHA-256 2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d (~105 MB); smol-360 SmolLM2-360M-Instruct Q4_K_M SHA-256 2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2 (~271 MB); qwen-05 official Qwen/Qwen2.5-0.5B-Instruct-GGUF qwen2.5-0.5b-instruct-q4_k_m.gguf revision 9217f5db79a29953eb74d5343926648285ec7e67 SHA-256 74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db (~491 MB, Apache-2.0). Not Qwen3 thinking mode."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-2",
+      "kind": "rule",
+      "statement": "ADR-017 stays Accepted: no runtime network, telemetry, CDN, account, or Hugging Face Hub fetch when the user switches or at first launch. Missing weights keep compact_title, log bronze-title: missing_weights, and Settings shows the tier as unavailable with the vendor command. No download button."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-3",
+      "kind": "rule",
+      "statement": "Auto-pick only when general.titleModel is missing or empty. Do not overwrite a stored user choice. Read machine RAM in Rust with no telemetry. Bands: <8 GB RAM or no GGUF present → extractive; 8–16 GB → smol-135 if vendored else extractive; 16–32 GB → smol-360 if vendored else next smaller present; ≥32 GB → qwen-05 if vendored else next smaller present. Most fit = largest tier the machine can hold and whose file is already on disk. Persist the resolved id so the picker shows it."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-4",
+      "kind": "rule",
+      "statement": "Live switch applies to the next refine without relaunch when possible: unload previous llama context and load the new file on bronze-title-model / bronze-item-title, not event-tap, not AppKit main. Reload failure stays on compact_title and surfaces the fallback reason. Capture never waits on the new model load. Persist compact_title first still."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-5",
+      "kind": "rule",
+      "statement": "Strip leading Title: / title: (optional space) and surrounding quotes from model output before clamp and groundedness. Prompt may still ask for a short topic. Keep groundedness and short_body skip. Qwen uses greedy/low temp, 16 tokens, no tools, same input truncate."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-6",
+      "kind": "rule",
+      "statement": "T-10 carve-out is the offline hash-pinned GGUF allow-list (135, 360, qwen-05) plus extractive. Hosted AI, PCC, runtime Hub stay forbidden. ADR-019 stays Proposed. Never silently accept ADR-002, ADR-009, ADR-018, or ADR-019."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-7",
+      "kind": "rule",
+      "statement": "Vendor script can fetch any allow-listed tier with SHA-256 pin. Record repo+rev+filename+hash for each. Weights are not user-writable via the app. Never a WebView path (SEC-003). CPU n_gpu_layers=0. No new entitlements. TitleABI.swift stays a compile-only stub with no llama/gguf."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-8",
+      "kind": "rule",
+      "statement": "Settings uses a real radio group or select, not a clickable div. Label plus RAM/disk hint per tier. Show present vs missing. Live region or existing save feedback on engine switch. Locale catalog only (en, nl, fr, de, es, it). No sentence concatenation. Semantic HTML, focus-visible, hig/wcag tokens. No Cooper/Copper copy."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-RULE-9",
+      "kind": "rule",
+      "statement": "general.titleModel is schema-valid, exportable, not a secret. Event-tap unchanged. Human stories 3.9, 3.10, 5.5, 9.3 stay backlog. Do not claim leftover QUEUE-ATTACHMENTS tasks. Do not resume bmad-loop 6a79. Do not run full-stack-app, pwa-app, or landing-page cores."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "clean_title strips Title: / title: and surrounding quotes; a model line Title: Landing Page Change Hasimproved becomes Landing Page Change Hasimproved before clamp/groundedness."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "Settings schema and export/import round-trip general.titleModel. Auto-pick runs only on missing/empty and does not overwrite a stored user value."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "Missing qwen-05 file does not fetch; refine stays compact_title and logs missing_weights. A Settings switch schedules reload on the title worker for the next refine."
+    },
+    {
+      "id": "TITLE-MODEL-SETTINGS-ACCEPTANCE-4",
+      "kind": "acceptance",
+      "statement": "Persist still writes compact_title first. ADR-019 status remains Proposed. T-10 names the three hash-pinned files as an allow-list and still forbids hosted AI and PCC."
+    }
+  ],
+  "depends_on": []
+}
