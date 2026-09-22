@@ -8,5 +8,6 @@ members = [
     "bronze-diagnostics",
     "bronze-platform",
     "bronze-platform-macos",
+    "bronze-title-model",
     "apps/desktop/src-tauri",
 ]

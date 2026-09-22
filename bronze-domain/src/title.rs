@@ -7,7 +7,11 @@ pub fn compact_title(body: &str) -> String {
     let plain = strip_markup(body);
     let sentences = split_sentences(&plain);
     let picked = best_sentence(&sentences).unwrap_or("");
-    clamp_chars(picked, TITLE_MAX_CHARS)
+    clamp_title(picked)
+}
+
+pub fn clamp_title(text: &str) -> String {
+    clamp_chars(text, TITLE_MAX_CHARS)
 }
 
 pub fn strip_markup(body: &str) -> String {
@@ -168,5 +172,13 @@ mod title_tests {
         let title = compact_title(&"a".repeat(80));
         assert_eq!(title.chars().count(), TITLE_MAX_CHARS);
         assert!(!title.contains('…'));
+    }
+
+    #[test]
+    fn clamp_title_matches_compact_title_limit() {
+        let clamped = clamp_title("  Migration timeout is the real persist bug and more words  ");
+        assert!(clamped.chars().count() <= TITLE_MAX_CHARS);
+        assert!(!clamped.contains('…'));
+        assert_eq!(clamped, clamp_title(&clamped));
     }
 }

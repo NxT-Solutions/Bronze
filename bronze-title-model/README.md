@@ -1,0 +1,25 @@
+# bronze-title-model
+
+Local title refine after persist. Persist still writes `compact_title` first.
+
+## Weights
+
+Developer or CI vendors once:
+
+```
+sh bronze-title-model/scripts/vendor-gguf.sh
+```
+
+The script downloads `SmolLM2-135M-Instruct-Q4_K_M.gguf` from the pinned Hugging Face revision and checks SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d`. git-lfs is not required. The GGUF is gitignored. Capture and runtime never fetch.
+
+`vendor/MANIFEST`, `vendor/LICENSE`, and `vendor/NOTICE` record HuggingFaceTB/SmolLM2-135M-Instruct (Apache-2.0), the bartowski Q4_K_M file, revision, and hash.
+
+Load order: `set_weights_path` (Rust setup only), else `BRONZE_TITLE_WEIGHTS`, else `vendor/` next to this crate, else `models/` beside the executable. No WebView path.
+
+## Runtime
+
+`llama-cpp-2` 0.1.154, local file only, CPU (`n_gpu_layers = 0`). The crate does not enable hub download. On Apple Silicon the crate still compiles Metal support; this worker does not offload and does not add JIT or unsigned-executable-memory entitlements.
+
+## Fallback
+
+Missing file, hash mismatch, timeout, empty output, load failure, a body already at most 40 characters, or a title that shares no 3+ character term with the body returns no refine. The stored `compact_title` stays. 135M can invent unrelated titles on short input; those are dropped rather than stored.

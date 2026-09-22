@@ -581,6 +581,29 @@ impl LiveSession {
             .collect())
     }
 
+    pub fn item_body(&self, id: &str) -> Option<String> {
+        self.store.get_item(id).ok().map(|row| row.body)
+    }
+
+    pub fn apply_refined_title(
+        &mut self,
+        id: &str,
+        expected_body: &str,
+        title: &str,
+    ) -> Result<bool, String> {
+        let row = self
+            .store
+            .get_item(id)
+            .map_err(|_| "not_found".to_string())?;
+        if row.body != expected_body {
+            return Ok(false);
+        }
+        self.store
+            .set_item_title(id, title, now_ms())
+            .map_err(|_| "title_store_failed".to_string())?;
+        Ok(true)
+    }
+
     pub fn persist_selection(
         &mut self,
         host: &dyn SelectionHost,
@@ -1299,10 +1322,13 @@ pub fn list_overview_items(
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn add_composer_item(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     body: String,
 ) -> Result<QueueItemDto, String> {
-    lock_session(&session)?.add_composer(body)
+    let dto = lock_session(&session)?.add_composer(body.clone())?;
+    crate::title_refine::schedule(&app, dto.id.clone(), body);
+    Ok(dto)
 }
 
 #[cfg(target_os = "macos")]
@@ -1318,11 +1344,14 @@ pub fn apply_queue_item_action(
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn edit_queue_item(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     id: String,
     body: String,
 ) -> Result<QueueItemDto, String> {
-    lock_session(&session)?.edit_item(&id, &body)
+    let dto = lock_session(&session)?.edit_item(&id, &body)?;
+    crate::title_refine::schedule(&app, id, body);
+    Ok(dto)
 }
 
 #[cfg(target_os = "macos")]
@@ -1624,11 +1653,16 @@ mod live_session_tests {
     }
 
     #[test]
-    fn live_title_path_is_compact_title_only() {
+    fn live_title_path_writes_compact_title_first() {
         let src = include_str!("live_session.rs");
         let prod = src.split("mod live_session_tests").next().expect("prod");
-        assert!(!prod.contains("set_item_title"));
-        assert!(!prod.contains("spawn_title_refine"));
+        let add = prod
+            .split("pub fn add_composer(")
+            .nth(1)
+            .expect("add_composer");
+        let add_end = add.find("\n    pub fn ").unwrap_or(add.len());
+        assert!(!add[..add_end].contains("refine_title"));
+        assert!(!add[..add_end].contains("set_item_title"));
         assert!(!prod.contains("native_item_title"));
         assert!(!prod.contains("bronze-item-title"));
         let body = "Thanks for the note.\nThe migration timeout is the real bug in persist.\nPlease take a look when you can.";
@@ -1638,6 +1672,19 @@ mod live_session_tests {
         assert_eq!(title, bronze_domain::compact_title(body));
         assert!(title.to_ascii_lowercase().contains("migration"));
         assert!(!title.to_ascii_lowercase().starts_with("thanks"));
+        assert!(session
+            .apply_refined_title(&added.id, body, "Migration timeout")
+            .expect("apply"));
+        let stored = session
+            .list_queue(true)
+            .expect("list")
+            .into_iter()
+            .find(|item| item.id == added.id)
+            .expect("row");
+        assert_eq!(stored.title.as_deref(), Some("Migration timeout"));
+        assert!(!session
+            .apply_refined_title(&added.id, "changed", "Ignored")
+            .expect("stale"));
     }
 
     #[test]

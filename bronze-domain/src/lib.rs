@@ -32,7 +32,7 @@ pub use reflow::{
     ReflowError, Size, COMPOSER_MUST_BE_REACHABLE, REFLOW_WIDTH_CSS_PX, TEXT_RESIZE_PERCENT,
     TOOLBAR_OVERFLOW_KEY, TWO_AXIS_SCROLL_ALLOWED,
 };
-pub use title::{compact_title, strip_markup};
+pub use title::{clamp_title, compact_title, strip_markup};
 pub use tokens::{
     contrast_ratio, normal_text_pairs, relative_luminance, Rgb, ThemeTokens,
     COMPETITOR_TRADE_DRESS, CONCEPT_PNG_IS_PIXEL_SPEC, DARK, LIGHT, MIN_NORMAL_TEXT_CONTRAST,

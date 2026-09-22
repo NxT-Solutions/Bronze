@@ -1,6 +1,7 @@
 mod capture_permissions;
 mod live_session;
 mod own_selection;
+mod title_refine;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -51,6 +52,13 @@ pub fn run() {
                 let data_dir = app.path().app_data_dir()?;
                 let session = live_session::LiveSession::open(data_dir)?;
                 app.manage(std::sync::Mutex::new(session));
+                if let Ok(dir) = app.path().resource_dir() {
+                    let weights = dir.join("models").join(bronze_title_model::FILENAME);
+                    if weights.is_file() {
+                        bronze_title_model::set_weights_path(weights);
+                    }
+                }
+                title_refine::warmup();
                 install_chrome_menu(app.handle())?;
                 install_status_item(app.handle())?;
                 reveal_quick_panel(app.handle())?;
@@ -566,6 +574,16 @@ fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::Ow
     let mut announce = FakeAnnouncer::default();
     let catalog = session.ui_catalog();
     let persisted = session.persist_selection(&LiveCaptureHost { own }, &mut announce, visible);
+    let refine = persisted.as_ref().ok().and_then(|outcome| {
+        if outcome.terminal == Terminal::Saved {
+            outcome
+                .item_id
+                .clone()
+                .and_then(|id| session.item_body(&id).map(|body| (id, body)))
+        } else {
+            None
+        }
+    });
     drop(session);
     if let Ok(outcome) = persisted {
         let saved = outcome.terminal == Terminal::Saved;
@@ -574,6 +592,9 @@ fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::Ow
         let _ = app.emit("capture-result", dto);
         if saved {
             let _ = app.emit("queue-changed", ());
+        }
+        if let Some((id, body)) = refine {
+            title_refine::schedule(app, id, body);
         }
     }
     let _ = rebuild_status_menu(app);
@@ -895,36 +916,47 @@ mod tests {
         assert!(lib.contains("queue-changed"));
         let prod = lib.split("#[cfg(test)]").next().expect("prod");
         assert!(!prod.contains("native_item_title"));
-        assert!(!prod.contains("spawn_title_refine"));
-        assert!(!prod.contains("bronze-item-title"));
-        assert!(!prod.contains("set_item_title"));
+        assert!(prod.contains("title_refine::schedule"));
+        assert!(
+            prod.contains("bronze-item-title")
+                || include_str!("title_refine.rs").contains("bronze-item-title")
+        );
         assert!(lib.contains("tray_entry_label"));
         let pump = lib.split("fn start_capture_pump").nth(1).expect("pump");
         let pump_end = pump.find("\nfn ").unwrap_or(pump.len());
         assert!(!pump[..pump_end].contains("native_item_title"));
+        assert!(!pump[..pump_end].contains("title_refine"));
+        assert!(!pump[..pump_end].contains("refine_title"));
         let persist = lib
             .split("fn persist_capture_request")
             .nth(1)
             .expect("persist");
         let persist_end = persist.find("\nmod ").unwrap_or(persist.len());
         assert!(!persist[..persist_end].contains("native_item_title"));
-        assert!(!persist[..persist_end].contains("spawn_title_refine"));
-        assert!(!persist[..persist_end].contains("set_item_title"));
+        let emit_at = persist[..persist_end].find("capture-result").expect("emit");
+        let schedule_at = persist[..persist_end]
+            .find("title_refine::schedule")
+            .expect("schedule");
+        assert!(emit_at < schedule_at);
         let composer = include_str!("live_session.rs");
         let session_prod = composer
             .split("mod live_session_tests")
             .next()
             .expect("session prod");
-        assert!(!session_prod.contains("spawn_title_refine"));
-        assert!(!session_prod.contains("set_item_title"));
         assert!(!session_prod.contains("native_item_title"));
+        let add_method = session_prod
+            .split("pub fn add_composer(")
+            .nth(1)
+            .expect("add_composer");
+        let add_method_end = add_method.find("\n    pub fn ").unwrap_or(add_method.len());
+        assert!(!add_method[..add_method_end].contains("title_refine"));
         let add = composer
             .split("pub fn add_composer_item")
             .nth(1)
             .expect("composer add");
         let add_end = add.find("\n#[cfg").unwrap_or(add.len());
         assert!(!add[..add_end].contains("native_item_title"));
-        assert!(!add[..add_end].contains("spawn_title_refine"));
+        assert!(add[..add_end].contains("title_refine::schedule"));
         let capture_fn = lib
             .split("pub fn on_capture_requested")
             .nth(1)
