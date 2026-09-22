@@ -21,6 +21,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
 const chrome = readFileSync(join(root, "chrome.css"), "utf8");
 const live = readFileSync(join(root, "queue-live.mjs"), "utf8");
+const motion = readFileSync(join(root, "queue-motion.mjs"), "utf8");
 const itemView = readFileSync(join(root, "item-view.mjs"), "utf8");
 
 const FEEDBACK = {
@@ -121,11 +122,14 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(html, /data-slot="expand"/);
   assert.match(html, /data-i18n="queue.item.showMore"/);
   assert.match(html, /data-i18n="queue.item.showLess"/);
-  assert.match(live, /sourceAppName/);
-  assert.match(live, /sourceAppIcon/);
-  assert.match(live, /applySourceRow/);
-  assert.match(live, /fillItemChrome/);
-  assert.match(live, /is-entering/);
+  assert.match(motion, /sourceAppName/);
+  assert.match(motion, /sourceAppIcon/);
+  assert.match(motion, /applySourceRow/);
+  assert.match(motion, /fillItemChrome/);
+  assert.match(motion, /is-entering/);
+  assert.match(live, /queue-motion\.mjs/);
+  assert.match(live, /applyQueueItemMutation/);
+  assert.match(live, /refresh\(\{ action/);
   assert.doesNotMatch(live, /http:\/\//);
   assert.match(itemView, /renderMarkdownBody/);
   assert.match(itemView, /is-expanded/);

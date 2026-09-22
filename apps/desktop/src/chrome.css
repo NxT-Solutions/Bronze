@@ -776,6 +776,38 @@ pre {
   position: relative;
   z-index: 0;
   overflow: visible;
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows var(--ease),
+    height var(--ease),
+    opacity var(--ease),
+    transform var(--ease),
+    margin-block var(--ease);
+}
+
+.queue-item.is-leaving-complete,
+.queue-item.is-leaving-skip,
+.queue-item.is-leaving-trash {
+  grid-template-rows: 0fr;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  margin-block: calc(var(--space-4) / -2);
+}
+
+.queue-item.is-leaving-complete {
+  transform: translateY(-8px);
+}
+
+.queue-item.is-leaving-skip {
+  transform: none;
+}
+
+.queue-item.is-leaving-trash {
+  transform: scale(0.96);
+  transform-origin: center center;
 }
 
 .queue-item:has(.row-action-icons .btn-icon:hover:not(:disabled)),

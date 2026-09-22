@@ -10,14 +10,12 @@ import {
   runBusy,
   showChromeNotice,
 } from "./control.mjs";
-import {
-  applySourceRow,
-  fillItemChrome,
-  formatCaptureSource,
-  readExpandLabels,
-  syncExpandVisibility,
-} from "./item-view.mjs";
+import { formatCaptureSource } from "./item-view.mjs";
 import { serializeComposerDom } from "./markdown-body.mjs";
+import {
+  applyQueueItemMutation,
+  createQueueRenderer,
+} from "./queue-motion.mjs";
 import { tauriInvoke } from "./tauri-bridge.mjs";
 
 export { formatCaptureSource, serializeComposerDom };
@@ -526,32 +524,13 @@ function observeQueueOrder(list) {
   observer.observe(list, { childList: true });
 }
 
-export function renderQueueItems(list, items, template) {
-  const labels = readExpandLabels(template.content);
-  list.replaceChildren();
-  for (const [index, item] of items.entries()) {
-    const node = template.content.firstElementChild.cloneNode(true);
-    node.classList.add("is-entering");
-    node.style.setProperty("--enter-delay", `${Math.min(index, 8) * 24}ms`);
-    node.dataset.itemId = item.id;
-    node.dataset.body = typeof item.body === "string" ? item.body : "";
-    const article = node.querySelector("article");
-    fillItemChrome(article, item, labels);
-    const source = node.querySelector("[data-slot=source]");
-    const labelNode =
-      source?.querySelector("[data-slot=source-label]") ?? source;
-    const label = formatCaptureSource(
-      labelNode?.textContent,
-      item.sourceAppName,
-    );
-    applySourceRow(article, label, item.sourceAppIcon);
-    node.querySelectorAll("[data-queue-action]").forEach((button) => {
-      button.dataset.itemId = item.id;
-    });
-    list.append(node);
-    syncExpandVisibility(article);
-  }
-  syncQueueMoveAvailability(list);
+const queueRenderer = createQueueRenderer({
+  queueItemRows,
+  syncMoveAvailability: syncQueueMoveAvailability,
+});
+
+export function renderQueueItems(list, items, template, options = {}) {
+  return queueRenderer.renderQueueItems(list, items, template, options);
 }
 
 export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
@@ -577,10 +556,21 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   }
   syncSubmitLabel();
 
-  async function refresh() {
+  let refreshGen = 0;
+  async function refresh(opts = {}) {
+    const gen = ++refreshGen;
     const items = await invokeFn("list_overview_items");
-    renderQueueItems(list, items, template);
-    if (empty) {
+    if (gen !== refreshGen) {
+      return;
+    }
+    try {
+      await renderQueueItems(list, items, template, opts);
+    } catch {
+      if (gen === refreshGen) {
+        queueRenderer.paintQueueItems(list, items, template);
+      }
+    }
+    if (gen === refreshGen && empty) {
       empty.hidden = items.length > 0;
     }
   }
@@ -597,7 +587,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
         error.hidden = true;
       }
       hideChromeNotice(root);
-      await refresh();
+      await refresh({ action: "insert" });
     } catch {
       if (error) {
         error.hidden = true;
@@ -731,12 +721,11 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
         const next = await openEditSheet(root, row?.dataset?.body ?? "");
         if (next !== null) {
           await invokeFn("edit_queue_item", { id, body: next });
-          await refresh();
+          await refresh({ action: "replace" });
         }
         return;
       }
-      await invokeFn("apply_queue_item_action", { id, action });
-      await refresh();
+      await applyQueueItemMutation(invokeFn, { id, action }, refresh);
     });
   });
 
@@ -746,11 +735,11 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   listenCaptureResult((event) => {
     applyCaptureResult(root, event?.payload ?? event);
     if (event?.payload?.terminal === "saved" || event?.terminal === "saved") {
-      refresh();
+      refresh({ action: "insert" });
     }
   });
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
-    refresh();
+    refresh({ action: "replace" });
     syncSubmitLabel();
   });
 

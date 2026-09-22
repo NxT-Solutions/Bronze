@@ -162,6 +162,18 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /cubic-bezier\(0\.22, 1, 0\.36, 1\)/);
   assert.match(chrome, /@keyframes bronze-enter/);
   assert.match(chrome, /@keyframes bronze-pop/);
+  assert.match(chrome, /\.queue-item\.is-leaving-complete/);
+  assert.match(chrome, /\.queue-item\.is-leaving-skip/);
+  assert.match(chrome, /\.queue-item\.is-leaving-trash/);
+  assert.match(
+    chrome,
+    /\.queue-item\.is-leaving-complete[\s\S]*grid-template-rows:\s*0fr/,
+  );
+  assert.match(
+    chrome,
+    /\.queue-item\.is-leaving-complete[\s\S]*translateY\(-8px\)/,
+  );
+  assert.match(chrome, /\.queue-item\.is-leaving-trash[\s\S]*scale\(0\.96\)/);
   assert.match(chrome, /SF Pro Display/);
   assert.match(chrome, /optimizeLegibility/);
   assert.match(chrome, /article \{[\s\S]*box-shadow:\s*none/);
