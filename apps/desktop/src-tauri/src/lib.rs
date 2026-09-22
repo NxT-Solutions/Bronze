@@ -303,12 +303,14 @@ fn status_tray_menu(
     let capture_item = MenuItem::with_id(app, "capture-selection", &capture, true, None::<&str>)?;
     let settings_item = MenuItem::with_id(app, "show-settings", &settings, true, None::<&str>)?;
     let help_item = MenuItem::with_id(app, "show-help", &help, true, None::<&str>)?;
+    let quit_item = MenuItem::with_id(app, "tray-quit", &quit, true, None::<&str>)?;
     builder = builder
         .item(&show_item)
         .item(&capture_item)
         .item(&settings_item)
         .item(&help_item)
-        .quit_with_text(&quit);
+        .separator()
+        .item(&quit_item);
     Ok(builder.build()?)
 }
 
@@ -535,6 +537,9 @@ fn handle_menu_id(app: &tauri::AppHandle, id: &str) {
         }
         "capture-selection" => {
             on_capture_requested(app);
+        }
+        "tray-quit" => {
+            app.exit(0);
         }
         _ => {}
     }
@@ -912,6 +917,11 @@ mod tests {
         assert!(lib.contains("on_tray_icon_event"));
         assert!(lib.contains("show_menu_on_left_click(false)"));
         assert!(lib.contains("menu.status.show"));
+        let tray_menu = lib.split("fn status_tray_menu").nth(1).expect("tray menu");
+        let tray_menu_end = tray_menu.find("\nfn ").unwrap_or(tray_menu.len());
+        assert!(!tray_menu[..tray_menu_end].contains("quit_with_text"));
+        assert!(tray_menu[..tray_menu_end].contains("tray-quit"));
+        assert!(tray_menu[..tray_menu_end].contains("None::<&str>"));
         assert_eq!(
             crate::status_item_click(
                 tauri::tray::MouseButton::Left,
