@@ -13,7 +13,6 @@ let package = Package(
             name: "BronzeNative",
             publicHeadersPath: "include",
             linkerSettings: [
-                .linkedFramework("NaturalLanguage"),
                 .linkedFramework("AppKit"),
                 .linkedFramework("UserNotifications"),
             ]

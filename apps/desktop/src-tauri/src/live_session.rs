@@ -777,19 +777,6 @@ impl LiveSession {
             .map_err(|_| "not_found".into())
     }
 
-    pub fn set_item_title(&mut self, id: &str, title: &str) -> Result<(), String> {
-        self.store
-            .set_item_title(id, title, now_ms())
-            .map_err(|err| format!("{err:?}"))
-    }
-
-    pub fn get_queue_item(&self, id: &str) -> Result<QueueItemDto, String> {
-        self.store
-            .get_item(id)
-            .map(QueueItemDto::from)
-            .map_err(|_| "not_found".into())
-    }
-
     pub fn copy_items(
         &mut self,
         item_ids: &[String],
@@ -1312,13 +1299,10 @@ pub fn list_overview_items(
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn add_composer_item(
-    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     body: String,
 ) -> Result<QueueItemDto, String> {
-    let item = lock_session(&session)?.add_composer(body)?;
-    crate::spawn_title_refine(&app, item.id.clone(), item.body.clone());
-    Ok(item)
+    lock_session(&session)?.add_composer(body)
 }
 
 #[cfg(target_os = "macos")]
@@ -1627,15 +1611,33 @@ mod live_session_tests {
         assert_eq!(session.list_queue(false).expect("done")[0].status, "done");
         assert!(session.list_overview().expect("overview").is_empty());
         assert!(session.add_composer(String::new()).is_err());
-        session.set_item_title(&added.id, "Refined").expect("title");
+        let edited = session
+            .edit_item(&added.id, "Thanks.\nThe persist timeout is the bug.")
+            .expect("edit");
+        let edited_title = edited.title.expect("edited title");
         assert_eq!(
-            session
-                .get_queue_item(&added.id)
-                .expect("get")
-                .title
-                .as_deref(),
-            Some("Refined")
+            edited_title,
+            bronze_domain::compact_title("Thanks.\nThe persist timeout is the bug.")
         );
+        assert!(edited_title.to_ascii_lowercase().contains("persist"));
+        assert!(!edited_title.to_ascii_lowercase().starts_with("thanks"));
+    }
+
+    #[test]
+    fn live_title_path_is_compact_title_only() {
+        let src = include_str!("live_session.rs");
+        let prod = src.split("mod live_session_tests").next().expect("prod");
+        assert!(!prod.contains("set_item_title"));
+        assert!(!prod.contains("spawn_title_refine"));
+        assert!(!prod.contains("native_item_title"));
+        assert!(!prod.contains("bronze-item-title"));
+        let body = "Thanks for the note.\nThe migration timeout is the real bug in persist.\nPlease take a look when you can.";
+        let mut session = open_session();
+        let added = session.add_composer(body.into()).expect("add");
+        let title = added.title.expect("title");
+        assert_eq!(title, bronze_domain::compact_title(body));
+        assert!(title.to_ascii_lowercase().contains("migration"));
+        assert!(!title.to_ascii_lowercase().starts_with("thanks"));
     }
 
     #[test]
@@ -2102,6 +2104,38 @@ mod live_session_tests {
             .apply_action(&overview[0].id, "complete")
             .expect("complete");
         assert!(session.list_overview().expect("hidden").is_empty());
+    }
+
+    #[test]
+    fn ax_capture_stores_extractive_compact_title() {
+        use bronze_capture::{AxRole, FakeAnnouncer, FakeAxNode, FakeAxTree, FakeSelection};
+        let body = "Thanks for the note.\nThe migration timeout is the real bug in persist.";
+        let mut session = open_session();
+        let host = FakeSelectionHost {
+            tree: FakeAxTree {
+                nodes: vec![FakeAxNode::new(
+                    AxRole::TextArea,
+                    None,
+                    FakeSelection::Text(body.into()),
+                    None,
+                )],
+                focused: Some(0),
+                excluded: false,
+                accessibility_granted: true,
+            },
+            source_app_name: Some("TextEdit".into()),
+            source_bundle_id: Some("com.apple.TextEdit".into()),
+        };
+        let mut announce = FakeAnnouncer::default();
+        let persisted = session
+            .persist_selection(&host, &mut announce, false)
+            .expect("persist");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        let overview = session.list_overview().expect("overview");
+        let title = overview[0].title.clone().expect("title");
+        assert_eq!(title, bronze_domain::compact_title(body));
+        assert!(title.to_ascii_lowercase().contains("migration"));
+        assert!(!title.to_ascii_lowercase().starts_with("thanks"));
     }
 
     #[test]

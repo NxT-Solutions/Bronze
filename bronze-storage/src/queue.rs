@@ -142,21 +142,6 @@ impl Store {
         }
     }
 
-    pub fn set_item_title(&mut self, id: &str, title: &str, now_ms: i64) -> Result<(), QueueError> {
-        let n = self
-            .conn
-            .execute(
-                "UPDATE items SET title=?1, revision=revision+1, updated_at_ms=?2 WHERE id=?3",
-                rusqlite::params![title, now_ms, id],
-            )
-            .map_err(|_| QueueError::Store)?;
-        if n == 0 {
-            Err(QueueError::NotFound)
-        } else {
-            Ok(())
-        }
-    }
-
     fn set_status(&mut self, id: &str, to: &str, now_ms: i64) -> Result<(), QueueError> {
         let from: String = self
             .conn
@@ -322,6 +307,19 @@ mod queue_tests {
             .query_row("SELECT body FROM items WHERE id='a'", [], |row| row.get(0))
             .expect("body");
         assert_eq!(body, "  edited  ");
+        let title: Option<String> = store
+            .conn
+            .query_row("SELECT title FROM items WHERE id='a'", [], |row| row.get(0))
+            .expect("title");
+        assert_eq!(
+            title.as_deref(),
+            Some(bronze_domain::compact_title("  edited  ").as_str())
+        );
+        let src = include_str!("queue.rs");
+        let prod = src.split("#[cfg(test)]").next().expect("prod");
+        assert!(prod.contains("compact_title"));
+        assert!(!prod.contains("set_item_title"));
+        assert!(!prod.contains("native_item_title"));
         store
             .apply_queue_action("a", QueueAction::Trash, 14)
             .expect("trash");

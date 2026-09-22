@@ -856,6 +856,10 @@ mod ax_live_tests {
             "../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         );
         assert!(!tap.contains("bronze_native_item_title"));
+        assert!(!tap.contains("SystemLanguageModel"));
+        assert!(!tap.contains("NLEmbedding"));
+        assert!(!tap.contains("FoundationModels"));
+        assert!(!tap.contains("NaturalLanguage"));
         assert!(!tap.contains("bronze_native_pasteboard_write"));
         assert!(!tap.contains("bronze_native_app_icon_png"));
         assert!(!tap.contains("bronze_native_list_installed_apps"));

@@ -185,6 +185,13 @@ mod composer_persist_tests {
         assert_eq!(body, "  park me  ");
         assert_eq!(lang, "und");
         assert_eq!(kind, "prompt");
+        let title: String = store
+            .conn
+            .query_row("SELECT title FROM items WHERE id='i-new'", [], |row| {
+                row.get(0)
+            })
+            .expect("title");
+        assert_eq!(title, bronze_domain::compact_title("  park me  "));
         assert_eq!(draft.body, "  park me  ");
 
         let mut failed = open_store();
@@ -262,6 +269,30 @@ mod composer_persist_tests {
             })
             .expect("title");
         assert_eq!(title, bronze_domain::compact_title("selected"));
+        let extractive = ComposerDraft {
+            body: "Thanks for the note.\nThe migration timeout is the real bug in persist.".into(),
+            content_language: None,
+        };
+        store
+            .add_from_capture(&extractive, Some("TextEdit"), None, "s1", "i-extract", 15)
+            .expect("extractive");
+        let extractive_title: String = store
+            .conn
+            .query_row("SELECT title FROM items WHERE id='i-extract'", [], |row| {
+                row.get(0)
+            })
+            .expect("extractive title");
+        assert_eq!(
+            extractive_title,
+            bronze_domain::compact_title(&extractive.body)
+        );
+        assert!(extractive_title.to_ascii_lowercase().contains("migration"));
+        assert!(!extractive_title.to_ascii_lowercase().starts_with("thanks"));
+        let src = include_str!("composer.rs");
+        let prod = src.split("#[cfg(test)]").next().expect("prod");
+        assert!(prod.contains("compact_title"));
+        assert!(!prod.contains("native_item_title"));
+        assert!(!prod.contains("set_item_title"));
         store
             .add_from_capture(&draft, Some("Bronze"), None, "s1", "i-self", 13)
             .expect("self");

@@ -33,6 +33,36 @@ mod title_tests {
     #[test]
     fn stub_or_unavailable_model_returns_none_without_body() {
         assert_eq!(native_item_title(""), None);
+        assert_eq!(
+            native_item_title("The migration timeout is the real bug in persist."),
+            None
+        );
         assert!(!format!("{:?}", native_item_title("secret-title-body")).contains("secret"));
+    }
+
+    #[test]
+    fn title_abi_has_no_vendor_or_apple_model() {
+        let src =
+            include_str!("../../native/macos/BronzeNative/Sources/BronzeNative/TitleABI.swift");
+        let lower = src.to_ascii_lowercase();
+        for needle in [
+            "privatecloudcompute",
+            "urlsession",
+            "openai",
+            "llama",
+            "gguf",
+            "systemlanguagemodel",
+            "nlembedding",
+            "foundationmodels",
+            "naturallanguage",
+            "huggingface",
+            "qwen",
+            "cactus",
+            "needle",
+        ] {
+            assert!(!lower.contains(needle), "TitleABI mentions {needle}");
+        }
+        assert!(src.contains("BRONZE_STATUS_DEGRADED"));
+        assert!(!src.contains("resolveTitle"));
     }
 }

@@ -566,18 +566,6 @@ fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::Ow
     let mut announce = FakeAnnouncer::default();
     let catalog = session.ui_catalog();
     let persisted = session.persist_selection(&LiveCaptureHost { own }, &mut announce, visible);
-    let refine = persisted.as_ref().ok().and_then(|outcome| {
-        if outcome.terminal == Terminal::Saved {
-            outcome.item_id.as_ref().and_then(|id| {
-                session
-                    .get_queue_item(id)
-                    .ok()
-                    .map(|item| (item.id, item.body))
-            })
-        } else {
-            None
-        }
-    });
     drop(session);
     if let Ok(outcome) = persisted {
         let saved = outcome.terminal == Terminal::Saved;
@@ -586,37 +574,9 @@ fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::Ow
         let _ = app.emit("capture-result", dto);
         if saved {
             let _ = app.emit("queue-changed", ());
-            if let Some((id, body)) = refine {
-                spawn_title_refine(app, id, body);
-            }
         }
     }
     let _ = rebuild_status_menu(app);
-}
-
-#[cfg(target_os = "macos")]
-pub(crate) fn spawn_title_refine(app: &tauri::AppHandle, id: String, body: String) {
-    use tauri::{Emitter, Manager};
-    let handle = app.clone();
-    let _ = std::thread::Builder::new()
-        .name("bronze-item-title".into())
-        .spawn(move || {
-            let Some(title) = bronze_platform_macos::native_item_title(&body) else {
-                return;
-            };
-            let app = handle.clone();
-            let _ = handle.run_on_main_thread(move || {
-                {
-                    let session = app.state::<std::sync::Mutex<live_session::LiveSession>>();
-                    let mut session = session
-                        .lock()
-                        .unwrap_or_else(|poisoned| poisoned.into_inner());
-                    let _ = session.set_item_title(&id, &title);
-                }
-                let _ = app.emit("queue-changed", ());
-                let _ = rebuild_status_menu(&app);
-            });
-        });
 }
 
 mod capabilities;
@@ -933,11 +893,38 @@ mod tests {
         assert!(popup[..popup_end].contains("show_menu"));
         assert!(!popup[..popup_end].contains("popup_menu_at"));
         assert!(lib.contains("queue-changed"));
-        assert!(lib.contains("native_item_title"));
+        let prod = lib.split("#[cfg(test)]").next().expect("prod");
+        assert!(!prod.contains("native_item_title"));
+        assert!(!prod.contains("spawn_title_refine"));
+        assert!(!prod.contains("bronze-item-title"));
+        assert!(!prod.contains("set_item_title"));
         assert!(lib.contains("tray_entry_label"));
         let pump = lib.split("fn start_capture_pump").nth(1).expect("pump");
         let pump_end = pump.find("\nfn ").unwrap_or(pump.len());
         assert!(!pump[..pump_end].contains("native_item_title"));
+        let persist = lib
+            .split("fn persist_capture_request")
+            .nth(1)
+            .expect("persist");
+        let persist_end = persist.find("\nmod ").unwrap_or(persist.len());
+        assert!(!persist[..persist_end].contains("native_item_title"));
+        assert!(!persist[..persist_end].contains("spawn_title_refine"));
+        assert!(!persist[..persist_end].contains("set_item_title"));
+        let composer = include_str!("live_session.rs");
+        let session_prod = composer
+            .split("mod live_session_tests")
+            .next()
+            .expect("session prod");
+        assert!(!session_prod.contains("spawn_title_refine"));
+        assert!(!session_prod.contains("set_item_title"));
+        assert!(!session_prod.contains("native_item_title"));
+        let add = composer
+            .split("pub fn add_composer_item")
+            .nth(1)
+            .expect("composer add");
+        let add_end = add.find("\n#[cfg").unwrap_or(add.len());
+        assert!(!add[..add_end].contains("native_item_title"));
+        assert!(!add[..add_end].contains("spawn_title_refine"));
         let capture_fn = lib
             .split("pub fn on_capture_requested")
             .nth(1)
@@ -995,6 +982,9 @@ mod tests {
             !crate::tray_entry_label(Some("Headline"), "secret-body-should-not-lead")
                 .contains("secret")
         );
+        let build = include_str!("../build.rs");
+        assert!(!build.contains("FoundationModels"));
+        assert!(!build.contains("NaturalLanguage"));
     }
 
     #[cfg(all(target_os = "macos", bronze_native_linked))]

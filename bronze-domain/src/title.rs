@@ -1,4 +1,4 @@
-//! On-device item titles. The native language model can replace this score.
+//! Extractive item titles from captured copy.
 
 // 400px panel − 20×2 chrome − 16×2 card ≈ 328px; 15px SF ~8px/Latin glyph.
 const TITLE_MAX_CHARS: usize = 40;
