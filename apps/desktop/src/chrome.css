@@ -1435,6 +1435,20 @@ fieldset > span {
   font-weight: 650;
 }
 
+.composer-body,
+.empty-state,
+.field-help,
+article.prose,
+.prose,
+article [data-slot="title"],
+article [data-slot="body"],
+article [data-slot="source-label"],
+.page-shell .card,
+.page-shell fieldset {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .shortcut-list {
   list-style: none;
   padding: 0;

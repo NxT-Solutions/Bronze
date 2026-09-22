@@ -99,6 +99,22 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /summary::-webkit-details-marker/);
   assert.match(chrome, /article \[data-slot="body"\] p/);
   assert.match(chrome, /article \[data-slot="body"\] ul/);
+  assert.match(
+    chrome,
+    /article \[data-slot="body"\][\s\S]*-webkit-user-select:\s*text/,
+  );
+  assert.match(
+    chrome,
+    /article \[data-slot="body"\][\s\S]*user-select:\s*text/,
+  );
+  assert.match(chrome, /\.composer-body[\s\S]*user-select:\s*text/);
+  assert.match(chrome, /article\.prose[\s\S]*user-select:\s*text/);
+  assert.match(
+    chrome,
+    /article \[data-slot="source-label"\][\s\S]*user-select:\s*text/,
+  );
+  assert.match(chrome, /\.page-shell \.card[\s\S]*user-select:\s*text/);
+  assert.match(chrome, /\.page-shell fieldset[\s\S]*user-select:\s*text/);
   assert.match(chrome, /appearance:\s*none/);
   assert.match(chrome, /180ms/);
   assert.match(chrome, /cubic-bezier\(0\.22, 1, 0\.36, 1\)/);
