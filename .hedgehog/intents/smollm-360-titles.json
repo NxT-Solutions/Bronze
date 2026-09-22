@@ -1,0 +1,69 @@
+{
+  "id": "smollm-360-titles",
+  "goal": "Replace the default title-refine weights with one hash-pinned SmolLM2-360M-Instruct Q4_K_M GGUF on the existing Rust worker, so queue titles can be generated rather than sentence-copied.",
+  "outcome": "The only default GGUF is bartowski SmolLM2-360M-Instruct-Q4_K_M (~271 MB, Apache-2.0), SHA-256 pinned, vendored by bronze-title-model/scripts/vendor-gguf.sh. Persist still writes compact_title first. The same llama-cpp-2 worker, load order, timeouts, groundedness skip, TitleABI stub, and CPU n_gpu_layers=0 stay. Missing file is still missing_weights. ADR-019 stays Proposed with the 360M candidate. T-10 still allows one offline hash-pinned GGUF. No Needle, Qwen, Gemma, Llama, Apple FM, or runtime Hub.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "SMOLLM-360-TITLES-RULE-1",
+      "kind": "rule",
+      "statement": "Same Rust worker and load order: override, then BRONZE_TITLE_WEIGHTS, then crate/workspace vendor/, then exe-relative models/. Never a WebView path. Never -hf. Never runtime Hub."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-RULE-2",
+      "kind": "rule",
+      "statement": "One default file: SmolLM2-360M-Instruct-Q4_K_M.gguf. Do not leave 135M as a dual default. Old 135M vendor file may remain a gitignored leftover."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-RULE-3",
+      "kind": "rule",
+      "statement": "Persist compact_title first. 45s first-load and 8s generate. bronze-title: stderr stages. Groundedness and short_body skip. TitleABI.swift stays a compile-only stub. CPU n_gpu_layers=0. No new entitlements."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-RULE-4",
+      "kind": "rule",
+      "statement": "Record repo, revision, filename, and SHA-256. Apache-2.0 NOTICE and LICENSE stay in-tree. Vendor command is sh bronze-title-model/scripts/vendor-gguf.sh. git-lfs is not required."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-RULE-5",
+      "kind": "rule",
+      "statement": "ADR-019 stays Proposed. Rewrite the candidate from 135M to 360M Q4_K_M. T-10 carve-out stays one offline hash-pinned GGUF with the new file and hash. Never silently accept ADR-019, ADR-002, ADR-009, or ADR-018."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-RULE-6",
+      "kind": "rule",
+      "statement": "Do not add Needle, Qwen, Gemma, Llama, Apple Foundation Models, or a runtime Hugging Face download. If 360M still copies sentences, report that; do not jump to Qwen."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-RULE-7",
+      "kind": "rule",
+      "statement": "No new chrome. Locale catalog only if a new user-facing string is required. Event-tap stays free of inference. Human stories 3.9, 3.10, 5.5, 9.3 stay backlog."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-RULE-8",
+      "kind": "rule",
+      "statement": "Do not claim leftover QUEUE-ATTACHMENTS tasks. Do not resume bmad-loop 6a79. Do not run full-stack-app, pwa-app, or landing-page cores."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Default filename and SHA-256 pin SmolLM2-360M-Instruct-Q4_K_M.gguf / 2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2. vendor-gguf.sh fetches that file from the pinned bartowski revision."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "Missing vendor file still yields missing_weights. When the vendor file is present, refine is attempted for bodies over 40 characters."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "ADR-019 status remains Proposed and names the 360M Q4_K_M candidate. T-10 still forbids hosted AI and PCC and names the 360M hash-pinned file."
+    },
+    {
+      "id": "SMOLLM-360-TITLES-ACCEPTANCE-4",
+      "kind": "acceptance",
+      "statement": "Title worker sources still have no runtime network. No new entitlements. TitleABI stub unchanged."
+    }
+  ],
+  "depends_on": []
+}
