@@ -1,0 +1,8 @@
+{
+  "id": "library-hig-chrome",
+  "goal": "Bring Bronze Library search and page layout to Settings-level Apple HIG craft: compact header search, Archive/Trash segment, quieter list/empty/footer.",
+  "outcome": "Library uses chrome-search in the header like Settings. Archive and Trash are the only segment pages. Typing filters via search_library_items without a third Search tab or giant search card. Count sits on the toolbar. Empty state is a quiet caption. Footer tools stay ghost. Locales updated. hig/screens.md and wcag/screens.md match. ADR-018 stays Proposed. No new IPC.",
+  "priority": 100,
+  "requirements": [],
+  "depends_on": []
+}
