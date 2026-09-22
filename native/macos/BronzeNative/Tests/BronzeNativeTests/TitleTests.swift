@@ -27,11 +27,19 @@ final class TitleTests: XCTestCase {
         XCTAssertEqual(nearestToCentroid(sentences: sentences, vectors: vectors), "gamma")
     }
 
-    func testClampTitleEllipsis() {
+    func testClampTitleFitsCardLineWithoutEllipsis() {
         let long = String(repeating: "a", count: 80)
         let clamped = clampTitle(long)
-        XCTAssertEqual(clamped.count, 72)
-        XCTAssertTrue(clamped.hasSuffix("…"))
+        XCTAssertEqual(clamped.count, 40)
+        XCTAssertFalse(clamped.contains("…"))
+    }
+
+    func testClampTitlePrefersWordBoundary() {
+        let long = "Bold heading that keeps going and going and going past the limit"
+        let clamped = clampTitle(long)
+        XCTAssertLessThanOrEqual(clamped.count, 40)
+        XCTAssertFalse(clamped.contains("…"))
+        XCTAssertFalse(clamped.hasSuffix(" "))
     }
 
     func testTitleABISourceBansHostedWeights() {

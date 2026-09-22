@@ -5,7 +5,8 @@ import NaturalLanguage
 import FoundationModels
 #endif
 
-private let titleMaxChars = 72
+// Matches bronze-domain compact_title: one queue-card title line (~328px).
+private let titleMaxChars = 40
 private let foundationWaitSeconds: TimeInterval = 8
 
 @_silgen_name("bronze_native_item_title")
@@ -204,8 +205,12 @@ func clampTitle(_ text: String, maxChars: Int = titleMaxChars) -> String {
     if trimmed.count <= maxChars {
         return trimmed
     }
-    let end = trimmed.index(trimmed.startIndex, offsetBy: maxChars - 1)
-    return String(trimmed[..<end]) + "…"
+    let end = trimmed.index(trimmed.startIndex, offsetBy: maxChars)
+    let taken = String(trimmed[..<end])
+    if let idx = taken.lastIndex(where: { $0.isWhitespace }), idx > taken.startIndex {
+        return taken[..<idx].trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    return taken
 }
 
 @available(macOS 11.0, *)

@@ -1,6 +1,7 @@
 //! On-device item titles. The native language model can replace this score.
 
-const TITLE_MAX_CHARS: usize = 72;
+// 400px panel − 20×2 chrome − 16×2 card ≈ 328px; 15px SF ~8px/Latin glyph.
+const TITLE_MAX_CHARS: usize = 40;
 
 pub fn compact_title(body: &str) -> String {
     let plain = strip_markup(body);
@@ -120,9 +121,11 @@ fn clamp_chars(text: &str, max: usize) -> String {
     if trimmed.chars().count() <= max {
         return trimmed.to_string();
     }
-    let mut out: String = trimmed.chars().take(max.saturating_sub(1)).collect();
-    out.push('…');
-    out
+    let taken: String = trimmed.chars().take(max).collect();
+    match taken.rfind(char::is_whitespace) {
+        Some(idx) if idx > 0 => taken[..idx].trim_end().to_string(),
+        _ => taken,
+    }
 }
 
 const STOP: &[&str] = &[
@@ -148,6 +151,22 @@ mod title_tests {
         let title = compact_title("**Bold heading** that keeps going and going and going past the limit of a tray label and then some extra words");
         assert!(!title.contains('*'));
         assert!(title.chars().count() <= TITLE_MAX_CHARS);
-        assert!(title.ends_with('…'));
+        assert!(!title.contains('…'));
+        assert!(!title.ends_with(' '));
+    }
+
+    #[test]
+    fn compact_title_fits_one_card_line_without_ellipsis() {
+        let title = compact_title(&"word ".repeat(30));
+        assert!(title.chars().count() <= TITLE_MAX_CHARS);
+        assert!(!title.contains('…'));
+        assert_eq!(TITLE_MAX_CHARS, 40);
+    }
+
+    #[test]
+    fn compact_title_hard_cuts_a_single_overlong_token() {
+        let title = compact_title(&"a".repeat(80));
+        assert_eq!(title.chars().count(), TITLE_MAX_CHARS);
+        assert!(!title.contains('…'));
     }
 }
