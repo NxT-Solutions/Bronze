@@ -174,9 +174,9 @@ packages/
     src/generated/
     src/index.ts
   i18n/
-    src/locales/
-    src/pseudo/
-    src/format.ts
+    src/
+    locales/{en,nl,fr,de,es,it,en-XA,ar-XB}/app.json
+    scripts/
   test-support/
 bronze-domain/
 bronze-capture/
@@ -270,7 +270,7 @@ Rules:
 2. Resolve local container and open database read-only enough to inspect version.
 3. Verify integrity; create backup before pending migration.
 4. Apply transactional migrations.
-5. Load settings and locale.
+5. Load settings and locale (`SettingsV1.general.locale`; `system` and unknown map to **en**; native menus use that catalog at launch).
 6. Create accessible status item and warm quick panel (debug `tauri dev` shows it on launch; capture-only still does not reveal it).
 7. Register last-known-good standard chord.
 8. Request Accessibility and Input Monitoring when not already granted; never Screen Recording; never loop-prompt.
@@ -507,7 +507,7 @@ Primary standards: [WCAG 2.2](https://www.w3.org/TR/WCAG22/), [EN 301 549 V3.2.1
 - Stable semantic message IDs; build fails on missing messages or placeholder mismatch.
 - Use Intl DateTimeFormat, NumberFormat, RelativeTimeFormat, ListFormat, Collator, and Segmenter.
 - Store UTC timestamps and locale-neutral enums.
-- Set UI document language and direction at runtime; preserve focus by stable semantic ID and announce completed live language change once.
+- Set UI document language and direction at runtime from the persisted locale catalog. Open WebViews reapply on `ui-locale-changed`. Native menus resolve the same glossary at launch and do not rebuild on a live switch.
 - Use CSS logical properties and shadcn RTL transform.
 - Portal direction, directional icons, animation direction, and third-party components need explicit tests.
 - Store `content_language` per item as canonical BCP 47 or `und`, default to `und`, and never silently detect it. Render each user-content container with its own `lang`, direction auto, and bidi isolation; never translate or normalize it silently. Export/import and revisions preserve field.

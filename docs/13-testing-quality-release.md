@@ -143,7 +143,7 @@ Manual per release candidate:
 - 200% text resize, 400%/320 CSS px reflow, dark/light, Increase Contrast, Differentiate Without Color, Reduce Motion, and Reduce Transparency;
 - Sticky/Slow Keys and non-timing route;
 - translated/RTL/IME journeys.
-- live UI-locale change preserves focus by stable ID, updates native/WebView/portal/menu language without stale text, and announces once;
+- live UI-locale change persists `general.locale`, reapplies WebView catalog and `html lang`/`dir`, keeps item bodies `lang="und" dir="auto"`, and leaves native app-menu labels until relaunch;
 - item bodies tagged `ja`, `ar`, mixed-script tag, and `und` receive correct per-content language/direction exposure;
 - authored hover/focus content passes dismissible/hoverable/persistent behavior; visible label remains in accessible name;
 - completed evidence row exists for every WCAG 2.2 A/AA criterion, including reasoned N/A rows.
@@ -198,7 +198,7 @@ Flaky test is defect. Quarantine requires issue, owner, reason, scope, expiry, a
 4. Capture and app matrices meet success thresholds.
 5. Migration from all supported schemas and restore drill pass.
 6. A11y matrix/known limitations reviewed; independent audit status clear.
-7. i18n catalogs complete for advertised locales; RTL/IME passes.
+7. i18n catalogs complete for advertised locales (`en`, `en-XA`, `ar-XB`); shipped nl/fr/de/es/it catalogs are not a public QA claim; RTL/IME passes.
 8. Threat model, dependency audit, CSP/capabilities, network test pass.
 9. Performance and 24-hour soak pass.
 10. Architecture selected by ADR-002 is signed/hardened/notarized/stapled; universal2 required only if DG-01 selects Intel support.

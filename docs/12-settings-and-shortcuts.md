@@ -52,7 +52,7 @@ type SettingsV1 = {
   general: {
     launchAtLogin: boolean
     showDockIcon: boolean
-    locale: "system" | string
+    locale: "system" | "en" | "nl" | "fr" | "de" | "es" | "it" | "en-XA" | "ar-XB"
     startView: "last" | "activeSection" | "composer"
   }
   capture: {
@@ -130,6 +130,7 @@ Shipped defaults:
 | built-in profile post-copy lifecycle | copied | do not claim task done from copy |
 | provenance | none | workflow metadata is sensitive; onboarding may offer opt-in app identity |
 | launch at login | off | explicit consent |
+| UI locale | `system` (resolves to **en**) | Settings → General switcher persists en, nl, fr, de, es, or it; unknown tags reject on save; `system` and unknown effective tags map to en |
 | Dock icon | off/accessory | menu-bar utility; user can enable |
 | panel mode | summon | lowest intrusion |
 | display | frontmost app or pointer, decided by spike | align source context |
@@ -311,7 +312,7 @@ type OutputProfileV1 = {
 - reset field/group/all scope correct;
 - exported file has no machine paths, diagnostics, app credentials, permission tokens, or internal secrets; preview covers user-entered sensitive literals/policies;
 - reduced motion/transparency/contrast/differentiate-without-color system change applies live and cannot be weakened by app override;
-- locale/RTL switch preserves focused control, updates WebView/native/portal/menu strings coherently, and announces completion once;
+- locale/RTL switch persists `general.locale`, reapplies the WebView catalog and `html lang`/`dir`, keeps item bodies `lang="und" dir="auto"`, and labels switcher options with endonyms plus option `lang`; native app/status menus follow the persisted locale at launch only;
 - permission revoke updates state without restart where platform allows.
 - output-profile CRUD/duplicate/reset/default-delete protection and optimistic revision conflicts;
 - formatter golden/property tests for every option, bounds, Unicode/newlines, prompt delimiting, and exact preview;

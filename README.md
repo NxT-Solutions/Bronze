@@ -45,11 +45,11 @@ Hand-test in the **native** window only:
 - Status item: left-click **Show**; menu is the latest five overview items (click copies), then Capture, Help, Quit
 - Status or app-menu **Show** recreates the Quick Panel if you closed it
 - Settings / Library / Help recreate if you closed them
-- Settings load/save `SettingsV1`; permission **Retest** and **Open System Settings** run from the Settings window. Privacy excluded apps is a search plus **Choose app…** (Finder `.app` panel); WebView never receives paths
+- Settings load/save `SettingsV1`; permission **Retest** and **Open System Settings** run from the Settings window. Settings → General **Language** persists `SettingsV1.general.locale` as **en**, **nl**, **fr**, **de**, **es**, or **it** (endonyms, each option has `lang`). File default is `system`, which maps to **en**; unknown persist tags are rejected. WebView chrome applies that catalog and sets `html lang`/`dir` (item bodies stay `lang="und" dir="auto"`). Native app and status menus follow the persisted locale at launch only. Privacy excluded apps is a search plus **Choose app…** (Finder `.app` panel); WebView never receives paths
 - Library search is substring-only (`QUE_007_COMPLETE=false`; ADR-018 stays Proposed)
 - Backup / export / import write under the Rust-owned app data dir; WebView paths are rejected
 
-Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**.
+Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**. Shipped UI catalogs also exist for nl, fr, de, es, it, plus pseudo `en-XA` / `ar-XB`. Advertised locales stay **en**, **en-XA**, and **ar-XB**. No public human linguistic QA claim.
 
 **Still stub / backlog.** Event-tap live fire is `capture.selection` Shift N-tap from the shortcuts table; Option/Command/Control/Fn remaps of that action disable the Shift engine. Other seeded defaults persist without a live OS grab, and Quick Panel keydown still uses hardcoded composer chords. File and image attachments are out until a new ADR and threat-model update (ADR-001). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
 
@@ -67,7 +67,7 @@ See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a gr
 
 **Verify (maintainer bar, not required to launch):** `pnpm verify`. Local debug package (SEC-005): `tooling/package-debug.sh`.
 
-**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. ADR-019 (on-device titles) is **Proposed**. QUE-007 locale search is **blocked** on ADR-018. Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
+**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. ADR-019 (on-device titles) is **Proposed**. QUE-007 locale search is **blocked** on ADR-018. A live language switch updates open WebViews; it does not rebuild the native app menu. Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
 
 ## Start here (planning pack)
 

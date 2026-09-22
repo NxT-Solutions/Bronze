@@ -8,12 +8,12 @@ Standards: [BCP 47 / RFC 5646](https://www.rfc-editor.org/info/rfc5646/), [RFC 4
 
 ## 2. Locale model
 
-- Store canonical BCP 47 tag, e.g. `en`, `en-GB`, `nl-BE`, `ar`, `ja`; canonicalize and validate through `Intl.getCanonicalLocales`.
-- Default follows macOS preferred languages and locale; user override applies without changing content. The current `tauri dev` hand-test path maps `system` and unknown tags to **en** (never `en-XA`) so permission labels keep real spaces; `en-XA` / `ar-XB` apply only when requested.
-- Fallback uses RFC 4647-style progressive lookup, preserving script and variant subtags before base language: `zh-Hant-HK` → `zh-Hant` → `zh` → `en` → visible missing-key error in development. Process macOS language priority entries in order; never jump directly from script-specific locale to base language.
+- Canonicalize and validate BCP 47 tags through `Intl.getCanonicalLocales`. Item `content_language` is canonical BCP 47 or `und`. UI locale persist is the closed `SettingsV1.general.locale` set, not an open `en-GB` / `nl-BE` store.
+- Persist `SettingsV1.general.locale`. Allowed persist tags are `system`, `en`, `nl`, `fr`, `de`, `es`, `it`, `en-XA`, and `ar-XB`. Settings → General offers **en**, **nl**, **fr**, **de**, **es**, and **it** as endonyms with `lang` on each option (WCAG 3.1.2 structure). Save rejects unknown persist tags. Effective UI locale maps `system` and unknown values to **en** (never `en-XA`) so permission labels keep real spaces; `en-XA` / `ar-XB` apply only when requested. This build does not follow macOS preferred languages at runtime.
+- Fallback uses RFC 4647-style progressive lookup, preserving script and variant subtags before base language: `zh-Hant-HK` → `zh-Hant` → `zh` → `en` → visible missing-key error in development. Process macOS language priority entries in order; never jump directly from script-specific locale to base language. Effective UI locale also accepts a shipped primary subtag (`nl-BE` → `nl`).
 - Language and regional formatting can be separate if user asks; P0 single locale override acceptable if documented.
 - Persist neutral enums/UTC timestamps; never persist localized labels.
-- Update `<html lang>` and `dir`; localize native menu/status/window/InfoPlist strings too. Live change preserves focused control by stable semantic ID, updates portal/menu/native strings before exposure, then announces completion once in new locale; no stale-language surface remains mounted.
+- Update `<html lang>` and `dir` (WCAG 3.1.1 structure). WebView chrome applies the catalog for `[data-i18n]` (and placeholder / title / aria-label) and skips item title/body slots. Item bodies stay `lang="und" dir="auto"` and are never relabeled by the UI locale. Native app and status menus resolve the same glossary at launch from the persisted locale. A live switch broadcasts `ui-locale-changed` so open WebViews reapply; it does not rebuild the native app menu.
 
 ## 3. Package structure
 
@@ -26,10 +26,13 @@ packages/i18n/
     generated-message-ids.ts
   locales/
     en/app.json
-    en/errors.json
-    en/help.json
-    ar-XB/...             # bidi pseudo-locale
-    en-XA/...             # expansion/accent pseudo-locale
+    nl/app.json
+    fr/app.json
+    de/app.json
+    es/app.json
+    it/app.json
+    ar-XB/app.json        # bidi pseudo-locale
+    en-XA/app.json        # expansion/accent pseudo-locale
   scripts/
     extract.ts
     validate.ts
@@ -162,9 +165,9 @@ Maintain `research/glossary.md` during implementation. Terms needing stable cont
 - RTL static and interaction smoke;
 - IME composer test confirms Enter does not submit during composition;
 - locale-independent JSON export golden tests;
-- native strings coverage — menu.status.*, panel.quick.title, and InfoPlist CFBundleDisplayName/CFBundleName resolve through the same `app.json` glossary as WebView (`en`, `en-XA`, `ar-XB`); RTL chrome smoke keeps a physical edge; item cards use per-item `lang` plus `dir="auto"`; expand controls use `queue.item.showMore` / `queue.item.showLess` (I18N-001/002/003/004, G-06);
+- native strings coverage — menu.status.*, panel.quick.title, and InfoPlist CFBundleDisplayName/CFBundleName resolve through the same `app.json` glossary as WebView. Advertised locales stay `en`, `en-XA`, `ar-XB`. Shipped UI catalogs also exist for `nl`, `fr`, `de`, `es`, `it` and are not a public locale claim. RTL chrome smoke keeps a physical edge; item cards use per-item `lang` plus `dir="auto"`; expand controls use `queue.item.showMore` / `queue.item.showLess` (I18N-001/002/003/004, G-06);
 - a11y names remain meaningful under longest locale.
 
 ## 13. Initial locale rollout
 
-Recommended sequence after English architecture stabilizes: Dutch (user region), German (expansion/compounds), Arabic (RTL), Japanese (IME/CJK), then broader demand. Selection should follow translator availability and QA capacity, not raw string generation ability.
+Shipped UI catalogs: English plus Dutch, French, German, Spanish, and Italian, with `en-XA` / `ar-XB` pseudo-locales. Advertised locales remain English and the two pseudo-locales until human linguistic QA. Arabic (RTL) and Japanese (IME/CJK) stay on the reviewed test path, not the Settings switcher. Selection follows translator availability and QA capacity, not raw string generation ability. Machine-seeded catalogs are not a public locale claim.

@@ -137,7 +137,7 @@ Every control has label, short description, current/default value, and reset act
 - changing capture shortcut tests registration before save;
 - shortening retention previews deletion schedule;
 - clearing data identifies exact counts and recovery window;
-- changing UI language applies live and preserves user content, focus, and active task. Focused control is reacquired by stable semantic ID; WebView `lang`/`dir`, native strings, menus, and portal content switch coherently; one completion announcement fires only after stale-language surfaces are gone.
+- changing UI language persists `SettingsV1.general.locale` (en, nl, fr, de, es, it) and applies the catalog live in open WebViews, including `html lang`/`dir`. Language options use endonyms with `lang` on each option. Item bodies stay `lang="und" dir="auto"` and are never relabeled. Native app and status menus follow the persisted locale at launch; a live switch does not rebuild the app menu. User content, focus, and the active task stay put.
 
 Exported settings always exclude app credentials, permission tokens, diagnostic events, and machine paths. Diagnostics use separate previewed support-bundle flow. Export preview identifies user-entered profile literals, excluded-app policies, and shortcuts that may themselves be sensitive.
 

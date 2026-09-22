@@ -83,7 +83,7 @@ Results:
 | 2.4.11 Focus Not Obscured (Minimum) | Supports | Open overflow raises its card. |
 | 2.5.7 Dragging Movements | Supports | Move up / Move down. No drag requirement. |
 | 2.5.8 Target Size (Minimum) | Supports | Interactive controls `min 2rem` (32px). Pills are not targets. |
-| 3.1.2 Language of Parts | Supports | Chrome follows UI locale. Bodies are `lang="und" dir="auto"`. |
+| 3.1.2 Language of Parts | Supports | Chrome follows UI locale. Language switcher options use endonyms and option `lang`. Bodies are `lang="und" dir="auto"`. |
 | 3.2.3 Consistent Navigation | Supports | Shared brand header; Library segments stay put. |
 | 3.2.4 Consistent Identification | Supports | Same actions keep the same names. |
 | 3.3.3 Error Suggestion | Supports | Capture failures name a recovery. |

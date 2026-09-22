@@ -69,9 +69,9 @@ This matrix converts PRD into executable backlog. Status starts `planned`. Imple
 | A11Y-004 | non-drag reorder | M5 | Move actions + keyboard/VO announcement | planned |
 | A11Y-005 | VO/FKA/Voice/Switch Control | M7 | signed-build manual evidence | planned |
 | A11Y-006 | identifiable recoverable errors | M5/M7 | failure journeys/live status | planned |
-| I18N-001 | complete catalogs/ICU/no concatenation | M1/M6 | extraction/parity/raw-string CI | planned |
-| I18N-002 | canonical BCP 47/Intl/script-preserving fallback | M1/M6 | locale/format/fallback tests | planned |
-| I18N-003 | RTL/IME/Unicode/long strings/per-item language | M1/M6/M7 | pseudo/Arabic/Japanese/grapheme/content-lang suite | planned |
+| I18N-001 | complete catalogs/ICU/no concatenation | M1/M6 | extraction/parity/raw-string CI; Settings General switcher applies shipped en/nl/fr/de/es/it catalogs; advertised remain en/en-XA/ar-XB; no public linguistic QA | planned |
+| I18N-002 | canonical BCP 47/Intl/script-preserving fallback | M1/M6 | locale/format/fallback tests; `system`/unknown → en; persist tags closed in bronze-settings | planned |
+| I18N-003 | RTL/IME/Unicode/long strings/per-item language | M1/M6/M7 | pseudo/Arabic/Japanese/grapheme/content-lang suite; item bodies `lang="und" dir="auto"` | planned |
 | I18N-004 | localized semantic shortcuts | M6 | glyph/spoken/layout/recorder tests | planned |
 | SUP-001 | accessible help/limitations/privacy/backup | M7 | clause-12/document audit | planned |
 | SUP-002 | version/identity/schema/health/diagnostics | M6/M7 | redaction and accessibility tests | planned |
