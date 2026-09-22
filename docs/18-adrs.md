@@ -771,9 +771,9 @@ Do not mark Accepted until the operator formally accepts a local-inference ADR. 
 
 Candidate path:
 
-- Persist `compact_title` immediately: term-frequency best sentence over significant terms, 72-character clamp, markup stripped. Not first-sentence-only.
+- Persist `compact_title` immediately: term-frequency best sentence over significant terms, 40-character word-boundary clamp, markup stripped, no ellipsis glyph. Not first-sentence-only. The clamp fits one title row in the 400px Quick Panel card at `--text-body` 0.9375rem.
 - After persist, a background thread may call `bronze_native_item_title`: Apple `SystemLanguageModel.default` when available (macOS 26+), never `PrivateCloudComputeLanguageModel`, never URLSession or OpenAI.
-- Else NLEmbedding sentence-centroid extractive (nearest sentence to the embedding centroid), 72-character clamp.
+- Else NLEmbedding sentence-centroid extractive (nearest sentence to the embedding centroid), 40-character word-boundary clamp, no ellipsis glyph.
 - Else leave `compact_title`. DEGRADED or unavailable is visible as no refine, never a fake empty title.
 - Event-tap callback must not call AX, the database, windows, the clipboard, or the language model.
 - No bundled llama.cpp, TinyLlama, or GGUF weights.
@@ -787,7 +787,7 @@ Candidate path:
 
 ### Verification
 
-- `compact_title` tests: a middle content-bearing sentence wins over a greeting.
+- `compact_title` tests: a middle content-bearing sentence wins over a greeting; the clamp is 40 characters without an ellipsis glyph.
 - Swift source-scan of `TitleABI.swift`: no `PrivateCloudCompute`, `URLSession`, `openai`, `llama`, or `gguf`.
 - Crate tests use the abi-stub (`bronze_native_item_title` returns DEGRADED).
 - Live binary links FoundationModels weakly and NaturalLanguage.
