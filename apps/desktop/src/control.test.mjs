@@ -5,6 +5,7 @@ import {
   applyActionStatus,
   applyActionTip,
   bindChromeNotice,
+  bindIconTips,
   bindOverflowDismiss,
   closeOverflowMenus,
   hideChromeNotice,
@@ -146,6 +147,34 @@ test("action tip writes catalog text on the row and overflow closes away", () =>
     });
   assert.equal(openMenu.open, false);
   assert.deepEqual(focused, ["summary"]);
+});
+
+test("icon tips dismiss on Escape and return on the next pointer", () => {
+  const host = { dataset: {} };
+  const listeners = [];
+  const root = {
+    addEventListener(type, fn) {
+      listeners.push({ type, fn });
+    },
+  };
+  bindIconTips(root);
+  listeners
+    .find((row) => row.type === "keydown")
+    .fn({
+      key: "Escape",
+      target: {
+        closest: (sel) => (sel === "[data-slot=action-icons]" ? host : null),
+      },
+    });
+  assert.equal(host.dataset.tipsDismissed, "true");
+  listeners
+    .find((row) => row.type === "pointerdown")
+    .fn({
+      target: {
+        closest: (sel) => (sel === "[data-slot=action-icons]" ? host : null),
+      },
+    });
+  assert.equal(host.dataset.tipsDismissed, undefined);
 });
 
 test("chrome notice is viewport chrome and dismisses", () => {

@@ -2,6 +2,7 @@ import { catalogMessage, LOCALE_APPLIED_EVENT } from "./apply-locale.mjs";
 import {
   applyActionStatus,
   bindChromeNotice,
+  bindIconTips,
   bindOverflowDismiss,
   closeOverflowMenus,
   hideChromeNotice,
@@ -508,6 +509,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   }
 
   bindOverflowDismiss(root);
+  bindIconTips(root);
   bindChromeNotice(root);
   syncComposerEmpty(editor);
   const submit = form.querySelector("[type=submit]");

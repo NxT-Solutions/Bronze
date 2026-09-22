@@ -82,19 +82,28 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /button\.btn-primary\[aria-busy="true"\][\s\S]*--primary-foreground/,
   );
-  assert.match(chrome, /\.row-actions menu[\s\S]*position:\s*absolute/);
-  assert.match(chrome, /\.row-actions menu[\s\S]*flex-direction:\s*column/);
+  assert.match(chrome, /\.row-action-icons[\s\S]*flex-wrap:\s*wrap/);
+  assert.match(
+    chrome,
+    /\.row-action-icons \.icon-tip[\s\S]*position:\s*absolute/,
+  );
   assert.match(chrome, /#queue[\s\S]*isolation:\s*isolate/);
   assert.match(chrome, /\.queue-item[\s\S]*z-index:\s*0/);
   assert.match(
     chrome,
-    /\.queue-item:has\(details\[open\]\)[\s\S]*z-index:\s*3/,
+    /\.queue-item:has\(\.row-action-icons \.btn-icon:hover\)[\s\S]*z-index:\s*3/,
   );
-  assert.match(chrome, /\.row-actions details\[open\][\s\S]*z-index:\s*5/);
-  assert.match(chrome, /\.row-actions menu[\s\S]*z-index:\s*6/);
   assert.match(
     chrome,
-    /\.row-actions menu \[data-queue-action="trash"\][\s\S]*--destructive/,
+    /\.row-action-icons \.btn-icon:hover \.icon-tip[\s\S]*pointer-events:\s*auto/,
+  );
+  assert.match(
+    chrome,
+    /\.row-action-icons \.btn-icon:focus-visible \.icon-tip[\s\S]*pointer-events:\s*auto/,
+  );
+  assert.match(
+    chrome,
+    /\.row-action-icons \[data-queue-action="trash"\][\s\S]*--destructive/,
   );
   assert.match(chrome, /\.segment a\[aria-current="page"\]/);
   assert.match(chrome, /\.help-launch[\s\S]*justify-content:\s*flex-end/);
@@ -148,8 +157,13 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     /article \[data-slot="body"\][\s\S]*font-size:\s*var\(--text-caption\)/,
   );
   assert.match(chrome, /\.action-tip[\s\S]*background:\s*var\(--card\)/);
-  assert.match(chrome, /\.row-actions summary[\s\S]*background:\s*transparent/);
-  assert.match(chrome, /\.row-actions menu button[\s\S]*border:\s*none/);
+  assert.match(
+    chrome,
+    /\.row-action-icons \.icon-tip[\s\S]*background:\s*var\(--card\)/,
+  );
+  assert.match(chrome, /\.row-action-icons\[data-tips-dismissed\] \.icon-tip/);
+  assert.match(pages[0].html, /data-slot="action-icons"/);
+  assert.doesNotMatch(pages[0].html, /data-slot="toolbar-overflow"/);
   assert.match(chrome, /\.field-row input[\s\S]*width:\s*auto/);
   assert.match(
     chrome,

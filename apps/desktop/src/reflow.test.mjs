@@ -20,16 +20,18 @@ const xa = JSON.parse(
   ),
 );
 
-test("320 CSS px reflow keeps one-axis scroll labeled overflow and composer", () => {
+test("320 CSS px reflow keeps one-axis scroll, wrapping icon row, and composer", () => {
   assert.match(chrome, /overflow-x:\s*hidden/);
   assert.match(chrome, /flex-wrap:\s*wrap/);
   assert.match(chrome, /#quick-panel[\s\S]*?flex-wrap:\s*nowrap/);
+  assert.match(chrome, /\.row-action-icons[\s\S]*flex-wrap:\s*wrap/);
   assert.match(chrome, /word-break:\s*normal/);
   assert.match(chrome, /white-space:\s*nowrap/);
   assert.doesNotMatch(chrome, /word-break:\s*break-all/);
   assert.doesNotMatch(chrome, /overflow-wrap:\s*anywhere/);
   assert.match(html, /chrome\.css/);
-  assert.match(html, /data-i18n="panel.toolbar.overflow"/);
+  assert.match(html, /data-slot="action-icons"/);
+  assert.doesNotMatch(html, /data-i18n="panel.toolbar.overflow"/);
   assert.match(html, /id="composer"/);
   assert.equal(en["panel.toolbar.overflow"], "More actions");
   assert.ok(

@@ -18,9 +18,11 @@ test("queue list uses semantic list article and real buttons", () => {
   assert.match(html, /<article lang="und" dir="auto">/);
   assert.match(
     html,
-    /<button\b[^>]*type="button"[^>]*data-i18n="queue.item.moveUp"/,
+    /<button\b[^>]*type="button"[^>]*data-i18n-aria-label="queue.item.moveUp"/,
   );
-  assert.match(html, /data-i18n="queue.item.moveDown"/);
+  assert.match(html, /data-i18n-aria-label="queue.item.moveDown"/);
+  assert.match(html, /data-slot="action-icons"/);
+  assert.doesNotMatch(html, /data-slot="toolbar-overflow"/);
   assert.doesNotMatch(html, /<div\b[^>]*(onclick|role="button")/);
   assert.equal(en["queue.item.moveUp"], "Move up");
   assert.equal(en["queue.item.complete"], "Complete");

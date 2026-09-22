@@ -146,30 +146,120 @@
                 Copy
               </button>
               <span class="action-tip" data-slot="action-tip" hidden></span>
-              <details data-slot="toolbar-overflow">
-                <summary data-i18n="panel.toolbar.overflow">More actions</summary>
-                <menu>
-                  <button type="button" class="btn-toolbar" data-queue-action="complete" data-i18n="queue.item.complete">
-                    Complete
-                  </button>
-                  <button type="button" class="btn-toolbar" data-queue-action="skip" data-i18n="queue.item.skip">
-                    Skip
-                  </button>
-                  <button type="button" class="btn-toolbar" data-queue-action="edit" data-i18n="queue.item.edit">
-                    Edit…
-                  </button>
-                  <button type="button" class="btn-toolbar" data-queue-action="moveUp" data-i18n="queue.item.moveUp">
-                    Move up
-                  </button>
-                  <button type="button" class="btn-toolbar" data-queue-action="moveDown" data-i18n="queue.item.moveDown">
-                    Move down
-                  </button>
-                  <hr />
-                  <button type="button" class="btn-toolbar" data-queue-action="trash" data-i18n="queue.item.trash">
-                    Trash
-                  </button>
-                </menu>
-              </details>
+              <div class="row-action-icons" data-slot="action-icons">
+                <button
+                  type="button"
+                  class="btn-icon"
+                  data-queue-action="complete"
+                  aria-label="Complete"
+                  data-i18n-aria-label="queue.item.complete"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                    <path
+                      d="M3.2 8.2 6.5 11.4 12.8 4.6"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="icon-tip" aria-hidden="true" data-i18n="queue.item.complete">Complete</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon"
+                  data-queue-action="skip"
+                  aria-label="Skip"
+                  data-i18n-aria-label="queue.item.skip"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                    <path
+                      d="M3.1 4.2 8.6 8 3.1 11.8Z"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M11.6 4.2v7.6"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  <span class="icon-tip" aria-hidden="true" data-i18n="queue.item.skip">Skip</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon"
+                  data-queue-action="edit"
+                  aria-label="Edit…"
+                  data-i18n-aria-label="queue.item.edit"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                    <path
+                      d="M10.4 3.2 12.8 5.6 5.5 12.9H3.1v-2.4Z"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="icon-tip" aria-hidden="true" data-i18n="queue.item.edit">Edit…</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon"
+                  data-queue-action="moveUp"
+                  aria-label="Move up"
+                  data-i18n-aria-label="queue.item.moveUp"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                    <path
+                      d="M8 12.4V3.6M4.4 7.2 8 3.6l3.6 3.6"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="icon-tip" aria-hidden="true" data-i18n="queue.item.moveUp">Move up</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon"
+                  data-queue-action="moveDown"
+                  aria-label="Move down"
+                  data-i18n-aria-label="queue.item.moveDown"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                    <path
+                      d="M8 3.6v8.8M4.4 8.8 8 12.4l3.6-3.6"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="icon-tip" aria-hidden="true" data-i18n="queue.item.moveDown">Move down</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon"
+                  data-queue-action="trash"
+                  aria-label="Trash"
+                  data-i18n-aria-label="queue.item.trash"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+                    <path
+                      d="M3.2 4.6h9.6M6.2 4.6V3.4h3.6v1.2M4.6 4.6l.6 8h5.6l.6-8"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="icon-tip" aria-hidden="true" data-i18n="queue.item.trash">Trash</span>
+                </button>
+              </div>
             </div>
           </article>
         </li>

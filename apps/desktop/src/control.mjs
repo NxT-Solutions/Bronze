@@ -167,6 +167,31 @@ export function closeOverflowMenus(root, keep = null) {
   }
 }
 
+export function bindIconTips(root) {
+  if (!root?.addEventListener) {
+    return;
+  }
+  const clearDismiss = (event) => {
+    const host = event.target?.closest?.("[data-slot=action-icons]");
+    if (!host?.dataset) {
+      return;
+    }
+    delete host.dataset.tipsDismissed;
+  };
+  root.addEventListener("pointerdown", clearDismiss);
+  root.addEventListener("focusin", clearDismiss);
+  root.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+    const host = event.target?.closest?.("[data-slot=action-icons]");
+    if (!host?.dataset) {
+      return;
+    }
+    host.dataset.tipsDismissed = "true";
+  });
+}
+
 export function bindOverflowDismiss(root) {
   if (!root?.addEventListener) {
     return;

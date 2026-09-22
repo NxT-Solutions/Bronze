@@ -93,6 +93,16 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(live, /bindChromeNotice/);
   assert.match(live, /showChromeNotice/);
   assert.match(live, /bindOverflowDismiss/);
+  assert.match(live, /bindIconTips/);
+  assert.match(html, /data-slot="action-icons"/);
+  assert.match(html, /data-queue-action="complete"/);
+  assert.match(html, /data-queue-action="skip"/);
+  assert.match(html, /data-queue-action="edit"/);
+  assert.match(html, /data-queue-action="moveUp"/);
+  assert.match(html, /data-queue-action="moveDown"/);
+  assert.match(html, /data-queue-action="trash"/);
+  assert.match(html, /data-queue-action="copy"/);
+  assert.doesNotMatch(html, /data-slot="toolbar-overflow"/);
   assert.match(live, /copy\.announce\.copied", button/);
   assert.match(html, /data-slot="action-tip"/);
   assert.match(html, /id="action-status"[^>]*visually-hidden/);
