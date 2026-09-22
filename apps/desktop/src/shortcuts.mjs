@@ -1,5 +1,5 @@
 import { catalogMessage } from "./apply-locale.mjs";
-import { runBusy } from "./control.mjs";
+import { animateElement, runBusy } from "./control.mjs";
 
 export const SHORTCUT_ACTIONS = [
   "app.togglePanel",
@@ -113,6 +113,8 @@ export const MODIFIER_DOUBLE_TAP_GAP_MS = 500;
 const KEY_MODIFIERS = {
   Meta: "Command",
   Alt: "Option",
+  AltGraph: "Option",
+  Option: "Option",
   Control: "Control",
   Shift: "Shift",
   Fn: "Fn",
@@ -231,7 +233,7 @@ export function doubleTapFromModifierEvents(previous, event, now) {
   }
   const modifier = modifierNameFromEvent(event);
   if (!modifier) {
-    return { previous: null, chord: null };
+    return { previous, chord: null };
   }
   if (
     previous &&
@@ -254,6 +256,39 @@ export function formatModifierDoubleTap(modifier, catalog = {}) {
   const key = DOUBLE_TAP_KEYS[modifier];
   const fallback = DOUBLE_TAP_FALLBACK[modifier] || DOUBLE_TAP_FALLBACK.Shift;
   return (key && catalog[key]) || fallback;
+}
+
+export function formatRecordingPreview(partial, labels = {}) {
+  const modifiers = partial?.modifiers ?? [];
+  const taps = partial?.taps ?? 0;
+  if (taps >= 2 && modifiers.length === 1 && !partial?.logicalKey) {
+    return formatModifierDoubleTap(modifiers[0], labels);
+  }
+  const glyphs = modifiers
+    .map((modifier) => MODIFIER_GLYPH[modifier] ?? "")
+    .join("");
+  return `${glyphs}${formatShortcutKey(partial?.logicalKey, labels)}`;
+}
+
+function modifiersFromEvent(event) {
+  const current = modifierNameFromEvent(event);
+  const modifiers = [];
+  if (event?.metaKey || current === "Command") {
+    modifiers.push("Command");
+  }
+  if (event?.altKey || current === "Option") {
+    modifiers.push("Option");
+  }
+  if (event?.ctrlKey || current === "Control") {
+    modifiers.push("Control");
+  }
+  if (event?.shiftKey || current === "Shift") {
+    modifiers.push("Shift");
+  }
+  if (current === "Fn") {
+    modifiers.push("Fn");
+  }
+  return modifiers;
 }
 
 export function formatShortcutChord(row, catalog = {}) {
@@ -358,6 +393,7 @@ function beginRecordingChord(item) {
   if (item.dataset.idleChord == null) {
     item.dataset.idleChord = slot.textContent ?? "";
   }
+  delete item.dataset.previewChord;
   slot.textContent = recordingLabel();
 }
 
@@ -367,6 +403,33 @@ function endRecordingChord(item) {
     slot.textContent = item.dataset.idleChord;
   }
   delete item.dataset.idleChord;
+  delete item.dataset.previewChord;
+}
+
+function previewRecording(item, text) {
+  const slot = item?.querySelector?.("[data-slot='shortcut-chord']");
+  if (!item || !slot || !text) {
+    return;
+  }
+  if (item.dataset.idleChord == null) {
+    item.dataset.idleChord = slot.textContent ?? "";
+  }
+  const changed = slot.textContent !== text;
+  item.dataset.previewChord = text;
+  slot.textContent = text;
+  if (!changed) {
+    return;
+  }
+  const assign = item.querySelector("[data-shortcut-record]") ?? slot;
+  animateElement(
+    assign,
+    [
+      { transform: "scale(1)" },
+      { transform: "scale(1.06)" },
+      { transform: "scale(1)" },
+    ],
+    { duration: 180 },
+  );
 }
 
 function paintRows(root, rows) {
@@ -383,7 +446,7 @@ function paintRows(root, rows) {
       const formatted = formatShortcutChord(row, labels);
       if (item.dataset.recording) {
         item.dataset.idleChord = formatted;
-        chord.textContent = recordingLabel();
+        chord.textContent = item.dataset.previewChord || recordingLabel();
       } else {
         delete item.dataset.idleChord;
         chord.textContent = formatted;
@@ -444,6 +507,17 @@ export async function bindShortcutRegistry(root, invokeFn) {
 
   let modifierTap = null;
   let usedModifierWithKey = false;
+  let countedPress = false;
+
+  const recordingItem = (action) =>
+    list.querySelector(`[data-action="${action}"]`);
+
+  const showPreview = (action, partial) => {
+    previewRecording(
+      recordingItem(action),
+      formatRecordingPreview(partial, catalog()),
+    );
+  };
 
   const record = async (action, chord, skipTest) => {
     if (isGlobalShortcutAction(action) && chord.modifiers.length === 0) {
@@ -452,6 +526,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
       return;
     }
     modifierTap = null;
+    countedPress = false;
     delete list.dataset.recordingAction;
     try {
       const rows = await invokeFn("record_shortcut", {
@@ -501,6 +576,7 @@ export async function bindShortcutRegistry(root, invokeFn) {
     if (recordButton) {
       modifierTap = null;
       usedModifierWithKey = false;
+      countedPress = false;
       list.dataset.recordingAction = action;
       setRecordingRow(root, action);
       recordButton.focus();
@@ -508,10 +584,24 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
   });
 
-  const eventNow = (event) =>
-    typeof event.timeStamp === "number" && event.timeStamp > 0
-      ? event.timeStamp
-      : Date.now();
+  const applyModifierTap = (event, action) => {
+    const tapped = doubleTapFromModifierEvents(modifierTap, event, Date.now());
+    modifierTap = tapped.previous;
+    if (tapped.chord) {
+      showPreview(action, {
+        modifiers: tapped.chord.modifiers,
+        taps: 2,
+      });
+      record(action, tapped.chord, true);
+      return;
+    }
+    if (tapped.previous) {
+      showPreview(action, {
+        modifiers: [tapped.previous.modifier],
+        taps: 1,
+      });
+    }
+  };
 
   const onKeyDown = (event) => {
     const action = list.dataset.recordingAction;
@@ -529,16 +619,36 @@ export async function bindShortcutRegistry(root, invokeFn) {
     if (chord?.cancel) {
       modifierTap = null;
       usedModifierWithKey = false;
+      countedPress = false;
       closeRecorder(root);
       setLive(root, "settings.shortcuts.live", LIVE_FALLBACK);
       return;
     }
-    if (!chord) {
+    if (chord) {
+      usedModifierWithKey = true;
+      countedPress = false;
+      modifierTap = null;
+      showPreview(action, {
+        modifiers: chord.modifiers,
+        logicalKey: chord.logicalKey,
+        taps: 1,
+      });
+      record(action, chord, true);
       return;
     }
-    usedModifierWithKey = true;
-    modifierTap = null;
-    record(action, chord, true);
+    const modifier = modifierNameFromEvent(event);
+    if (!modifier) {
+      return;
+    }
+    const held = modifiersFromEvent(event);
+    if (held.length > 1) {
+      modifierTap = null;
+      countedPress = true;
+      showPreview(action, { modifiers: held, taps: 1 });
+      return;
+    }
+    countedPress = true;
+    applyModifierTap(event, action);
   };
 
   const onKeyUp = (event) => {
@@ -549,17 +659,14 @@ export async function bindShortcutRegistry(root, invokeFn) {
     event.preventDefault();
     if (usedModifierWithKey) {
       usedModifierWithKey = false;
+      countedPress = false;
       return;
     }
-    const tapped = doubleTapFromModifierEvents(
-      modifierTap,
-      event,
-      eventNow(event),
-    );
-    modifierTap = tapped.previous;
-    if (tapped.chord) {
-      record(action, tapped.chord, true);
+    if (countedPress) {
+      countedPress = false;
+      return;
     }
+    applyModifierTap(event, action);
   };
 
   const onCopy = (event) => {
@@ -569,7 +676,13 @@ export async function bindShortcutRegistry(root, invokeFn) {
     }
     event.preventDefault();
     usedModifierWithKey = true;
+    countedPress = false;
     modifierTap = null;
+    showPreview(action, {
+      modifiers: ["Command"],
+      logicalKey: "c",
+      taps: 1,
+    });
     record(
       action,
       {

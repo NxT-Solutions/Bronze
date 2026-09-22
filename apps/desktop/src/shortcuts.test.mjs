@@ -7,6 +7,7 @@ import {
   bindShortcutRegistry,
   chordFromKeyboardEvent,
   doubleTapFromModifierEvents,
+  formatRecordingPreview,
   formatShortcutChord,
   isGlobalShortcutAction,
   modifierNameFromEvent,
@@ -158,6 +159,27 @@ test("shortcut formatter and recorder keep IME out and reject path keys", () => 
       700,
     ).chord,
     null,
+  );
+  assert.equal(
+    doubleTapFromModifierEvents(
+      { modifier: "Option", at: 100 },
+      { key: "Dead", code: "" },
+      180,
+    ).previous.modifier,
+    "Option",
+  );
+  assert.equal(formatRecordingPreview({ modifiers: ["Option"], taps: 1 }), "⌥");
+  assert.equal(
+    formatRecordingPreview({ modifiers: ["Option"], taps: 2 }),
+    "Option double-tap",
+  );
+  assert.equal(
+    formatRecordingPreview({
+      modifiers: ["Option", "Shift"],
+      logicalKey: "o",
+      taps: 1,
+    }),
+    "⌥⇧O",
   );
   assert.equal(recorderIgnores({ isComposing: true, repeat: false }), true);
   assert.equal(
@@ -457,6 +479,27 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   assert.equal(chord.textContent, "Recording…");
 
   root.emit("keydown", {
+    key: "Alt",
+    code: "AltLeft",
+    altKey: true,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  assert.equal(chord.textContent, "⌥");
+  root.emit("keydown", {
+    key: "Shift",
+    code: "ShiftLeft",
+    altKey: true,
+    shiftKey: true,
+    isComposing: false,
+    repeat: false,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  assert.equal(chord.textContent, "⌥⇧");
+  root.emit("keydown", {
     key: "ø",
     code: "KeyO",
     metaKey: false,
@@ -466,6 +509,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     isComposing: false,
     repeat: false,
     preventDefault() {},
+    stopPropagation() {},
   });
   await Promise.resolve();
   assert.equal(calls.at(-1).cmd, "record_shortcut");
@@ -591,6 +635,8 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     preventDefault() {},
     stopPropagation() {},
   });
+  assert.equal(calls.length, beforeDoubleTap);
+  assert.equal(chord.textContent, "⇧");
   root.emit("keyup", {
     key: "Shift",
     code: "ShiftLeft",
@@ -608,14 +654,6 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     repeat: false,
     preventDefault() {},
     stopPropagation() {},
-  });
-  root.emit("keyup", {
-    key: "Shift",
-    code: "ShiftLeft",
-    timeStamp: 340,
-    isComposing: false,
-    repeat: false,
-    preventDefault() {},
   });
   await Promise.resolve();
   assert.equal(calls.at(-1).cmd, "record_shortcut");
@@ -650,9 +688,9 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     stopPropagation() {},
   });
   root.emit("keydown", optionTap(400, "keydown"));
+  assert.equal(chord.textContent, "⌥");
   root.emit("keyup", optionTap(460, "keyup"));
   root.emit("keydown", optionTap(520, "keydown"));
-  root.emit("keyup", optionTap(580, "keyup"));
   await Promise.resolve();
   assert.equal(calls.at(-1).cmd, "record_shortcut");
   assert.deepEqual(calls.at(-1).args.input, {
@@ -663,6 +701,32 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
     skipTest: true,
   });
   assert.equal(chord.textContent, "Option double-tap");
+
+  list.emit("click", {
+    target: {
+      closest(sel) {
+        if (sel === "[data-shortcut-record]") return recordBtn;
+        if (sel === "[data-shortcut-restore]") return null;
+        if (sel === "[data-action]") return item;
+        return null;
+      },
+    },
+  });
+  root.emit("keydown", optionTap(800, "keydown"));
+  assert.equal(chord.textContent, "⌥");
+  root.emit("keyup", {
+    key: "Dead",
+    code: "",
+    timeStamp: 820,
+    isComposing: true,
+    repeat: false,
+    preventDefault() {},
+  });
+  assert.equal(chord.textContent, "⌥");
+  root.emit("keydown", optionTap(860, "keydown"));
+  await Promise.resolve();
+  assert.equal(calls.at(-1).args.input.trigger, "modifier_double_tap");
+  assert.equal(calls.at(-1).args.input.modifiers[0], "Option");
 
   list.emit("click", {
     target: {
@@ -708,7 +772,7 @@ test("shortcut registry paints defaults, records a custom chord, and restores", 
   });
   assert.equal(list.dataset.recordingAction, "queue.search");
   assert.equal(liveStatus.textContent, "Could not save that shortcut.");
-  assert.equal(chord.textContent, "Recording…");
+  assert.equal(chord.textContent, "⌘C");
   const recordsAfterReject = calls.filter(
     (entry) => entry.cmd === "record_shortcut",
   ).length;
