@@ -186,8 +186,8 @@ Event-tap live fire is `capture.selection` Shift double-tap. Other seeded global
 
 Settings Shortcuts lists every action with its current chord. The assignment control (catalog Record shortcut) starts the recorder for that row. Restore Default is visible only when the row is not the seeded default.
 
-1. Activate the assignment control on that row.
-2. The recording bar takes the next complete chord. Escape or Cancel leaves the old binding.
+1. Activate the assignment control on that row. Recording stays on the row; no extra field is inserted above the list.
+2. The next complete chord is captured inline, including multi-modifier combinations. Option+letter uses the physical key (ø from Option+O binds as O). Escape leaves the old binding.
 3. Live region reports recording, reject, or duplicate from the catalog. No sentence concatenation.
 4. Normalize left/right only according to action schema.
 5. Validate syntax and internal duplicate.
@@ -195,7 +195,7 @@ Settings Shortcuts lists every action with its current chord. The assignment con
 7. Persist only after native registration succeeds or the operator skips the test. A skipped test stores explicit untested status.
 8. If registration fails, retain the old value and announce the catalog reason.
 
-Recorder ignores composition, key repeat, a lone character without a modifier for a global action, and a VoiceOver/system-reserved chord where detectable. Provide a typed/manual chooser for AT users who cannot use the recorder.
+Recorder ignores composition, key repeat, a lone Backspace/Delete, a lone character without a modifier for a global action, and a VoiceOver/system-reserved chord where detectable. Provide a typed/manual chooser for AT users who cannot use the recorder.
 
 ## 6. Conflict model
 
