@@ -52,7 +52,7 @@ Token pairs must be measured in all themes. Normal text target 4.5:1; large text
 
 Each item exposes:
 
-- heading from stored `items.title` (`h3`); hidden when the title is absent or blank; the UI does not invent a title; persist writes `compact_title` (40-character word-boundary clamp, no ellipsis glyph) so the heading is a short descriptive line shown in full; card CSS uses `text-overflow: clip` on the title, never ellipsis; Show more / Show less apply to the body only; the source row is unchanged;
+- heading from stored `items.title` (`h3`); hidden when the title is absent or blank; the UI does not invent a title; persist writes `compact_title` first (40-character word-boundary clamp, no ellipsis glyph) so the heading is a short descriptive line shown in full; a local refine may replace that stored string after persist; card CSS uses `text-overflow: clip` on the title, never ellipsis; Show more / Show less apply to the body only; the source row is unchanged;
 - lifecycle control with item-specific accessible label;
 - kind icon plus visible/announced label when kind matters;
 - content preview: constrained markdown rendered as `strong`/`em`/text plus line-start `ul`/`ol`/`li` (createElement only); body uses `white-space: pre-wrap` and collapses with `max-height` (not `-webkit-box`); catalog `queue.item.showMore` / `queue.item.showLess` expands the full body on a real `button` (`aria-expanded`);

@@ -167,7 +167,7 @@ Mutation transaction writes content-free command receipt plus ordered entity/rev
 - Do not silently NFC/NFKC normalize user text. Search may maintain derived normalized index without changing source.
 - Count limits by UTF-8 bytes plus grapheme-aware UI feedback.
 - Proposed P0 item cap: 1 MiB, configurable only internally. Larger selection requires explicit cancel/copy-to-file path; never truncate.
-- `items.title` is nullable TEXT (migration `items_title`). Persist, composer add, and body edit write `compact_title` (40-character word-boundary clamp, no ellipsis glyph). That stored string is the title (ADR-019 Proposed). Existing rows keep their stored string until recapture or edit.
+- `items.title` is nullable TEXT (migration `items_title`). Persist, composer add, and body edit write `compact_title` first (40-character word-boundary clamp, no ellipsis glyph). A local SmolLM2 refine may replace that string after persist; failure keeps `compact_title` (ADR-019 Proposed). Existing rows keep their stored string until recapture or edit.
 - Capture may store constrained markdown in `items.body` (bold/italic plus exact whitespace). Inbox render is sanitized: createElement/createTextNode only, including line-start `ul`/`ol`/`li`; raw HTML and remote images disabled. Copy writes that same dialect as escaped HTML on the pasteboard. Composer text is stored as authored.
 - Source URL is optional, allowlisted by scheme, and excluded by default from output.
 - `content_language` is canonical BCP 47 or `und`; application validation rejects invalid tags. New captures/manual notes default to `und` unless user assigns language. Bronze never silently detects language.

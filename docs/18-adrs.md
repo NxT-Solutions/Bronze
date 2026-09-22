@@ -39,7 +39,7 @@ An ADR change must name affected PRD IDs, migration impact, tests, distribution/
 | ADR-016 | Semantic configurable-shortcut schema | Accepted | CAP-001, CAP-002, SET-001, SET-002, I18N-004 |
 | ADR-017 | Packaged local UI with zero runtime network by default | Accepted | SEC-001, SEC-004, G-05 |
 | ADR-018 | Locale-aware search/tokenizer semantics | Proposed | QUE-007, G-06, I18N-003 |
-| ADR-019 | Portable extractive item titles (no hosted model, no bundled GGUF, no OS-AI) | Proposed | QUE-002, SEC-004, G-05 |
+| ADR-019 | Portable local item titles (compact_title first, optional hash-pinned SmolLM2 refine) | Proposed | QUE-002, SEC-004, G-05 |
 
 ## ADR-001: Local selection-to-action queue
 
@@ -756,41 +756,43 @@ Raw item content remains unchanged. Search diagnostics never store query/body. P
 - Migration/rebuild/purge and corruption recovery tests.
 - Threat review for duplicated sensitive FTS data.
 
-## ADR-019: Portable extractive item titles (no hosted model, no bundled GGUF, no OS-AI)
+## ADR-019: Portable local item titles (compact_title first, optional hash-pinned SmolLM2 refine)
 
 Status: Proposed  
 Planning gate: TITLE-01
 
 ### Context
 
-Captured bodies can be long. The inbox and status-menu overview need a title that is not the first sentence by policy. First-sentence-only is not the shipped title. Hosted AI and Private Cloud Compute violate ADR-017 and SEC-004. Bundling a multi-hundred-MB GGUF is rejected for app weight. An OS-AI entitlement (`SystemLanguageModel`, NLEmbedding, Foundation Models) is not portable to Linux or Windows. ADR-017 remains Accepted. ADR-002, ADR-009, and ADR-018 remain Proposed.
+Captured bodies can be long. The inbox and status-menu overview need a title that is not the first sentence by policy. First-sentence-only is not the shipped title. Hosted AI, Private Cloud Compute, and a runtime Hugging Face Hub download violate ADR-017 and SEC-004. An OS-AI entitlement (`SystemLanguageModel`, NLEmbedding, Foundation Models) is not portable to Linux or Windows. T-10 allows only an offline vendored SHA-256-pinned GGUF; it does not allow hosted AI, PCC, or runtime fetch. ADR-017 remains Accepted. ADR-002, ADR-009, and ADR-018 remain Proposed.
 
 ### Decision gate
 
-Do not mark Accepted until the operator formally accepts this extractive title contract. The path below is a candidate. It must not silently become the Accepted contract.
+Do not mark Accepted until the operator formally accepts this title contract. The path below is a candidate. It must not silently become the Accepted contract.
 
 Candidate path:
 
-- Persist `compact_title` only: term-frequency best sentence over significant terms, 40-character word-boundary clamp, markup stripped, no ellipsis glyph. Not first-sentence-only. The clamp fits one title row in the 400px Quick Panel card at `--text-body` 0.9375rem.
-- Composer add and body edit write the same `compact_title` function. That stored string is the title.
-- The function is pure Rust in `bronze-domain`. Linux and Windows use it without a native language-model symbol.
-- Event-tap callback must not call AX, the database, windows, the clipboard, or a language model.
-- No `SystemLanguageModel`, NLEmbedding, Private Cloud Compute, URLSession, or OpenAI on the title path.
-- No bundled llama.cpp, Needle, Qwen, TinyLlama, or GGUF weights.
+- Persist `compact_title` first: term-frequency best sentence over significant terms, 40-character word-boundary clamp, markup stripped, no ellipsis glyph. Not first-sentence-only. The clamp fits one title row in the 400px Quick Panel card at `--text-body` 0.9375rem. Composer add and body edit write the same function before any refine.
+- After persist (and after composer add / body edit), a Rust `llama-cpp-2` 0.1.156 worker on thread `bronze-item-title` may refine the stored title. Inference is not on AppKit main and not in the event-tap. `TitleABI.swift` stays a compile-only stub (`BRONZE_STATUS_DEGRADED`). Linux and Windows call the same Rust function.
+- Weights are HuggingFaceTB/SmolLM2-135M-Instruct, bartowski `SmolLM2-135M-Instruct-Q4_K_M.gguf`, revision `09816acd5d99df7be770d85ea30822623dab342c`, SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d` (~105 MB, Apache-2.0). Developer or CI vendors once with `bronze-title-model/scripts/vendor-gguf.sh`. Load only that verified path (`set_weights_path`, else `BRONZE_TITLE_WEIGHTS`, else crate `vendor/`, else exe-relative `models/`). Never `-hf`. Never Hub at capture or runtime. Never a WebView path (SEC-003). Weights are not user-writable via the app.
+- Inference: lazy load once per process; truncate input to 2048 characters; `max_new_tokens` 16; greedy; stop on newline; clamp with the same 40-character word-boundary function; English prompt v1 (“short title, no quotes”). Skip refine when the body is already at most 40 characters, or when the candidate shares no 3+ character term with the body.
+- Missing file, hash mismatch, 8 s timeout, empty output, load failure, or an ungrounded candidate keeps `compact_title`. Capture ID and terminal result are never dropped.
+- CPU path only (`n_gpu_layers=0`). No `allow-jit` or `allow-unsigned-executable-memory` entitlement. `llama-cpp-2` may still compile Metal on Apple Silicon; the worker does not offload.
+- No Needle, Qwen, Llama 1B, Gemma, hosted AI, Private Cloud Compute, `SystemLanguageModel`, NLEmbedding, URLSession, or OpenAI on the title path.
 
 ### Consequences while Proposed
 
-- Persist, composer add, and edit store `compact_title` only.
-- The same Rust function is the title on macOS, Linux, and Windows.
-- No OS-AI entitlement and no third-party inference pack.
-- Private Cloud Compute remains forbidden.
-- Release copy must not treat this as an Accepted inference contract.
+- Persist, composer add, and edit always store `compact_title` before any refine.
+- Refine is best-effort and local. Failure leaves the extractive title in place.
+- Private Cloud Compute remains forbidden. Release copy must not treat this as an Accepted inference contract.
+- Queue chrome does not show Apple Intelligence or model-status copy. Titles clip without an ellipsis glyph.
 
 ### Verification
 
 - `compact_title` tests: a middle content-bearing sentence wins over a greeting; the clamp is 40 characters without an ellipsis glyph.
-- Persist, composer, and edit paths do not call `native_item_title` or schedule `bronze-item-title`.
+- Persist writes `compact_title` even when the GGUF is missing, the hash mismatches, or the worker fails.
+- Title-worker sources have no runtime network. Capture ID and terminal result are never dropped.
 - Swift source-scan of `TitleABI.swift`: no `PrivateCloudCompute`, `URLSession`, `openai`, `llama`, `gguf`, `SystemLanguageModel`, or `NLEmbedding`.
+- Packaging asserts no `allow-jit` or `allow-unsigned-executable-memory`.
 - Live binary does not link FoundationModels or NaturalLanguage.
 
 ## 3. Decision-change checklist

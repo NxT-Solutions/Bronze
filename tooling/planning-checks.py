@@ -133,6 +133,43 @@ def resolve_link(source: Path, target: str) -> Path | None:
     return (source.parent / href).resolve()
 
 
+def check_title_adr() -> list[str]:
+    errors: list[str] = []
+    adrs = (DOCS / "18-adrs.md").read_text()
+    threat = (DOCS / "09-security-privacy-threat-model.md").read_text()
+    start = adrs.find("## ADR-019:")
+    if start < 0:
+        return ["ADR-019 section missing"]
+    nxt = adrs.find("\n## ", start + 1)
+    section = adrs[start : nxt if nxt > 0 else None]
+    if "Status: Proposed" not in section:
+        errors.append("ADR-019 must stay Proposed")
+    if "Status: Accepted" in section:
+        errors.append("ADR-019 must not be Accepted")
+    for needle in (
+        "SmolLM2-135M-Instruct",
+        "llama-cpp-2",
+        "compact_title",
+        "Q4_K_M",
+        "2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d",
+    ):
+        if needle not in section:
+            errors.append(f"ADR-019 missing {needle}")
+    t10 = next((line for line in threat.splitlines() if line.startswith("| T-10 ")), "")
+    if not t10:
+        errors.append("T-10 row missing")
+    else:
+        if "hosted AI" not in t10:
+            errors.append("T-10 must still forbid hosted AI")
+        if "Private Cloud Compute" not in t10:
+            errors.append("T-10 must still forbid Private Cloud Compute")
+        if "hash-pinned" not in t10 and "SHA-256-pinned" not in t10:
+            errors.append("T-10 missing hash-pinned carve-out")
+        if "no bundled GGUF" in t10:
+            errors.append("T-10 still bans bundled GGUF without carve-out")
+    return errors
+
+
 def check_local_links() -> list[str]:
     errors: list[str] = []
     roots = [
@@ -158,12 +195,14 @@ def main() -> int:
     errors.extend(check_requirement_parity())
     errors.extend(check_enums())
     errors.extend(check_local_links())
+    errors.extend(check_title_adr())
     if errors:
         return fail(errors)
     print("PASS requirement-parity")
     print("PASS enum/schema")
     print("PASS local-links")
     print("PASS traceability")
+    print("PASS title-adr")
     print(f"checked {len(PRD_IDS)} requirement IDs")
     return 0
 
