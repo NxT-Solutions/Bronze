@@ -89,4 +89,39 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /data-search-clear/);
   assert.match(html, /data-i18n-aria-label="settings.search.clear"/);
   assert.equal(en["settings.search.clear"], "Clear search");
+  assert.match(html, /id="title-model"/);
+  assert.match(html, /data-reset-field="general.titleModel"/);
+  assert.match(html, /data-i18n="settings.field.titleModel"/);
+  assert.match(html, />\s*Title engine\s*</);
+  assert.match(
+    html,
+    />\s*Choose a local title engine that is already on this Mac\.\s*</,
+  );
+  assert.equal(en["settings.field.titleModel"], "Title engine");
+  assert.equal(
+    en["settings.field.titleModel.help"],
+    "Choose a local title engine that is already on this Mac.",
+  );
+  assert.equal(
+    en["settings.field.titleModel.extractive"],
+    "Extractive — no model file",
+  );
+  assert.equal(
+    en["settings.field.titleModel.smol135"],
+    "SmolLM2 135M — about 105 MB, 8 GB RAM",
+  );
+  assert.equal(
+    en["settings.field.titleModel.smol360"],
+    "SmolLM2 360M — about 271 MB, 16 GB RAM",
+  );
+  assert.equal(
+    en["settings.field.titleModel.qwen05"],
+    "Qwen2.5 0.5B — about 491 MB, 32 GB RAM",
+  );
+  assert.equal(
+    en["settings.field.titleModel.missing"],
+    "Vendored file missing; keep extractive titles and run {command}",
+  );
+  assert.doesNotMatch(html, /Title:/);
+  assert.doesNotMatch(html, /download/i);
 });

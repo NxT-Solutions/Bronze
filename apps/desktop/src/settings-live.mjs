@@ -11,6 +11,87 @@ import { showChromeWindow, tauriInvoke } from "./tauri-bridge.mjs";
 
 const SWITCHER_LOCALES = ["en", "nl", "fr", "de", "es", "it"];
 
+export const TITLE_MODEL_IDS = Object.freeze([
+  "extractive",
+  "smol-135",
+  "smol-360",
+  "qwen-05",
+]);
+
+const TITLE_MODEL_VENDOR = {
+  "smol-135": "sh bronze-title-model/scripts/vendor-gguf.sh smol-135",
+  "smol-360": "sh bronze-title-model/scripts/vendor-gguf.sh smol-360",
+  "qwen-05": "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+};
+
+const TITLE_MODEL_STATUS_FALLBACK = {
+  extractive: "Extractive titles use no model file.",
+  present: "This file is on this Mac and can title the next capture.",
+  missing: "Vendored file missing; keep extractive titles and run {command}",
+  unavailable: "Title engines could not be listed.",
+};
+
+export function parseTitleModelId(raw) {
+  const value = String(raw ?? "").trim();
+  return TITLE_MODEL_IDS.includes(value) ? value : "";
+}
+
+export function formatTitleModelStatus(row, options = {}) {
+  const id = parseTitleModelId(row?.id) || "extractive";
+  if (id === "extractive") {
+    return (
+      catalogMessage("settings.field.titleModel.extractive.status") ||
+      TITLE_MODEL_STATUS_FALLBACK.extractive
+    );
+  }
+  if (options.unavailable) {
+    return (
+      catalogMessage("settings.field.titleModel.unavailable") ||
+      TITLE_MODEL_STATUS_FALLBACK.unavailable
+    );
+  }
+  if (row?.present) {
+    return (
+      catalogMessage("settings.field.titleModel.present") ||
+      TITLE_MODEL_STATUS_FALLBACK.present
+    );
+  }
+  const command = String(
+    row?.vendorCommand || TITLE_MODEL_VENDOR[id] || "",
+  ).trim();
+  const template =
+    catalogMessage("settings.field.titleModel.missing") ||
+    TITLE_MODEL_STATUS_FALLBACK.missing;
+  return template.replaceAll("{command}", command);
+}
+
+export function applyTitleModelStatus(root, row, options = {}) {
+  const status = root.querySelector("[data-title-model-status]");
+  if (!status) {
+    return;
+  }
+  status.textContent = formatTitleModelStatus(row, options);
+}
+
+export async function refreshTitleModelStatus(root, invokeFn, settings) {
+  const selected = parseTitleModelId(
+    root.querySelector("#title-model")?.value || settings?.general?.titleModel,
+  );
+  const id = selected || "extractive";
+  let rows = null;
+  try {
+    const listed = await invokeFn("list_title_models");
+    rows = Array.isArray(listed) ? listed : null;
+  } catch {
+    rows = null;
+  }
+  const row = rows?.find((item) => item?.id === id) ?? { id, present: false };
+  applyTitleModelStatus(root, row, {
+    unavailable: rows === null && id !== "extractive",
+  });
+  return rows;
+}
+
 export function switcherLocale(tag) {
   if (SWITCHER_LOCALES.includes(tag)) {
     return tag;
@@ -35,9 +116,13 @@ export function settingsSearchMatches(text, needle) {
 
 export function settingsUnitHaystack(unit) {
   const label = unit.querySelector?.("label")?.textContent ?? "";
-  const help = unit.querySelector?.("[data-excluded-help]")?.textContent ?? "";
-  const howto =
-    unit.querySelector?.("[data-excluded-howto]")?.textContent ?? "";
+  const help = [
+    ...(unit.querySelectorAll?.(
+      ".field-help, [data-excluded-help], [data-excluded-howto], [data-title-model-help]",
+    ) ?? []),
+  ]
+    .map((node) => node.textContent ?? "")
+    .join(" ");
   const chips = [...(unit.querySelectorAll?.("[data-app-name]") ?? [])]
     .map((node) => node.getAttribute?.("data-app-name") ?? "")
     .join(" ");
@@ -48,8 +133,8 @@ export function settingsUnitHaystack(unit) {
   const controlText = control
     ? `${control.value ?? ""} ${control.getAttribute?.("name") ?? ""}`
     : "";
-  if (label || help || howto || chips || options || controlText.trim()) {
-    return `${label} ${help} ${howto} ${chips} ${options} ${controlText}`;
+  if (label || help || chips || options || controlText.trim()) {
+    return `${label} ${help} ${chips} ${options} ${controlText}`;
   }
   return unit.textContent ?? "";
 }
@@ -454,6 +539,7 @@ function showExportStatus(root, key) {
 export function applySettingsForm(root, settings) {
   const schedule = root.querySelector("#backup-schedule");
   const locale = root.querySelector("#ui-locale");
+  const titleModel = root.querySelector("#title-model");
   const host = root.querySelector("#excluded-apps");
   if (schedule && settings?.data?.backupSchedule) {
     schedule.value = settings.data.backupSchedule;
@@ -470,6 +556,10 @@ export function applySettingsForm(root, settings) {
   if (locale) {
     locale.value = switcherLocale(settings?.general?.locale);
   }
+  const titleId = parseTitleModelId(settings?.general?.titleModel);
+  if (titleModel && titleId) {
+    titleModel.value = titleId;
+  }
 }
 
 export function patchSettingsFromForm(settings, root) {
@@ -479,6 +569,9 @@ export function patchSettingsFromForm(settings, root) {
   }
   const schedule = root.querySelector("#backup-schedule")?.value;
   const locale = root.querySelector("#ui-locale")?.value;
+  const titleModel = parseTitleModelId(
+    root.querySelector("#title-model")?.value,
+  );
   if (schedule === "daily" || schedule === "weekly") {
     next.data.backupSchedule = schedule;
   }
@@ -487,6 +580,9 @@ export function patchSettingsFromForm(settings, root) {
   );
   if (SWITCHER_LOCALES.includes(locale)) {
     next.general.locale = locale;
+  }
+  if (titleModel) {
+    next.general.titleModel = titleModel;
   }
   return next;
 }
@@ -499,6 +595,7 @@ async function applySavedLocale(root, settings, invokeFn) {
   } catch {
     applyHandTestLocale(root, switcherLocale(settings?.general?.locale));
   }
+  await refreshTitleModelStatus(root, invokeFn, settings);
 }
 
 export function bindSearchClear(root = document) {
@@ -644,11 +741,13 @@ export async function bindSettingsLive(
 
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
     refreshExportPreview().catch(() => {});
+    refreshTitleModelStatus(root, invokeFn, settings).catch(() => {});
   });
   await refreshExportPreview();
 
   root.querySelector("#backup-schedule")?.addEventListener("change", persist);
   root.querySelector("#ui-locale")?.addEventListener("change", persist);
+  root.querySelector("#title-model")?.addEventListener("change", persist);
 
   root.querySelectorAll("[data-reset-field]").forEach((button) => {
     button.addEventListener("click", () => {

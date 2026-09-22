@@ -6,21 +6,26 @@ import { fileURLToPath } from "node:url";
 import {
   applySettingsForm,
   applySettingsSearch,
+  applyTitleModelStatus,
   exportCategoryLabel,
   exportSensitiveLabel,
   filterInstalledApps,
+  formatTitleModelStatus,
   isSafeBundleId,
   isSafeDisplayName,
+  parseTitleModelId,
   patchSettingsFromForm,
   pickExcludedApp,
   pickerFailureCode,
   readExcludedBundleIds,
+  refreshTitleModelStatus,
   renderExportPreview,
   resolveExcludedApps,
   settingsExportFailureCode,
   settingsSearchNeedle,
   settingsUnitHaystack,
   switcherLocale,
+  TITLE_MODEL_IDS,
 } from "./settings-live.mjs";
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
@@ -29,18 +34,20 @@ const live = readFileSync(join(rootDir, "settings-live.mjs"), "utf8");
 
 test("settings form patches backup schedule, excluded apps, and locale", () => {
   const settings = {
-    general: { locale: "system" },
+    general: { locale: "system", titleModel: "smol-360" },
     data: { backupSchedule: "daily" },
     privacy: { excludedBundleIds: ["com.example"] },
   };
   const schedule = { value: "weekly" };
   const excluded = { dataset: { excludedIds: "" } };
   const locale = { value: "en" };
+  const titleModel = { value: "extractive" };
   const root = {
     querySelector(sel) {
       if (sel === "#backup-schedule") return schedule;
       if (sel === "#excluded-apps") return excluded;
       if (sel === "#ui-locale") return locale;
+      if (sel === "#title-model") return titleModel;
       return null;
     },
   };
@@ -48,18 +55,30 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   assert.equal(schedule.value, "daily");
   assert.equal(excluded.dataset.excludedIds, "com.example");
   assert.equal(locale.value, "en");
+  assert.equal(titleModel.value, "smol-360");
   settings.general.locale = "nl";
   applySettingsForm(root, settings);
   assert.equal(locale.value, "nl");
   schedule.value = "weekly";
   excluded.dataset.excludedIds = "com.one\ncom.two";
   locale.value = "fr";
+  titleModel.value = "qwen-05";
   const next = patchSettingsFromForm(settings, root);
   assert.equal(next.data.backupSchedule, "weekly");
   assert.deepEqual(next.privacy.excludedBundleIds, ["com.one", "com.two"]);
   assert.equal(next.general.locale, "fr");
+  assert.equal(next.general.titleModel, "qwen-05");
   assert.equal(switcherLocale("system"), "en");
   assert.equal(switcherLocale("de"), "de");
+  const preserved = patchSettingsFromForm(
+    { general: { titleModel: "smol-135" }, data: {}, privacy: {} },
+    {
+      querySelector() {
+        return null;
+      },
+    },
+  );
+  assert.equal(preserved.general.titleModel, "smol-135");
 });
 
 test("excluded app picker searches installed apps and keeps many ids", () => {
@@ -392,4 +411,80 @@ test("settings search matches visible labels and not reset chrome", () => {
   assert.equal(shortcuts.hidden, false);
   assert.equal(form.hidden, false);
   assert.equal(empty.hidden, true);
+});
+
+test("title model status shows present vs vendor command and never fetches", async () => {
+  assert.deepEqual(
+    [...TITLE_MODEL_IDS],
+    ["extractive", "smol-135", "smol-360", "qwen-05"],
+  );
+  assert.equal(parseTitleModelId("qwen-05"), "qwen-05");
+  assert.equal(parseTitleModelId("needle"), "");
+  assert.equal(
+    formatTitleModelStatus({ id: "extractive", present: true }),
+    "Extractive titles use no model file.",
+  );
+  assert.equal(
+    formatTitleModelStatus({ id: "smol-360", present: true }),
+    "This file is on this Mac and can title the next capture.",
+  );
+  assert.equal(
+    formatTitleModelStatus({
+      id: "qwen-05",
+      present: false,
+      vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+    }),
+    "Vendored file missing; keep extractive titles and run sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+  );
+  assert.equal(
+    formatTitleModelStatus(
+      { id: "qwen-05", present: false },
+      { unavailable: true },
+    ),
+    "Title engines could not be listed.",
+  );
+  const status = { textContent: "" };
+  const select = { value: "qwen-05" };
+  const root = {
+    querySelector(sel) {
+      if (sel === "[data-title-model-status]") return status;
+      if (sel === "#title-model") return select;
+      return null;
+    },
+  };
+  applyTitleModelStatus(root, {
+    id: "qwen-05",
+    present: false,
+    vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+  });
+  assert.match(status.textContent, /vendor-gguf\.sh qwen-05/);
+  assert.doesNotMatch(status.textContent, /Title:/);
+  const listed = await refreshTitleModelStatus(root, async (cmd) => {
+    assert.equal(cmd, "list_title_models");
+    return [
+      { id: "extractive", present: true, vendorCommand: "" },
+      {
+        id: "qwen-05",
+        present: false,
+        vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+      },
+    ];
+  });
+  assert.equal(listed?.[1]?.present, false);
+  assert.match(status.textContent, /Vendored file missing/);
+  assert.match(html, /id="title-model"/);
+  assert.match(html, /name="titleModel"/);
+  assert.match(html, /data-reset-field="general.titleModel"/);
+  assert.match(html, /data-title-model-status/);
+  assert.match(html, /role="status"/);
+  assert.match(html, /value="extractive"/);
+  assert.match(html, /value="smol-135"/);
+  assert.match(html, /value="smol-360"/);
+  assert.match(html, /value="qwen-05"/);
+  assert.doesNotMatch(html, /download/i);
+  assert.doesNotMatch(html, /huggingface/i);
+  assert.match(live, /list_title_models/);
+  assert.match(live, /#title-model/);
+  assert.doesNotMatch(live, /huggingface/i);
+  assert.doesNotMatch(live, /https:\/\//);
 });

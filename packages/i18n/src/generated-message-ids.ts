@@ -85,6 +85,19 @@ export const MessageIds = {
   "settings.field.launchAtLogin": "settings.field.launchAtLogin",
   "settings.field.backupSchedule": "settings.field.backupSchedule",
   "settings.field.locale": "settings.field.locale",
+  "settings.field.titleModel": "settings.field.titleModel",
+  "settings.field.titleModel.help": "settings.field.titleModel.help",
+  "settings.field.titleModel.extractive":
+    "settings.field.titleModel.extractive",
+  "settings.field.titleModel.smol135": "settings.field.titleModel.smol135",
+  "settings.field.titleModel.smol360": "settings.field.titleModel.smol360",
+  "settings.field.titleModel.qwen05": "settings.field.titleModel.qwen05",
+  "settings.field.titleModel.extractive.status":
+    "settings.field.titleModel.extractive.status",
+  "settings.field.titleModel.present": "settings.field.titleModel.present",
+  "settings.field.titleModel.missing": "settings.field.titleModel.missing",
+  "settings.field.titleModel.unavailable":
+    "settings.field.titleModel.unavailable",
   "settings.field.excludedBundleIds": "settings.field.excludedBundleIds",
   "settings.field.excludedBundleIds.help":
     "settings.field.excludedBundleIds.help",

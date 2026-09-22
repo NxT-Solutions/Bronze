@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   defaultSettingsDraft,
   parseBackupSchedule,
+  parseTitleModelId,
   previewSettingsExport,
   resetSettingsField,
   searchSettingsFields,
@@ -20,6 +21,29 @@ describe("settings schema (SET-001)", () => {
     expect(parseBackupSchedule("weekly")).toBe("weekly");
     expect(parseBackupSchedule("off")).toBeNull();
     expect(parseBackupSchedule("manual")).toBeNull();
+  });
+
+  it("title model is exportable, searchable, and reset does not invent a choice", () => {
+    expect(parseTitleModelId("qwen-05")).toBe("qwen-05");
+    expect(parseTitleModelId("smol-360")).toBe("smol-360");
+    expect(parseTitleModelId("needle")).toBeNull();
+    expect(
+      searchSettingsFields("qwen").some(
+        (field) => field.id === "general.titleModel",
+      ),
+    ).toBe(true);
+    expect(settingsKeyExportable("general.titleModel")).toBe(true);
+    const preview = previewSettingsExport({
+      ...defaultSettingsDraft(),
+      titleModel: "smol-360",
+    });
+    expect(preview.included["general.titleModel"]).toBe("smol-360");
+    expect(preview.sensitiveLiteralKeys).not.toContain("general.titleModel");
+    const reset = resetSettingsField(
+      { ...defaultSettingsDraft(), titleModel: "qwen-05" },
+      "general.titleModel",
+    );
+    expect(reset.titleModel).toBe("");
   });
 
   it("reset field restores daily backup", () => {

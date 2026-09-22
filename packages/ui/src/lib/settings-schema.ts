@@ -1,4 +1,10 @@
 export type BackupSchedule = "daily" | "weekly";
+export type TitleModelId =
+  | ""
+  | "extractive"
+  | "smol-135"
+  | "smol-360"
+  | "qwen-05";
 export type SettingsGroupId =
   | "general"
   | "capture"
@@ -10,6 +16,7 @@ export type SettingsGroupId =
 
 export type SettingsFieldId =
   | "general.launchAtLogin"
+  | "general.titleModel"
   | "capture.standardChord"
   | "privacy.excludedBundleIds"
   | "privacy.appPolicies"
@@ -26,6 +33,11 @@ export const SETTINGS_FIELDS: readonly SettingsFieldDef[] = [
     id: "general.launchAtLogin",
     group: "general",
     tokens: ["launch", "login"],
+  },
+  {
+    id: "general.titleModel",
+    group: "general",
+    tokens: ["title", "model", "smol", "qwen", "extractive", "engine"],
   },
   {
     id: "capture.standardChord",
@@ -51,6 +63,7 @@ export const SETTINGS_FIELDS: readonly SettingsFieldDef[] = [
 
 export type SettingsDraft = {
   launchAtLogin: boolean;
+  titleModel: TitleModelId;
   backupSchedule: BackupSchedule;
   excludedBundleIds: string;
   appPolicies: string;
@@ -60,11 +73,25 @@ export type SettingsDraft = {
 export function defaultSettingsDraft(): SettingsDraft {
   return {
     launchAtLogin: false,
+    titleModel: "",
     backupSchedule: "daily",
     excludedBundleIds: "",
     appPolicies: "",
     standardChordEnabled: true,
   };
+}
+
+export function parseTitleModelId(raw: string): TitleModelId | null {
+  if (
+    raw === "" ||
+    raw === "extractive" ||
+    raw === "smol-135" ||
+    raw === "smol-360" ||
+    raw === "qwen-05"
+  ) {
+    return raw;
+  }
+  return null;
 }
 
 export function parseBackupSchedule(raw: string): BackupSchedule | null {
@@ -96,6 +123,8 @@ export function resetSettingsField(
   switch (fieldId) {
     case "general.launchAtLogin":
       return { ...draft, launchAtLogin: defaults.launchAtLogin };
+    case "general.titleModel":
+      return { ...draft, titleModel: defaults.titleModel };
     case "capture.standardChord":
       return { ...draft, standardChordEnabled: defaults.standardChordEnabled };
     case "privacy.excludedBundleIds":
@@ -155,6 +184,9 @@ export function previewSettingsExport(
     "data.backupSchedule": draft.backupSchedule,
     "general.launchAtLogin": String(draft.launchAtLogin),
   };
+  if (draft.titleModel) {
+    included["general.titleModel"] = draft.titleModel;
+  }
   if (draft.excludedBundleIds.trim()) {
     included["privacy.excludedBundleIds"] = draft.excludedBundleIds;
   }

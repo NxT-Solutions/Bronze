@@ -106,6 +106,64 @@
               </button>
             </div>
           </div>
+          <div class="field-block" data-settings-unit>
+            <label for="title-model" data-i18n="settings.field.titleModel">Title engine</label>
+            <p
+              id="title-model-help"
+              class="muted field-help"
+              data-title-model-help
+              data-i18n="settings.field.titleModel.help"
+            >
+              Choose a local title engine that is already on this Mac.
+            </p>
+            <div class="field-row">
+              <select
+                id="title-model"
+                name="titleModel"
+                aria-describedby="title-model-help title-model-status"
+              >
+                <option
+                  value="extractive"
+                  selected
+                  data-i18n="settings.field.titleModel.extractive"
+                >
+                  Extractive — no model file
+                </option>
+                <option
+                  value="smol-135"
+                  data-i18n="settings.field.titleModel.smol135"
+                >
+                  SmolLM2 135M — about 105 MB, 8 GB RAM
+                </option>
+                <option
+                  value="smol-360"
+                  data-i18n="settings.field.titleModel.smol360"
+                >
+                  SmolLM2 360M — about 271 MB, 16 GB RAM
+                </option>
+                <option
+                  value="qwen-05"
+                  data-i18n="settings.field.titleModel.qwen05"
+                >
+                  Qwen2.5 0.5B — about 491 MB, 32 GB RAM
+                </option>
+              </select>
+              <button
+                type="button"
+                class="btn-ghost"
+                data-reset-field="general.titleModel"
+                data-i18n="settings.reset.field"
+              >
+                Reset field
+              </button>
+            </div>
+            <p
+              id="title-model-status"
+              class="muted field-help"
+              role="status"
+              data-title-model-status
+            ></p>
+          </div>
         </fieldset>
         <fieldset
           data-settings-group="data"

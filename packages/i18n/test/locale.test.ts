@@ -59,6 +59,14 @@ describe("i18n ICU plural", () => {
     expect(tzh("app.name")).toBe("Bronze");
     const { t: tfr } = await createI18n({ lng: "fr" });
     expect(tfr("settings.field.locale")).toBe("Langue");
+    expect(tfr("settings.field.titleModel")).toBe("Moteur de titre");
+    expect(
+      tfr("settings.field.titleModel.missing", {
+        command: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+      }),
+    ).toBe(
+      "Fichier vendor manquant; les titres restent extractifs, exécutez sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+    );
     expect(tfr("capture.source", { appName: "Mail" })).toBe("De Mail");
   });
 
