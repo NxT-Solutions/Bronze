@@ -219,6 +219,8 @@
   "help.diagnostics.preview": "Se qualcosa non va",
   "help.diagnostics.export": "Esporta file di supporto…",
   "help.diagnostics.export.explain": "Salva un file di supporto su questo Mac e allegalo a una issue o pull request GitHub; Bronze non lo carica mai.",
+  "help.diagnostics.export.done": "Il file di supporto è su questo Mac.",
+  "help.diagnostics.export.failed": "Il file di supporto non è stato salvato.",
   "help.limitations.heading": "Limitazioni note",
   "help.limitations.humanGates": "Il permesso di accessibilità, la cattura da altre app, più display, VoiceOver e la firma Apple devono ancora essere verificati da una persona su un Mac firmato.",
   "help.upload.none": "Bronze non carica mai automaticamente diagnostica o il file di supporto, quindi tutto resta su questo Mac.",

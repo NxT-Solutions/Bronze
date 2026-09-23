@@ -219,6 +219,8 @@
   "help.diagnostics.preview": "If something breaks",
   "help.diagnostics.export": "Export Support File…",
   "help.diagnostics.export.explain": "Save a support file on this Mac and attach it to a GitHub issue or pull request; Bronze never uploads it.",
+  "help.diagnostics.export.done": "Saved the support file on this Mac.",
+  "help.diagnostics.export.failed": "The support file could not be saved.",
   "help.limitations.heading": "Known limitations",
   "help.limitations.humanGates": "Accessibility permission, capture from other apps, multiple displays, VoiceOver, and Apple signing still need a person on a signed Mac.",
   "help.upload.none": "Bronze does not upload diagnostics or the support file automatically, so everything stays on this Mac.",

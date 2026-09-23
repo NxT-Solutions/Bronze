@@ -224,6 +224,7 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\.library-dock/);
   assert.match(chrome, /\.library-dock-tools/);
   assert.match(chrome, /\.library-dock-status/);
+  assert.match(chrome, /\.help-dock-status/);
   assert.match(chrome, /\.library-toolbar/);
   assert.match(chrome, /#library\.page-shell/);
   assert.match(chrome, /#library \.library-empty/);

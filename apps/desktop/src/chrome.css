@@ -1215,7 +1215,8 @@ menu {
   white-space: normal;
 }
 
-.library-dock-status {
+.library-dock-status,
+.help-dock-status {
   margin: 0;
   min-width: 0;
   font-size: var(--text-micro);

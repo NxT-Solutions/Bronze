@@ -219,6 +219,8 @@
   "help.diagnostics.preview": "Si algo falla",
   "help.diagnostics.export": "Exportar archivo de soporte…",
   "help.diagnostics.export.explain": "Guarda un archivo de soporte en este Mac y adjúntalo a una issue o pull request de GitHub; Bronze nunca lo sube.",
+  "help.diagnostics.export.done": "El archivo de soporte está en este Mac.",
+  "help.diagnostics.export.failed": "No se pudo guardar el archivo de soporte.",
   "help.limitations.heading": "Limitaciones conocidas",
   "help.limitations.humanGates": "El permiso de accesibilidad, la captura desde otras apps, varias pantallas, VoiceOver y la firma de Apple aún deben ser revisados por una persona en un Mac firmado.",
   "help.upload.none": "Bronze no sube diagnósticos ni el archivo de soporte automáticamente, así que todo permanece en este Mac.",

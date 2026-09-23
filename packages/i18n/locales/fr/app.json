@@ -219,6 +219,8 @@
   "help.diagnostics.preview": "En cas de problème",
   "help.diagnostics.export": "Exporter le fichier d’assistance…",
   "help.diagnostics.export.explain": "Enregistrez un fichier d’assistance sur ce Mac et joignez-le à une issue ou une pull request GitHub ; Bronze ne le téléverse jamais.",
+  "help.diagnostics.export.done": "Le fichier d’assistance est enregistré sur ce Mac.",
+  "help.diagnostics.export.failed": "Le fichier d’assistance n’a pas pu être enregistré.",
   "help.limitations.heading": "Limites connues",
   "help.limitations.humanGates": "L’autorisation d’accessibilité, la capture depuis d’autres apps, les écrans multiples, VoiceOver et la signature Apple doivent encore être vérifiés par une personne sur un Mac signé.",
   "help.upload.none": "Bronze n’envoie jamais automatiquement les diagnostics ni le fichier d’assistance, donc tout reste sur ce Mac.",

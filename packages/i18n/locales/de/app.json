@@ -219,6 +219,8 @@
   "help.diagnostics.preview": "Wenn etwas schiefgeht",
   "help.diagnostics.export": "Supportdatei exportieren…",
   "help.diagnostics.export.explain": "Eine Supportdatei auf diesem Mac speichern und an ein GitHub-Issue oder einen Pull Request anhängen; Bronze lädt sie nie hoch.",
+  "help.diagnostics.export.done": "Die Supportdatei liegt auf diesem Mac.",
+  "help.diagnostics.export.failed": "Die Supportdatei konnte nicht gespeichert werden.",
   "help.limitations.heading": "Bekannte Einschränkungen",
   "help.limitations.humanGates": "Zugriffsberechtigung, Erfassen aus anderen Apps, mehrere Displays, VoiceOver und die Apple-Signierung müssen noch von einer Person auf einem signierten Mac geprüft werden.",
   "help.upload.none": "Bronze lädt Diagnosen oder die Supportdatei niemals automatisch hoch, sodass alles auf diesem Mac bleibt.",

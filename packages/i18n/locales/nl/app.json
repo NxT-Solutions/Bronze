@@ -219,6 +219,8 @@
   "help.diagnostics.preview": "Als er iets misgaat",
   "help.diagnostics.export": "Ondersteuningsbestand exporteren…",
   "help.diagnostics.export.explain": "Sla een ondersteuningsbestand op deze Mac op en voeg het toe aan een GitHub-issue of pull request; Bronze uploadt het nooit.",
+  "help.diagnostics.export.done": "Het ondersteuningsbestand staat op deze Mac.",
+  "help.diagnostics.export.failed": "Het ondersteuningsbestand kon niet worden opgeslagen.",
   "help.limitations.heading": "Bekende beperkingen",
   "help.limitations.humanGates": "Toegankelijkheidsrechten, vastleggen uit andere apps, meerdere beeldschermen, VoiceOver en Apple-ondertekening moeten nog door een persoon op een ondertekende Mac worden nagelopen.",
   "help.upload.none": "Bronze uploadt diagnostiek of het ondersteuningsbestand nooit automatisch, dus alles blijft op deze Mac.",

@@ -17,6 +17,7 @@ test("local help previews redacted diagnostics without automatic upload", () => 
   assert.match(html, /data-slot="help"/);
   assert.match(html, /data-automatic-upload="false"/);
   assert.match(html, /data-diagnostics-preview/);
+  assert.match(html, /data-export-support/);
   assert.match(html, /data-i18n="help.capture.composer"/);
   assert.match(html, /3\.9/);
   assert.match(html, /9\.3/);

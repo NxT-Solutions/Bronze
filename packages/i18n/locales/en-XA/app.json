@@ -219,6 +219,8 @@
   "help.diagnostics.preview": "【ÍIff ssóomméetthhíiñngg bbrréeáakkss】",
   "help.diagnostics.export": "【ÉExxppóorrtt SSúuppppóorrtt FFíillée…】",
   "help.diagnostics.export.explain": "【SSáavvée áa ssúuppppóorrtt ffíillée óoñn tthhíiss MMáaçc áañndd áattttáaçchh íitt ttóo áa GGíittHHúubb íissssúuée óorr ppúullll rréeqqúuéesstt; BBrróoñnzzée ñnéevvéerr úuppllóoáaddss íitt.】",
+  "help.diagnostics.export.done": "【SSáavvéedd tthhée ssúuppppóorrtt ffíillée óoñn tthhíiss MMáaçc.】",
+  "help.diagnostics.export.failed": "【TThhée ssúuppppóorrtt ffíillée çcóoúulldd ñnóott bbée ssáavvéedd.】",
   "help.limitations.heading": "【KKñnóowwñn llíimmíittáattíióoñnss】",
   "help.limitations.humanGates": "【ÁAçcçcéessssíibbíillíittyy ppéerrmmíissssíióoñn, çcáappttúurrée ffrróomm óotthhéerr áappppss, mmúullttíippllée ddíisspplláayyss, VVóoíiçcéeÓOvvéerr, áañndd ÁAppppllée ssíiggñníiñngg ssttíillll ñnéeéedd áa ppéerrssóoñn óoñn áa ssíiggñnéedd MMáaçc.】",
   "help.upload.none": "【BBrróoñnzzée ddóoéess ñnóott úuppllóoáadd ddíiáaggñnóossttíiçcss óorr tthhée ssúuppppóorrtt ffíillée áaúuttóommáattíiçcáallllyy, ssóo éevvéerryytthhíiñngg ssttáayyss óoñn tthhíiss MMáaçc.】",
