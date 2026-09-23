@@ -217,9 +217,10 @@
   "help.about": "Informazioni su Bronze",
   "help.about.body": "Bronze è una coda di lavoro locale per il testo che selezioni, così puoi usarlo senza lasciare questo Mac.",
   "help.diagnostics.preview": "Se qualcosa non va",
-  "help.diagnostics.export": "Salva file di supporto…",
-  "help.diagnostics.export.explain": "Salva un file di supporto su questo Mac da inviare a una persona; Bronze non lo invia da solo.",
-  "help.limitations.humanGates": "La convalida umana resta in backlog: storie 3.9, 3.10, 5.5 e 9.3.",
+  "help.diagnostics.export": "Esporta file di supporto…",
+  "help.diagnostics.export.explain": "Salva un file di supporto su questo Mac e allegalo a una issue o pull request GitHub; Bronze non lo carica mai.",
+  "help.limitations.heading": "Limitazioni note",
+  "help.limitations.humanGates": "Il permesso di accessibilità, la cattura da altre app, più display, VoiceOver e la firma Apple devono ancora essere verificati da una persona su un Mac firmato.",
   "help.upload.none": "Bronze non carica mai automaticamente diagnostica o il file di supporto, quindi tutto resta su questo Mac.",
   "help.capture.heading": "Come catturare",
   "help.capture.composer": "Seleziona testo in qualsiasi app, incluso Bronze, poi Cattura dalla barra dei menu, usa il collegamento Cattura in Impostazioni oppure digita nel campo quando la cattura non è disponibile."

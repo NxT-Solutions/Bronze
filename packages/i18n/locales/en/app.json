@@ -217,9 +217,10 @@
   "help.about": "About Bronze",
   "help.about.body": "Bronze is a local work queue for text you select, so you can act on it without leaving this Mac.",
   "help.diagnostics.preview": "If something breaks",
-  "help.diagnostics.export": "Save Support File…",
-  "help.diagnostics.export.explain": "Save a support file on this Mac that you can send to a person; Bronze never sends it itself.",
-  "help.limitations.humanGates": "Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.",
+  "help.diagnostics.export": "Export Support File…",
+  "help.diagnostics.export.explain": "Save a support file on this Mac and attach it to a GitHub issue or pull request; Bronze never uploads it.",
+  "help.limitations.heading": "Known limitations",
+  "help.limitations.humanGates": "Accessibility permission, capture from other apps, multiple displays, VoiceOver, and Apple signing still need a person on a signed Mac.",
   "help.upload.none": "Bronze does not upload diagnostics or the support file automatically, so everything stays on this Mac.",
   "help.capture.heading": "How to capture",
   "help.capture.composer": "Select text in any app including Bronze, then Capture from the menu bar, use the Capture selection shortcut from Settings, or type into the composer when capture is unavailable."

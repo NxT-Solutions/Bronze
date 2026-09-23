@@ -217,9 +217,10 @@
   "help.about": "À propos de Bronze",
   "help.about.body": "Bronze est une file de travail locale pour le texte que vous sélectionnez, afin d’agir dessus sans quitter ce Mac.",
   "help.diagnostics.preview": "En cas de problème",
-  "help.diagnostics.export": "Enregistrer le fichier d’assistance…",
-  "help.diagnostics.export.explain": "Enregistrez un fichier d’assistance sur ce Mac que vous pouvez envoyer à quelqu’un ; Bronze ne l’envoie jamais lui-même.",
-  "help.limitations.humanGates": "La validation humaine reste en backlog : récits 3.9, 3.10, 5.5 et 9.3.",
+  "help.diagnostics.export": "Exporter le fichier d’assistance…",
+  "help.diagnostics.export.explain": "Enregistrez un fichier d’assistance sur ce Mac et joignez-le à une issue ou une pull request GitHub ; Bronze ne le téléverse jamais.",
+  "help.limitations.heading": "Limites connues",
+  "help.limitations.humanGates": "L’autorisation d’accessibilité, la capture depuis d’autres apps, les écrans multiples, VoiceOver et la signature Apple doivent encore être vérifiés par une personne sur un Mac signé.",
   "help.upload.none": "Bronze n’envoie jamais automatiquement les diagnostics ni le fichier d’assistance, donc tout reste sur ce Mac.",
   "help.capture.heading": "Comment capturer",
   "help.capture.composer": "Sélectionnez du texte dans n’importe quelle app, y compris Bronze, puis Capturer depuis la barre de menus, utilisez le raccourci Capturer de Réglages, ou saisissez dans le champ lorsque la capture est indisponible."

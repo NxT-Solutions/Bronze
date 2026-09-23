@@ -22,9 +22,15 @@ test("local help previews redacted diagnostics and lists human gates", () => {
   assert.match(html, /3\.9/);
   assert.match(html, /9\.3/);
   assert.doesNotMatch(html, /fetch\(|xmlhttprequest|https:\/\//i);
+  assert.equal(en["help.limitations.heading"], "Known limitations");
   assert.equal(
     en["help.limitations.humanGates"],
-    "Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.",
+    "Accessibility permission, capture from other apps, multiple displays, VoiceOver, and Apple signing still need a person on a signed Mac.",
+  );
+  assert.equal(en["help.diagnostics.export"], "Export Support File…");
+  assert.equal(
+    en["help.diagnostics.export.explain"],
+    "Save a support file on this Mac and attach it to a GitHub issue or pull request; Bronze never uploads it.",
   );
   assert.equal(
     en["help.upload.none"],

@@ -282,6 +282,7 @@ export const MessageIds = {
   "help.diagnostics.preview": "help.diagnostics.preview",
   "help.diagnostics.export": "help.diagnostics.export",
   "help.diagnostics.export.explain": "help.diagnostics.export.explain",
+  "help.limitations.heading": "help.limitations.heading",
   "help.limitations.humanGates": "help.limitations.humanGates",
   "help.upload.none": "help.upload.none",
   "help.capture.heading": "help.capture.heading",
