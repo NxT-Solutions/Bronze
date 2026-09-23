@@ -21,11 +21,7 @@ pub enum BundleError {
 }
 
 fn looks_secret(text: &str) -> bool {
-    let lower = text.to_ascii_lowercase();
-    lower.contains("secret")
-        || lower.contains("password")
-        || lower.contains("token")
-        || lower.contains("hunter2")
+    crate::report::contains_forbidden_payload(text)
 }
 
 pub fn preview_bundle(events: &[DiagnosticEvent]) -> Result<BundlePreview, BundleError> {

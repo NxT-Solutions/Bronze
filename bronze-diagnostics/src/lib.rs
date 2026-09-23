@@ -6,8 +6,13 @@
 use std::fmt;
 
 mod bundle;
+mod report;
 pub use bundle::{
     export_bundle, preview_bundle, BundleError, BundlePreview, AUTOMATIC_UPLOAD, HUMAN_GATES,
+};
+pub use report::{
+    contains_forbidden_payload, redact_home_path, render_support_report, SupportEventLine,
+    SupportNamedState, SupportQueueCounts, SupportReport, SupportSourceApp, LAST_HOUR_MS,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

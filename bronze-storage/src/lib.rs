@@ -2,6 +2,7 @@
 
 mod backup;
 mod composer;
+mod diagnostics;
 mod export;
 mod migrate;
 mod profiles;
@@ -13,6 +14,10 @@ mod undo;
 
 pub use backup::{BackupError, BackupSchedule};
 pub use composer::{ComposerDraft, ComposerError};
+pub use diagnostics::{
+    DiagStoreError, DiagnosticEventRow, QueueStatusCounts, RecentSourceRow, APP_SCHEMA_VERSION,
+    DIAGNOSTIC_WINDOW_MS,
+};
 pub use export::{
     check_entry_path, filter_settings_for_export, ExportError, ExportPreview, ImportError,
     ImportPreview, ImportStrategy, Overwrite, EXPORT_FORMAT, EXPORT_VERSION,

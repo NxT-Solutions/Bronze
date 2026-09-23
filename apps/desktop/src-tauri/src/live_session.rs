@@ -13,7 +13,10 @@ use bronze_capture::{
 };
 #[cfg(test)]
 use bronze_capture::{ax_capture, FakeAxTree};
-use bronze_diagnostics::{export_bundle, preview_bundle, AUTOMATIC_UPLOAD};
+use bronze_diagnostics::{
+    redact_home_path, render_support_report, SupportEventLine, SupportNamedState,
+    SupportQueueCounts, SupportReport, SupportSourceApp, AUTOMATIC_UPLOAD, LAST_HOUR_MS,
+};
 use bronze_domain::{
     default_output_profile, ComposerChord, OutputFormat, OutputProfile, PostCopyAction,
 };
@@ -22,6 +25,8 @@ use bronze_platform_macos::{
     try_pick_settings_export_path, try_pick_settings_import_path, try_pick_support_export_path,
     PickSettingsFile, SettingsFileError,
 };
+#[cfg(not(test))]
+use bronze_platform_macos::{snapshot_from_preflight, MacosPreflightHost};
 use bronze_settings::{
     apply_recorded_double_tap_timing, default_shortcut_binding, effective_tap_count,
     export_settings_document, is_default_binding, logical_key_allowed, parse_settings_import,
@@ -29,11 +34,11 @@ use bronze_settings::{
     CaptureAlternatives, Modifier, NativeRegistrar, RegisterError, SettingsExportPreview,
     SettingsGroup, SettingsImportError, SettingsV1, ShortcutActionId, ShortcutBinding,
     ShortcutRegistry, ShortcutScope, TestedState, TitleModelId, TriggerKind, MAX_MODIFIER_TAPS,
-    SETTINGS_EXPORT_FORMAT, SETTINGS_EXPORT_VERSION,
+    SCHEMA_VERSION, SETTINGS_EXPORT_FORMAT, SETTINGS_EXPORT_VERSION,
 };
 use bronze_storage::{
-    ComposerDraft, ImportStrategy, NoopBackup, Overwrite, PathLocator, QueueAction, QueueItemRow,
-    Store, ADR_018_STATUS, QUE_007_COMPLETE,
+    ComposerDraft, DiagnosticEventRow, ImportStrategy, NoopBackup, Overwrite, PathLocator,
+    QueueAction, QueueItemRow, Store, ADR_018_STATUS, APP_SCHEMA_VERSION, QUE_007_COMPLETE,
 };
 use bronze_title_model::{
     auto_pick_title_tier, present_gguf_tiers, request_tier, TitleTier, GGUF_TIERS,
@@ -509,6 +514,16 @@ pub struct LiveSession {
     data_dir: PathBuf,
 }
 
+struct TerminalDiag {
+    stage: &'static str,
+    result: &'static str,
+    trigger: &'static str,
+    provider: &'static str,
+    source_bundle_id: Option<String>,
+    store_result: Option<&'static str>,
+    duration_ms: Option<i64>,
+}
+
 impl LiveSession {
     pub fn open(data_dir: PathBuf) -> Result<Self, String> {
         fs::create_dir_all(&data_dir).map_err(|err| err.to_string())?;
@@ -616,6 +631,31 @@ impl LiveSession {
     }
 
     pub fn persist_selection(
+        &mut self,
+        host: &dyn SelectionHost,
+        announcer: &mut dyn Announcer,
+        webview_visible: bool,
+    ) -> Result<CapturePersistOutcome, String> {
+        let peeked = host.peek_bundle_id();
+        let started = now_ms();
+        let outcome = self.persist_selection_apply(host, announcer, webview_visible)?;
+        self.record_terminal_diag(TerminalDiag {
+            stage: capture_stage(outcome.reason),
+            result: capture_result_code(outcome.reason),
+            trigger: "menu",
+            provider: "ax",
+            source_bundle_id: peeked,
+            store_result: Some(if outcome.terminal == Terminal::Saved {
+                "ok"
+            } else {
+                "failed"
+            }),
+            duration_ms: Some(now_ms().saturating_sub(started)),
+        });
+        Ok(outcome)
+    }
+
+    fn persist_selection_apply(
         &mut self,
         host: &dyn SelectionHost,
         announcer: &mut dyn Announcer,
@@ -812,6 +852,31 @@ impl LiveSession {
     }
 
     pub fn copy_items(
+        &mut self,
+        item_ids: &[String],
+        profile: &str,
+        board: &mut impl Pasteboard,
+    ) -> Result<String, String> {
+        let started = now_ms();
+        let result = self.copy_items_apply(item_ids, profile, board);
+        let (result_code, store_result) = match &result {
+            Ok(_) => ("ok", "ok"),
+            Err(err) if err == "copy_empty" => ("no_selection", "failed"),
+            Err(_) => ("persist_failed", "failed"),
+        };
+        self.record_terminal_diag(TerminalDiag {
+            stage: "clipboard",
+            result: result_code,
+            trigger: "manual_clipboard",
+            provider: "clipboard",
+            source_bundle_id: None,
+            store_result: Some(store_result),
+            duration_ms: Some(now_ms().saturating_sub(started)),
+        });
+        result
+    }
+
+    fn copy_items_apply(
         &mut self,
         item_ids: &[String],
         profile: &str,
@@ -1100,12 +1165,8 @@ impl LiveSession {
     }
 
     pub fn preview_support_text(&self) -> Result<String, String> {
-        let preview = preview_bundle(&[]).map_err(|_| "support_secret")?;
-        Ok(format!(
-            "events={} limits={}",
-            preview.event_count,
-            preview.known_limitations.join(",")
-        ))
+        let report = self.build_support_report();
+        render_support_report(&report).map_err(|_| "support_secret".into())
     }
 
     pub fn export_support_to_path(&self, dest: &Path) -> Result<String, String> {
@@ -1119,14 +1180,108 @@ impl LiveSession {
         if let Some(parent) = accepted.parent() {
             fs::create_dir_all(parent).map_err(|err| err.to_string())?;
         }
-        let preview = preview_bundle(&[]).map_err(|_| "support_secret")?;
-        let body = export_bundle(&preview, true).map_err(|_| "support_secret")?;
+        let body = self.preview_support_text()?;
         fs::write(&accepted, body).map_err(|err| err.to_string())?;
         Ok(accepted
             .file_name()
             .and_then(|name| name.to_str())
             .unwrap_or("bronze-support.txt")
             .to_string())
+    }
+
+    fn build_support_report(&self) -> SupportReport {
+        let now = now_ms();
+        let since = now.saturating_sub(LAST_HOUR_MS as i64);
+        let events = self
+            .store
+            .list_diagnostics_since(since)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|row| SupportEventLine {
+                occurred_at_ms: row.occurred_at_ms as u64,
+                request_id: row.request_id,
+                stage: row.stage,
+                result: row.result_code,
+                duration_ms: row.duration_ms.and_then(|ms| u32::try_from(ms).ok()),
+                trigger_kind: row.trigger_kind,
+                source_bundle_id: row.source_bundle_id,
+            })
+            .collect();
+        let recent_sources = self
+            .store
+            .list_sources_since(since)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|row| SupportSourceApp {
+                bundle_id: row.bundle_id.unwrap_or_default(),
+                app_name: row.app_name.unwrap_or_default(),
+            })
+            .collect();
+        let counts = self.store.queue_status_counts().unwrap_or_default();
+        let engine = bronze_title_model::current_status();
+        SupportReport {
+            generated_at_ms: now as u64,
+            app_version: env!("CARGO_PKG_VERSION").into(),
+            toolchain: "1.98.1".into(),
+            rust_min: env!("CARGO_PKG_RUST_VERSION").into(),
+            tauri_version: "2.11.3".into(),
+            rusqlite_version: "0.32".into(),
+            settings_schema: SCHEMA_VERSION.to_string(),
+            store_schema: self
+                .store
+                .schema_version()
+                .unwrap_or(APP_SCHEMA_VERSION)
+                .to_string(),
+            os: std::env::consts::OS.into(),
+            os_version: macos_os_version(),
+            arch: std::env::consts::ARCH.into(),
+            model: macos_model(),
+            data_path: redact_home_path(&self.data_dir.to_string_lossy()),
+            login_item_setting: if self.settings.general.launch_at_login {
+                "on".into()
+            } else {
+                "off".into()
+            },
+            login_item_status: bronze_platform_macos::login_item_status().as_str().into(),
+            title_engine_tier: engine.tier.as_str().into(),
+            title_engine_phase: engine.phase.as_str().into(),
+            permissions: support_permission_rows(),
+            queue: SupportQueueCounts {
+                queued: counts.queued,
+                copied: counts.copied,
+                active: counts.active,
+                done: counts.done,
+                skipped: counts.skipped,
+                trashed: counts.trashed,
+            },
+            excluded_bundle_ids: self.settings.privacy.excluded_bundle_ids.clone(),
+            recent_sources,
+            events,
+            last_hour_ms: LAST_HOUR_MS,
+        }
+    }
+
+    fn record_terminal_diag(&self, diag: TerminalDiag) {
+        let now = now_ms();
+        let row = DiagnosticEventRow {
+            id: next_diag_id(now),
+            occurred_at_ms: now,
+            request_id: format!("r{now}"),
+            stage: diag.stage.into(),
+            result_code: diag.result.into(),
+            duration_ms: diag.duration_ms,
+            trigger_kind: diag.trigger.into(),
+            provider_kind: Some(diag.provider.into()),
+            permission_state: None,
+            source_bundle_id: diag.source_bundle_id,
+            app_schema_version: APP_SCHEMA_VERSION,
+            queue_depth: None,
+            overflow_count: None,
+            tap_health: None,
+            store_result_code: diag.store_result.map(str::to_string),
+            build_id: env!("CARGO_PKG_VERSION").into(),
+        };
+        let _ = self.store.insert_diagnostic_event(&row);
     }
 
     fn settings_export_preview(&self) -> Result<SettingsExportPreview, String> {
@@ -1347,6 +1502,107 @@ fn next_item_id(now: i64) -> String {
         "i{now}-{}",
         SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     )
+}
+
+fn next_diag_id(now: i64) -> String {
+    static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    format!(
+        "d{now}-{}",
+        SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    )
+}
+
+fn capture_stage(reason: &str) -> &'static str {
+    match reason {
+        "ok" | "failed" => "store",
+        "no_selection" => "selection",
+        _ => "ax",
+    }
+}
+
+fn capture_result_code(reason: &str) -> &'static str {
+    match reason {
+        "ok" => "ok",
+        "app_excluded" => "app_excluded",
+        "protected" => "protected_content",
+        "no_selection" => "no_selection",
+        "accessibility" => "context_unavailable",
+        _ => "persist_failed",
+    }
+}
+
+fn support_permission_rows() -> Vec<SupportNamedState> {
+    #[cfg(test)]
+    {
+        vec![
+            SupportNamedState {
+                name: "input_monitoring".into(),
+                state: "unavailable".into(),
+            },
+            SupportNamedState {
+                name: "accessibility".into(),
+                state: "unavailable".into(),
+            },
+            SupportNamedState {
+                name: "capture_pipeline_self_test".into(),
+                state: "unknown".into(),
+            },
+        ]
+    }
+    #[cfg(not(test))]
+    {
+        let snapshot = snapshot_from_preflight(&MacosPreflightHost);
+        vec![
+            SupportNamedState {
+                name: "input_monitoring".into(),
+                state: snapshot.input_monitoring.as_str().into(),
+            },
+            SupportNamedState {
+                name: "accessibility".into(),
+                state: snapshot.accessibility.as_str().into(),
+            },
+            SupportNamedState {
+                name: "capture_pipeline_self_test".into(),
+                state: snapshot.capture_pipeline_self_test.as_str().into(),
+            },
+        ]
+    }
+}
+
+fn macos_os_version() -> String {
+    let Ok(raw) = fs::read_to_string("/System/Library/CoreServices/SystemVersion.plist") else {
+        return "unavailable".into();
+    };
+    match plist_string_value(&raw, "ProductVersion") {
+        Some(version) if !version.is_empty() => version,
+        _ => "unavailable".into(),
+    }
+}
+
+fn plist_string_value(plist: &str, key: &str) -> Option<String> {
+    let needle = format!("<key>{key}</key>");
+    let after = plist.split(&needle).nth(1)?;
+    let start = after.find("<string>")? + 8;
+    let end = after.get(start..)?.find("</string>")?;
+    Some(after[start..start + end].trim().to_string())
+}
+
+fn macos_model() -> String {
+    let Ok(output) = std::process::Command::new("/usr/sbin/sysctl")
+        .args(["-n", "hw.model"])
+        .output()
+    else {
+        return "unavailable".into();
+    };
+    if !output.status.success() {
+        return "unavailable".into();
+    }
+    let model = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if model.is_empty() || bronze_diagnostics::contains_forbidden_payload(&model) {
+        "unavailable".into()
+    } else {
+        model
+    }
 }
 
 fn now_ms() -> i64 {
@@ -2161,11 +2417,59 @@ mod live_session_tests {
 
     #[test]
     fn support_export_writes_redacted_txt_without_webview_path() {
-        let session = open_session();
+        use bronze_capture::{AxRole, FakeAnnouncer, FakeAxNode, FakeAxTree, FakeSelection};
+        let mut session = open_session();
+        let host = FakeSelectionHost {
+            tree: FakeAxTree {
+                nodes: vec![FakeAxNode::new(
+                    AxRole::TextArea,
+                    None,
+                    FakeSelection::Text("  captured  ".into()),
+                    None,
+                )],
+                focused: Some(0),
+                excluded: false,
+                accessibility_granted: true,
+            },
+            source_app_name: Some("TextEdit".into()),
+            source_bundle_id: Some("com.apple.TextEdit".into()),
+        };
+        let mut announce = FakeAnnouncer::default();
+        let persisted = session
+            .persist_selection(&host, &mut announce, false)
+            .expect("persist");
+        assert_eq!(persisted.reason, "ok");
+        let mut board = FakePasteboard::default();
+        let copied = session
+            .copy_items(
+                &[persisted.item_id.clone().expect("id")],
+                "plain",
+                &mut board,
+            )
+            .expect("copy");
+        assert_eq!(copied, "  captured  ");
         let preview = session.preview_support_text().expect("preview");
-        assert!(preview.contains("events=0"));
-        assert!(preview.contains("3.9"));
+        assert!(!preview.contains("events=0"));
+        for needle in [
+            "version=",
+            "os=",
+            "arch=",
+            "schema=",
+            "path=",
+            "input_monitoring=",
+            "human_gates=",
+            "Last-hour diagnostic events",
+            "Last-hour copy attempts",
+            "3.9",
+        ] {
+            assert!(preview.contains(needle), "missing {needle}");
+        }
         assert!(!preview.contains("http"));
+        assert!(!preview.contains("hunter2"));
+        assert!(preview.contains("stage=store"));
+        assert!(preview.contains("stage=clipboard"));
+        assert!(preview.contains("com.apple.TextEdit"));
+        assert!(!preview.contains("captured"));
         let dest = std::env::temp_dir().join(format!(
             "bronze-support-{}.txt",
             SEQ.fetch_add(1, Ordering::Relaxed)
@@ -2173,6 +2477,13 @@ mod live_session_tests {
         let name = session.export_support_to_path(&dest).expect("export");
         assert_eq!(name, dest.file_name().unwrap().to_str().unwrap());
         let body = fs::read_to_string(&dest).expect("read");
+        let strip_clock = |text: &str| {
+            text.lines()
+                .filter(|line| !line.starts_with("generated_at_ms="))
+                .collect::<Vec<_>>()
+                .join("\n")
+        };
+        assert_eq!(strip_clock(&preview), strip_clock(&body));
         assert!(body.contains("3.9"));
         assert!(!body.contains("hunter2"));
         assert!(!body.contains("http"));
@@ -2183,6 +2494,17 @@ mod live_session_tests {
                 .unwrap_err(),
             "support_path_invalid"
         );
+        let src = include_str!("live_session.rs");
+        assert!(src.contains("record_terminal_diag"));
+        assert!(src.contains("insert_diagnostic_event"));
+        let tap = include_str!(
+            "../../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        );
+        assert!(!tap.contains("insert_diagnostic_event"));
+        assert!(!tap.contains("preview_support"));
+        assert!(!tap.contains("export_support"));
+        assert!(!tap.contains("render_support_report"));
+        assert!(!tap.contains("SMAppService"));
         let _ = fs::remove_file(&dest);
     }
 

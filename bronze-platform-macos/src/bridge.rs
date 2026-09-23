@@ -741,6 +741,12 @@ mod tests {
             "/usr/bin/open",
             "URLSession",
             "LanguageModel",
+            "insert_diagnostic_event",
+            "diagnostic_events",
+            "preview_support",
+            "export_support",
+            "render_support_report",
+            "SupportReport",
         ] {
             assert!(
                 !engine.contains(needle),
