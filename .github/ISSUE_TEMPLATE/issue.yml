@@ -1,0 +1,62 @@
+name: Report a problem
+description: Use this form for every issue. Attach the local support file from Help.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        In Bronze, open Help and choose Export Support File…. Attach
+        bronze-support.txt to this issue. Bronze never uploads that file.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "15.6"
+    validations:
+      required: true
+  - type: input
+    id: bronze
+    attributes:
+      label: Bronze version
+      placeholder: 0.1.0 or tauri dev
+    validations:
+      required: true
+  - type: textarea
+    id: support-report
+    attributes:
+      label: Support report
+      description: >
+        Attach bronze-support.txt to this issue. If you cannot attach a
+        file, paste the file contents here.
+      render: text
+    validations:
+      required: false
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Before you send
+      options:
+        - label: I used Help → Export Support File…, or I explained why I could not.
+          required: true
+        - label: This report does not include selected text, passwords, or tokens.
+          required: true
+        - label: I know Bronze does not upload diagnostics automatically.
+          required: true
