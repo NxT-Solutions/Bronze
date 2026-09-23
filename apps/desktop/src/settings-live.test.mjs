@@ -16,11 +16,13 @@ import {
   formatTitleModelStatus,
   isSafeBundleId,
   isSafeDisplayName,
+  parseLoginItemStatus,
   parseTitleModelId,
   patchSettingsFromForm,
   pickExcludedApp,
   pickerFailureCode,
   readExcludedBundleIds,
+  refreshLoginItemStatus,
   refreshTitleModelStatus,
   renderExportPreview,
   resolveExcludedApps,
@@ -43,6 +45,7 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
       locale: "system",
       titleModel: "smol-360",
       reduceMotion: "system",
+      launchAtLogin: false,
     },
     data: { backupSchedule: "daily" },
     privacy: { excludedBundleIds: ["com.example"] },
@@ -53,6 +56,7 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   const locale = { value: "en" };
   const titleModel = { value: "extractive" };
   const reduceMotion = { value: "system" };
+  const launchAtLogin = { checked: false };
   const root = {
     querySelector(sel) {
       if (sel === "#backup-schedule") return schedule;
@@ -60,6 +64,7 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
       if (sel === "#ui-locale") return locale;
       if (sel === "#title-model") return titleModel;
       if (sel === "#reduce-motion") return reduceMotion;
+      if (sel === "#launch-at-login") return launchAtLogin;
       return null;
     },
   };
@@ -69,22 +74,27 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   assert.equal(locale.value, "en");
   assert.equal(titleModel.value, "smol-360");
   assert.equal(reduceMotion.value, "system");
+  assert.equal(launchAtLogin.checked, false);
   settings.general.locale = "nl";
   settings.general.reduceMotion = "off";
+  settings.general.launchAtLogin = true;
   applySettingsForm(root, settings);
   assert.equal(locale.value, "nl");
   assert.equal(reduceMotion.value, "off");
+  assert.equal(launchAtLogin.checked, true);
   schedule.value = "weekly";
   excluded.dataset.excludedIds = "com.one\ncom.two";
   locale.value = "fr";
   titleModel.value = "qwen-05";
   reduceMotion.value = "on";
+  launchAtLogin.checked = false;
   const next = patchSettingsFromForm(settings, root);
   assert.equal(next.data.backupSchedule, "weekly");
   assert.deepEqual(next.privacy.excludedBundleIds, ["com.one", "com.two"]);
   assert.equal(next.general.locale, "fr");
   assert.equal(next.general.titleModel, "qwen-05");
   assert.equal(next.general.reduceMotion, "on");
+  assert.equal(next.general.launchAtLogin, false);
   assert.equal(next.accessibility.motion, "on");
   assert.equal(switcherLocale("system"), "en");
   assert.equal(switcherLocale("de"), "de");
@@ -97,6 +107,42 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
     },
   );
   assert.equal(preserved.general.titleModel, "smol-135");
+});
+
+test("login item status stays honest when the command is missing", async () => {
+  assert.equal(parseLoginItemStatus("enabled"), "enabled");
+  assert.equal(parseLoginItemStatus("not_registered"), "not_registered");
+  assert.equal(parseLoginItemStatus("requires_approval"), "requires_approval");
+  assert.equal(parseLoginItemStatus("unavailable"), "unavailable");
+  assert.equal(parseLoginItemStatus("enabled_secret"), "unavailable");
+  const status = { hidden: true, dataset: {}, textContent: "" };
+  const listed = await refreshLoginItemStatus(
+    {
+      querySelector(sel) {
+        return sel === "[data-login-item-status]" ? status : null;
+      },
+    },
+    async () => {
+      throw new Error("denied");
+    },
+  );
+  assert.equal(listed, "unavailable");
+  assert.equal(status.hidden, false);
+  assert.equal(status.dataset.loginItemStatus, "unavailable");
+  assert.match(status.textContent, /debug build/);
+  const approved = await refreshLoginItemStatus(
+    {
+      querySelector(sel) {
+        return sel === "[data-login-item-status]" ? status : null;
+      },
+    },
+    async (cmd) => {
+      assert.equal(cmd, "login_item_status");
+      return "requires_approval";
+    },
+  );
+  assert.equal(approved, "requires_approval");
+  assert.equal(status.dataset.loginItemStatus, "requires_approval");
 });
 
 test("excluded app picker searches installed apps and keeps many ids", () => {
@@ -290,6 +336,12 @@ test("settings language switcher uses endonyms and option lang", () => {
   assert.match(html, /<option value="it" lang="it">🇮🇹 Italiano<\/option>/);
   assert.match(html, /data-reset-field="general.locale"/);
   assert.match(html, /data-reset-field="general.reduceMotion"/);
+  assert.match(html, /data-reset-field="general.launchAtLogin"/);
+  assert.match(html, /id="launch-at-login"/);
+  assert.match(html, /name="launchAtLogin"/);
+  assert.match(html, /data-login-item-status/);
+  assert.match(live, /login_item_status/);
+  assert.match(live, /#launch-at-login/);
   assert.match(html, /id="reduce-motion"/);
   assert.match(live, /emitMotionChanged/);
   assert.match(live, /emitUiLocaleChanged/);

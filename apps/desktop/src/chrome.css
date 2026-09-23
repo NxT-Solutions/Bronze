@@ -1454,6 +1454,14 @@ menu {
   min-width: 0;
 }
 
+.field-row input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+}
+
 .field-row button {
   flex: 0 0 auto;
 }

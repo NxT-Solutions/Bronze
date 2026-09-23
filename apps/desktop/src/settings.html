@@ -97,11 +97,59 @@
                   data-setting-info
                   data-i18n="settings.group.general.info"
                 >
-                  Language, motion, and the title engine for new captures.
+                  Launch at login, language, motion, and the title engine for new captures.
                 </p>
               </details>
             </div>
           </legend>
+          <div class="field-block" data-settings-unit>
+            <div class="setting-heading">
+              <label for="launch-at-login" data-i18n="settings.field.launchAtLogin">Launch at login</label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.launchAtLogin.infoName"
+                  aria-label="About Launch at login"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.field.launchAtLogin.info"
+                >
+                  Saves whether Bronze should open when this Mac starts; Login Items may still ask for approval, and a debug build that is not an app cannot register.
+                </p>
+              </details>
+            </div>
+            <p
+              id="launch-at-login-help"
+              class="muted field-help"
+              data-i18n="settings.field.launchAtLogin.help"
+            >
+              Starts Bronze when you log in to this Mac; off until you turn it on.
+            </p>
+            <p
+              class="muted field-help"
+              data-login-item-status
+              hidden
+            ></p>
+            <div class="field-row">
+              <input
+                id="launch-at-login"
+                type="checkbox"
+                name="launchAtLogin"
+                aria-describedby="launch-at-login-help"
+              />
+              <button
+                type="button"
+                class="btn-ghost"
+                data-reset-field="general.launchAtLogin"
+                data-i18n="settings.reset.field"
+              >
+                Reset field
+              </button>
+            </div>
+          </div>
           <div class="field-block" data-settings-unit>
             <div class="setting-heading">
               <label for="ui-locale" data-i18n="settings.field.locale">Language</label>

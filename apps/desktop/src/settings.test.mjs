@@ -90,6 +90,33 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /data-i18n-aria-label="settings.search.clear"/);
   assert.equal(en["settings.search.clear"], "Clear search");
   assert.match(html, /id="title-model"/);
+  assert.match(html, /id="launch-at-login"/);
+  assert.match(html, /type="checkbox"/);
+  assert.match(html, /name="launchAtLogin"/);
+  assert.match(html, /data-reset-field="general.launchAtLogin"/);
+  assert.match(html, /data-i18n="settings.field.launchAtLogin"/);
+  assert.match(html, /data-login-item-status/);
+  assert.match(
+    html,
+    />\s*Starts Bronze when you log in to this Mac; off until you turn it on\.\s*</,
+  );
+  assert.equal(en["settings.field.launchAtLogin"], "Launch at login");
+  assert.equal(
+    en["settings.field.launchAtLogin.help"],
+    "Starts Bronze when you log in to this Mac; off until you turn it on.",
+  );
+  assert.equal(
+    en["settings.field.launchAtLogin.infoName"],
+    "About Launch at login",
+  );
+  assert.equal(
+    en["settings.field.launchAtLogin.info"],
+    "Saves whether Bronze should open when this Mac starts; Login Items may still ask for approval, and a debug build that is not an app cannot register.",
+  );
+  assert.equal(
+    en["settings.field.launchAtLogin.status.unavailable"],
+    "This debug build cannot register as a login item.",
+  );
   assert.match(html, /id="reduce-motion"/);
   assert.match(html, /data-reset-field="general.reduceMotion"/);
   assert.match(html, /data-i18n="settings.field.reduceMotion"/);
@@ -121,8 +148,8 @@ test("settings window is searchable grouped with daily weekly backup and export 
   );
   assert.equal(en["settings.field.titleModel.infoName"], "About Title engine");
   assert.match(html, /class="setting-info"/);
-  assert.equal((html.match(/class="setting-info"/g) || []).length, 11);
-  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 11);
+  assert.equal((html.match(/class="setting-info"/g) || []).length, 12);
+  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 12);
   assert.match(html, /data-i18n="settings.field.titleModel.info"/);
   assert.match(html, /data-i18n-aria-label="settings.field.locale.infoName"/);
   assert.equal(

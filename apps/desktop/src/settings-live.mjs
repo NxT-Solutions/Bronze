@@ -690,11 +690,55 @@ function showExportStatus(root, key) {
         : "That settings file is not valid.");
 }
 
+const LOGIN_ITEM_STATUS_KEYS = Object.freeze({
+  enabled: "settings.field.launchAtLogin.status.enabled",
+  not_registered: "settings.field.launchAtLogin.status.notRegistered",
+  requires_approval: "settings.field.launchAtLogin.status.requiresApproval",
+  unavailable: "settings.field.launchAtLogin.status.unavailable",
+});
+
+const LOGIN_ITEM_STATUS_FALLBACK = Object.freeze({
+  enabled: "Registered to open at login.",
+  not_registered: "Not registered to open at login.",
+  requires_approval: "Saved on; allow Bronze in Login Items to finish.",
+  unavailable: "This debug build cannot register as a login item.",
+});
+
+export function parseLoginItemStatus(raw) {
+  if (raw && LOGIN_ITEM_STATUS_KEYS[raw]) {
+    return raw;
+  }
+  return "unavailable";
+}
+
+export async function refreshLoginItemStatus(root, invokeFn) {
+  const el = root.querySelector("[data-login-item-status]");
+  if (!el) {
+    return "unavailable";
+  }
+  let raw = "unavailable";
+  try {
+    raw = await invokeFn("login_item_status");
+  } catch {
+    raw = "unavailable";
+  }
+  const status = parseLoginItemStatus(raw);
+  const key = LOGIN_ITEM_STATUS_KEYS[status];
+  el.hidden = false;
+  el.dataset.loginItemStatus = status;
+  el.textContent = catalogMessage(key) || LOGIN_ITEM_STATUS_FALLBACK[status];
+  return status;
+}
+
 export function applySettingsForm(root, settings) {
   const schedule = root.querySelector("#backup-schedule");
   const locale = root.querySelector("#ui-locale");
   const titleModel = root.querySelector("#title-model");
   const host = root.querySelector("#excluded-apps");
+  const launchAtLogin = root.querySelector("#launch-at-login");
+  if (launchAtLogin) {
+    launchAtLogin.checked = Boolean(settings?.general?.launchAtLogin);
+  }
   if (schedule && settings?.data?.backupSchedule) {
     schedule.value = settings.data.backupSchedule;
   }
@@ -752,6 +796,10 @@ export function patchSettingsFromForm(settings, root) {
     }
     next.accessibility.motion = reduceEl;
   }
+  const launchAtLogin = root.querySelector("#launch-at-login");
+  if (launchAtLogin && typeof launchAtLogin.checked === "boolean") {
+    next.general.launchAtLogin = launchAtLogin.checked;
+  }
   return next;
 }
 
@@ -765,6 +813,7 @@ async function applySavedLocale(root, settings, invokeFn) {
     applyHandTestLocale(root, switcherLocale(settings?.general?.locale));
   }
   await refreshTitleModelStatus(root, invokeFn, settings);
+  await refreshLoginItemStatus(root, invokeFn);
 }
 
 export function bindSearchClear(root = document) {
@@ -961,6 +1010,7 @@ export async function bindSettingsLive(
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
     refreshExportPreview().catch(() => {});
     refreshTitleModelStatus(root, invokeFn, settings).catch(() => {});
+    refreshLoginItemStatus(root, invokeFn).catch(() => {});
   });
   await refreshExportPreview();
 
@@ -968,6 +1018,7 @@ export async function bindSettingsLive(
   root.querySelector("#ui-locale")?.addEventListener("change", persist);
   root.querySelector("#title-model")?.addEventListener("change", persist);
   root.querySelector("#reduce-motion")?.addEventListener("change", persist);
+  root.querySelector("#launch-at-login")?.addEventListener("change", persist);
 
   root.querySelectorAll("[data-reset-field]").forEach((button) => {
     button.addEventListener("click", () => {

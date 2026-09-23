@@ -89,6 +89,18 @@ export const MessageIds = {
   "settings.group.data.info": "settings.group.data.info",
   "settings.group.accessibility": "settings.group.accessibility",
   "settings.field.launchAtLogin": "settings.field.launchAtLogin",
+  "settings.field.launchAtLogin.infoName":
+    "settings.field.launchAtLogin.infoName",
+  "settings.field.launchAtLogin.info": "settings.field.launchAtLogin.info",
+  "settings.field.launchAtLogin.help": "settings.field.launchAtLogin.help",
+  "settings.field.launchAtLogin.status.enabled":
+    "settings.field.launchAtLogin.status.enabled",
+  "settings.field.launchAtLogin.status.notRegistered":
+    "settings.field.launchAtLogin.status.notRegistered",
+  "settings.field.launchAtLogin.status.requiresApproval":
+    "settings.field.launchAtLogin.status.requiresApproval",
+  "settings.field.launchAtLogin.status.unavailable":
+    "settings.field.launchAtLogin.status.unavailable",
   "settings.field.backupSchedule": "settings.field.backupSchedule",
   "settings.field.backupSchedule.infoName":
     "settings.field.backupSchedule.infoName",

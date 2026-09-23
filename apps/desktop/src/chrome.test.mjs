@@ -60,7 +60,8 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\.setting-info-mark/);
   assert.match(chrome, /\.setting-info-panel/);
   assert.match(pages[2].html, /class="setting-info"/);
-  assert.equal((pages[2].html.match(/class="setting-info"/g) || []).length, 11);
+  assert.equal((pages[2].html.match(/class="setting-info"/g) || []).length, 12);
+  assert.match(chrome, /input\[type="checkbox"\]/);
   assert.match(chrome, /\.btn-icon/);
   assert.match(chrome, /#composer-error\[hidden\]/);
   assert.match(chrome, /#capture-status\[hidden\]/);
