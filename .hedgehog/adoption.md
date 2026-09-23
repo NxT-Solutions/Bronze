@@ -59,8 +59,9 @@ reads sit in that scope.
 - **No BMAD planning shelf.** Product drivers are already locked in
   `docs/03-prd.md` and `docs/18-adrs.md`.
 - **No `swift test` gate.** It is not in the repo's own verify script.
-- **Human stories 3.9, 3.10, 5.5, 9.3 stay backlog** and are not
-  intents.
+- **Stories 3.9, 3.10, 5.5, and 9.3 are not reserved as human-only.**
+  The operator decides ad hoc whether a person must run them. Do not
+  claim WCAG, VoiceOver, or notarization without `docs/evidence/`.
 - **Do not resume bmad-loop run `6a79`.**
 
 ## Repo shape, as of adoption

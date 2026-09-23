@@ -55,8 +55,7 @@ the live queue.
 
 ## Help — `apps/desktop/src/help.html`
 
-Purpose: what Bronze is, how to capture, what is backlog, export a
-local bundle.
+Purpose: what Bronze is, how to capture, export a local bundle.
 
 - Prose stack: heading, then short paragraphs with vertical gap.
 - Diagnostics preview is secondary (mono caption).

@@ -150,7 +150,7 @@ EN 301 549 clause 12 means help/support must also be accessible. Provide:
 - complete shortcut table and remapping guidance;
 - supported-app matrix and failure recovery;
 - local/privacy/data backup explanation;
-- accessibility features and known limitations — including human gates 3.9, 3.10, 5.5, and 9.3;
+- accessibility features and known limitations;
 - redacted diagnostics preview before any local export; no automatic upload (SUP-001/002, SEC-006);
 - contact/support path usable without inaccessible form;
 - exported ACR/conformance matrix in accessible format.

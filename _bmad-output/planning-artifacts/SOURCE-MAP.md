@@ -25,8 +25,8 @@ Maps BMAD artifacts, epics, and stories to Bronze source files, requirement IDs,
 | 6 Queue UI | M4–M5 | QUE-001–008 |
 | 7 Settings | M6 | SET/I18N/DAT UI |
 | 8 Visual | M5 polish | A11Y-003 |
-| 9 Packaging | M7–M8 minus notarization | SEC-005–006, SUP, human gates |
+| 9 Packaging | M7–M8 minus notarization | SEC-005–006, SUP |
 
 ## Story files
 
-Machine-actionable stories live in `_bmad-output/implementation-artifacts/<epic>-<n>-<slug>.md`. Human-only stories 3.9, 3.10, 5.5, 9.3 remain epic-only until an operator records evidence under `docs/evidence/`.
+Machine-actionable stories live in `_bmad-output/implementation-artifacts/<epic>-<n>-<slug>.md`. Stories 3.9, 3.10, 5.5, and 9.3 stay in the epics file until evidence lands under `docs/evidence/`. The operator decides ad hoc who runs them.

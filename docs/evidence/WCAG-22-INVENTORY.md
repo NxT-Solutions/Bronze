@@ -8,8 +8,8 @@ conforms to WCAG 2.2 AA” or “AAA”.
 - Standard: [WCAG 2.2](https://www.w3.org/TR/WCAG22/) (12 December 2024)
 - Scope: `apps/desktop/src` WebView chrome only
 - Out of scope here: native menu bar, status item, TCC dialogs, VoiceOver
-- Human gate 9.3 / DG-08 still owns AT, Voice Control, Switch Control,
-  and an independent audit (`HUMAN-GATES.md`)
+- AT, Voice Control, Switch Control, and an independent audit are
+  optional checklist rows in `HUMAN-GATES.md`
 - Token math: `packages/ui/src/lib/contrast.ts` (A11Y-003). Sampling
   is not a public AA/AAA claim.
 

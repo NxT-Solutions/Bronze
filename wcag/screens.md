@@ -54,15 +54,13 @@ Purpose: find and manage stored items.
 
 ## Help — `apps/desktop/src/help.html`
 
-Purpose: what Bronze is, how to capture, what is backlog, export a
-local bundle.
+Purpose: what Bronze is, how to capture, export a local bundle.
 
 - Skip link → `#help-about`.
 - `h1` Help, `h2` About Bronze, `h2` Diagnostics preview.
 - Prose ≤80ch, line-height 1.5, not justified (1.4.8 Partial).
 - One filled control: Export Support Bundle….
 - No automatic upload (`data-automatic-upload="false"`).
-- Human gates named in copy. Do not claim those gates are done.
 
 ## Shared defects to refuse
 

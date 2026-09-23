@@ -51,7 +51,7 @@ Hand-test in the **native** window only:
 
 Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**. Shipped UI catalogs also exist for nl, fr, de, es, it, plus pseudo `en-XA` / `ar-XB`. Advertised locales stay **en**, **en-XA**, and **ar-XB**. No public human linguistic QA claim.
 
-**Still stub / backlog.** Event-tap live fire is `capture.selection` Shift N-tap from the shortcuts table; Option/Command/Control/Fn remaps of that action disable the Shift engine. Other seeded defaults persist without a live OS grab, and Quick Panel keydown still uses hardcoded composer chords. File and image attachments are out until a new ADR and threat-model update (ADR-001). Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
+**Still stub / backlog.** Event-tap live fire is `capture.selection` Shift N-tap from the shortcuts table; Option/Command/Control/Fn remaps of that action disable the Shift engine. Other seeded defaults persist without a live OS grab, and Quick Panel keydown still uses hardcoded composer chords. File and image attachments are out until a new ADR and threat-model update (ADR-001). After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
 
 **Permissions (macOS).** On native start, Bronze requests **Accessibility** and **Input Monitoring** when they are not already granted (real OS dialogs). The first capture path requests once more if still ungranted. Settings → permission health **Retest** re-attempts those prompts; if macOS will not show another dialog, use **Open System Settings** after that attempt (not instead of it).
 
@@ -67,7 +67,7 @@ See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a gr
 
 **Verify (maintainer bar, not required to launch):** `pnpm verify`. Local debug package (SEC-005): `tooling/package-debug.sh`.
 
-**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. ADR-019 (compact_title first, selectable offline GGUF refine) is **Proposed**. QUE-007 locale search is **blocked** on ADR-018. A live language switch updates open WebViews; it does not rebuild the native app menu. Human stories 3.9, 3.10, 5.5, and 9.3 stay backlog. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
+**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. ADR-019 (compact_title first, selectable offline GGUF refine) is **Proposed**. QUE-007 locale search is **blocked** on ADR-018. A live language switch updates open WebViews; it does not rebuild the native app menu. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
 
 ## Start here (planning pack)
 

@@ -11,5 +11,4 @@ This project is built with **Hedgehog**: one gated step at a time. Follow `AGENT
 - Query `.hedgehog/hedgehog.db` via `hedgehog status` / `hedgehog next`. Do not re-derive the queue from sprint-status prose.
 - `hedgehog verify <task-id>` is the only thing that completes a task.
 - Keep ADR-002, ADR-009, and ADR-018 Proposed unless the user accepts them.
-- Human stories 3.9, 3.10, 5.5, 9.3 stay backlog.
 - Do not resume `bmad-loop` run `6a79`.

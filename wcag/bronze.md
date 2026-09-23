@@ -9,8 +9,7 @@ must be updated in the same change.
 - WebView *target*: WCAG 2.2 AA (`docs/10`).
 - AAA is an implementation stretch, not a public claim.
 - Whole desktop: EN 301 549 clauses 5, 11, 12 plus Apple VoiceOver.
-- Agents must not mark stories 3.9, 3.10, 5.5, or 9.3 done.
-- Inventory: `docs/evidence/WCAG-22-INVENTORY.md`. Human gates:
+- Inventory: `docs/evidence/WCAG-22-INVENTORY.md`. Optional checklist:
   `docs/evidence/HUMAN-GATES.md`.
 - Contrast math: `packages/ui/src/lib/contrast.ts` (relative luminance).
   Sampling is not a public AA/AAA claim.

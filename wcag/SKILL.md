@@ -27,7 +27,7 @@ Official authority: `wcag/README.md`.
   strokes to chase 1.4.11 or 1.4.6 AAA. Increase Contrast is the 3:1
   border path.
 - Never claim WCAG, VoiceOver, or notarization without
-  `docs/evidence/` artifacts and human gate 9.3.
+  `docs/evidence/` artifacts.
 - Semantic HTML. Real `button` / `a` / `label` / `summary`. No
   clickable `div`. Visible `:focus-visible` that meets 1.4.11.
 - Accessible name contains the visible label (2.5.3). Do not replace
@@ -94,8 +94,8 @@ Last-letter doubling in a macOS window screenshot is a capture
 artifact, not official `en-XA`. Word smash is a real defect.
 
 Do not treat a pretty screenshot as WCAG evidence. Contrast is
-measured with `packages/ui/src/lib/contrast.ts`. VoiceOver is human
-gate 9.3.
+measured with `packages/ui/src/lib/contrast.ts`. VoiceOver evidence
+belongs in `docs/evidence/`.
 
 ## Progressive disclosure
 

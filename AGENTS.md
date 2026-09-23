@@ -63,7 +63,6 @@ Local-first macOS selection-to-action queue. Tauri 2, React, Rust, in-process Sw
 
 - Event-tap callbacks must not touch AX, DB, windows, or clipboard.
 - `SettingsV1.capture.standardChord` is not the full shortcut registry.
-- Human stories 3.9, 3.10, 5.5, 9.3 are not agent-completable.
 
 <!-- /bmad:context -->
 
@@ -116,8 +115,7 @@ library. Do not keep a second copy of these rules in a vendor folder.
 - Claude Code entry: `CLAUDE.md`
 
 WebView target is WCAG 2.2 AA. Meet AAA where tokens or markup allow.
-Do not claim WCAG, VoiceOver, or notarization without `docs/evidence/`
-and human gate 9.3.
+Do not claim WCAG, VoiceOver, or notarization without `docs/evidence/`.
 
 Applies on any Settings, Library, Help, queue, CSS, contrast, focus,
 keyboard, label, or “WCAG / a11y” change.

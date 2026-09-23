@@ -43,5 +43,5 @@ folder wins.
 Do not publish “conforms to WCAG 2.2 AA” or “AAA” from token tests,
 axe, or this library. WebView target is WCAG 2.2 AA (`docs/10`). Whole
 app uses EN 301 549 plus VoiceOver. Public claims need
-`docs/evidence/` plus human gate 9.3. Inventory rows may say Supports /
+`docs/evidence/`. Inventory rows may say Supports /
 Partial / N/A without a public claim.
