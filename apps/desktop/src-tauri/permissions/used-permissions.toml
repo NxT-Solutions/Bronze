@@ -79,3 +79,8 @@ commands.allow = [
 identifier = "allow-ui-catalog"
 description = "Read the effective UI locale and catalog strings"
 commands.allow = ["ui_locale", "ui_catalog"]
+
+[[permission]]
+identifier = "allow-help-support"
+description = "Preview and export a local redacted support file from Help"
+commands.allow = ["preview_support_bundle", "export_support_file"]

@@ -165,6 +165,10 @@ uint32_t bronze_native_pick_installed_app(bronze_native_utf8_view *out);
 uint32_t bronze_native_pick_settings_export_path(bronze_native_utf8_view *out);
 uint32_t bronze_native_pick_settings_import_path(bronze_native_utf8_view *out);
 
+// Rust-owned NSSavePanel for a redacted support text file. Owned UTF-8 path.
+// Path stays in Rust. CANCELLED when the operator dismisses.
+uint32_t bronze_native_pick_support_export_path(bronze_native_utf8_view *out);
+
 // Local Notification Center banner. Title and body are catalog strings only.
 // Never include captured selection or paths. DEGRADED when the payload is unsafe.
 uint32_t bronze_native_deliver_user_notice(

@@ -15,6 +15,7 @@ mod permission;
 mod settings_file;
 mod source_icon;
 mod status_item;
+mod support_file;
 mod title;
 mod user_notice;
 
@@ -60,6 +61,7 @@ pub use status_item::{
     build_status_menu, StatusAction, StatusMenuError, StatusMenuItem, StringCatalog,
     STATUS_MENU_KEYS,
 };
+pub use support_file::{accept_support_file_path, try_pick_support_export_path};
 pub use title::native_item_title;
 pub use user_notice::{
     is_safe_notice_text, notification_authorization_status,

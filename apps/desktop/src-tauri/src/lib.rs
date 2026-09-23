@@ -46,6 +46,8 @@ pub fn run() {
                 live_session::preview_settings_export,
                 live_session::export_settings_file,
                 live_session::import_settings_file,
+                live_session::preview_support_bundle,
+                live_session::export_support_file,
                 live_session::list_title_models,
                 title_refine::title_engine_status,
             ])
@@ -750,7 +752,8 @@ mod tests {
                     permissions,
                     &vec![
                         Value::String("core:default".into()),
-                        Value::String("allow-ui-catalog".into())
+                        Value::String("allow-ui-catalog".into()),
+                        Value::String("allow-help-support".into())
                     ]
                 );
             } else {

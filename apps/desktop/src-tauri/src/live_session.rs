@@ -13,12 +13,14 @@ use bronze_capture::{
 };
 #[cfg(test)]
 use bronze_capture::{ax_capture, FakeAxTree};
+use bronze_diagnostics::{export_bundle, preview_bundle, AUTOMATIC_UPLOAD};
 use bronze_domain::{
     default_output_profile, ComposerChord, OutputFormat, OutputProfile, PostCopyAction,
 };
 use bronze_platform_macos::{
-    accept_settings_file_path, read_settings_import_bytes, try_pick_settings_export_path,
-    try_pick_settings_import_path, PickSettingsFile, SettingsFileError,
+    accept_settings_file_path, accept_support_file_path, read_settings_import_bytes,
+    try_pick_settings_export_path, try_pick_settings_import_path, try_pick_support_export_path,
+    PickSettingsFile, SettingsFileError,
 };
 use bronze_settings::{
     apply_recorded_double_tap_timing, default_shortcut_binding, effective_tap_count,
@@ -46,6 +48,7 @@ pub const HAND_TEST_UI_LOCALE: &str = "en";
 pub const AX_CAPTURE_LIVE: bool = true;
 const _: () = assert!(AX_CAPTURE_LIVE);
 const _: () = assert!(!CAPTURE_ONLY_REVEALS_PANEL);
+const _: () = assert!(!AUTOMATIC_UPLOAD);
 
 pub fn is_overview_status(status: &str) -> bool {
     matches!(status, "queued" | "copied" | "active")
@@ -1091,6 +1094,36 @@ impl LiveSession {
         Ok(self.settings.clone())
     }
 
+    pub fn preview_support_text(&self) -> Result<String, String> {
+        let preview = preview_bundle(&[]).map_err(|_| "support_secret")?;
+        Ok(format!(
+            "events={} limits={}",
+            preview.event_count,
+            preview.known_limitations.join(",")
+        ))
+    }
+
+    pub fn export_support_to_path(&self, dest: &Path) -> Result<String, String> {
+        let accepted = accept_support_file_path(dest.to_str().unwrap_or_default())
+            .map_err(|_| "support_path_invalid")?;
+        accept_native_path(
+            PathSource::RustPicker,
+            accepted.to_str().ok_or("support_path_invalid")?,
+        )
+        .map_err(|_| "webview_path_rejected")?;
+        if let Some(parent) = accepted.parent() {
+            fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+        }
+        let preview = preview_bundle(&[]).map_err(|_| "support_secret")?;
+        let body = export_bundle(&preview, true).map_err(|_| "support_secret")?;
+        fs::write(&accepted, body).map_err(|err| err.to_string())?;
+        Ok(accepted
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("bronze-support.txt")
+            .to_string())
+    }
+
     fn settings_export_preview(&self) -> Result<SettingsExportPreview, String> {
         let profiles = self
             .store
@@ -1688,6 +1721,29 @@ pub fn import_settings_file(
     lock_session(&session)?.import_settings_from_path(&src)
 }
 
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn preview_support_bundle(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+) -> Result<String, String> {
+    lock_session(&session)?.preview_support_text()
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn export_support_file(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+    requested_path: Option<String>,
+) -> Result<String, String> {
+    reject_webview_path(requested_path)?;
+    let dest = match try_pick_support_export_path() {
+        PickSettingsFile::Picked(path) => path,
+        PickSettingsFile::Cancelled => return Err("picker_cancelled".into()),
+        PickSettingsFile::Unavailable => return Err("picker_unavailable".into()),
+    };
+    lock_session(&session)?.export_support_to_path(&dest)
+}
+
 fn reject_webview_path(requested_path: Option<String>) -> Result<(), String> {
     if requested_path
         .as_deref()
@@ -2043,11 +2099,42 @@ mod live_session_tests {
         assert!(used.contains("export_settings_file"));
         assert!(used.contains("import_settings_file"));
         assert!(used.contains("list_title_models"));
+        assert!(used.contains("preview_support_bundle"));
+        assert!(used.contains("export_support_file"));
         let src = include_str!("live_session.rs");
         assert!(src.contains("pub fn preview_settings_export"));
         assert!(src.contains("pub fn export_settings_file"));
         assert!(src.contains("pub fn import_settings_file"));
         assert!(src.contains("pub fn list_title_models"));
+        assert!(src.contains("pub fn preview_support_bundle"));
+        assert!(src.contains("pub fn export_support_file"));
+        let _ = fs::remove_file(&dest);
+    }
+
+    #[test]
+    fn support_export_writes_redacted_txt_without_webview_path() {
+        let session = open_session();
+        let preview = session.preview_support_text().expect("preview");
+        assert!(preview.contains("events=0"));
+        assert!(preview.contains("3.9"));
+        assert!(!preview.contains("http"));
+        let dest = std::env::temp_dir().join(format!(
+            "bronze-support-{}.txt",
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let name = session.export_support_to_path(&dest).expect("export");
+        assert_eq!(name, dest.file_name().unwrap().to_str().unwrap());
+        let body = fs::read_to_string(&dest).expect("read");
+        assert!(body.contains("3.9"));
+        assert!(!body.contains("hunter2"));
+        assert!(!body.contains("http"));
+        assert!(reject_webview_path(Some("/tmp/bronze-support.txt".into())).is_err());
+        assert_eq!(
+            session
+                .export_support_to_path(Path::new("/tmp/bronze-support.json"))
+                .unwrap_err(),
+            "support_path_invalid"
+        );
         let _ = fs::remove_file(&dest);
     }
 
@@ -2454,6 +2541,8 @@ mod live_session_tests {
         assert!(used.contains("import_settings_file"));
         assert!(used.contains("list_title_models"));
         assert!(used.contains("title_engine_status"));
+        assert!(used.contains("preview_support_bundle"));
+        assert!(used.contains("export_support_file"));
         assert!(src.contains("pub fn pick_installed_app()"));
         assert!(src.contains("picker_cancelled"));
         assert!(src.contains("picker_unavailable"));

@@ -27,6 +27,7 @@ bronze-title-model = { path = "../../../bronze-title-model" }
 bronze-storage = { path = "../../../bronze-storage" }
 bronze-settings = { path = "../../../bronze-settings" }
 bronze-capture = { path = "../../../bronze-capture" }
+bronze-diagnostics = { path = "../../../bronze-diagnostics" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"

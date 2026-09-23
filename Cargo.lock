@@ -183,6 +183,7 @@ name = "bronze-desktop"
 version = "0.1.0"
 dependencies = [
  "bronze-capture",
+ "bronze-diagnostics",
  "bronze-domain",
  "bronze-platform-macos",
  "bronze-settings",

@@ -147,6 +147,7 @@ mod settings_file_tests {
         ));
         assert!(swift.contains("bronze_native_pick_settings_export_path"));
         assert!(swift.contains("bronze_native_pick_settings_import_path"));
+        assert!(swift.contains("bronze_native_pick_support_export_path"));
         assert!(swift.contains("NSSavePanel"));
         assert!(swift.contains("bronze-settings.json"));
         assert!(swift.contains("allowedFileTypes"));
@@ -157,6 +158,7 @@ mod settings_file_tests {
         ));
         assert!(!tap.contains("bronze_native_pick_settings_export_path"));
         assert!(!tap.contains("bronze_native_pick_settings_import_path"));
+        assert!(!tap.contains("bronze_native_pick_support_export_path"));
         assert!(!tap.contains("NSSavePanel"));
         assert!(!tap.contains("NSOpenPanel"));
         fs::remove_dir_all(&dir).expect("cleanup");

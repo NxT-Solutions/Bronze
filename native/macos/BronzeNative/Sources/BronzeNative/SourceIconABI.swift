@@ -243,6 +243,27 @@ public func bronze_native_pick_settings_export_path(
     }
 }
 
+@_silgen_name("bronze_native_pick_support_export_path")
+public func bronze_native_pick_support_export_path(
+    _ out: UnsafeMutablePointer<bronze_native_utf8_view>?
+) -> UInt32 {
+    guard let out else {
+        return BRONZE_STATUS_NOT_FOUND
+    }
+    let outBox = BronzeOutViewBox(out)
+    return bronzeOnAppKitModal {
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.allowedFileTypes = ["txt"]
+        panel.nameFieldStringValue = "bronze-support.txt"
+        let response = panel.runModal()
+        guard response == .OK else {
+            return BRONZE_STATUS_CANCELLED
+        }
+        return copyPickedSupportPath(panel.url, to: outBox.ptr)
+    }
+}
+
 @_silgen_name("bronze_native_pick_settings_import_path")
 public func bronze_native_pick_settings_import_path(
     _ out: UnsafeMutablePointer<bronze_native_utf8_view>?
@@ -262,6 +283,27 @@ public func bronze_native_pick_settings_import_path(
             return BRONZE_STATUS_CANCELLED
         }
         return copyPickedSettingsPath(panel.url, to: outBox.ptr)
+    }
+}
+
+private func copyPickedSupportPath(
+    _ url: URL?,
+    to out: UnsafeMutablePointer<bronze_native_utf8_view>
+) -> UInt32 {
+    guard let url, url.isFileURL else {
+        return BRONZE_STATUS_DEGRADED
+    }
+    let path = url.path
+    guard !path.isEmpty, !path.contains("\0"), path.lowercased().hasSuffix(".txt") else {
+        return BRONZE_STATUS_DEGRADED
+    }
+    let bytes = Array(path.utf8)
+    guard bytes.count <= settingsPathCap else {
+        return BRONZE_STATUS_DEGRADED
+    }
+    return bytes.withUnsafeBufferPointer { buf in
+        let src = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(bytes.count))
+        return bronze_native_utf8_owned_copy(src, out)
     }
 }
 
