@@ -1,0 +1,49 @@
+{
+  "id": "support-report",
+  "goal": "Make Help Export Support File a readable local report that a GitHub issue can use to debug and reproduce, instead of an empty events=0 line.",
+  "outcome": "bronze-support.txt is a sectioned English report with app and runtime versions, macOS/arch/model, schema version, redacted data path, permission health, login-item status, title-engine phase, queue status counts, excluded-app bundle IDs, recent source apps (bundle ID and app name only), last-hour content-free diagnostic events and copy attempts, and human-gate IDs 3.9/3.10/5.5/9.3. Help preview matches the same text and is visible. Capture and copy terminals persist content-free diagnostic_events; a diagnostic write failure never rolls back a saved item. No selected text, titles, URLs, raw key streams, tokens, or unredacted home paths. No automatic upload. Cargo tests use fixtures, not live SMAppService. Event-tap does not write the bundle. ADR-002, ADR-009, and ADR-018 stay Proposed. Do not claim QUEUE-ATTACHMENTS-*.",
+  "priority": 96,
+  "requirements": [
+    {
+      "id": "SUPPORT-REPORT-RULE-1",
+      "kind": "rule",
+      "statement": "ADR-015 allowlist only: request/diagnostic ID, timestamps, stage durations, trigger/provider/result enums, permission snapshot, build/schema version, source bundle ID, queue/tap counters, store result code. Never selected/item/clipboard text, window title, URL, AX tree, raw key stream, or user document path."
+    },
+    {
+      "id": "SUPPORT-REPORT-RULE-2",
+      "kind": "rule",
+      "statement": "Export and preview render the same SupportReport. Secret scan rejects password/token/secret/hunter2/http and unredacted /Users/<name> paths. AUTOMATIC_UPLOAD stays false. Human gates 3.9, 3.10, 5.5, 9.3 remain listed."
+    },
+    {
+      "id": "SUPPORT-REPORT-RULE-3",
+      "kind": "rule",
+      "statement": "Capture persist and copy terminals insert diagnostic_events (closed enums plus optional source_bundle_id). Insert failure is ignored and never undoes a saved item or a successful copy. List events and sources from the last 3600000 ms."
+    },
+    {
+      "id": "SUPPORT-REPORT-RULE-4",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not build, preview, or write the support file. They must not touch AX, DB, windows, clipboard, or login items."
+    },
+    {
+      "id": "SUPPORT-REPORT-RULE-5",
+      "kind": "rule",
+      "statement": "Help shows a visible preview of the report. Locale catalog for Help chrome only (en, nl, fr, de, es, it). The file body stays English technical text. HTML fallback matches the new shape. No sentence concatenation. No Cooper/Copper copy. No runtime network."
+    },
+    {
+      "id": "SUPPORT-REPORT-RULE-6",
+      "kind": "rule",
+      "statement": "Do not claim QUEUE-ATTACHMENTS-*. Do not resume bmad-loop 6a79. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-015 stays Accepted."
+    },
+    {
+      "id": "SUPPORT-REPORT-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "A fixture session export contains version, os, arch, schema, redacted data path, permission rows, human gates, and last-hour headings. Preview text equals export body. events=0 one-liner is gone."
+    },
+    {
+      "id": "SUPPORT-REPORT-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "Recording a capture or copy terminal writes a diagnostic_events row without body text. Seeded hunter2 and http never appear. Cargo tests never call live SMAppService."
+    }
+  ],
+  "depends_on": []
+}
