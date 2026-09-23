@@ -121,7 +121,7 @@ Targets are quality gates, not telemetry requirements. Measure on test fixtures 
 - **SET-003** Permission health distinguishes Input Monitoring, Accessibility, Automation if introduced, and capture-pipeline self-test.
 - **SET-004** App explains why each permission is needed and offers deep-link/instructions, retest, and alternative workflow.
 - **SUP-001** Built-in help documents supported sources, limitations, privacy, backup/restore, shortcuts, and accessibility.
-- **SUP-002** About/diagnostics shows version, bundle identity, data path, schema version, permission health, and redacted recent failures.
+- **SUP-002** About/diagnostics shows a sectioned local `bronze-support.txt`: app and runtime versions, macOS/arch/model, schema version, redacted data path, permission health, login-item status, title-engine phase, queue status counts, excluded-app bundle IDs, recent source apps (bundle ID and app name only), last-hour content-free diagnostic events and copy attempts, and human-gate IDs 3.9/3.10/5.5/9.3. Help preview matches the export. No automatic upload. Capture and copy terminals persist `diagnostic_events`; a diagnostic write failure never rolls back a saved item.
 
 ## 7. P1
 

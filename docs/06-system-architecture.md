@@ -205,7 +205,7 @@ Ownership:
 | bronze-capture | Request state machine and provider policy | Direct WebView access |
 | bronze-storage | Schema, repositories, migration, backup/import/export | UI messages |
 | bronze-settings | Typed settings schema, shortcut registry and policy (SET-*) | Rendering, Tauri/AppKit, capture decisions |
-| bronze-diagnostics | Redacted event schema and support bundle | Captured or clipboard payload |
+| bronze-diagnostics | Content-free events and sectioned SupportReport | Captured or clipboard payload |
 | bronze-platform | Platform-neutral traits | macOS framework imports |
 | bronze-platform-macos | Safe Rust façade and ABI ownership | Business rules |
 | BronzeNative | CGEventTap, AX, AppKit, NSPasteboard | Queue state, SQL, localization policy |

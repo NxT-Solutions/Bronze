@@ -637,6 +637,7 @@ Diagnostic persistence is independent from content transactions. Coordinator kee
 - Some defects require user-run local self-test instead of content trace.
 - Redaction must happen at type/schema boundary, not log formatter.
 - Framework errors become safe enums; any content-free causal chain is in-memory only and never persisted or exported.
+- Exported `bronze-support.txt` is a sectioned English report (versions, machine, redacted data path, permission snapshot, login-item status, title-engine phase, queue counts, excluded bundle IDs, recent source apps, last-hour events and copy attempts). Help preview matches export. Unredacted `/Users/<name>` paths fail the secret scan.
 
 ### Verification
 

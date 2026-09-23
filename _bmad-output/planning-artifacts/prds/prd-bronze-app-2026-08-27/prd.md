@@ -82,7 +82,7 @@ Positioning: offline, local-first, accessibility-first macOS selection-to-action
   - **Persona + context:** Privacy-sensitive user who needs explicit capture, exclusions, and local backup — not hidden network traffic, clipboard corruption, or secret capture.
   - **Entry state:** local-only production-default build; exclusions configured; Secure Input contexts exist.
   - **Path:** deliberate trigger only; secure/password fields never captured; excluded apps skipped; diagnostics expose stages without storing captured content; backup/restore and deletion are local, explicit, and scoped.
-  - **Climax:** About/diagnostics and a previewed support bundle show version, identity, data path, schema version, permission health, and redacted failures — no content.
+  - **Climax:** About/diagnostics and a previewed `bronze-support.txt` show versions, machine, redacted path, schema, permission health, last-hour events, and redacted failures — no content.
   - **Resolution:** user can export, restore, or delete; zero runtime network in the production-default build.
   - **Edge case:** WebView must not reach arbitrary files or shell. Realizes CAP-006, CAP-009, CAP-010, DAT-002, DAT-004, SEC-001 through SEC-006, SUP-002.
 
@@ -523,10 +523,11 @@ Built-in help documents supported sources, limitations, privacy, backup/restore,
 
 #### SUP-002: About and diagnostics
 
-About/diagnostics shows version, bundle identity, data path, schema version, permission health, and redacted recent failures. Realizes UJ-5.
+About/diagnostics shows a sectioned local `bronze-support.txt`: versions, macOS/arch/model, schema, redacted data path, permission health, login-item status, title-engine phase, queue counts, excluded bundle IDs, recent source apps, last-hour content-free events and copy attempts, and human gates 3.9/3.10/5.5/9.3. Help preview matches the export. Realizes UJ-5.
 
 **Consequences (testable):**
 - Failures are redacted; content is not shown.
+- Preview text equals export; no automatic upload.
 
 ## 5. Non-Goals (Explicit)
 

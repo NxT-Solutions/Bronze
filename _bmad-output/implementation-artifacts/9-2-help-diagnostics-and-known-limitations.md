@@ -46,10 +46,13 @@ Hedgehog authored loop / layer-eng (cursor-grok).
 
 ### File List
 
+- `bronze-diagnostics/src/report.rs` — sectioned SupportReport, home-path redact, secret scan
 - `bronze-diagnostics/src/bundle.rs` — preview-before-export, no upload, human gates
-- `packages/ui/src/components/help.tsx` — local HTML help
-- `apps/desktop/src/help.html` — diagnostics preview
+- `bronze-storage/src/diagnostics.rs` — persist/list last-hour `diagnostic_events` and recent sources
+- `apps/desktop/src-tauri/src/live_session.rs` — capture/copy terminals record events; preview equals export
+- `apps/desktop/src/help.html` — visible English preview; HTML fallback matches the report shape
+- `apps/desktop/src/help-live.mjs` — `preview_support_bundle` / `export_support_file`
 
 ### Notes
 
-- Stories 3.9, 3.10, 5.5, 9.3 stay backlog. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. No public ACR claim.
+- Stories 3.9, 3.10, 5.5, 9.3 stay backlog. Proposed ADR-002 / ADR-009 / ADR-018 remain unresolved. No public ACR, WCAG, or VoiceOver claim. The `events=0` one-liner is gone.

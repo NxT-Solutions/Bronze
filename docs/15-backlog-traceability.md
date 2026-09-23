@@ -74,7 +74,7 @@ This matrix converts PRD into executable backlog. Status starts `planned`. Imple
 | I18N-003 | RTL/IME/Unicode/long strings/per-item language | M1/M6/M7 | pseudo/Arabic/Japanese/grapheme/content-lang suite; item bodies `lang="und" dir="auto"` | planned |
 | I18N-004 | localized semantic shortcuts | M6 | glyph/spoken/layout/recorder tests | planned |
 | SUP-001 | accessible help/limitations/privacy/backup | M7 | clause-12/document audit | planned |
-| SUP-002 | version/identity/schema/health/diagnostics | M6/M7 | redaction and accessibility tests | planned |
+| SUP-002 | version/identity/schema/health/last-hour diagnostics | M6/M7 | sectioned bronze-support.txt; Help preview equals export; secret scan; human gates 3.9/3.10/5.5/9.3 remain; not a WCAG claim | planned |
 
 ## 6. Goals and release metrics
 
