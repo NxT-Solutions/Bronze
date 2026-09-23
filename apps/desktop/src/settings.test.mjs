@@ -139,19 +139,38 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, />\s*Title engine\s*</);
   assert.match(
     html,
-    />\s*A local model bundled in Bronze that never leaves this Mac and works offline; extractive uses no model\.\s*</,
+    />\s*<strong>Stays on this Mac<\/strong> and works offline\.\s*</,
   );
+  assert.match(html, />\s*<strong>Extractive<\/strong> uses no model\.\s*</);
   assert.equal(en["settings.field.titleModel"], "Title engine");
   assert.equal(
     en["settings.field.titleModel.help"],
-    "A local model bundled in Bronze that never leaves this Mac and works offline; extractive uses no model.",
+    "**Stays on this Mac** and works offline.",
+  );
+  assert.equal(
+    en["settings.field.titleModel.helpExtractive"],
+    "**Extractive** uses no model.",
   );
   assert.equal(en["settings.field.titleModel.infoName"], "About Title engine");
+  assert.equal(
+    en["settings.field.titleModel.info"],
+    "**Stays on this Mac** and never sends text off this device.",
+  );
+  assert.equal(
+    en["settings.field.titleModel.infoExtractive"],
+    "**Extractive** uses no model.",
+  );
   assert.match(html, /class="setting-info"/);
   assert.equal((html.match(/class="setting-info"/g) || []).length, 12);
   assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 12);
   assert.match(html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(html, /data-i18n="settings.field.titleModel.info"/);
+  assert.match(html, /data-i18n="settings.field.titleModel.infoExtractive"/);
+  assert.match(html, /data-i18n="settings.field.titleModel.helpExtractive"/);
+  assert.match(
+    html,
+    /aria-describedby="title-model-help title-model-help-extractive title-model-status"/,
+  );
   assert.match(html, /data-i18n-aria-label="settings.field.locale.infoName"/);
   assert.equal(
     en["settings.field.titleModel.extractive"],

@@ -260,13 +260,14 @@
                 >
                   <span class="setting-info-mark" aria-hidden="true"></span>
                 </summary>
-                <p
-                  class="setting-info-panel"
-                  data-setting-info
-                  data-i18n="settings.field.titleModel.info"
-                >
-                  The chosen engine writes queue titles on this Mac from a file bundled in Bronze; extractive uses no model, and no engine sends text off this device.
-                </p>
+                <div class="setting-info-panel" data-setting-info>
+                  <p data-i18n="settings.field.titleModel.info">
+                    <strong>Stays on this Mac</strong> and never sends text off this device.
+                  </p>
+                  <p data-i18n="settings.field.titleModel.infoExtractive">
+                    <strong>Extractive</strong> uses no model.
+                  </p>
+                </div>
               </details>
             </div>
             <p
@@ -275,13 +276,21 @@
               data-title-model-help
               data-i18n="settings.field.titleModel.help"
             >
-              A local model bundled in Bronze that never leaves this Mac and works offline; extractive uses no model.
+              <strong>Stays on this Mac</strong> and works offline.
+            </p>
+            <p
+              id="title-model-help-extractive"
+              class="muted field-help"
+              data-title-model-help
+              data-i18n="settings.field.titleModel.helpExtractive"
+            >
+              <strong>Extractive</strong> uses no model.
             </p>
             <div class="field-row">
               <select
                 id="title-model"
                 name="titleModel"
-                aria-describedby="title-model-help title-model-status"
+                aria-describedby="title-model-help title-model-help-extractive title-model-status"
               >
                 <option
                   value="extractive"

@@ -62,12 +62,17 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\.setting-info-panel::before/);
   assert.match(chrome, /\.setting-info-panel[\s\S]*word-spacing:\s*0\.02em/);
   assert.match(chrome, /\.setting-info-panel strong[\s\S]*font-weight:\s*600/);
+  assert.match(chrome, /\.field-help strong[\s\S]*font-weight:\s*600/);
   assert.match(chrome, /\.setting-info > summary[\s\S]*cursor:\s*help/);
   assert.match(pages[2].html, /class="setting-info"/);
   assert.equal((pages[2].html.match(/class="setting-info"/g) || []).length, 12);
   assert.match(pages[2].html, /settings\.shortcuts\.title\.infoRestore/);
+  assert.match(pages[2].html, /settings\.field\.titleModel\.helpExtractive/);
+  assert.match(pages[2].html, /settings\.field\.titleModel\.infoExtractive/);
   assert.match(pages[2].html, /<strong>Record<\/strong>/);
   assert.match(pages[2].html, /<strong>Restore<\/strong>/);
+  assert.match(pages[2].html, /<strong>Stays on this Mac<\/strong>/);
+  assert.match(pages[2].html, /<strong>Extractive<\/strong>/);
   assert.match(chrome, /input\[type="checkbox"\]/);
   assert.match(chrome, /\.btn-icon/);
   assert.match(chrome, /#composer-error\[hidden\]/);

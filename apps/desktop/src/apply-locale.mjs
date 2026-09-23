@@ -65,12 +65,14 @@ export function isIcuMessage(value) {
 }
 
 function usesRichCatalog(el) {
+  const classes = String(el.className ?? "").split(/\s+/);
   return (
     el.hasAttribute?.("data-setting-info") ||
-    String(el.className ?? "")
-      .split(/\s+/)
-      .includes("setting-info-panel") ||
-    Boolean(el.closest?.("[data-setting-info], .setting-info-panel"))
+    classes.includes("setting-info-panel") ||
+    classes.includes("field-help") ||
+    Boolean(
+      el.closest?.("[data-setting-info], .setting-info-panel, .field-help"),
+    )
   );
 }
 

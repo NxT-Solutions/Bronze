@@ -119,7 +119,11 @@ export const MessageIds = {
   "settings.field.titleModel": "settings.field.titleModel",
   "settings.field.titleModel.infoName": "settings.field.titleModel.infoName",
   "settings.field.titleModel.info": "settings.field.titleModel.info",
+  "settings.field.titleModel.infoExtractive":
+    "settings.field.titleModel.infoExtractive",
   "settings.field.titleModel.help": "settings.field.titleModel.help",
+  "settings.field.titleModel.helpExtractive":
+    "settings.field.titleModel.helpExtractive",
   "settings.field.titleModel.extractive":
     "settings.field.titleModel.extractive",
   "settings.field.titleModel.smol135": "settings.field.titleModel.smol135",

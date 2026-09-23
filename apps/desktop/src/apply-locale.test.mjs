@@ -85,10 +85,15 @@ test("setting info catalog bolds markers and treats markup as text", () => {
   assert.equal(kids[0].tagName, "strong");
   assert.equal(kids[0].textContent, "Record");
   assert.equal(kids[1].textContent, " a row to replace that shortcut.");
+  applyCatalogRichText(el, "**Stays on this Mac** and works offline.");
+  assert.equal(kids[0].tagName, "strong");
+  assert.equal(kids[0].textContent, "Stays on this Mac");
+  assert.equal(kids[1].textContent, " and works offline.");
   applyCatalogRichText(el, "<b>unsafe</b>");
   assert.equal(kids.length, 1);
   assert.equal(kids[0].nodeType, 3);
   assert.equal(kids[0].textContent, "<b>unsafe</b>");
+  assert.match(applyLocaleSource, /includes\("field-help"\)/);
 });
 
 test("applyHandTestLocale sets html lang and catalog chrome", () => {

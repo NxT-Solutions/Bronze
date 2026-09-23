@@ -1443,7 +1443,8 @@ menu {
   line-height: inherit;
 }
 
-.setting-info-panel strong {
+.setting-info-panel strong,
+.field-help strong {
   font-weight: 600;
 }
 
