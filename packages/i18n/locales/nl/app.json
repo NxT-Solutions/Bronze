@@ -215,9 +215,12 @@
   "settings.search.clear": "Zoekopdracht wissen",
   "help.title": "Help",
   "help.about": "Over Bronze",
-  "help.diagnostics.preview": "Diagnostisch voorbeeld",
-  "help.diagnostics.export": "Ondersteuningsbundel exporteren…",
+  "help.about.body": "Bronze is een lokale wachtrij voor tekst die je selecteert, zodat je er iets mee kunt doen zonder deze Mac te verlaten.",
+  "help.diagnostics.preview": "Als er iets misgaat",
+  "help.diagnostics.export": "Ondersteuningsbestand opslaan…",
+  "help.diagnostics.export.explain": "Sla een ondersteuningsbestand op deze Mac op dat je aan iemand kunt sturen; Bronze verstuurt het zelf nooit.",
   "help.limitations.humanGates": "Menselijke validatie blijft backlog: verhalen 3.9, 3.10, 5.5 en 9.3.",
-  "help.upload.none": "Bronze uploadt diagnostiek nooit automatisch.",
+  "help.upload.none": "Bronze uploadt diagnostiek of het ondersteuningsbestand nooit automatisch, dus alles blijft op deze Mac.",
+  "help.capture.heading": "Tekst vastleggen",
   "help.capture.composer": "Selecteer tekst in elke app, ook Bronze, en kies Vastleggen in de menubalk, gebruik de Vastleggen-sneltoets uit Instellingen, of typ in de invoer wanneer vastleggen niet beschikbaar is."
 }

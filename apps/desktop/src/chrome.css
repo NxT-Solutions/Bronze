@@ -1720,16 +1720,24 @@ article [data-slot="source-label"],
 
 #help .help-diagnostics {
   display: grid;
-  gap: var(--space-1);
+  gap: 1.5em;
   margin: 0;
   padding: 0;
   border: none;
   background: transparent;
+  max-width: 80ch;
 }
 
 #help .help-diagnostics h2 {
-  font-size: var(--text-micro);
-  font-weight: 600;
+  font-size: var(--text-body);
+  font-weight: 590;
+  color: var(--foreground);
+}
+
+#help .help-diagnostics p {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  text-align: start;
 }
 
 #help [data-diagnostics-preview] {

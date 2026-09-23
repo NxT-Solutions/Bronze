@@ -215,9 +215,12 @@
   "settings.search.clear": "Clear search",
   "help.title": "Help",
   "help.about": "About Bronze",
-  "help.diagnostics.preview": "Diagnostics preview",
-  "help.diagnostics.export": "Export Support Bundle…",
+  "help.about.body": "Bronze is a local work queue for text you select, so you can act on it without leaving this Mac.",
+  "help.diagnostics.preview": "If something breaks",
+  "help.diagnostics.export": "Save Support File…",
+  "help.diagnostics.export.explain": "Save a support file on this Mac that you can send to a person; Bronze never sends it itself.",
   "help.limitations.humanGates": "Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.",
-  "help.upload.none": "Bronze never uploads diagnostics automatically.",
+  "help.upload.none": "Bronze does not upload diagnostics or the support file automatically, so everything stays on this Mac.",
+  "help.capture.heading": "How to capture",
   "help.capture.composer": "Select text in any app including Bronze, then Capture from the menu bar, use the Capture selection shortcut from Settings, or type into the composer when capture is unavailable."
 }

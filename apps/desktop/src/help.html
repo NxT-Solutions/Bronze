@@ -17,26 +17,33 @@
       </header>
       <article id="help-about" class="prose" tabindex="-1">
         <h2 data-i18n="help.about">About Bronze</h2>
-        <p data-i18n="help.upload.none">
-          Bronze never uploads diagnostics automatically.
+        <p data-i18n="help.about.body">
+          Bronze is a local work queue for text you select, so you can act on it without leaving this Mac.
         </p>
+        <p data-i18n="help.upload.none">
+          Bronze does not upload diagnostics or the support file automatically, so everything stays on this Mac.
+        </p>
+        <h2 data-i18n="help.capture.heading">How to capture</h2>
         <p data-i18n="help.capture.composer">
           Select text in any app including Bronze, then Capture from the menu bar, use the Capture selection shortcut from Settings, or type into the composer when capture is unavailable.
         </p>
-        <p class="muted" data-i18n="help.limitations.humanGates">
+        <p hidden data-i18n="help.limitations.humanGates">
           Human validation remains backlog: stories 3.9, 3.10, 5.5, and 9.3.
         </p>
       </article>
       <section class="help-diagnostics" aria-labelledby="diagnostics-preview-title">
         <h2 id="diagnostics-preview-title" data-i18n="help.diagnostics.preview">
-          Diagnostics preview
+          If something breaks
         </h2>
-        <pre data-diagnostics-preview>events=0 limits=3.9,3.10,5.5,9.3</pre>
+        <p data-i18n="help.diagnostics.export.explain">
+          Save a support file on this Mac that you can send to a person; Bronze never sends it itself.
+        </p>
+        <pre hidden data-diagnostics-preview aria-hidden="true">events=0 limits=3.9,3.10,5.5,9.3</pre>
       </section>
       <footer class="help-dock">
         <div class="help-dock-tools">
           <button type="button" class="btn-primary" data-i18n="help.diagnostics.export">
-            Export Support Bundle…
+            Save Support File…
           </button>
         </div>
       </footer>

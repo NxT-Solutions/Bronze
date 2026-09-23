@@ -278,10 +278,13 @@ export const MessageIds = {
   "settings.search.clear": "settings.search.clear",
   "help.title": "help.title",
   "help.about": "help.about",
+  "help.about.body": "help.about.body",
   "help.diagnostics.preview": "help.diagnostics.preview",
   "help.diagnostics.export": "help.diagnostics.export",
+  "help.diagnostics.export.explain": "help.diagnostics.export.explain",
   "help.limitations.humanGates": "help.limitations.humanGates",
   "help.upload.none": "help.upload.none",
+  "help.capture.heading": "help.capture.heading",
   "help.capture.composer": "help.capture.composer",
 } as const;
 

@@ -215,9 +215,12 @@
   "settings.search.clear": "hcraes raelC",
   "help.title": "pleH",
   "help.about": "eznorB tuobA",
-  "help.diagnostics.preview": "weiverp scitsongaiD",
-  "help.diagnostics.export": "…eldnuB troppuS tropxE",
+  "help.about.body": ".caM siht gnivael tuohtiw ti no tca nac uoy os ,tceles uoy txet rof eueuq krow lacol a si eznorB",
+  "help.diagnostics.preview": "skaerb gnihtemos fI",
+  "help.diagnostics.export": "…eliF troppuS evaS",
+  "help.diagnostics.export.explain": ".flesti ti sdnes reven eznorB ;nosrep a ot dnes nac uoy taht caM siht no elif troppus a evaS",
   "help.limitations.humanGates": ".3.9 dna ,5.5 ,01.3 ,9.3 seirots :golkcab sniamer noitadilav namuH",
-  "help.upload.none": ".yllacitamotua scitsongaid sdaolpu reven eznorB",
+  "help.upload.none": ".caM siht no syats gnihtyreve os ,yllacitamotua elif troppus eht ro scitsongaid daolpu ton seod eznorB",
+  "help.capture.heading": "erutpac ot woH",
   "help.capture.composer": ".elbaliavanu si erutpac nehw resopmoc eht otni epyt ro ,sgnitteS morf tuctrohs noitceles erutpaC eht esu ,rab unem eht morf erutpaC neht ,eznorB gnidulcni ppa yna ni txet tceleS"
 }

@@ -215,9 +215,12 @@
   "settings.search.clear": "【CClléeáarr sséeáarrçchh】",
   "help.title": "【HHéellpp】",
   "help.about": "【ÁAbbóoúutt BBrróoñnzzée】",
-  "help.diagnostics.preview": "【DDíiáaggñnóossttíiçcss pprréevvíiéeww】",
-  "help.diagnostics.export": "【ÉExxppóorrtt SSúuppppóorrtt BBúuñnddllée…】",
+  "help.about.body": "【BBrróoñnzzée íiss áa llóoçcáall wwóorrkk qqúuéeúuée ffóorr ttéexxtt yyóoúu sséelléeçctt, ssóo yyóoúu çcáañn áaçctt óoñn íitt wwíitthhóoúutt lléeáavvíiñngg tthhíiss MMáaçc.】",
+  "help.diagnostics.preview": "【ÍIff ssóomméetthhíiñngg bbrréeáakkss】",
+  "help.diagnostics.export": "【SSáavvée SSúuppppóorrtt FFíillée…】",
+  "help.diagnostics.export.explain": "【SSáavvée áa ssúuppppóorrtt ffíillée óoñn tthhíiss MMáaçc tthháatt yyóoúu çcáañn sséeñndd ttóo áa ppéerrssóoñn; BBrróoñnzzée ñnéevvéerr sséeñnddss íitt íittsséellff.】",
   "help.limitations.humanGates": "【HHúummáañn vváallíiddáattíióoñn rréemmáaíiñnss bbáaçckkllóogg: ssttóorríiéess 3.9, 3.10, 5.5, áañndd 9.3.】",
-  "help.upload.none": "【BBrróoñnzzée ñnéevvéerr úuppllóoáaddss ddíiáaggñnóossttíiçcss áaúuttóommáattíiçcáallllyy.】",
+  "help.upload.none": "【BBrróoñnzzée ddóoéess ñnóott úuppllóoáadd ddíiáaggñnóossttíiçcss óorr tthhée ssúuppppóorrtt ffíillée áaúuttóommáattíiçcáallllyy, ssóo éevvéerryytthhíiñngg ssttáayyss óoñn tthhíiss MMáaçc.】",
+  "help.capture.heading": "【HHóoww ttóo çcáappttúurrée】",
   "help.capture.composer": "【SSéelléeçctt ttéexxtt íiñn áañnyy áapppp íiñnçcllúuddíiñngg BBrróoñnzzée, tthhéeñn CCáappttúurrée ffrróomm tthhée mméeñnúu bbáarr, úussée tthhée CCáappttúurrée sséelléeçcttíióoñn sshhóorrttçcúutt ffrróomm SSéettttíiñnggss, óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr wwhhéeñn çcáappttúurrée íiss úuñnáavváaíilláabbllée.】"
 }

@@ -28,7 +28,7 @@ test("local help previews redacted diagnostics and lists human gates", () => {
   );
   assert.equal(
     en["help.upload.none"],
-    "Bronze never uploads diagnostics automatically.",
+    "Bronze does not upload diagnostics or the support file automatically, so everything stays on this Mac.",
   );
   assert.equal(
     en["help.capture.composer"],
