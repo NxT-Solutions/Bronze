@@ -116,7 +116,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
     html,
     />\s*<strong>Starts Bronze<\/strong> when you log in to this Mac\.\s*</,
   );
-  assert.match(html, />\s*<strong>Off<\/strong> until you turn it on\.\s*</);
+  assert.doesNotMatch(html, /settings\.field\.launchAtLogin\.helpUntil/);
   assert.equal(en["settings.field.launchAtLogin"], "Launch at login");
   assert.equal(
     en["settings.field.launchAtLogin.help"],

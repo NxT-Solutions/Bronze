@@ -701,7 +701,7 @@ const LOGIN_ITEM_STATUS_KEYS = Object.freeze({
 const LOGIN_ITEM_STATUS_FALLBACK = Object.freeze({
   enabled: "Registered to open at login.",
   not_registered: "Not registered to open at login.",
-  requires_approval: "Saved on; allow Bronze in Login Items to finish.",
+  requires_approval: "Allow Bronze in Login Items to finish.",
   unavailable: "This debug build cannot register as a login item.",
 });
 
