@@ -21,6 +21,18 @@ test("local help previews redacted diagnostics without automatic upload", () => 
   assert.match(html, /data-i18n="help.capture.composer"/);
   assert.match(html, /3\.9/);
   assert.match(html, /9\.3/);
+  assert.doesNotMatch(html, /events=0/);
+  assert.doesNotMatch(html, /data-diagnostics-preview[^>]*\bhidden\b/);
+  assert.doesNotMatch(html, /data-diagnostics-preview[^>]*aria-hidden/);
+  assert.match(html, /version=/);
+  assert.match(html, /os=/);
+  assert.match(html, /arch=/);
+  assert.match(html, /schema=/);
+  assert.match(html, /path=/);
+  assert.match(html, /input_monitoring=/);
+  assert.match(html, /Last-hour diagnostic events/);
+  assert.match(html, /Last-hour copy attempts/);
+  assert.match(html, /human_gates=/);
   assert.doesNotMatch(html, /fetch\(|xmlhttprequest|https:\/\//i);
   assert.equal(en["help.diagnostics.export"], "Export Support File…");
   assert.equal(

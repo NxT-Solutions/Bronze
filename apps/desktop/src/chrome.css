@@ -1882,9 +1882,19 @@ article [data-slot="source-label"],
 }
 
 #help [data-diagnostics-preview] {
+  margin: 0;
+  overflow-x: auto;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
   font-size: var(--text-micro);
   font-weight: 400;
-  color: var(--muted-foreground);
+  line-height: 1.45;
+  letter-spacing: 0;
+  white-space: pre;
 }
 
 [data-slot="toolbar-overflow"] summary {

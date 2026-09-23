@@ -248,6 +248,14 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /#help article/);
   assert.match(pages[3].html, /class="help-dock"/);
   assert.match(pages[3].html, /class="help-diagnostics"/);
+  assert.match(
+    chrome,
+    /#help \[data-diagnostics-preview\][\s\S]*overflow-x:\s*auto/,
+  );
+  assert.match(
+    chrome,
+    /#help \[data-diagnostics-preview\][\s\S]*font-family:\s*var\(--font-mono\)/,
+  );
   assert.doesNotMatch(pages[3].html, /class="card"/);
   assert.match(chrome, /\[data-standard-chord\]:empty/);
   assert.match(chrome, /--radius-control:\s*8px/);

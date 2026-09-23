@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  refreshSupportPreview,
   showSupportExportStatus,
   supportExportFailureCode,
 } from "./help-live.mjs";
@@ -39,4 +40,29 @@ test("help export invokes rust picker and never sends a path", () => {
   showSupportExportStatus(fakeRoot, "");
   assert.equal(status.textContent, "");
   assert.equal(status.hidden, true);
+});
+
+test("help preview is visible and uses the rust report text", async () => {
+  assert.doesNotMatch(html, /events=0/);
+  const preview = {
+    textContent: "fallback",
+    hidden: true,
+    removeAttribute(name) {
+      if (name === "aria-hidden") {
+        this.ariaHidden = false;
+      }
+    },
+  };
+  const root = {
+    querySelector(sel) {
+      return sel.includes("data-diagnostics-preview") ? preview : null;
+    },
+  };
+  await refreshSupportPreview(
+    root,
+    async () => "Bronze support report\nversion=0.1.0\nos=macos",
+  );
+  assert.equal(preview.hidden, false);
+  assert.match(preview.textContent, /Bronze support report/);
+  assert.match(preview.textContent, /version=0.1.0/);
 });

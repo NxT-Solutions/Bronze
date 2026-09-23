@@ -45,13 +45,17 @@ export async function refreshSupportPreview(root, invokeFn = tauriInvoke) {
   if (!preview) {
     return;
   }
+  preview.hidden = false;
+  preview.removeAttribute("aria-hidden");
   try {
     const text = await invokeFn("preview_support_bundle");
     if (typeof text === "string" && text.length > 0) {
       preview.textContent = text;
     }
   } catch {
-    // HTML fallback stays.
+    if (!preview.textContent?.trim()) {
+      preview.textContent = "unavailable";
+    }
   }
 }
 
