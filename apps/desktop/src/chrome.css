@@ -1128,7 +1128,8 @@ menu {
   gap: var(--space-2);
 }
 
-#library.page-shell {
+#library.page-shell,
+#help.page-shell {
   gap: var(--space-4);
   min-height: calc(100vh - (var(--space-6) * 2));
   padding-block-end: 0;
@@ -1179,7 +1180,8 @@ menu {
   font-weight: 400;
 }
 
-.library-dock {
+.library-dock,
+.help-dock {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -1193,7 +1195,8 @@ menu {
   box-shadow: none;
 }
 
-.library-dock-tools {
+.library-dock-tools,
+.help-dock-tools {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -1204,6 +1207,12 @@ menu {
   min-height: 1.75rem;
   padding-inline: 0.55rem;
   font-weight: 400;
+}
+
+.help-dock-tools .btn-primary {
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
 }
 
 .library-dock-status {
@@ -1700,6 +1709,35 @@ article [data-slot="source-label"],
   border-radius: var(--radius-page-card);
 }
 
+#help article,
+#help-about {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+#help .help-diagnostics {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+#help .help-diagnostics h2 {
+  font-size: var(--text-micro);
+  font-weight: 600;
+}
+
+#help [data-diagnostics-preview] {
+  font-size: var(--text-micro);
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+
 [data-slot="toolbar-overflow"] summary {
   cursor: pointer;
   font-size: var(--text-caption);
@@ -1821,6 +1859,11 @@ html[data-motion="reduce"] li.is-entering {
 
   fieldset {
     box-shadow: 0 0 0 2px var(--border);
+  }
+
+  #help article,
+  #help-about {
+    border: none !important;
   }
 }
 
