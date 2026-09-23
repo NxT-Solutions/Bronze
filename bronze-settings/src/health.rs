@@ -119,8 +119,10 @@ pub fn privacy_settings_url(capability: PermissionCapability) -> Option<&'static
         PermissionCapability::Accessibility => {
             Some("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
         }
-        PermissionCapability::LaunchAtLogin
-        | PermissionCapability::Automation
+        PermissionCapability::LaunchAtLogin => {
+            Some("x-apple.systempreferences:com.apple.LoginItems-Settings.extension")
+        }
+        PermissionCapability::Automation
         | PermissionCapability::ScreenRecording
         | PermissionCapability::CapturePipelineSelfTest => None,
     }
@@ -206,6 +208,9 @@ mod health_tests {
             privacy_settings_url(PermissionCapability::ScreenRecording),
             None
         );
+        assert!(privacy_settings_url(PermissionCapability::LaunchAtLogin)
+            .unwrap()
+            .contains("LoginItems"));
         assert!(!SCREEN_RECORDING_USED);
     }
 }

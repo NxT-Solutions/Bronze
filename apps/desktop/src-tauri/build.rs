@@ -73,6 +73,7 @@ fn link_bronze_native() {
     println!("cargo:rustc-link-lib=framework=Foundation");
     println!("cargo:rustc-link-lib=framework=AppKit");
     println!("cargo:rustc-link-lib=framework=UserNotifications");
+    println!("cargo:rustc-link-lib=framework=ServiceManagement");
     println!("cargo:rustc-cfg=bronze_native_linked");
 
     wrap_notice_helper(

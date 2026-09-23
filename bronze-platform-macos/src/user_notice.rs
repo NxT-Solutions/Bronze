@@ -165,6 +165,8 @@ mod user_notice_tests {
         ));
         assert!(!tap.contains("bronze_native_deliver_user_notice"));
         assert!(!tap.contains("bronze_native_request_notification_authorization"));
+        assert!(!tap.contains("bronze_native_apply_login_item"));
+        assert!(!tap.contains("SMAppService"));
         assert!(!tap.contains("UNUserNotificationCenter"));
         assert!(!tap.contains("UserNotifications"));
         assert!(!tap.contains("NSUserNotification"));

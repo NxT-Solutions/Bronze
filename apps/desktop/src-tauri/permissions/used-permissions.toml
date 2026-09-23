@@ -55,6 +55,7 @@ identifier = "allow-settings-live"
 description = "Load, save, and reset SettingsV1 plus catalog locale"
 commands.allow = [
   "load_settings_v1",
+  "login_item_status",
   "save_settings_v1",
   "reset_settings_field",
   "reset_settings_group",

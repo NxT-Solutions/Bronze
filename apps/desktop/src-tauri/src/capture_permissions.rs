@@ -97,6 +97,9 @@ pub fn privacy_settings_open_target(capability: &str) -> Option<&'static str> {
         "notifications" => {
             Some("x-apple.systempreferences:com.apple.Notifications-Settings.extension")
         }
+        "launchAtLogin" => bronze_settings::privacy_settings_url(
+            bronze_settings::PermissionCapability::LaunchAtLogin,
+        ),
         _ => None,
     }
 }
@@ -166,6 +169,7 @@ mod tests {
         assert!(privacy_settings_open_target("inputMonitoring").is_some());
         assert!(privacy_settings_open_target("accessibility").is_some());
         assert!(privacy_settings_open_target("notifications").is_some());
+        assert!(privacy_settings_open_target("launchAtLogin").is_some());
     }
 
     #[test]

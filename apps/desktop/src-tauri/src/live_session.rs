@@ -522,6 +522,7 @@ impl LiveSession {
             persist_settings_file(&data_dir, &settings)?;
         }
         apply_title_engine(&settings);
+        apply_login_item(&settings);
         let shortcuts = store
             .load_shortcuts()
             .map_err(|_| "shortcuts_load_failed")?;
@@ -883,6 +884,7 @@ impl LiveSession {
         self.settings = next;
         persist_settings_file(&self.data_dir, &self.settings)?;
         apply_title_engine(&self.settings);
+        apply_login_item(&self.settings);
         self.shortcuts
             .register(chord, &mut SessionRegistrar, keep_menu_manual())
             .map_err(register_error_code)?;
@@ -907,6 +909,7 @@ impl LiveSession {
             let _ = resolve_title_model(&mut self.settings);
         }
         apply_title_engine(&self.settings);
+        apply_login_item(&self.settings);
         self.sync_standard_chord()?;
         Ok(self.settings.clone())
     }
@@ -927,6 +930,7 @@ impl LiveSession {
             let _ = resolve_title_model(&mut self.settings);
         }
         apply_title_engine(&self.settings);
+        apply_login_item(&self.settings);
         self.sync_standard_chord()?;
         Ok(self.settings.clone())
     }
@@ -935,6 +939,7 @@ impl LiveSession {
         self.settings.reset_all_preserving_content();
         let _ = resolve_title_model(&mut self.settings);
         apply_title_engine(&self.settings);
+        apply_login_item(&self.settings);
         self.shortcuts = ShortcutRegistry::seeded();
         self.sync_standard_chord()?;
         Ok(self.settings.clone())
@@ -1305,6 +1310,10 @@ fn apply_title_engine(settings: &SettingsV1) {
     request_tier(title_tier_from_model(settings.general.title_model));
 }
 
+fn apply_login_item(settings: &SettingsV1) {
+    let _ = bronze_platform_macos::apply_login_item(settings.general.launch_at_login);
+}
+
 fn load_settings_file(data_dir: &Path) -> Result<SettingsV1, String> {
     let path = data_dir.join("settings.json");
     if !path.exists() {
@@ -1486,6 +1495,14 @@ pub fn load_settings_v1(
     session: tauri::State<std::sync::Mutex<LiveSession>>,
 ) -> Result<SettingsV1, String> {
     Ok(lock_session(&session)?.settings())
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn login_item_status() -> String {
+    bronze_platform_macos::login_item_status()
+        .as_str()
+        .to_string()
 }
 
 #[cfg(target_os = "macos")]
@@ -1875,6 +1892,35 @@ mod live_session_tests {
     }
 
     #[test]
+    fn launch_at_login_persists_without_claiming_os_success() {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("bronze-login-item-{n}-{}", now_ms()));
+        let mut session = LiveSession::open(dir.clone()).expect("open");
+        let mut settings = session.settings();
+        assert!(!settings.general.launch_at_login);
+        settings.general.launch_at_login = true;
+        session.replace_settings(settings).expect("save");
+        assert!(session.settings().general.launch_at_login);
+        drop(session);
+        let mut again = LiveSession::open(dir).expect("reopen");
+        assert!(again.settings().general.launch_at_login);
+        again.reset_field("general.launchAtLogin").expect("reset");
+        assert!(!again.settings().general.launch_at_login);
+        let src = include_str!("live_session.rs");
+        assert!(src.contains("apply_login_item"));
+        assert!(src.contains("login_item_status"));
+        assert!(src.contains("launch_at_login"));
+        let lib = include_str!("lib.rs");
+        assert!(lib.contains("login_item_status"));
+        let tap = include_str!(
+            "../../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        );
+        assert!(!tap.contains("SMAppService"));
+        assert!(!tap.contains("bronze_native_apply_login_item"));
+        assert_eq!(ADR_018_STATUS, "Proposed");
+    }
+
+    #[test]
     fn copy_uses_profile_and_search_stays_placeholder() {
         assert!(!QUE_007_COMPLETE);
         assert_eq!(ADR_018_STATUS, "Proposed");
@@ -2099,6 +2145,7 @@ mod live_session_tests {
         assert!(used.contains("export_settings_file"));
         assert!(used.contains("import_settings_file"));
         assert!(used.contains("list_title_models"));
+        assert!(used.contains("login_item_status"));
         assert!(used.contains("preview_support_bundle"));
         assert!(used.contains("export_support_file"));
         let src = include_str!("live_session.rs");
@@ -2106,6 +2153,7 @@ mod live_session_tests {
         assert!(src.contains("pub fn export_settings_file"));
         assert!(src.contains("pub fn import_settings_file"));
         assert!(src.contains("pub fn list_title_models"));
+        assert!(src.contains("pub fn login_item_status"));
         assert!(src.contains("pub fn preview_support_bundle"));
         assert!(src.contains("pub fn export_support_file"));
         let _ = fs::remove_file(&dest);
@@ -2541,6 +2589,7 @@ mod live_session_tests {
         assert!(used.contains("import_settings_file"));
         assert!(used.contains("list_title_models"));
         assert!(used.contains("title_engine_status"));
+        assert!(used.contains("login_item_status"));
         assert!(used.contains("preview_support_bundle"));
         assert!(used.contains("export_support_file"));
         assert!(src.contains("pub fn pick_installed_app()"));

@@ -10,6 +10,7 @@ mod ax_live;
 mod bridge;
 mod display_prefs;
 mod installed_apps;
+mod login_item;
 mod pasteboard;
 mod permission;
 mod settings_file;
@@ -45,6 +46,7 @@ pub use installed_apps::{
     is_safe_bundle_id, parse_app_list_payload, try_list_installed_apps, try_pick_installed_app,
     InstalledApp, PickInstalledApp,
 };
+pub use login_item::{apply_login_item, login_item_status, LoginItemStatus};
 pub use pasteboard::native_pasteboard_write;
 #[cfg(target_os = "macos")]
 pub use permission::MacosPreflightHost;

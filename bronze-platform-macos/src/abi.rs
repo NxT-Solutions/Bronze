@@ -140,4 +140,6 @@ extern "C" {
     ) -> u32;
     pub fn bronze_native_notification_authorization_status() -> u32;
     pub fn bronze_native_request_notification_authorization() -> u32;
+    pub fn bronze_native_login_item_status() -> u32;
+    pub fn bronze_native_apply_login_item(enabled: u32) -> u32;
 }

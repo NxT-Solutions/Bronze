@@ -690,3 +690,13 @@ pub extern "C" fn bronze_native_notification_authorization_status() -> u32 {
 pub extern "C" fn bronze_native_request_notification_authorization() -> u32 {
     BRONZE_STATUS_DEGRADED
 }
+
+#[no_mangle]
+pub extern "C" fn bronze_native_login_item_status() -> u32 {
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_apply_login_item(_enabled: u32) -> u32 {
+    BRONZE_STATUS_DEGRADED
+}

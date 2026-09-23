@@ -27,6 +27,7 @@ pub fn run() {
                 live_session::copy_queue_items,
                 live_session::search_library_items,
                 live_session::load_settings_v1,
+                live_session::login_item_status,
                 live_session::save_settings_v1,
                 live_session::reset_settings_field,
                 live_session::reset_settings_group,
