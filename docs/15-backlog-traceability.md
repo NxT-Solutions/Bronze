@@ -37,7 +37,7 @@ This matrix converts PRD into executable backlog. Status starts `planned`. Imple
 | WIN-001 | summon/hide on correct display/edge | M0/M5 | pointer/front-app/multi-display matrix | planned |
 | WIN-002 | safe frame, Spaces/full-screen/scale | M0/M5 | native display matrix | planned |
 | WIN-003 | pinned/auto-hide/focus restore | M5/M6 | focus/Space/VoiceOver journeys | planned |
-| WIN-004 | Dock/login/material/density/size controls | M6 | settings/native state tests | planned |
+| WIN-004 | Dock/login/material/density/size controls | M6 | launch-at-login: Settings General checkbox, `login_item_status`, SMAppService apply tests (persist on requiresApproval; cargo tests never register). Dock icon, material, density, and size still planned | planned |
 | WIN-005 | semantic resizable settings, no focus trap | M5/M6 | keyboard/VoiceOver/zoom | planned |
 | SET-001 | searchable/resettable/safely exportable settings | M6 | schema/search/reset plus `bronze-settings` export/import/redaction tests (preview sensitive leftovers; rust-owned panels; no WebView path) | planned |
 | SET-002 | accessible conflict-aware shortcut editor | M3/M6 | layouts/collision/registration rollback/AT | planned |

@@ -118,6 +118,8 @@ Internal safety ceilings (AX timeout, payload size) may be advanced-only or not 
 
 Accessibility overrides for Increase Contrast, Reduce Transparency, and Differentiate Without Color are one-way strengthening: effective value equals the active macOS preference OR a stronger Bronze override. Native display-option bridge still only strengthens Reduce Motion. WebView motion is `SettingsV1.general.reduceMotion` (`system` | `on` | `off`, default `system`). `system` follows `matchMedia('(prefers-reduced-motion: reduce)')` plus a change listener. `on` always sets `document.documentElement.dataset.motion` to `reduce`. `off` always sets `full` so queue animations play even when macOS Reduce Motion is on (explicit Tools test override, not a silent weaken). Missing `general.reduceMotion` on load maps `accessibility.motion` (`system`, `reduce`, `on`, `off`). Persist copies `general.reduceMotion` onto `accessibility.motion`. Settings apply live; no restart. Persist broadcasts `ui-motion-changed`. Queue and Library first load call `load_settings_v1` (`allow-queue-live` / `allow-library-live`) plus the media query. `chrome.css` gates with `html[data-motion="reduce"]` (no anim) and `html[data-motion="full"]` (anim). `@media (prefers-reduced-motion: reduce)` is first-paint fallback only and must not win over `data-motion=full`. Existing JS still honors `data-reduce-motion`.
 
+`SettingsV1.general.launchAtLogin` defaults to `false`. Settings → General `#launch-at-login` is a real labeled checkbox with circled-i catalog info. Save, reset field/group/all, and `LiveSession::open` apply the stored value through `SMAppService.mainApp` `register` / `unregister`. Persist does not flip the checkbox when status is `requires_approval` or `not_found`. Command `login_item_status` (`allow-settings-live`) returns `enabled` | `not_registered` | `requires_approval` | `unavailable`. Unbundled `tauri dev` and cargo-test binaries are not a `.app` and report `unavailable` without calling `register`. Cargo tests never invoke live `SMAppService`. Event-tap callbacks do not register, unregister, or read login items. `open_privacy_settings` `launchAtLogin` opens the Login Items pane. The permission-health row stays optional; the General checkbox is the user control.
+
 ## 3. Defaults
 
 Shipped defaults:
@@ -131,7 +133,7 @@ Shipped defaults:
 | clipboard fallback | manual | synthetic copy mutates shared clipboard; per-app opt-in required |
 | built-in profile post-copy lifecycle | copied | do not claim task done from copy |
 | provenance | none | workflow metadata is sensitive; onboarding may offer opt-in app identity |
-| launch at login | off | explicit consent |
+| launch at login | off | explicit consent; Settings → General checkbox applies `SMAppService.mainApp` |
 | UI locale | `system` (resolves to **en**) | Settings → General switcher persists en, nl, fr, de, es, or it; unknown tags reject on save; `system` and unknown effective tags map to en |
 | title engine | empty auto-picks among files already on disk; otherwise last persisted `general.titleModel` | extractive uses no GGUF; a change reloads the title worker for the next refine; Settings shows load status (`title-engine-status` / `title_engine_status`) |
 | reduce motion | `system` (follows this Mac) | play motion unless macOS Reduce Motion is on; Settings `on` always reduces; `off` always plays (Tools test) |
@@ -239,7 +241,7 @@ Each row includes status, why needed, last test, Retest, Open System Settings/he
 - Input Monitoring: global modifier event tap.
 - Accessibility: AX selection and synthetic fallback.
 - Notifications: Notification Center banners. Status comes from `notification_authorization_status` (never auto-request from the queue WebView). Allow calls `request_notification_authorization` only while `not_requested`. Denied shows Open System Settings (`open_privacy_settings` notifications). Unbundled `tauri dev` reports `unavailable` and hides Allow; banners still go through the signed `BronzeNotice.app` helper.
-- Launch at Login: optional service registration.
+- Launch at Login: optional `SMAppService.mainApp` registration. Status comes from `login_item_status`. The General checkbox persists `general.launchAtLogin` even when Login Items still requires approval. Unbundled debug reports `unavailable`. Open System Settings uses the Login Items pane (`launchAtLogin`).
 - Automation: absent P0 unless a later feature requires it.
 - Screen Recording: explicitly “Not used.”
 
@@ -316,6 +318,7 @@ type OutputProfileV1 = {
 - reset field/group/all scope correct;
 - exported `bronze-settings` file has no machine paths, diagnostics, app credentials, permission tokens, or internal secrets; preview lists included categories plus user-entered sensitive literals/policies; import rejects WebView paths, `bronze-export` archives, unknown versions, and oversized files; rust-owned save/open panels are not invoked from cargo tests;
 - `general.reduceMotion` defaults to `system` and round-trips `on` / `off` / legacy `reduce`; unknown values reject; reset field returns `system`; export/import include the field; `system` follows `prefers-reduced-motion` live; `on` sets `data-motion=reduce`; `off` sets `data-motion=full` even when the OS requests reduce; Increase Contrast, Reduce Transparency, and Differentiate Without Color still cannot be weakened by app override;
+- `general.launchAtLogin` defaults to `false` and persists through save/reset/export; apply uses `SMAppService.mainApp`; `requires_approval` and `not_found` do not flip the stored checkbox; `login_item_status` maps enabled / not_registered / requires_approval / unavailable; unbundled debug is unavailable; cargo tests never call live `SMAppService`; event-tap files must not contain `SMAppService`;
 - locale/RTL switch persists `general.locale`, reapplies the WebView catalog and `html lang`/`dir`, keeps item bodies `lang="und" dir="auto"`, and labels switcher options with endonyms plus option `lang`; native app/status menus follow the persisted locale at launch only;
 - Title engine load status maps `switch scheduled` → loading, `weights resolved` / `hash ok` → hashing, `model loaded` → ready, extractive → idle, `missing_weights` → missing, and load fallbacks `bad_hash` / `timeout` / `unreadable` → failed; Settings shows spinner plus catalog Loading `{engine}` while loading or hashing, ready/loaded copy when ready, and vendor-command copy when missing; event `title-engine-status` and command `title_engine_status` stay Settings-only; capture never waits; focus stays on the select; Reduce Motion stops decorative spin; no WCAG or VoiceOver claim;
 - permission revoke updates state without restart where platform allows.
