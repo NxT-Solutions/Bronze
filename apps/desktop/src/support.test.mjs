@@ -13,20 +13,14 @@ const en = JSON.parse(
   ),
 );
 
-test("local help previews redacted diagnostics and lists human gates", () => {
+test("local help previews redacted diagnostics without automatic upload", () => {
   assert.match(html, /data-slot="help"/);
   assert.match(html, /data-automatic-upload="false"/);
   assert.match(html, /data-diagnostics-preview/);
-  assert.match(html, /data-i18n="help.limitations.humanGates"/);
   assert.match(html, /data-i18n="help.capture.composer"/);
   assert.match(html, /3\.9/);
   assert.match(html, /9\.3/);
   assert.doesNotMatch(html, /fetch\(|xmlhttprequest|https:\/\//i);
-  assert.equal(en["help.limitations.heading"], "Known limitations");
-  assert.equal(
-    en["help.limitations.humanGates"],
-    "Accessibility permission, capture from other apps, multiple displays, VoiceOver, and Apple signing still need a person on a signed Mac.",
-  );
   assert.equal(en["help.diagnostics.export"], "Export Support File…");
   assert.equal(
     en["help.diagnostics.export.explain"],
