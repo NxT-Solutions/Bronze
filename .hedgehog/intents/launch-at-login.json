@@ -1,0 +1,49 @@
+{
+  "id": "launch-at-login",
+  "goal": "Add a Settings Launch at login control so people can start Bronze when this Mac logs in and do not have to remember to open it.",
+  "outcome": "Settings General shows a labeled Launch at login checkbox bound to SettingsV1.general.launchAtLogin (default false, explicit consent). Saving, resetting, or starting Bronze applies that intent through SMAppService.mainApp register/unregister. Persist the user choice even when registration needs Login Items approval or the current debug binary is not a .app. Surface enabled, notRegistered, requiresApproval, or unavailable honestly — never silently succeed. Cargo tests never call live SMAppService. Event-tap does not touch login items. ADR-002, ADR-009, and ADR-018 stay Proposed. Do not claim QUEUE-ATTACHMENTS-*.",
+  "priority": 95,
+  "requirements": [
+    {
+      "id": "LAUNCH-AT-LOGIN-RULE-1",
+      "kind": "rule",
+      "statement": "Field is SettingsV1.general.launchAtLogin, bool, default false. Persist through save_settings_v1 / replace_settings / reset. Apply on save, reset field/group/all, and native start."
+    },
+    {
+      "id": "LAUNCH-AT-LOGIN-RULE-2",
+      "kind": "rule",
+      "statement": "macOS 13+ apply uses ServiceManagement.SMAppService.mainApp register() / unregister() / status. Map status to enabled, notRegistered, requiresApproval, notFound, or unavailable. Persist the checkbox even when register returns requiresApproval or notFound."
+    },
+    {
+      "id": "LAUNCH-AT-LOGIN-RULE-3",
+      "kind": "rule",
+      "statement": "Unbundled tauri dev and missing SMAppService must not pretend the login item is on. Return unavailable or notFound. Cargo tests never invoke live SMAppService.register or unregister."
+    },
+    {
+      "id": "LAUNCH-AT-LOGIN-RULE-4",
+      "kind": "rule",
+      "statement": "Event-tap callbacks must not contain SMAppService, login item, register, unregister, or launch-at-login apply. They must not touch AX, DB, windows, clipboard, or login items."
+    },
+    {
+      "id": "LAUNCH-AT-LOGIN-RULE-5",
+      "kind": "rule",
+      "statement": "Settings uses a real labeled checkbox (HIG/WCAG), not a clickable div, plus circled-i info like other General titles. Locale catalog only (en, nl, fr, de, es, it). No sentence concatenation. HTML fallback matches en."
+    },
+    {
+      "id": "LAUNCH-AT-LOGIN-RULE-6",
+      "kind": "rule",
+      "statement": "Do not claim QUEUE-ATTACHMENTS-RUST or other QUEUE-ATTACHMENTS-*. Do not resume bmad-loop 6a79. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-019 stays Proposed. No Cooper/Copper copy. No runtime network."
+    },
+    {
+      "id": "LAUNCH-AT-LOGIN-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Checking Launch at login persists general.launchAtLogin true and calls register; unchecking persists false and calls unregister. Reset returns false and unregisters."
+    },
+    {
+      "id": "LAUNCH-AT-LOGIN-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "A status of requiresApproval or notFound does not flip the stored checkbox back to off. Tests cover status mapping without live SMAppService."
+    }
+  ],
+  "depends_on": []
+}
