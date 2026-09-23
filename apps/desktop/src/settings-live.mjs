@@ -841,6 +841,7 @@ export function bindSettingInfo(root) {
   if (infos.length === 0) {
     return;
   }
+  const dismissed = new WeakSet();
   const closeAll = (except) => {
     for (const el of infos) {
       if (el !== except && el.open) {
@@ -848,11 +849,46 @@ export function bindSettingInfo(root) {
       }
     }
   };
+  const show = (el) => {
+    if (dismissed.has(el)) {
+      return;
+    }
+    el.open = true;
+    closeAll(el);
+  };
+  const hide = (el) => {
+    el.open = false;
+  };
+  const focusInside = (el) => {
+    const active = el.ownerDocument?.activeElement;
+    return Boolean(active && el.contains?.(active));
+  };
   for (const el of infos) {
-    el.addEventListener("toggle", () => {
-      if (el.open) {
-        closeAll(el);
+    el.addEventListener("pointerenter", () => {
+      show(el);
+    });
+    el.addEventListener("pointerleave", () => {
+      dismissed.delete(el);
+      if (!focusInside(el)) {
+        hide(el);
       }
+    });
+    el.addEventListener("focusin", () => {
+      show(el);
+    });
+    el.addEventListener("focusout", (event) => {
+      const next = event.relatedTarget;
+      if (next && el.contains?.(next)) {
+        return;
+      }
+      if (el.matches?.(":hover")) {
+        return;
+      }
+      dismissed.delete(el);
+      hide(el);
+    });
+    el.querySelector("summary")?.addEventListener("click", (event) => {
+      event.preventDefault();
     });
   }
   root.addEventListener("pointerdown", (event) => {
@@ -872,7 +908,8 @@ export function bindSettingInfo(root) {
     if (!open) {
       return;
     }
-    open.open = false;
+    dismissed.add(open);
+    hide(open);
     open.querySelector("summary")?.focus?.();
     event.preventDefault();
   });

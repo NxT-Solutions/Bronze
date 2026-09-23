@@ -1367,7 +1367,7 @@ menu {
   padding: 0;
   border-radius: 50%;
   list-style: none;
-  cursor: pointer;
+  cursor: help;
   color: var(--muted-foreground);
 }
 
@@ -1432,6 +1432,14 @@ menu {
   word-spacing: normal;
   white-space: normal;
   overflow-wrap: break-word;
+}
+
+.setting-info-panel::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 6px;
 }
 
 .field-block {

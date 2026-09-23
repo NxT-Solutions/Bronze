@@ -619,22 +619,32 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.doesNotMatch(live, /https:\/\//);
 });
 
-test("setting info closes other panels and dismisses on Escape", () => {
+test("setting info opens on hover and focus, not click, and dismisses on Escape", () => {
   const listeners = [];
-  const first = {
-    open: false,
-    querySelector: () => ({ focus() {} }),
-    addEventListener(type, handler) {
-      listeners.push(["first", type, handler]);
-    },
+  const makeInfo = (name) => {
+    const summary = {
+      focus() {},
+      addEventListener(type, handler) {
+        listeners.push([name, `summary:${type}`, handler]);
+      },
+    };
+    return {
+      open: false,
+      ownerDocument: { activeElement: null },
+      querySelector: () => summary,
+      contains() {
+        return false;
+      },
+      matches() {
+        return false;
+      },
+      addEventListener(type, handler) {
+        listeners.push([name, type, handler]);
+      },
+    };
   };
-  const second = {
-    open: false,
-    querySelector: () => ({ focus() {} }),
-    addEventListener(type, handler) {
-      listeners.push(["second", type, handler]);
-    },
-  };
+  const first = makeInfo("first");
+  const second = makeInfo("second");
   const root = {
     querySelectorAll(sel) {
       return sel === "details.setting-info" ? [first, second] : [];
@@ -647,21 +657,42 @@ test("setting info closes other panels and dismisses on Escape", () => {
     },
   };
   bindSettingInfo(root);
-  first.open = true;
-  listeners.find((row) => row[0] === "first" && row[1] === "toggle")[2]();
-  second.open = true;
-  listeners.find((row) => row[0] === "second" && row[1] === "toggle")[2]();
+  listeners.find((row) => row[0] === "first" && row[1] === "pointerenter")[2]();
+  assert.equal(first.open, true);
+  assert.equal(second.open, false);
+  listeners.find(
+    (row) => row[0] === "second" && row[1] === "pointerenter",
+  )[2]();
   assert.equal(first.open, false);
   assert.equal(second.open, true);
-  const keydown = listeners.find(
-    (row) => row[0] === "root" && row[1] === "keydown",
-  )[2];
-  keydown({ key: "Escape", preventDefault() {} });
+  let prevented = false;
+  listeners.find((row) => row[0] === "second" && row[1] === "summary:click")[2](
+    {
+      preventDefault() {
+        prevented = true;
+      },
+    },
+  );
+  assert.equal(prevented, true);
+  assert.equal(second.open, true);
+  listeners.find(
+    (row) => row[0] === "second" && row[1] === "pointerleave",
+  )[2]();
   assert.equal(second.open, false);
-  const pointer = listeners.find(
-    (row) => row[0] === "root" && row[1] === "pointerdown",
-  )[2];
-  first.open = true;
-  pointer({ target: { closest: () => null } });
+  listeners.find((row) => row[0] === "first" && row[1] === "focusin")[2]();
+  assert.equal(first.open, true);
+  listeners.find((row) => row[0] === "root" && row[1] === "keydown")[2]({
+    key: "Escape",
+    preventDefault() {},
+  });
+  assert.equal(first.open, false);
+  listeners.find((row) => row[0] === "first" && row[1] === "pointerenter")[2]();
+  assert.equal(first.open, false);
+  listeners.find((row) => row[0] === "first" && row[1] === "pointerleave")[2]();
+  listeners.find((row) => row[0] === "first" && row[1] === "pointerenter")[2]();
+  assert.equal(first.open, true);
+  listeners.find((row) => row[0] === "root" && row[1] === "pointerdown")[2]({
+    target: { closest: () => null },
+  });
   assert.equal(first.open, false);
 });
