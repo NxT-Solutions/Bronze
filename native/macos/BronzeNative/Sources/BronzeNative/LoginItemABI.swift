@@ -1,8 +1,10 @@
+import Darwin
 import Foundation
 import ServiceManagement
 
 private let loginAgentLabel = "app.bronze.desktop.login"
 private let loginAgentBundleId = "app.bronze.desktop"
+private let launchctlPath = "/bin/launchctl"
 private let allowedLoginExecutables: Set<String> = ["bronze-desktop", "Bronze"]
 
 @_silgen_name("bronze_native_login_item_status")
@@ -34,7 +36,7 @@ private func loginItemStatusCode() -> UInt32 {
     if bundledMainApp() {
         return statusCode(SMAppService.mainApp.status)
     }
-    return launchAgentIsRegistered() ? BRONZE_STATUS_OK : BRONZE_STATUS_NOT_FOUND
+    return launchAgentIsLoaded() ? BRONZE_STATUS_OK : BRONZE_STATUS_NOT_FOUND
 }
 
 private func statusCode(_ status: SMAppService.Status) -> UInt32 {
@@ -63,6 +65,7 @@ private func applyLoginItem(_ enabled: Bool) -> UInt32 {
     if enabled {
         return writeLoginAgent()
     }
+    bootoutLoginAgent()
     removeLoginAgentIfThisProcessOwnsLogin()
     return BRONZE_STATUS_NOT_FOUND
 }
@@ -182,10 +185,54 @@ private func writeLoginAgent() -> UInt32 {
             options: 0
         )
         try data.write(to: plistURL, options: .atomic)
-        return BRONZE_STATUS_OK
+        let loaded = bootstrapLoginAgent(plistURL)
+        stopLoginAgentIfRunning()
+        if loaded || launchAgentIsLoaded() {
+            return BRONZE_STATUS_OK
+        }
+        return BRONZE_STATUS_CANCELLED
     } catch {
         return BRONZE_STATUS_DEGRADED
     }
+}
+
+private func launchdDomain() -> String {
+    "gui/\(getuid())"
+}
+
+private func runLaunchctl(_ arguments: [String]) -> Int32 {
+    let proc = Process()
+    proc.executableURL = URL(fileURLWithPath: launchctlPath)
+    proc.arguments = arguments
+    proc.standardOutput = Pipe()
+    proc.standardError = Pipe()
+    do {
+        try proc.run()
+        proc.waitUntilExit()
+        return proc.terminationStatus
+    } catch {
+        return -1
+    }
+}
+
+private func launchAgentIsLoaded() -> Bool {
+    guard launchAgentIsRegistered() else {
+        return false
+    }
+    return runLaunchctl(["print", "\(launchdDomain())/\(loginAgentLabel)"]) == 0
+}
+
+private func bootstrapLoginAgent(_ plistURL: URL) -> Bool {
+    let code = runLaunchctl(["bootstrap", launchdDomain(), plistURL.path])
+    return code == 0 || launchAgentIsLoaded()
+}
+
+private func stopLoginAgentIfRunning() {
+    _ = runLaunchctl(["kill", "SIGTERM", "\(launchdDomain())/\(loginAgentLabel)"])
+}
+
+private func bootoutLoginAgent() {
+    _ = runLaunchctl(["bootout", "\(launchdDomain())/\(loginAgentLabel)"])
 }
 
 private func removeLoginAgentIfThisProcessOwnsLogin() {

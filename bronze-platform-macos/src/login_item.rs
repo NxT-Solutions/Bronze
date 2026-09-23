@@ -98,9 +98,12 @@ mod login_item_tests {
         assert!(swift.contains("app.bronze.desktop.login"));
         assert!(swift.contains("writeLoginAgent"));
         assert!(swift.contains("removeLoginAgentIfThisProcessOwnsLogin"));
+        assert!(swift.contains("bootstrapLoginAgent"));
+        assert!(swift.contains("bootoutLoginAgent"));
+        assert!(swift.contains("launchAgentIsLoaded"));
         assert!(swift.contains("\"RunAtLoad\": true"));
+        assert!(swift.contains("/bin/launchctl"));
         assert!(!swift.contains("\"RunAtLoad\": false"));
-        assert!(!swift.contains("launchctl"));
         assert!(!swift.contains("URLSession"));
         assert!(!swift.contains("http://"));
         assert!(!swift.contains("https://"));
