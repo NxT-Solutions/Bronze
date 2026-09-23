@@ -2173,6 +2173,8 @@ mod live_session_tests {
         );
         assert!(!tap.contains("SMAppService"));
         assert!(!tap.contains("bronze_native_apply_login_item"));
+        assert!(!tap.contains("LaunchAgents"));
+        assert!(!tap.contains("launchctl"));
         assert_eq!(ADR_018_STATUS, "Proposed");
     }
 

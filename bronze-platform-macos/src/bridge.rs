@@ -730,6 +730,8 @@ mod tests {
             "bronze_native_apply_login_item",
             "SMAppService",
             "ServiceManagement",
+            "LaunchAgents",
+            "launchctl",
             "NSOpenPanel",
             "NSSavePanel",
             "NSUserNotification",

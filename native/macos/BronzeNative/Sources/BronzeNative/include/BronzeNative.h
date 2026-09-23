@@ -175,8 +175,9 @@ uint32_t bronze_native_deliver_user_notice(
     bronze_native_utf8_view title,
     bronze_native_utf8_view body);
 
-// Login item via SMAppService.mainApp. DEGRADED when the process is not a .app.
-// CANCELLED when Login Items requires approval. NOT_FOUND when not registered.
+// Login item via SMAppService.mainApp when bundled. Unbundled processes write
+// ~/Library/LaunchAgents/app.bronze.desktop.login.plist. CANCELLED when Login
+// Items requires approval. NOT_FOUND when not registered.
 uint32_t bronze_native_login_item_status(void);
 uint32_t bronze_native_apply_login_item(uint32_t enabled);
 

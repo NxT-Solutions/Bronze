@@ -1,6 +1,10 @@
 import Foundation
 import ServiceManagement
 
+private let loginAgentLabel = "app.bronze.desktop.login"
+private let loginAgentBundleId = "app.bronze.desktop"
+private let allowedLoginExecutables: Set<String> = ["bronze-desktop", "Bronze"]
+
 @_silgen_name("bronze_native_login_item_status")
 public func bronze_native_login_item_status() -> UInt32 {
     bronzeOnAppKit {
@@ -27,10 +31,10 @@ private func bundledMainApp() -> Bool {
 }
 
 private func loginItemStatusCode() -> UInt32 {
-    guard bundledMainApp() else {
-        return BRONZE_STATUS_DEGRADED
+    if bundledMainApp() {
+        return statusCode(SMAppService.mainApp.status)
     }
-    return statusCode(SMAppService.mainApp.status)
+    return launchAgentIsRegistered() ? BRONZE_STATUS_OK : BRONZE_STATUS_NOT_FOUND
 }
 
 private func statusCode(_ status: SMAppService.Status) -> UInt32 {
@@ -49,9 +53,21 @@ private func statusCode(_ status: SMAppService.Status) -> UInt32 {
 }
 
 private func applyLoginItem(_ enabled: Bool) -> UInt32 {
-    guard bundledMainApp() else {
+    if bundledMainApp() {
+        removeLoginAgentIfThisProcessOwnsLogin()
+        return applyBundledLoginItem(enabled)
+    }
+    guard let exe = currentExecutableURL(), isOwnedLoginExecutable(exe) else {
         return BRONZE_STATUS_DEGRADED
     }
+    if enabled {
+        return writeLoginAgent()
+    }
+    removeLoginAgentIfThisProcessOwnsLogin()
+    return BRONZE_STATUS_NOT_FOUND
+}
+
+private func applyBundledLoginItem(_ enabled: Bool) -> UInt32 {
     let service = SMAppService.mainApp
     do {
         if enabled {
@@ -81,4 +97,103 @@ private func applyLoginItem(_ enabled: Bool) -> UInt32 {
     } catch {
         return BRONZE_STATUS_DEGRADED
     }
+}
+
+private func currentExecutableURL() -> URL? {
+    if let url = Bundle.main.executableURL {
+        return url.resolvingSymlinksInPath()
+    }
+    let raw = ProcessInfo.processInfo.arguments.first ?? ""
+    guard !raw.isEmpty else {
+        return nil
+    }
+    return URL(fileURLWithPath: raw).resolvingSymlinksInPath()
+}
+
+private func isOwnedLoginExecutable(_ url: URL) -> Bool {
+    let resolved = url.resolvingSymlinksInPath()
+    let path = resolved.path
+    guard path.hasPrefix("/"),
+          !path.contains("/../"),
+          FileManager.default.isExecutableFile(atPath: path)
+    else {
+        return false
+    }
+    return allowedLoginExecutables.contains(resolved.lastPathComponent)
+}
+
+private func loginAgentPlistURL() -> URL? {
+    guard let library = FileManager.default.urls(
+        for: .libraryDirectory,
+        in: .userDomainMask
+    ).first else {
+        return nil
+    }
+    return library
+        .resolvingSymlinksInPath()
+        .appendingPathComponent("LaunchAgents", isDirectory: true)
+        .appendingPathComponent("\(loginAgentLabel).plist", isDirectory: false)
+}
+
+private func launchAgentIsRegistered() -> Bool {
+    guard let plistURL = loginAgentPlistURL(),
+          let data = try? Data(contentsOf: plistURL),
+          let obj = try? PropertyListSerialization.propertyList(
+            from: data,
+            options: [],
+            format: nil
+          ) as? [String: Any],
+          obj["Label"] as? String == loginAgentLabel,
+          let args = obj["ProgramArguments"] as? [String],
+          let first = args.first
+    else {
+        return false
+    }
+    guard isOwnedLoginExecutable(URL(fileURLWithPath: first)),
+          let exe = currentExecutableURL(),
+          isOwnedLoginExecutable(exe)
+    else {
+        return false
+    }
+    return URL(fileURLWithPath: first).resolvingSymlinksInPath().path == exe.path
+}
+
+private func writeLoginAgent() -> UInt32 {
+    guard let exe = currentExecutableURL(),
+          isOwnedLoginExecutable(exe),
+          let plistURL = loginAgentPlistURL()
+    else {
+        return BRONZE_STATUS_DEGRADED
+    }
+    let dir = plistURL.deletingLastPathComponent()
+    do {
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let payload: [String: Any] = [
+            "Label": loginAgentLabel,
+            "ProgramArguments": [exe.path],
+            "RunAtLoad": true,
+            "LimitLoadToSessionType": "Aqua",
+            "ProcessType": "Interactive",
+            "AssociatedBundleIdentifiers": [loginAgentBundleId],
+        ]
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: payload,
+            format: .xml,
+            options: 0
+        )
+        try data.write(to: plistURL, options: .atomic)
+        return BRONZE_STATUS_OK
+    } catch {
+        return BRONZE_STATUS_DEGRADED
+    }
+}
+
+private func removeLoginAgentIfThisProcessOwnsLogin() {
+    guard let exe = currentExecutableURL(),
+          isOwnedLoginExecutable(exe),
+          let plistURL = loginAgentPlistURL()
+    else {
+        return
+    }
+    try? FileManager.default.removeItem(at: plistURL)
 }

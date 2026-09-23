@@ -94,6 +94,13 @@ mod login_item_tests {
         assert!(swift.contains(".enabled"));
         assert!(swift.contains("pathExtension == \"app\""));
         assert!(swift.contains("bundledMainApp"));
+        assert!(swift.contains("LaunchAgents"));
+        assert!(swift.contains("app.bronze.desktop.login"));
+        assert!(swift.contains("writeLoginAgent"));
+        assert!(swift.contains("removeLoginAgentIfThisProcessOwnsLogin"));
+        assert!(swift.contains("\"RunAtLoad\": true"));
+        assert!(!swift.contains("\"RunAtLoad\": false"));
+        assert!(!swift.contains("launchctl"));
         assert!(!swift.contains("URLSession"));
         assert!(!swift.contains("http://"));
         assert!(!swift.contains("https://"));
@@ -125,6 +132,8 @@ mod login_item_tests {
         assert!(!tap.contains("bronze_native_login_item_status"));
         assert!(!tap.contains("launchAtLogin"));
         assert!(!tap.contains("apply_login_item"));
+        assert!(!tap.contains("LaunchAgents"));
+        assert!(!tap.contains("launchctl"));
         assert!(!tap.contains("LSSharedFileList"));
         assert!(!tap.contains("SMLoginItemSetEnabled"));
     }
