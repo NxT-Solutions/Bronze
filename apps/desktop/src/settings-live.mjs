@@ -265,7 +265,7 @@ export function settingsUnitHaystack(unit) {
   const label = unit.querySelector?.("label")?.textContent ?? "";
   const help = [
     ...(unit.querySelectorAll?.(
-      ".field-help, [data-excluded-help], [data-excluded-howto], [data-title-model-help]",
+      ".field-help, [data-excluded-help], [data-excluded-howto], [data-title-model-help], [data-setting-info]",
     ) ?? []),
   ]
     .map((node) => node.textContent ?? "")
@@ -498,7 +498,14 @@ export function applySettingsSearch(root, rawQuery) {
   for (const section of root.querySelectorAll("[data-settings-section]")) {
     const title =
       section.querySelector("[data-settings-title]")?.textContent ?? "";
-    const titleHit = settingsSearchMatches(title, needle);
+    const info = [
+      ...(section.querySelectorAll?.(
+        ":scope > .setting-heading [data-setting-info], legend [data-setting-info]",
+      ) ?? []),
+    ]
+      .map((node) => node.textContent ?? "")
+      .join(" ");
+    const titleHit = settingsSearchMatches(`${title} ${info}`, needle);
     const units = [...section.querySelectorAll("[data-settings-unit]")];
     if (searching && titleHit) {
       for (const unit of units) {
@@ -780,10 +787,53 @@ export function bindSearchClear(root = document) {
   }
 }
 
+export function bindSettingInfo(root) {
+  const infos = [...(root.querySelectorAll?.("details.setting-info") ?? [])];
+  if (infos.length === 0) {
+    return;
+  }
+  const closeAll = (except) => {
+    for (const el of infos) {
+      if (el !== except && el.open) {
+        el.open = false;
+      }
+    }
+  };
+  for (const el of infos) {
+    el.addEventListener("toggle", () => {
+      if (el.open) {
+        closeAll(el);
+      }
+    });
+  }
+  root.addEventListener("pointerdown", (event) => {
+    if (event.target?.closest?.("details.setting-info")) {
+      return;
+    }
+    closeAll();
+  });
+  root.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+    if (root.querySelector?.("[data-recording='true']")) {
+      return;
+    }
+    const open = infos.find((el) => el.open);
+    if (!open) {
+      return;
+    }
+    open.open = false;
+    open.querySelector("summary")?.focus?.();
+    event.preventDefault();
+  });
+}
+
 export async function bindSettingsLive(
   root = document,
   invokeFn = tauriInvoke,
 ) {
+  bindSettingInfo(root);
   bindSearchClear(root);
   const search = root.querySelector("#settings-search");
   const filterSettings = () => {

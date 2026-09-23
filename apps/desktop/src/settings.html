@@ -79,14 +79,48 @@
           aria-labelledby="settings-group-general"
         >
           <legend>
-            <span
-              id="settings-group-general"
-              data-settings-title
-              data-i18n="settings.group.general"
-            >General</span>
+            <div class="setting-heading setting-heading-group">
+              <span
+                id="settings-group-general"
+                data-settings-title
+                data-i18n="settings.group.general"
+              >General</span>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.group.general.infoName"
+                  aria-label="About General"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.group.general.info"
+                >
+                  Language, motion, and the title engine for new captures.
+                </p>
+              </details>
+            </div>
           </legend>
           <div class="field-block" data-settings-unit>
-            <label for="ui-locale" data-i18n="settings.field.locale">Language</label>
+            <div class="setting-heading">
+              <label for="ui-locale" data-i18n="settings.field.locale">Language</label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.locale.infoName"
+                  aria-label="About Language"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.field.locale.info"
+                >
+                  Sets the language of Bronze windows on this Mac; menus follow the saved language at launch.
+                </p>
+              </details>
+            </div>
             <div class="field-row">
               <select id="ui-locale" name="locale">
                 <option value="en" lang="en" selected>🇬🇧 English</option>
@@ -107,7 +141,24 @@
             </div>
           </div>
           <div class="field-block" data-settings-unit>
-            <label for="reduce-motion" data-i18n="settings.field.reduceMotion">Reduce motion</label>
+            <div class="setting-heading">
+              <label for="reduce-motion" data-i18n="settings.field.reduceMotion">Reduce motion</label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.reduceMotion.infoName"
+                  aria-label="About Reduce motion"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.field.reduceMotion.info"
+                >
+                  Queue cards can animate when you complete, skip, move, or trash an item; Follow this Mac uses the system setting, Always reduce skips motion, and Play animations keeps it on.
+                </p>
+              </details>
+            </div>
             <p
               id="reduce-motion-help"
               class="muted field-help"
@@ -152,14 +203,31 @@
             </div>
           </div>
           <div class="field-block" data-settings-unit>
-            <label for="title-model" data-i18n="settings.field.titleModel">Title engine</label>
+            <div class="setting-heading">
+              <label for="title-model" data-i18n="settings.field.titleModel">Title engine</label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.titleModel.infoName"
+                  aria-label="About Title engine"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.field.titleModel.info"
+                >
+                  The chosen engine writes queue titles on this Mac from a file bundled in Bronze; extractive uses no model, and no engine sends text off this device.
+                </p>
+              </details>
+            </div>
             <p
               id="title-model-help"
               class="muted field-help"
               data-title-model-help
               data-i18n="settings.field.titleModel.help"
             >
-              Choose a local title engine that is already on this Mac.
+              A local model bundled in Bronze that never leaves this Mac and works offline; extractive uses no model.
             </p>
             <div class="field-row">
               <select
@@ -223,16 +291,50 @@
           aria-labelledby="settings-group-data"
         >
           <legend>
-            <span
-              id="settings-group-data"
-              data-settings-title
-              data-i18n="settings.group.data"
-            >Data</span>
+            <div class="setting-heading setting-heading-group">
+              <span
+                id="settings-group-data"
+                data-settings-title
+                data-i18n="settings.group.data"
+              >Data</span>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.group.data.infoName"
+                  aria-label="About Data"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.group.data.info"
+                >
+                  How often Bronze writes a local backup of queue data on this Mac.
+                </p>
+              </details>
+            </div>
           </legend>
           <div class="field-block" data-settings-unit>
-            <label for="backup-schedule" data-i18n="settings.field.backupSchedule">
-              Backup schedule
-            </label>
+            <div class="setting-heading">
+              <label for="backup-schedule" data-i18n="settings.field.backupSchedule">
+                Backup schedule
+              </label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.backupSchedule.infoName"
+                  aria-label="About Backup schedule"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.field.backupSchedule.info"
+                >
+                  Bronze writes a local backup of your queue on this Mac on the schedule you pick.
+                </p>
+              </details>
+            </div>
             <div class="field-row">
               <select id="backup-schedule" name="backupSchedule">
                 <option value="daily" selected data-i18n="settings.backup.daily">
@@ -259,19 +361,53 @@
           aria-labelledby="settings-group-privacy"
         >
           <legend>
-            <span
-              id="settings-group-privacy"
-              data-settings-title
-              data-i18n="settings.group.privacy"
-            >Privacy</span>
+            <div class="setting-heading setting-heading-group">
+              <span
+                id="settings-group-privacy"
+                data-settings-title
+                data-i18n="settings.group.privacy"
+              >Privacy</span>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.group.privacy.infoName"
+                  aria-label="About Privacy"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.group.privacy.info"
+                >
+                  Apps Bronze must not read a selection from, even when the capture chord fires.
+                </p>
+              </details>
+            </div>
           </legend>
           <div class="field-block" data-settings-unit>
-            <label
-              for="excluded-apps-search"
-              data-i18n="settings.field.excludedBundleIds"
-            >
-              Excluded apps
-            </label>
+            <div class="setting-heading">
+              <label
+                for="excluded-apps-search"
+                data-i18n="settings.field.excludedBundleIds"
+              >
+                Excluded apps
+              </label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.excludedBundleIds.infoName"
+                  aria-label="About Excluded apps"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.field.excludedBundleIds.info"
+                >
+                  Selections in listed apps never enter the queue; use this for password managers, banks, or any app you do not want captured.
+                </p>
+              </details>
+            </div>
             <p
               id="excluded-apps-help"
               class="muted field-help"
@@ -415,13 +551,30 @@
         data-settings-section
         aria-labelledby="permission-health-title"
       >
-        <h2
-          id="permission-health-title"
-          data-settings-title
-          data-i18n="settings.permission.title"
-        >
-          Permission health
-        </h2>
+        <div class="setting-heading">
+          <h2
+            id="permission-health-title"
+            data-settings-title
+            data-i18n="settings.permission.title"
+          >
+            Permission health
+          </h2>
+          <details class="setting-info">
+            <summary
+              data-i18n-aria-label="settings.permission.title.infoName"
+              aria-label="About Permission health"
+            >
+              <span class="setting-info-mark" aria-hidden="true"></span>
+            </summary>
+            <p
+              class="setting-info-panel"
+              data-setting-info
+              data-i18n="settings.permission.title.info"
+            >
+              Shows whether macOS has granted the permissions capture needs, with a way to retest or open System Settings.
+            </p>
+          </details>
+        </div>
         <ul class="health-list">
           <li
             class="health-card"
@@ -579,13 +732,30 @@
         data-settings-section
         aria-labelledby="shortcuts-title"
       >
-        <h2
-          id="shortcuts-title"
-          data-settings-title
-          data-i18n="settings.shortcuts.title"
-        >
-          Shortcuts
-        </h2>
+        <div class="setting-heading">
+          <h2
+            id="shortcuts-title"
+            data-settings-title
+            data-i18n="settings.shortcuts.title"
+          >
+            Shortcuts
+          </h2>
+          <details class="setting-info">
+            <summary
+              data-i18n-aria-label="settings.shortcuts.title.infoName"
+              aria-label="About Shortcuts"
+            >
+              <span class="setting-info-mark" aria-hidden="true"></span>
+            </summary>
+            <p
+              class="setting-info-panel"
+              data-setting-info
+              data-i18n="settings.shortcuts.title.info"
+            >
+              Replace a default chord by recording a row; restore puts the built-in shortcut back.
+            </p>
+          </details>
+        </div>
         <p
           class="muted"
           id="shortcuts-live"
@@ -739,13 +909,30 @@
         data-settings-section
         aria-labelledby="settings-export-preview"
       >
-        <h2
-          id="settings-export-preview"
-          data-settings-title
-          data-i18n="settings.export.preview"
-        >
-          Export preview
-        </h2>
+        <div class="setting-heading">
+          <h2
+            id="settings-export-preview"
+            data-settings-title
+            data-i18n="settings.export.preview"
+          >
+            Export preview
+          </h2>
+          <details class="setting-info">
+            <summary
+              data-i18n-aria-label="settings.export.preview.infoName"
+              aria-label="About Export preview"
+            >
+              <span class="setting-info-mark" aria-hidden="true"></span>
+            </summary>
+            <p
+              class="setting-info-panel"
+              data-setting-info
+              data-i18n="settings.export.preview.info"
+            >
+              Export or import a settings file on this Mac; the preview lists what the file includes before you save.
+            </p>
+          </details>
+        </div>
         <div data-export-preview>
           <p class="muted" data-i18n="settings.export.included">
             Included in this file

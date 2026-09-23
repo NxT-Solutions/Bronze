@@ -1322,10 +1322,112 @@ menu {
   font-size: var(--text-caption);
 }
 
+.setting-heading {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
 .field-help,
-.field-block > label {
+.field-block > label,
+.field-block > .setting-heading {
   margin: 0;
   max-width: 36rem;
+  letter-spacing: 0;
+  word-spacing: normal;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.setting-heading > label {
+  display: inline;
+  margin-block-end: 0;
+}
+
+.setting-heading-group {
+  font-size: var(--text-caption);
+  font-weight: 650;
+  color: var(--foreground);
+}
+
+.setting-info {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.setting-info > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  list-style: none;
+  cursor: pointer;
+  color: var(--muted-foreground);
+}
+
+.setting-info > summary::-webkit-details-marker {
+  display: none;
+}
+
+.setting-info[open] > summary {
+  color: var(--foreground);
+}
+
+.setting-info-mark {
+  display: block;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  position: relative;
+}
+
+.setting-info-mark::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.setting-info-mark::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 5.5px;
+  width: 1.5px;
+  height: 4.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.setting-info-panel {
+  position: absolute;
+  z-index: 5;
+  inset-inline-start: 0;
+  top: calc(100% + 4px);
+  width: max(16rem, 100%);
+  max-width: min(22rem, calc(100vw - 3rem));
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: var(--shadow);
+  font-size: var(--text-caption);
+  font-weight: 400;
+  line-height: 1.5;
   letter-spacing: 0;
   word-spacing: normal;
   white-space: normal;
@@ -1571,7 +1673,8 @@ legend {
   display: contents;
 }
 
-fieldset > span {
+fieldset > span,
+.setting-heading-group > [data-settings-title] {
   font-size: var(--text-caption);
   font-weight: 650;
 }
@@ -1681,6 +1784,14 @@ article [data-slot="source-label"],
   gap: var(--space-4);
   padding: var(--space-5);
   border-radius: var(--radius-page-card);
+  overflow: visible;
+}
+
+.page-shell fieldset:has(.setting-info[open]),
+.page-shell .card:has(.setting-info[open]),
+.page-shell .card-stack:has(.setting-info[open]) {
+  position: relative;
+  z-index: 4;
 }
 
 .page-shell [hidden] {

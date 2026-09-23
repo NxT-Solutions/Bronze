@@ -8,6 +8,7 @@ import {
   applySettingsSearch,
   applyTitleEngineLifecycle,
   applyTitleModelStatus,
+  bindSettingInfo,
   exportCategoryLabel,
   exportSensitiveLabel,
   filterInstalledApps,
@@ -326,14 +327,16 @@ function fakeNode(spec = {}) {
 }
 
 function fakeMatches(node, sel) {
-  if (sel === "label") {
-    return node._attr.tag === "label";
+  if (sel.includes(",")) {
+    return sel.split(",").some((part) => fakeMatches(node, part.trim()));
   }
-  if (sel === "option") {
-    return node._attr.tag === "option";
+  if (["label", "option", "input", "select", "textarea"].includes(sel)) {
+    return node._attr.tag === sel;
   }
-  if (sel === "input, select, textarea") {
-    return ["input", "select", "textarea"].includes(node._attr.tag);
+  if (sel.startsWith(".") && !sel.includes(" ")) {
+    const cls = sel.slice(1);
+    const raw = node._attr.class ?? "";
+    return raw === cls || String(raw).split(/\s+/).includes(cls);
   }
   if (sel.startsWith("[") && sel.endsWith("]")) {
     return Object.hasOwn(node._attr, sel.slice(1, -1));
@@ -349,6 +352,10 @@ test("settings search matches visible labels and not reset chrome", () => {
     children: [
       fakeNode({ attr: { tag: "label" }, text: "Language" }),
       fakeNode({
+        attr: { "data-setting-info": "", class: "setting-info-panel" },
+        text: "Sets the language of Bronze windows on this Mac",
+      }),
+      fakeNode({
         attr: { tag: "select", name: "locale" },
         text: "",
       }),
@@ -361,6 +368,7 @@ test("settings search matches visible labels and not reset chrome", () => {
   const hay = settingsUnitHaystack(language);
   assert.match(hay, /Language/);
   assert.match(hay, /English/);
+  assert.match(hay, /windows on this Mac/);
   assert.doesNotMatch(hay, /Reset field/);
 
   const general = fakeNode({
@@ -557,4 +565,51 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.equal(TITLE_ENGINE_STATUS_EVENT, "title-engine-status");
   assert.doesNotMatch(live, /huggingface/i);
   assert.doesNotMatch(live, /https:\/\//);
+});
+
+test("setting info closes other panels and dismisses on Escape", () => {
+  const listeners = [];
+  const first = {
+    open: false,
+    querySelector: () => ({ focus() {} }),
+    addEventListener(type, handler) {
+      listeners.push(["first", type, handler]);
+    },
+  };
+  const second = {
+    open: false,
+    querySelector: () => ({ focus() {} }),
+    addEventListener(type, handler) {
+      listeners.push(["second", type, handler]);
+    },
+  };
+  const root = {
+    querySelectorAll(sel) {
+      return sel === "details.setting-info" ? [first, second] : [];
+    },
+    querySelector() {
+      return null;
+    },
+    addEventListener(type, handler) {
+      listeners.push(["root", type, handler]);
+    },
+  };
+  bindSettingInfo(root);
+  first.open = true;
+  listeners.find((row) => row[0] === "first" && row[1] === "toggle")[2]();
+  second.open = true;
+  listeners.find((row) => row[0] === "second" && row[1] === "toggle")[2]();
+  assert.equal(first.open, false);
+  assert.equal(second.open, true);
+  const keydown = listeners.find(
+    (row) => row[0] === "root" && row[1] === "keydown",
+  )[2];
+  keydown({ key: "Escape", preventDefault() {} });
+  assert.equal(second.open, false);
+  const pointer = listeners.find(
+    (row) => row[0] === "root" && row[1] === "pointerdown",
+  )[2];
+  first.open = true;
+  pointer({ target: { closest: () => null } });
+  assert.equal(first.open, false);
 });

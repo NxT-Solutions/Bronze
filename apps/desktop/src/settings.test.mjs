@@ -99,6 +99,10 @@ test("settings window is searchable grouped with daily weekly backup and export 
     en["settings.field.reduceMotion.help"],
     "Follows this Mac unless you override it.",
   );
+  assert.equal(
+    en["settings.field.reduceMotion.infoName"],
+    "About Reduce motion",
+  );
   assert.equal(en["settings.field.reduceMotion.system"], "Follow this Mac");
   assert.equal(en["settings.field.reduceMotion.on"], "Always reduce");
   assert.equal(en["settings.field.reduceMotion.off"], "Play animations");
@@ -108,13 +112,19 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, />\s*Title engine\s*</);
   assert.match(
     html,
-    />\s*Choose a local title engine that is already on this Mac\.\s*</,
+    />\s*A local model bundled in Bronze that never leaves this Mac and works offline; extractive uses no model\.\s*</,
   );
   assert.equal(en["settings.field.titleModel"], "Title engine");
   assert.equal(
     en["settings.field.titleModel.help"],
-    "Choose a local title engine that is already on this Mac.",
+    "A local model bundled in Bronze that never leaves this Mac and works offline; extractive uses no model.",
   );
+  assert.equal(en["settings.field.titleModel.infoName"], "About Title engine");
+  assert.match(html, /class="setting-info"/);
+  assert.equal((html.match(/class="setting-info"/g) || []).length, 11);
+  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 11);
+  assert.match(html, /data-i18n="settings.field.titleModel.info"/);
+  assert.match(html, /data-i18n-aria-label="settings.field.locale.infoName"/);
   assert.equal(
     en["settings.field.titleModel.extractive"],
     "Extractive — no model file",
