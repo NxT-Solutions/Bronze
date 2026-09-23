@@ -150,6 +150,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /class="setting-info"/);
   assert.equal((html.match(/class="setting-info"/g) || []).length, 12);
   assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 12);
+  assert.match(html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(html, /data-i18n="settings.field.titleModel.info"/);
   assert.match(html, /data-i18n-aria-label="settings.field.locale.infoName"/);
   assert.equal(

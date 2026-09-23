@@ -200,6 +200,8 @@ export const MessageIds = {
   "settings.shortcuts.title": "settings.shortcuts.title",
   "settings.shortcuts.title.infoName": "settings.shortcuts.title.infoName",
   "settings.shortcuts.title.info": "settings.shortcuts.title.info",
+  "settings.shortcuts.title.infoRestore":
+    "settings.shortcuts.title.infoRestore",
   "settings.shortcuts.record": "settings.shortcuts.record",
   "settings.shortcuts.skipTest": "settings.shortcuts.skipTest",
   "settings.shortcuts.cancel": "settings.shortcuts.cancel",

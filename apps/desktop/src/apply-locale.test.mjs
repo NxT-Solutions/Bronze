@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  applyCatalogRichText,
   applyHandTestLocale,
   catalogHasRealSpaces,
   emitUiLocaleChanged,
@@ -54,6 +55,40 @@ test("hand-test locale stays en unless a shipped or pseudo locale is explicit", 
     catalogHasRealSpaces("Needededforthegloballcaptureechordd"),
     false,
   );
+});
+
+test("setting info catalog bolds markers and treats markup as text", () => {
+  const kids = [];
+  const el = {
+    ownerDocument: {
+      createElement(tag) {
+        return { tagName: tag, textContent: "" };
+      },
+      createTextNode(text) {
+        return { nodeType: 3, textContent: text };
+      },
+      createDocumentFragment() {
+        const nodes = [];
+        return {
+          append(...part) {
+            nodes.push(...part);
+          },
+          nodes,
+        };
+      },
+    },
+    replaceChildren(frag) {
+      kids.splice(0, kids.length, ...(frag.nodes ?? []));
+    },
+  };
+  applyCatalogRichText(el, "**Record** a row to replace that shortcut.");
+  assert.equal(kids[0].tagName, "strong");
+  assert.equal(kids[0].textContent, "Record");
+  assert.equal(kids[1].textContent, " a row to replace that shortcut.");
+  applyCatalogRichText(el, "<b>unsafe</b>");
+  assert.equal(kids.length, 1);
+  assert.equal(kids[0].nodeType, 3);
+  assert.equal(kids[0].textContent, "<b>unsafe</b>");
 });
 
 test("applyHandTestLocale sets html lang and catalog chrome", () => {

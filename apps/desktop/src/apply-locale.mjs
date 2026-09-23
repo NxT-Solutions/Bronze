@@ -64,6 +64,39 @@ export function isIcuMessage(value) {
   return /,\s*(plural|select|selectordinal)\s*,/i.test(value);
 }
 
+function usesRichCatalog(el) {
+  return (
+    el.hasAttribute?.("data-setting-info") ||
+    String(el.className ?? "")
+      .split(/\s+/)
+      .includes("setting-info-panel") ||
+    Boolean(el.closest?.("[data-setting-info], .setting-info-panel"))
+  );
+}
+
+export function applyCatalogRichText(el, value) {
+  const raw = String(value ?? "");
+  const doc = el.ownerDocument ?? globalThis.document;
+  if (!el.replaceChildren || !doc?.createElement || !doc.createTextNode) {
+    el.textContent = raw.replaceAll("**", "");
+    return;
+  }
+  const frag = doc.createDocumentFragment();
+  for (const part of raw.split(/(\*\*[^*]+\*\*)/g)) {
+    const bold = /^\*\*([^*]+)\*\*$/.exec(part);
+    if (bold) {
+      const strong = doc.createElement("strong");
+      strong.textContent = bold[1];
+      frag.append(strong);
+      continue;
+    }
+    if (part) {
+      frag.append(doc.createTextNode(part));
+    }
+  }
+  el.replaceChildren(frag);
+}
+
 export function formatQueueCount(count, template) {
   const fallback = "{count, plural, =0 {0 items} one {1 item} other {# items}}";
   const src =
@@ -96,7 +129,11 @@ function applyCatalogMessages(scope, messages) {
     if (typeof value !== "string" || isIcuMessage(value)) {
       continue;
     }
-    el.textContent = value;
+    if (usesRichCatalog(el)) {
+      applyCatalogRichText(el, value);
+    } else {
+      el.textContent = value;
+    }
   }
   for (const el of scope.querySelectorAll("[data-i18n-placeholder]")) {
     const key = el.getAttribute("data-i18n-placeholder");

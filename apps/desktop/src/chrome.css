@@ -1417,6 +1417,8 @@ menu {
   z-index: 5;
   inset-inline-start: 0;
   top: calc(100% + 4px);
+  display: grid;
+  gap: var(--space-2);
   width: max(16rem, 100%);
   max-width: min(22rem, calc(100vw - 3rem));
   margin: 0;
@@ -1429,9 +1431,20 @@ menu {
   font-weight: 400;
   line-height: 1.5;
   letter-spacing: 0;
-  word-spacing: normal;
+  word-spacing: 0.02em;
   white-space: normal;
   overflow-wrap: break-word;
+}
+
+.setting-info-panel p {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.setting-info-panel strong {
+  font-weight: 600;
 }
 
 .setting-info-panel::before {
