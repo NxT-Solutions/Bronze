@@ -109,9 +109,9 @@ pub fn chrome_window_spec(kind: &str) -> Option<ChromeWindowSpec> {
     }
 }
 
-pub fn quick_panel_frame(work: Rect, dir: TextDirection) -> Rect {
+pub fn quick_panel_frame(edge: PhysicalEdge, work: Rect, dir: TextDirection) -> Rect {
     place_on_physical_edge(
-        DEFAULT_PHYSICAL_EDGE,
+        edge,
         Rect {
             x: 0,
             y: 0,
@@ -286,8 +286,8 @@ mod window_edge_tests {
     fn dev_launch_reveals_quick_on_physical_edge_without_capture_steal() {
         assert!(DEV_LAUNCH_REVEALS_QUICK);
         assert!(!CAPTURE_ONLY_REVEALS_PANEL);
-        let frame = quick_panel_frame(WORK, TextDirection::Ltr);
-        let rtl = quick_panel_frame(WORK, TextDirection::Rtl);
+        let frame = quick_panel_frame(DEFAULT_PHYSICAL_EDGE, WORK, TextDirection::Ltr);
+        let rtl = quick_panel_frame(DEFAULT_PHYSICAL_EDGE, WORK, TextDirection::Rtl);
         assert_eq!(frame, rtl);
         assert_eq!(frame.x, WORK.x);
         assert_eq!(frame.width, QUICK_PANEL_WIDTH);
@@ -323,7 +323,7 @@ mod window_edge_tests {
                 height: 945,
             }
         );
-        let frame = quick_panel_frame(logical, TextDirection::Ltr);
+        let frame = quick_panel_frame(DEFAULT_PHYSICAL_EDGE, logical, TextDirection::Ltr);
         assert_eq!(frame.width, QUICK_PANEL_WIDTH);
         assert_eq!(frame.height, logical.height);
         assert!(frame.width > QUICK_PANEL_MIN_WIDTH);

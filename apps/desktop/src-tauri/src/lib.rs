@@ -76,8 +76,14 @@ pub fn run() {
             });
     }
     builder
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
+                let _ = reveal_quick_panel(app);
+            }
+        });
 }
 
 #[cfg(target_os = "macos")]
@@ -188,7 +194,7 @@ fn reveal_quick_panel(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::
             .visible(true)
             .build()?
     };
-    if let Some(monitor) = window.current_monitor()? {
+    if let Some(monitor) = monitor_for_reveal(&window) {
         let area = monitor.work_area();
         let work = physical_rect_to_logical(
             Rect {
@@ -199,7 +205,7 @@ fn reveal_quick_panel(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::
             },
             monitor.scale_factor(),
         );
-        let placed = quick_panel_frame(work, catalog_dir("en"));
+        let placed = quick_panel_frame(panel_reveal_edge(app), work, catalog_dir("en"));
         window.set_position(LogicalPosition::new(placed.x as f64, placed.y as f64))?;
         window.set_size(LogicalSize::new(
             f64::from(placed.width),
@@ -212,8 +218,69 @@ fn reveal_quick_panel(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::
     }
     let _ = window.unminimize();
     window.show()?;
+    raise_quick_panel(&window);
     let _ = window.set_focus();
     Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn panel_reveal_edge(app: &tauri::AppHandle) -> window_edge::PhysicalEdge {
+    use bronze_settings::PanelEdge;
+    use tauri::Manager;
+    use window_edge::{PhysicalEdge, DEFAULT_PHYSICAL_EDGE};
+    let Some(session) = app.try_state::<std::sync::Mutex<live_session::LiveSession>>() else {
+        return DEFAULT_PHYSICAL_EDGE;
+    };
+    let edge = session
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .settings()
+        .panel
+        .edge;
+    match edge {
+        PanelEdge::Left => PhysicalEdge::Left,
+        PanelEdge::Right => PhysicalEdge::Right,
+        PanelEdge::Top => PhysicalEdge::Top,
+        PanelEdge::LastPosition => DEFAULT_PHYSICAL_EDGE,
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn monitor_for_reveal(window: &tauri::WebviewWindow) -> Option<tauri::Monitor> {
+    if let Ok(pos) = window.cursor_position() {
+        if let Ok(Some(monitor)) = window.monitor_from_point(pos.x, pos.y) {
+            return Some(monitor);
+        }
+    }
+    window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| window.primary_monitor().ok().flatten())
+}
+
+/// Dock/status clicks are a user gesture. `activate()` is the macOS 14+ path;
+/// `orderFrontRegardless` raises a window that is already visible behind others.
+#[cfg(target_os = "macos")]
+fn raise_quick_panel(window: &tauri::WebviewWindow) {
+    use objc2::rc::Retained;
+    use objc2_app_kit::{NSApplication, NSWindow};
+    use objc2_foundation::MainThreadMarker;
+    let Some(mtm) = MainThreadMarker::new() else {
+        return;
+    };
+    NSApplication::sharedApplication(mtm).activate();
+    let Ok(ptr) = window.ns_window() else {
+        return;
+    };
+    if ptr.is_null() {
+        return;
+    }
+    let Some(ns_window) = (unsafe { Retained::retain(ptr.cast::<NSWindow>()) }) else {
+        return;
+    };
+    ns_window.orderFrontRegardless();
+    ns_window.makeKeyAndOrderFront(None);
 }
 
 #[cfg(target_os = "macos")]
@@ -812,6 +879,11 @@ mod tests {
         let reveal = include_str!("lib.rs");
         assert!(reveal.contains("LogicalSize"));
         assert!(reveal.contains("physical_rect_to_logical"));
+        assert!(reveal.contains("RunEvent::Reopen"));
+        assert!(reveal.contains("monitor_from_point"));
+        assert!(reveal.contains("orderFrontRegardless"));
+        assert!(reveal.contains("makeKeyAndOrderFront"));
+        assert!(reveal.contains("NSApplication::sharedApplication"));
         let library = windows
             .iter()
             .find(|window| window["label"] == "library")
@@ -921,6 +993,8 @@ mod tests {
         assert!(lib.contains("on_tray_icon_event"));
         assert!(lib.contains("show_menu_on_left_click(false)"));
         assert!(lib.contains("menu.status.show"));
+        assert!(lib.contains("raise_quick_panel"));
+        assert!(lib.contains("RunEvent::Reopen"));
         let tray_menu = lib.split("fn status_tray_menu").nth(1).expect("tray menu");
         let tray_menu_end = tray_menu.find("\nfn ").unwrap_or(tray_menu.len());
         assert!(!tray_menu[..tray_menu_end].contains("quit_with_text"));
