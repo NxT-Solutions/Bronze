@@ -3,7 +3,6 @@ import Foundation
 import ServiceManagement
 
 private let loginAgentLabel = "app.bronze.desktop.login"
-private let loginAgentBundleId = "app.bronze.desktop"
 private let launchctlPath = "/bin/launchctl"
 private let allowedLoginExecutables: Set<String> = ["bronze-desktop", "Bronze"]
 
@@ -33,10 +32,11 @@ private func bundledMainApp() -> Bool {
 }
 
 private func loginItemStatusCode() -> UInt32 {
+    removeLeftoverDebugLoginAgent()
     if bundledMainApp() {
         return statusCode(SMAppService.mainApp.status)
     }
-    return launchAgentIsLoaded() ? BRONZE_STATUS_OK : BRONZE_STATUS_NOT_FOUND
+    return BRONZE_STATUS_DEGRADED
 }
 
 private func statusCode(_ status: SMAppService.Status) -> UInt32 {
@@ -55,19 +55,11 @@ private func statusCode(_ status: SMAppService.Status) -> UInt32 {
 }
 
 private func applyLoginItem(_ enabled: Bool) -> UInt32 {
+    removeLeftoverDebugLoginAgent()
     if bundledMainApp() {
-        removeLoginAgentIfThisProcessOwnsLogin()
         return applyBundledLoginItem(enabled)
     }
-    guard let exe = currentExecutableURL(), isOwnedLoginExecutable(exe) else {
-        return BRONZE_STATUS_DEGRADED
-    }
-    if enabled {
-        return writeLoginAgent()
-    }
-    bootoutLoginAgent()
-    removeLoginAgentIfThisProcessOwnsLogin()
-    return BRONZE_STATUS_NOT_FOUND
+    return BRONZE_STATUS_DEGRADED
 }
 
 private func applyBundledLoginItem(_ enabled: Bool) -> UInt32 {
@@ -138,64 +130,6 @@ private func loginAgentPlistURL() -> URL? {
         .appendingPathComponent("\(loginAgentLabel).plist", isDirectory: false)
 }
 
-private func launchAgentIsRegistered() -> Bool {
-    guard let plistURL = loginAgentPlistURL(),
-          let data = try? Data(contentsOf: plistURL),
-          let obj = try? PropertyListSerialization.propertyList(
-            from: data,
-            options: [],
-            format: nil
-          ) as? [String: Any],
-          obj["Label"] as? String == loginAgentLabel,
-          let args = obj["ProgramArguments"] as? [String],
-          let first = args.first
-    else {
-        return false
-    }
-    guard isOwnedLoginExecutable(URL(fileURLWithPath: first)),
-          let exe = currentExecutableURL(),
-          isOwnedLoginExecutable(exe)
-    else {
-        return false
-    }
-    return URL(fileURLWithPath: first).resolvingSymlinksInPath().path == exe.path
-}
-
-private func writeLoginAgent() -> UInt32 {
-    guard let exe = currentExecutableURL(),
-          isOwnedLoginExecutable(exe),
-          let plistURL = loginAgentPlistURL()
-    else {
-        return BRONZE_STATUS_DEGRADED
-    }
-    let dir = plistURL.deletingLastPathComponent()
-    do {
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let payload: [String: Any] = [
-            "Label": loginAgentLabel,
-            "ProgramArguments": [exe.path],
-            "RunAtLoad": true,
-            "LimitLoadToSessionType": "Aqua",
-            "ProcessType": "Interactive",
-            "AssociatedBundleIdentifiers": [loginAgentBundleId],
-        ]
-        let data = try PropertyListSerialization.data(
-            fromPropertyList: payload,
-            format: .xml,
-            options: 0
-        )
-        try data.write(to: plistURL, options: .atomic)
-        let loaded = bootstrapLoginAgent(plistURL)
-        stopLoginAgentIfRunning()
-        if loaded || launchAgentIsLoaded() {
-            return BRONZE_STATUS_OK
-        }
-        return BRONZE_STATUS_CANCELLED
-    } catch {
-        return BRONZE_STATUS_DEGRADED
-    }
-}
-
 private func launchdDomain() -> String {
     "gui/\(getuid())"
 }
@@ -215,22 +149,6 @@ private func runLaunchctl(_ arguments: [String]) -> Int32 {
     }
 }
 
-private func launchAgentIsLoaded() -> Bool {
-    guard launchAgentIsRegistered() else {
-        return false
-    }
-    return runLaunchctl(["print", "\(launchdDomain())/\(loginAgentLabel)"]) == 0
-}
-
-private func bootstrapLoginAgent(_ plistURL: URL) -> Bool {
-    let code = runLaunchctl(["bootstrap", launchdDomain(), plistURL.path])
-    return code == 0 || launchAgentIsLoaded()
-}
-
-private func stopLoginAgentIfRunning() {
-    _ = runLaunchctl(["kill", "SIGTERM", "\(launchdDomain())/\(loginAgentLabel)"])
-}
-
 private func bootoutLoginAgent() {
     _ = runLaunchctl(["bootout", "\(launchdDomain())/\(loginAgentLabel)"])
 }
@@ -243,4 +161,10 @@ private func removeLoginAgentIfThisProcessOwnsLogin() {
         return
     }
     try? FileManager.default.removeItem(at: plistURL)
+}
+
+/// A leftover debug LaunchAgent makes macOS treat this binary as background and refuse `tauri dev`.
+private func removeLeftoverDebugLoginAgent() {
+    bootoutLoginAgent()
+    removeLoginAgentIfThisProcessOwnsLogin()
 }
