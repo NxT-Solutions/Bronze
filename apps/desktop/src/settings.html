@@ -112,13 +112,14 @@
                 >
                   <span class="setting-info-mark" aria-hidden="true"></span>
                 </summary>
-                <p
-                  class="setting-info-panel"
-                  data-setting-info
-                  data-i18n="settings.field.launchAtLogin.info"
-                >
-                  Saves whether Bronze should open when this Mac starts; Login Items may still ask for approval, and a debug build that is not an app cannot register.
-                </p>
+                <div class="setting-info-panel" data-setting-info>
+                  <p data-i18n="settings.field.launchAtLogin.info">
+                    <strong>Opens Bronze</strong> when you log in to this Mac.
+                  </p>
+                  <p data-i18n="settings.field.launchAtLogin.infoApproval">
+                    <strong>Login Items</strong> may still ask for approval.
+                  </p>
+                </div>
               </details>
             </div>
             <p
@@ -126,7 +127,14 @@
               class="muted field-help"
               data-i18n="settings.field.launchAtLogin.help"
             >
-              Starts Bronze when you log in to this Mac; off until you turn it on.
+              <strong>Starts Bronze</strong> when you log in to this Mac.
+            </p>
+            <p
+              id="launch-at-login-help-until"
+              class="muted field-help"
+              data-i18n="settings.field.launchAtLogin.helpUntil"
+            >
+              <strong>Off</strong> until you turn it on.
             </p>
             <p
               class="muted field-help"
@@ -138,7 +146,7 @@
                 id="launch-at-login"
                 type="checkbox"
                 name="launchAtLogin"
-                aria-describedby="launch-at-login-help"
+                aria-describedby="launch-at-login-help launch-at-login-help-until"
               />
               <button
                 type="button"
@@ -160,13 +168,14 @@
                 >
                   <span class="setting-info-mark" aria-hidden="true"></span>
                 </summary>
-                <p
-                  class="setting-info-panel"
-                  data-setting-info
-                  data-i18n="settings.field.locale.info"
-                >
-                  Sets the language of Bronze windows on this Mac; menus follow the saved language at launch.
-                </p>
+                <div class="setting-info-panel" data-setting-info>
+                  <p data-i18n="settings.field.locale.info">
+                    <strong>Sets the language</strong> of Bronze windows on this Mac.
+                  </p>
+                  <p data-i18n="settings.field.locale.infoMenus">
+                    <strong>Menus</strong> follow the saved language at launch.
+                  </p>
+                </div>
               </details>
             </div>
             <div class="field-row">
@@ -198,13 +207,17 @@
                 >
                   <span class="setting-info-mark" aria-hidden="true"></span>
                 </summary>
-                <p
-                  class="setting-info-panel"
-                  data-setting-info
-                  data-i18n="settings.field.reduceMotion.info"
-                >
-                  Queue cards can animate when you complete, skip, move, or trash an item; Follow this Mac uses the system setting, Always reduce skips motion, and Play animations keeps it on.
-                </p>
+                <div class="setting-info-panel" data-setting-info>
+                  <p data-i18n="settings.field.reduceMotion.info">
+                    <strong>Follow this Mac</strong> uses the system setting.
+                  </p>
+                  <p data-i18n="settings.field.reduceMotion.infoAlways">
+                    <strong>Always reduce</strong> skips motion.
+                  </p>
+                  <p data-i18n="settings.field.reduceMotion.infoPlay">
+                    <strong>Play animations</strong> keeps it on.
+                  </p>
+                </div>
               </details>
             </div>
             <p
@@ -456,13 +469,14 @@
                 >
                   <span class="setting-info-mark" aria-hidden="true"></span>
                 </summary>
-                <p
-                  class="setting-info-panel"
-                  data-setting-info
-                  data-i18n="settings.field.excludedBundleIds.info"
-                >
-                  Selections in listed apps never enter the queue; use this for password managers, banks, or any app you do not want captured.
-                </p>
+                <div class="setting-info-panel" data-setting-info>
+                  <p data-i18n="settings.field.excludedBundleIds.info">
+                    <strong>Selections</strong> in listed apps never enter the queue.
+                  </p>
+                  <p data-i18n="settings.field.excludedBundleIds.infoWhen">
+                    <strong>Use this</strong> for password managers, banks, or any app you do not want captured.
+                  </p>
+                </div>
               </details>
             </div>
             <p
@@ -982,13 +996,14 @@
             >
               <span class="setting-info-mark" aria-hidden="true"></span>
             </summary>
-            <p
-              class="setting-info-panel"
-              data-setting-info
-              data-i18n="settings.export.preview.info"
-            >
-              Export or import a settings file on this Mac; the preview lists what the file includes before you save.
-            </p>
+            <div class="setting-info-panel" data-setting-info>
+              <p data-i18n="settings.export.preview.info">
+                <strong>Export or import</strong> a settings file on this Mac.
+              </p>
+              <p data-i18n="settings.export.preview.infoList">
+                <strong>The preview</strong> lists what the file includes before you save.
+              </p>
+            </div>
           </details>
         </div>
         <div data-export-preview>

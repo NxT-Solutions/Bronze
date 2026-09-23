@@ -37,7 +37,11 @@ test("local help previews redacted diagnostics without automatic upload", () => 
   assert.equal(en["help.diagnostics.export"], "Export Support File…");
   assert.equal(
     en["help.diagnostics.export.explain"],
-    "Save a support file on this Mac and attach it to a GitHub issue or pull request; Bronze never uploads it.",
+    "Save a support file on this Mac and attach it to a GitHub issue.",
+  );
+  assert.equal(
+    en["help.diagnostics.export.explainLocal"],
+    "Bronze never uploads it.",
   );
   assert.equal(
     en["help.upload.none"],

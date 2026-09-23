@@ -43,7 +43,8 @@ const TITLE_ENGINE_PHASES = Object.freeze([
 const TITLE_MODEL_STATUS_FALLBACK = {
   extractive: "Extractive titles use no model file.",
   present: "This file is on this Mac and can title the next capture.",
-  missing: "Vendored file missing; keep extractive titles and run {command}",
+  missing:
+    "Vendored file missing — titles stay extractive until you run {command}.",
   unavailable: "Title engines could not be listed.",
   loading: "Loading {engine}…",
   hashing: "Checking {engine}…",

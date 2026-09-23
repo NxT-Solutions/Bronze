@@ -69,10 +69,15 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(pages[2].html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(pages[2].html, /settings\.field\.titleModel\.helpExtractive/);
   assert.match(pages[2].html, /settings\.field\.titleModel\.infoExtractive/);
+  assert.match(pages[2].html, /settings\.field\.reduceMotion\.infoAlways/);
+  assert.match(pages[2].html, /settings\.field\.reduceMotion\.infoPlay/);
   assert.match(pages[2].html, /<strong>Record<\/strong>/);
   assert.match(pages[2].html, /<strong>Restore<\/strong>/);
   assert.match(pages[2].html, /<strong>Stays on this Mac<\/strong>/);
   assert.match(pages[2].html, /<strong>Extractive<\/strong>/);
+  assert.match(pages[2].html, /<strong>Follow this Mac<\/strong>/);
+  assert.match(pages[2].html, /<strong>Always reduce<\/strong>/);
+  assert.match(pages[2].html, /<strong>Play animations<\/strong>/);
   assert.match(chrome, /input\[type="checkbox"\]/);
   assert.match(chrome, /\.btn-icon/);
   assert.match(chrome, /#composer-error\[hidden\]/);

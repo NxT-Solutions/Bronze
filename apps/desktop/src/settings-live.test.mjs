@@ -514,7 +514,7 @@ test("title model status shows present vs vendor command and never fetches", asy
       present: false,
       vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
     }),
-    "Vendored file missing; keep extractive titles and run sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+    "Vendored file missing — titles stay extractive until you run sh bronze-title-model/scripts/vendor-gguf.sh qwen-05.",
   );
   assert.equal(
     formatTitleModelStatus(

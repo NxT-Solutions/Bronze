@@ -75,8 +75,24 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /role="combobox"/);
   assert.doesNotMatch(html, /name="excludedBundleIds"/);
   assert.equal(
+    en["settings.field.excludedBundleIds.info"],
+    "**Selections** in listed apps never enter the queue.",
+  );
+  assert.equal(
+    en["settings.field.excludedBundleIds.infoWhen"],
+    "**Use this** for password managers, banks, or any app you do not want captured.",
+  );
+  assert.equal(
     en["settings.field.excludedBundleIds.help"],
     "Bronze will not capture selections from these apps.",
+  );
+  assert.equal(
+    en["settings.export.preview.info"],
+    "**Export or import** a settings file on this Mac.",
+  );
+  assert.equal(
+    en["settings.export.preview.infoList"],
+    "**The preview** lists what the file includes before you save.",
   );
   assert.equal(
     en["settings.field.excludedBundleIds.howto"],
@@ -98,12 +114,17 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /data-login-item-status/);
   assert.match(
     html,
-    />\s*Starts Bronze when you log in to this Mac; off until you turn it on\.\s*</,
+    />\s*<strong>Starts Bronze<\/strong> when you log in to this Mac\.\s*</,
   );
+  assert.match(html, />\s*<strong>Off<\/strong> until you turn it on\.\s*</);
   assert.equal(en["settings.field.launchAtLogin"], "Launch at login");
   assert.equal(
     en["settings.field.launchAtLogin.help"],
-    "Starts Bronze when you log in to this Mac; off until you turn it on.",
+    "**Starts Bronze** when you log in to this Mac.",
+  );
+  assert.equal(
+    en["settings.field.launchAtLogin.helpUntil"],
+    "**Off** until you turn it on.",
   );
   assert.equal(
     en["settings.field.launchAtLogin.infoName"],
@@ -111,7 +132,15 @@ test("settings window is searchable grouped with daily weekly backup and export 
   );
   assert.equal(
     en["settings.field.launchAtLogin.info"],
-    "Saves whether Bronze should open when this Mac starts; Login Items may still ask for approval, and a debug build that is not an app cannot register.",
+    "**Opens Bronze** when you log in to this Mac.",
+  );
+  assert.equal(
+    en["settings.field.launchAtLogin.infoApproval"],
+    "**Login Items** may still ask for approval.",
+  );
+  assert.equal(
+    en["settings.field.launchAtLogin.status.requiresApproval"],
+    "Allow Bronze in Login Items to finish.",
   );
   assert.equal(
     en["settings.field.launchAtLogin.status.unavailable"],
@@ -130,6 +159,24 @@ test("settings window is searchable grouped with daily weekly backup and export 
     en["settings.field.reduceMotion.infoName"],
     "About Reduce motion",
   );
+  assert.equal(
+    en["settings.field.reduceMotion.info"],
+    "**Follow this Mac** uses the system setting.",
+  );
+  assert.equal(
+    en["settings.field.reduceMotion.infoAlways"],
+    "**Always reduce** skips motion.",
+  );
+  assert.equal(
+    en["settings.field.reduceMotion.infoPlay"],
+    "**Play animations** keeps it on.",
+  );
+  assert.match(
+    html,
+    />\s*<strong>Follow this Mac<\/strong> uses the system setting\.\s*</,
+  );
+  assert.match(html, />\s*<strong>Always reduce<\/strong> skips motion\.\s*</);
+  assert.match(html, />\s*<strong>Play animations<\/strong> keeps it on\.\s*</);
   assert.equal(en["settings.field.reduceMotion.system"], "Follow this Mac");
   assert.equal(en["settings.field.reduceMotion.on"], "Always reduce");
   assert.equal(en["settings.field.reduceMotion.off"], "Play animations");
@@ -166,6 +213,11 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(html, /data-i18n="settings.field.titleModel.info"/);
   assert.match(html, /data-i18n="settings.field.titleModel.infoExtractive"/);
+  assert.match(html, /data-i18n="settings.field.reduceMotion.infoAlways"/);
+  assert.match(html, /data-i18n="settings.field.reduceMotion.infoPlay"/);
+  assert.match(html, /data-i18n="settings.field.locale.infoMenus"/);
+  assert.match(html, /data-i18n="settings.field.excludedBundleIds.infoWhen"/);
+  assert.match(html, /data-i18n="settings.export.preview.infoList"/);
   assert.match(html, /data-i18n="settings.field.titleModel.helpExtractive"/);
   assert.match(
     html,
@@ -190,7 +242,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
   );
   assert.equal(
     en["settings.field.titleModel.missing"],
-    "Vendored file missing; keep extractive titles and run {command}",
+    "Vendored file missing — titles stay extractive until you run {command}.",
   );
   assert.equal(en["settings.field.titleModel.loading"], "Loading {engine}…");
   assert.equal(en["settings.field.titleModel.hashing"], "Checking {engine}…");

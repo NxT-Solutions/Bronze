@@ -92,7 +92,11 @@ export const MessageIds = {
   "settings.field.launchAtLogin.infoName":
     "settings.field.launchAtLogin.infoName",
   "settings.field.launchAtLogin.info": "settings.field.launchAtLogin.info",
+  "settings.field.launchAtLogin.infoApproval":
+    "settings.field.launchAtLogin.infoApproval",
   "settings.field.launchAtLogin.help": "settings.field.launchAtLogin.help",
+  "settings.field.launchAtLogin.helpUntil":
+    "settings.field.launchAtLogin.helpUntil",
   "settings.field.launchAtLogin.status.enabled":
     "settings.field.launchAtLogin.status.enabled",
   "settings.field.launchAtLogin.status.notRegistered":
@@ -108,10 +112,15 @@ export const MessageIds = {
   "settings.field.locale": "settings.field.locale",
   "settings.field.locale.infoName": "settings.field.locale.infoName",
   "settings.field.locale.info": "settings.field.locale.info",
+  "settings.field.locale.infoMenus": "settings.field.locale.infoMenus",
   "settings.field.reduceMotion": "settings.field.reduceMotion",
   "settings.field.reduceMotion.infoName":
     "settings.field.reduceMotion.infoName",
   "settings.field.reduceMotion.info": "settings.field.reduceMotion.info",
+  "settings.field.reduceMotion.infoAlways":
+    "settings.field.reduceMotion.infoAlways",
+  "settings.field.reduceMotion.infoPlay":
+    "settings.field.reduceMotion.infoPlay",
   "settings.field.reduceMotion.help": "settings.field.reduceMotion.help",
   "settings.field.reduceMotion.system": "settings.field.reduceMotion.system",
   "settings.field.reduceMotion.on": "settings.field.reduceMotion.on",
@@ -156,6 +165,8 @@ export const MessageIds = {
     "settings.field.excludedBundleIds.infoName",
   "settings.field.excludedBundleIds.info":
     "settings.field.excludedBundleIds.info",
+  "settings.field.excludedBundleIds.infoWhen":
+    "settings.field.excludedBundleIds.infoWhen",
   "settings.field.excludedBundleIds.help":
     "settings.field.excludedBundleIds.help",
   "settings.field.excludedBundleIds.search":
@@ -182,6 +193,7 @@ export const MessageIds = {
   "settings.export.preview": "settings.export.preview",
   "settings.export.preview.infoName": "settings.export.preview.infoName",
   "settings.export.preview.info": "settings.export.preview.info",
+  "settings.export.preview.infoList": "settings.export.preview.infoList",
   "settings.export.sensitive": "settings.export.sensitive",
   "settings.export.included": "settings.export.included",
   "settings.export.action": "settings.export.action",
@@ -326,6 +338,8 @@ export const MessageIds = {
   "help.diagnostics.preview": "help.diagnostics.preview",
   "help.diagnostics.export": "help.diagnostics.export",
   "help.diagnostics.export.explain": "help.diagnostics.export.explain",
+  "help.diagnostics.export.explainLocal":
+    "help.diagnostics.export.explainLocal",
   "help.diagnostics.export.done": "help.diagnostics.export.done",
   "help.diagnostics.export.failed": "help.diagnostics.export.failed",
   "help.limitations.heading": "help.limitations.heading",
