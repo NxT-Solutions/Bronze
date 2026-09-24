@@ -32,7 +32,7 @@ private func bundledMainApp() -> Bool {
 }
 
 private func loginItemStatusCode() -> UInt32 {
-    removeLeftoverDebugLoginAgent()
+    scheduleLeftoverDebugLoginAgentRemoval()
     if bundledMainApp() {
         return statusCode(SMAppService.mainApp.status)
     }
@@ -55,7 +55,7 @@ private func statusCode(_ status: SMAppService.Status) -> UInt32 {
 }
 
 private func applyLoginItem(_ enabled: Bool) -> UInt32 {
-    removeLeftoverDebugLoginAgent()
+    scheduleLeftoverDebugLoginAgentRemoval()
     if bundledMainApp() {
         return applyBundledLoginItem(enabled)
     }
@@ -138,8 +138,8 @@ private func runLaunchctl(_ arguments: [String]) -> Int32 {
     let proc = Process()
     proc.executableURL = URL(fileURLWithPath: launchctlPath)
     proc.arguments = arguments
-    proc.standardOutput = Pipe()
-    proc.standardError = Pipe()
+    proc.standardOutput = FileHandle.nullDevice
+    proc.standardError = FileHandle.nullDevice
     do {
         try proc.run()
         proc.waitUntilExit()
@@ -163,7 +163,18 @@ private func removeLoginAgentIfThisProcessOwnsLogin() {
     try? FileManager.default.removeItem(at: plistURL)
 }
 
-/// A leftover debug LaunchAgent makes macOS treat this binary as background and refuse `tauri dev`.
+/// `waitUntilExit` runs the current run loop. On the main thread that re-enters WebKit IPC while LiveSession is still locked.
+private func scheduleLeftoverDebugLoginAgentRemoval() {
+    enum Once {
+        static let token: Void = {
+            DispatchQueue.global(qos: .utility).async {
+                removeLeftoverDebugLoginAgent()
+            }
+        }()
+    }
+    _ = Once.token
+}
+
 private func removeLeftoverDebugLoginAgent() {
     bootoutLoginAgent()
     removeLoginAgentIfThisProcessOwnsLogin()

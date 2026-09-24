@@ -96,10 +96,24 @@ mod login_item_tests {
         assert!(swift.contains("bundledMainApp"));
         assert!(swift.contains("LaunchAgents"));
         assert!(swift.contains("app.bronze.desktop.login"));
+        assert!(swift.contains("scheduleLeftoverDebugLoginAgentRemoval"));
+        assert!(swift.contains("DispatchQueue.global"));
+        assert!(swift.contains("FileHandle.nullDevice"));
         assert!(swift.contains("removeLeftoverDebugLoginAgent"));
         assert!(swift.contains("removeLoginAgentIfThisProcessOwnsLogin"));
         assert!(swift.contains("bootoutLoginAgent"));
         assert!(swift.contains("/bin/launchctl"));
+        let status_fn = swift
+            .split("func loginItemStatusCode")
+            .nth(1)
+            .expect("status");
+        let status_body = &status_fn[..status_fn.find("\nprivate func ").expect("status end")];
+        assert!(!status_body.contains("runLaunchctl"));
+        assert!(!status_body.contains("waitUntilExit"));
+        let apply_fn = swift.split("func applyLoginItem").nth(1).expect("apply");
+        let apply_body = &apply_fn[..apply_fn.find("\nprivate func ").expect("apply end")];
+        assert!(!apply_body.contains("runLaunchctl"));
+        assert!(!apply_body.contains("waitUntilExit"));
         assert!(swift.contains("return BRONZE_STATUS_DEGRADED"));
         assert!(!swift.contains("writeLoginAgent"));
         assert!(!swift.contains("bootstrapLoginAgent"));
