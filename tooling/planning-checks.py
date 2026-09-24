@@ -164,6 +164,38 @@ def check_title_adr() -> list[str]:
     ):
         if needle not in section:
             errors.append(f"ADR-019 missing {needle}")
+    if "Contents/Resources/models" not in section:
+        errors.append("ADR-019 missing packaged models path")
+    for adr_id, needles in (
+        (
+            "ADR-020",
+            ("Status: Accepted", "titleCustomId", "GGUF", "Application Support"),
+        ),
+        (
+            "ADR-021",
+            ("Status: Accepted", "127.0.0.1", "/api/chat", "/api/pull"),
+        ),
+        (
+            "ADR-022",
+            ("Status: Accepted", "Keychain", "hosted-openai", "payload class"),
+        ),
+    ):
+        start_n = adrs.find(f"## {adr_id}:")
+        if start_n < 0:
+            errors.append(f"{adr_id} section missing")
+            continue
+        nxt_n = adrs.find("\n## ", start_n + 1)
+        body = adrs[start_n : nxt_n if nxt_n > 0 else None]
+        for needle in needles:
+            if needle not in body:
+                errors.append(f"{adr_id} missing {needle}")
+        if adr_id in ("ADR-020", "ADR-021", "ADR-022") and "| " + adr_id + " |" in adrs:
+            row = next(
+                (line for line in adrs.splitlines() if line.startswith(f"| {adr_id} |")),
+                "",
+            )
+            if "Accepted" not in row:
+                errors.append(f"{adr_id} index row must stay Accepted")
     t10 = next((line for line in threat.splitlines() if line.startswith("| T-10 ")), "")
     if not t10:
         errors.append("T-10 row missing")
