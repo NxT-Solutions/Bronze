@@ -1,7 +1,7 @@
 //! Copy to pasteboard (story 6.4, QUE-005). No synthetic paste.
 
 use bronze_domain::{
-    format_items, html_from_constrained_markdown, lifecycle_after_copy, restore_smashed_structure,
+    format_items, html_from_constrained_markdown, lifecycle_after_copy, outline_captured_text,
     Lifecycle, OutputProfile,
 };
 
@@ -60,11 +60,7 @@ pub fn copy_items(
     if SYNTHETIC_PASTE {
         return Err(CopyError::SyntheticPasteForbidden);
     }
-    let restored: Vec<String> = items
-        .iter()
-        .copied()
-        .map(restore_smashed_structure)
-        .collect();
+    let restored: Vec<String> = items.iter().copied().map(outline_captured_text).collect();
     let views: Vec<&str> = restored.iter().map(String::as_str).collect();
     let text = format_items(profile, &views);
     let html = format_items_html(&views);
