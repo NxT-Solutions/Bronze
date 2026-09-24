@@ -25,10 +25,14 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /article:not\(\.is-expanded\)\s*\[data-slot="body"\]/);
   assert.match(chrome, /\[data-slot="body"\][\s\S]*white-space:\s*pre-wrap/);
   assert.match(chrome, /\[data-slot="body"\][\s\S]*tab-size:\s*4/);
-  assert.match(
-    chrome,
-    /article:not\(\.is-expanded\)\s*\[data-slot="body"\][\s\S]*max-height:\s*calc\(1\.45em \* 3\)/,
+  const collapsedBody = chrome.match(
+    /article:not\(\.is-expanded\)\s*\[data-slot="body"\]\s*\{[^}]+\}/,
   );
+  assert.ok(collapsedBody, "collapsed body clip");
+  assert.match(collapsedBody[0], /line-height:\s*1\.45em/);
+  assert.match(collapsedBody[0], /max-height:\s*calc\(3 \* 1lh\)/);
+  assert.match(collapsedBody[0], /overflow:\s*hidden/);
+  assert.doesNotMatch(collapsedBody[0], /-webkit-line-clamp/);
   assert.doesNotMatch(chrome, /-webkit-line-clamp/);
   assert.doesNotMatch(chrome, /-webkit-box-orient/);
   assert.match(
@@ -201,6 +205,18 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   );
   assert.match(collapsedListMarkers[0], /list-style-position:\s*inside/);
   assert.match(collapsedListMarkers[0], /padding-inline-start:\s*0\.2em/);
+  const collapsedLineBoxes = chrome.match(
+    /article:not\(\.is-expanded\) \[data-slot="body"\] :is\(p, ul, ol, li\)\s*\{[^}]+\}/,
+  );
+  assert.ok(collapsedLineBoxes, "collapsed body stacks whole line boxes");
+  assert.match(collapsedLineBoxes[0], /margin-block:\s*0/);
+  assert.match(collapsedLineBoxes[0], /padding-block:\s*0/);
+  assert.match(collapsedLineBoxes[0], /line-height:\s*1\.45em/);
+  const collapsedMarkerBox = chrome.match(
+    /article:not\(\.is-expanded\) \[data-slot="body"\] ::marker\s*\{[^}]+\}/,
+  );
+  assert.ok(collapsedMarkerBox, "collapsed markers stay inside the line box");
+  assert.match(collapsedMarkerBox[0], /line-height:\s*1;/);
   assert.match(
     chrome,
     /article \[data-slot="body"\] strong \{[\s\S]*font-weight:\s*650/,

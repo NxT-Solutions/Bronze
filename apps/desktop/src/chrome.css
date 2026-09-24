@@ -929,8 +929,21 @@ article [data-slot="body"] li > p {
 }
 
 article:not(.is-expanded) [data-slot="body"] {
-  max-height: calc(1.45em * 3);
+  line-height: 1.45em;
+  max-height: calc(3 * 1lh);
   overflow: hidden;
+}
+
+article:not(.is-expanded) [data-slot="body"] :is(p, ul, ol, li) {
+  /* Vertical margin is not a line box, so it shifts this clip into a glyph. */
+  margin-block: 0;
+  padding-block: 0;
+  line-height: 1.45em;
+}
+
+article:not(.is-expanded) [data-slot="body"] ::marker {
+  /* Marker metrics use normal and can exceed the item line box. */
+  line-height: 1;
 }
 
 article:not(.is-expanded) [data-slot="body"] > :is(ul, ol) {
