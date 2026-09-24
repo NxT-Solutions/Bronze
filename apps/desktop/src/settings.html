@@ -292,11 +292,19 @@
             >
               <strong>Extractive</strong> uses no model.
             </p>
+            <p
+              id="title-model-help-size"
+              class="muted field-help"
+              data-title-model-help
+              data-i18n="settings.field.titleModel.helpSize"
+            >
+              <strong>That number is the file</strong> on this Mac, not memory used.
+            </p>
             <div class="field-row">
               <select
                 id="title-model"
                 name="titleModel"
-                aria-describedby="title-model-help title-model-help-extractive title-model-status"
+                aria-describedby="title-model-help title-model-help-extractive title-model-help-size title-model-status"
               >
                 <option
                   value="extractive"
@@ -309,19 +317,19 @@
                   value="smol-135"
                   data-i18n="settings.field.titleModel.smol135"
                 >
-                  SmolLM2 135M — about 105 MB, 8 GB RAM
+                  SmolLM2 135M — 105 MB file
                 </option>
                 <option
                   value="smol-360"
                   data-i18n="settings.field.titleModel.smol360"
                 >
-                  SmolLM2 360M — about 271 MB, 16 GB RAM
+                  SmolLM2 360M — 271 MB file
                 </option>
                 <option
                   value="qwen-05"
                   data-i18n="settings.field.titleModel.qwen05"
                 >
-                  Qwen2.5 0.5B — about 491 MB, 32 GB RAM
+                  Qwen2.5 0.5B — 491 MB file
                 </option>
               </select>
               <span

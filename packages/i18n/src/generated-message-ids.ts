@@ -133,6 +133,7 @@ export const MessageIds = {
   "settings.field.titleModel.help": "settings.field.titleModel.help",
   "settings.field.titleModel.helpExtractive":
     "settings.field.titleModel.helpExtractive",
+  "settings.field.titleModel.helpSize": "settings.field.titleModel.helpSize",
   "settings.field.titleModel.extractive":
     "settings.field.titleModel.extractive",
   "settings.field.titleModel.smol135": "settings.field.titleModel.smol135",

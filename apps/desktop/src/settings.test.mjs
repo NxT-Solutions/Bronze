@@ -221,7 +221,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /data-i18n="settings.field.titleModel.helpExtractive"/);
   assert.match(
     html,
-    /aria-describedby="title-model-help title-model-help-extractive title-model-status"/,
+    /aria-describedby="title-model-help title-model-help-extractive title-model-help-size title-model-status"/,
   );
   assert.match(html, /data-i18n-aria-label="settings.field.locale.infoName"/);
   assert.equal(
@@ -230,16 +230,21 @@ test("settings window is searchable grouped with daily weekly backup and export 
   );
   assert.equal(
     en["settings.field.titleModel.smol135"],
-    "SmolLM2 135M — about 105 MB, 8 GB RAM",
+    "SmolLM2 135M — 105 MB file",
   );
   assert.equal(
     en["settings.field.titleModel.smol360"],
-    "SmolLM2 360M — about 271 MB, 16 GB RAM",
+    "SmolLM2 360M — 271 MB file",
   );
   assert.equal(
     en["settings.field.titleModel.qwen05"],
-    "Qwen2.5 0.5B — about 491 MB, 32 GB RAM",
+    "Qwen2.5 0.5B — 491 MB file",
   );
+  assert.equal(
+    en["settings.field.titleModel.helpSize"],
+    "**That number is the file** on this Mac, not memory used.",
+  );
+  assert.match(html, /settings\.field\.titleModel\.helpSize/);
   assert.equal(
     en["settings.field.titleModel.missing"],
     "Vendored file missing — titles stay extractive until you run {command}.",
