@@ -915,6 +915,19 @@ article [data-slot="body"] li {
   margin-block: 0.15em;
 }
 
+article [data-slot="body"] li:has(> strong:first-child) {
+  font-weight: 650;
+}
+
+article [data-slot="body"] li:has(> strong:first-child) :is(ol, ul, p) {
+  font-weight: 400;
+}
+
+article [data-slot="body"] li > p {
+  margin: 0;
+  padding-inline-start: 1.25em;
+}
+
 article:not(.is-expanded) [data-slot="body"] {
   max-height: calc(1.45em * 3);
   overflow: hidden;

@@ -281,15 +281,58 @@ test("smashed lists keep source numbers and jammed sentences break", () => {
     target,
     "één tegelijk1. DataForSEO (klaar)1. Grant is)2. Disable",
   );
-  assert.deepEqual(tagsUnder(target), ["p", "ol", "li", "li", "li"]);
+  assert.deepEqual(tagsUnder(target), [
+    "p",
+    "ol",
+    "li",
+    "strong",
+    "ol",
+    "li",
+    "li",
+  ]);
   const lis = target.querySelectorAll("li");
   assert.equal(lis[0].getAttribute("value"), "1");
-  assert.equal(lis[0].textContent, "DataForSEO (klaar)");
+  assert.equal(
+    lis[0].querySelector("strong").textContent,
+    "DataForSEO (klaar)",
+  );
   assert.equal(lis[1].getAttribute("value"), "1");
   assert.equal(lis[1].textContent, "Grant is)");
   assert.equal(lis[2].getAttribute("value"), "2");
   assert.equal(lis[2].textContent, "Disable");
+  assert.equal(lis[0].getAttribute("style"), "font-weight:650");
   assert.equal(target.querySelector("script"), null);
+
+  renderMarkdownBody(
+    target,
+    "1. DataForSEO (klaar om te knippen)1. Grant roles2. Disable3. Zet4. Eén5. Check6. Unpause2. Asana (Rutger: low risk)\n--dry-run op prod FE=357 scheduler.3. OpenRouter\nNiet. Eerst",
+  );
+  const headings = target.querySelectorAll("strong");
+  assert.equal(headings[0].textContent, "DataForSEO (klaar om te knippen)");
+  assert.equal(headings[1].textContent, "Asana (Rutger: low risk)");
+  assert.equal(headings[2].textContent, "OpenRouter");
+  const values = target.querySelectorAll("li");
+  assert.equal(values[0].getAttribute("value"), "1");
+  assert.equal(values[1].getAttribute("value"), "1");
+  assert.equal(values[1].textContent, "Grant roles");
+  assert.equal(values[6].getAttribute("value"), "6");
+  assert.equal(values[6].textContent, "Unpause");
+  assert.equal(values[7].getAttribute("value"), "2");
+  assert.match(target.textContent, /--dry-run op prod FE=357/);
+  assert.match(target.textContent, /Niet\. Eerst/);
+  assert.equal(
+    [...values].some((li) => li.getAttribute("value") === "7"),
+    false,
+  );
+  renderMarkdownBody(target, "see section 2. Next stays.");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "see section 2. Next stays.");
+  renderMarkdownBody(target, "Hello. World");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "Hello. World");
+  renderMarkdownBody(target, "version 1.2 and FE=357");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "version 1.2 and FE=357");
 
   renderMarkdownBody(target, "Schedule blijft paused.Niet alle");
   assert.equal(target.textContent, "Schedule blijft paused.\n\nNiet alle");
