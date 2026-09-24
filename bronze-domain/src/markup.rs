@@ -919,4 +919,60 @@ mod markup_tests {
         );
         assert!(kept.find(">body line</p>").unwrap() < kept.find("<strong>Next</strong>").unwrap());
     }
+    #[test]
+    fn outline_keeps_lead_and_paragraph_after_period() {
+        let smashed = "Jij kiest welk pad je overzet — één tegelijk1. DataForSEO (klaar om te knippen)1. Grant2. Disable3. Zet4. Eén5. Check6. Unpause2. Asana (Rutger: low risk)\n--dry-run op prod\n3. OpenRouter\nNiet. Eerst management key + finance. Schedule blijft paused.Niet alle drie tegelijk.";
+        assert_cursor_outline(smashed);
+        let restored = "Jij kiest welk pad je overzet — één tegelijk\n1. DataForSEO (klaar om te knippen)\n1. Grant\n2. Disable\n3. Zet\n4. Eén\n5. Check\n6. Unpause\n2. Asana (Rutger: low risk)\n--dry-run op prod\n3. OpenRouter\nNiet. Eerst management key + finance. Schedule blijft paused.\nNiet alle drie tegelijk.";
+        assert_cursor_outline(restored);
+        assert_eq!(
+            restore_smashed_structure("see section 2. Next"),
+            "see section 2. Next"
+        );
+        assert_eq!(restore_smashed_structure("version 1.2"), "version 1.2");
+        assert_eq!(restore_smashed_structure("Hello. World"), "Hello. World");
+        assert!(!html_from_constrained_markdown("see section 2. Next").contains("<ol"));
+        assert!(!html_from_constrained_markdown("version 1.2").contains("<ol"));
+        assert!(!html_from_constrained_markdown("Hello. World").contains("<ol"));
+    }
+
+    fn assert_cursor_outline(src: &str) {
+        let html = html_from_constrained_markdown(src);
+        let plain = outline_captured_text(src);
+        for needle in [
+            "Jij kiest welk pad je overzet — één tegelijk",
+            "DataForSEO (klaar om te knippen)",
+            "Asana (Rutger: low risk)",
+            "--dry-run",
+            "OpenRouter",
+            "Niet. Eerst management key + finance. Schedule blijft paused.",
+            "Niet alle drie tegelijk.",
+        ] {
+            assert!(html.contains(needle), "display missing {needle}: {html}");
+            assert!(plain.contains(needle), "copy missing {needle}: {plain}");
+        }
+        assert!(html.contains("<li value=\"1\">Grant</li>"), "{html}");
+        assert!(html.contains("<li value=\"6\">Unpause</li>"), "{html}");
+        assert!(plain.contains("1. Grant"), "{plain}");
+        assert!(plain.contains("6. Unpause"), "{plain}");
+        assert!(!html.contains("value=\"7\""));
+        assert!(plain.contains("**1. DataForSEO (klaar om te knippen)**"));
+        assert!(plain.contains("\n    1. Grant"));
+        assert!(plain.contains("\n    6. Unpause"));
+        assert!(plain.contains("**2. Asana (Rutger: low risk)**"));
+        assert!(plain.contains("\n    --dry-run"));
+        assert!(plain.contains("**3. OpenRouter**"));
+        let lead = plain.find("Jij kiest").expect("lead");
+        let first = plain.find("**1. DataForSEO").expect("first heading");
+        let paused = plain.find("paused.").expect("paused");
+        let closing = plain.find("Niet alle drie tegelijk.").expect("closing");
+        assert!(lead < first);
+        assert!(paused < closing);
+        assert_eq!(outline_captured_text(&plain), plain);
+        let again = html_from_constrained_markdown(&plain);
+        assert!(again.contains("Jij kiest welk pad je overzet — één tegelijk"));
+        assert!(again.contains("Niet alle drie tegelijk."));
+        assert!(again.contains("<li value=\"6\">"));
+        assert!(!again.contains("value=\"7\""));
+    }
 }
