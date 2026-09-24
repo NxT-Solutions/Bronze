@@ -1,0 +1,69 @@
+{
+  "id": "title-engines",
+  "goal": "Ship bundled pinned GGUF title engines, then custom local GGUF import, opt-in loopback Ollama, and opt-in hosted keys, with one resolver and compact_title first.",
+  "outcome": "A packaged app copies the three SHA-256-pinned GGUFs into Contents/Resources/models when they are already vendored. Capture still writes compact_title first and never waits on a load. Extractive stops on that title. A bundled pin or imported GGUF uses the existing CPU worker (2 threads, n_ctx 1024, 16 tokens); failure keeps compact_title and never hops to Ollama or a host. Ollama talks only to 127.0.0.1/::1:11434, never /api/pull, ignores non-loopback OLLAMA_HOST and HTTP_PROXY/ALL_PROXY, and falls back to the bundled engine for this Mac then compact_title. Hosted OpenAI-compatible and Anthropic adapters stay off until selected; keys live in Keychain, never export/support/logs; a missing key, refusal, or no network uses the bundled engine then compact_title. A local failure never calls a hosted API. ADR-019 stays Proposed. ADR-020, ADR-021, and ADR-022 are Accepted. ADR-017 stays Accepted except the ADR-022 opt-in title API. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-015 stays Accepted. T-10 still forbids hosted AI by default. bronze-title-model has no HTTP. WebView never receives a filesystem path or a key. No runtime Hub download, no download button, no chat client.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "TITLE-ENGINES-RULE-1",
+      "kind": "rule",
+      "statement": "Persist compact_title first. Capture ID and terminal result are never dropped. Refine is after persist on bronze-item-title / bronze-title-model, not AppKit main, not the event-tap."
+    },
+    {
+      "id": "TITLE-ENGINES-RULE-2",
+      "kind": "rule",
+      "statement": "Bundle the three existing pins (smol-135, smol-360, qwen-05) into Contents/Resources/models at package time when vendored. Release load still SHA-256 checks. Files stay gitignored. vendor-gguf.sh stays build-time fetch. No download button. ADR-019 stays Proposed; update packaging text only."
+    },
+    {
+      "id": "TITLE-ENGINES-RULE-3",
+      "kind": "rule",
+      "statement": "One resolver: extractive stops; bundled pin or custom GGUF fail keeps compact_title; Ollama or hosted fail uses the auto-picked bundled engine for this Mac, then compact_title. A local choice never calls a hosted API. Hosted is never the silent fallback. Keep 2048-char body truncate, Title: strip, 40-char clamp, groundedness."
+    },
+    {
+      "id": "TITLE-ENGINES-RULE-4",
+      "kind": "rule",
+      "statement": "Custom GGUF: Rust file dialog, GGUF magic bytes, copy into Application Support, store size plus SHA-256. WebView gets display name and byte size, never a path (SEC-003). Same CPU worker. ADR-020 Accepted. general.titleModel may be custom; general.titleCustomId is exportable and non-secret."
+    },
+    {
+      "id": "TITLE-ENGINES-RULE-5",
+      "kind": "rule",
+      "statement": "Ollama: connect only when Settings lists models or refine uses a saved Ollama engine. 127.0.0.1 and ::1 only. Ignore non-loopback OLLAMA_HOST. Ignore HTTP_PROXY/ALL_PROXY. No /api/pull, no background poll, no event-tap call. POST /api/chat stream off, num_predict 16, temperature 0. Store general.titleOllamaModel. ADR-021 Accepted. bronze-title-model sources still contain no reqwest, ureq, or openai."
+    },
+    {
+      "id": "TITLE-ENGINES-RULE-6",
+      "kind": "rule",
+      "statement": "Hosted: off until hosted-openai, hosted-anthropic, or hosted-openrouter. Keychain from Rust. WebView posts the key once and never reads it back. Export, support files, and logs do not contain it. Before first send, Settings shows host and payload class (truncated capture text, 2048 characters, plus the fixed title instruction). OpenAI-compatible POST {base}/v1/chat/completions; Anthropic POST https://api.anthropic.com/v1/messages. Custom general.titleHostedBase is HTTPS, shown as a host, confirmed; hosted adapter refuses loopback, link-local, and private addresses. ADR-022 Accepted and is the superseding record ADR-017 requires for this opt-in only."
+    },
+    {
+      "id": "TITLE-ENGINES-RULE-7",
+      "kind": "rule",
+      "statement": "T-10 still forbids hosted AI, PCC, and runtime Hub by default. Auto-pick RAM bands unchanged and run only when general.titleModel is empty. Settings keeps the four local rows and adds custom, Ollama, and hosted rows with locale catalog copy. Local and Ollama rows keep never-sends-text-off-this-device. Hosted row names the host. No Cooper/Copper copy. No sentence concatenation."
+    },
+    {
+      "id": "TITLE-ENGINES-RULE-8",
+      "kind": "rule",
+      "statement": "Do not start QUEUE-ATTACHMENTS. Do not claim WCAG, VoiceOver, or notarization without docs/evidence. Do not silently accept ADR-002, ADR-009, ADR-018, or ADR-019. Do not resume bmad-loop 6a79. Do not run full-stack-app, pwa-app, or landing-page cores."
+    },
+    {
+      "id": "TITLE-ENGINES-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Packaging lists models/* resources and the three GGUF filenames. A bad hash is not staged. ADR-019 status remains Proposed."
+    },
+    {
+      "id": "TITLE-ENGINES-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "A file whose first four bytes are not GGUF is rejected and not copied. Import does not pass a filesystem path to the WebView. Export contains titleCustomId and never a path."
+    },
+    {
+      "id": "TITLE-ENGINES-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "The Ollama client rejects a non-loopback host. Title-model crate sources still contain no reqwest, ureq, or openai. A refused Ollama connection leaves compact_title or the bundled refine, never a hosted call."
+    },
+    {
+      "id": "TITLE-ENGINES-ACCEPTANCE-4",
+      "kind": "acceptance",
+      "statement": "Export and support preview contain no key material. A private or loopback hosted base is rejected. A failed hosted refine does not throw away the capture ID."
+    }
+  ],
+  "depends_on": []
+}
