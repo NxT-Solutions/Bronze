@@ -1,7 +1,8 @@
 //! Copy to pasteboard (story 6.4, QUE-005). No synthetic paste.
 
 use bronze_domain::{
-    format_items, html_from_constrained_markdown, lifecycle_after_copy, Lifecycle, OutputProfile,
+    format_items, html_from_constrained_markdown, lifecycle_after_copy, restore_smashed_structure,
+    Lifecycle, OutputProfile,
 };
 
 pub const SYNTHETIC_PASTE: bool = false;
@@ -59,8 +60,14 @@ pub fn copy_items(
     if SYNTHETIC_PASTE {
         return Err(CopyError::SyntheticPasteForbidden);
     }
-    let text = format_items(profile, items);
-    let html = format_items_html(items);
+    let restored: Vec<String> = items
+        .iter()
+        .copied()
+        .map(restore_smashed_structure)
+        .collect();
+    let views: Vec<&str> = restored.iter().map(String::as_str).collect();
+    let text = format_items(profile, &views);
+    let html = format_items_html(&views);
     board.write_plain_and_html(&text, &html)?;
     if let Some(next) = lifecycle_after_copy(profile.post_copy_action) {
         *lifecycle = next;
@@ -120,6 +127,20 @@ mod copy_tests {
         assert!(!html.contains("<script"));
         assert!(html.contains("&lt;script&gt;"));
         assert!(html.contains("white-space:pre-wrap"));
+        copy_items(
+            &["tegelijk1. Data paused.Niet"],
+            &profile,
+            &mut board,
+            &mut life,
+        )
+        .expect("smashed");
+        assert_eq!(
+            board.last.as_deref(),
+            Some("tegelijk\n1. Data paused.\n\nNiet")
+        );
+        let smashed_html = board.last_html.as_deref().expect("smashed html");
+        assert!(smashed_html.contains("<li value=\"1\">Data paused.</li>"));
+        assert!(smashed_html.contains("</ol><br>Niet"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"

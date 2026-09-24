@@ -53,28 +53,98 @@ fn escape_inline(text: &str) -> String {
         .replace('`', "\\`")
 }
 
-fn list_item_body(line: &str) -> Option<(&str, bool)> {
+fn list_item_body(line: &str) -> Option<(Option<u32>, &str, bool)> {
     let trimmed = line.trim_start();
     if let Some(rest) = trimmed.strip_prefix("- ") {
-        return Some((rest, false));
+        return Some((None, rest, false));
     }
     if let Some(rest) = trimmed.strip_prefix("+ ") {
-        return Some((rest, false));
+        return Some((None, rest, false));
     }
     if let Some(rest) = trimmed.strip_prefix("• ") {
-        return Some((rest, false));
+        return Some((None, rest, false));
     }
     if let Some(rest) = trimmed.strip_prefix("* ") {
-        return Some((rest, false));
+        return Some((None, rest, false));
     }
     let digits = trimmed.bytes().take_while(u8::is_ascii_digit).count();
     if digits > 0 {
         let after = &trimmed[digits..];
         if let Some(rest) = after.strip_prefix(". ") {
-            return Some((rest, true));
+            let number = trimmed[..digits].parse::<u32>().ok();
+            return Some((number, rest, true));
         }
     }
     None
+}
+
+fn marker_gap(ch: char) -> bool {
+    ch.is_whitespace() && ch != '\n' && ch != '\r' && ch != '\u{2028}' && ch != '\u{2029}'
+}
+
+fn glued_list_marker(chars: &[char], index: usize) -> Option<usize> {
+    if index == 0 || chars[index - 1].is_whitespace() {
+        return None;
+    }
+    let mut end = index;
+    if end >= chars.len() || !chars[end].is_ascii_digit() {
+        return None;
+    }
+    while end < chars.len() && chars[end].is_ascii_digit() {
+        end += 1;
+    }
+    if end >= chars.len() || chars[end] != '.' {
+        return None;
+    }
+    end += 1;
+    if end >= chars.len() || !marker_gap(chars[end]) {
+        return None;
+    }
+    while end < chars.len() && marker_gap(chars[end]) {
+        end += 1;
+    }
+    Some(end - index)
+}
+
+fn jammed_sentence(chars: &[char], index: usize) -> bool {
+    if chars.get(index) != Some(&'.') || index < 2 {
+        return false;
+    }
+    let prev = chars[index - 1];
+    let before = chars[index - 2];
+    if !prev.is_lowercase() || !before.is_lowercase() {
+        return false;
+    }
+    matches!(chars.get(index + 1), Some(next) if next.is_uppercase())
+}
+
+/// Accessibility selections often omit block separators. A list marker glued
+/// to the previous word, or a sentence end jammed onto the next capital,
+/// is restored. Spaced prose is left as captured.
+pub fn restore_smashed_structure(text: &str) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len());
+    let mut index = 0;
+    while index < chars.len() {
+        if let Some(len) = glued_list_marker(&chars, index) {
+            out.push('\n');
+            for ch in &chars[index..index + len] {
+                out.push(*ch);
+            }
+            index += len;
+            continue;
+        }
+        if jammed_sentence(&chars, index) {
+            out.push('.');
+            out.push('\n');
+            out.push('\n');
+            index += 1;
+            continue;
+        }
+        out.push(chars[index]);
+        index += 1;
+    }
+    out
 }
 
 fn render_inline_markdown(md: &str, body: &mut String) {
@@ -132,21 +202,26 @@ fn render_inline_markdown(md: &str, body: &mut String) {
 }
 
 pub fn html_from_constrained_markdown(md: &str) -> String {
+    let normalized = restore_smashed_structure(md);
     let mut body = String::new();
-    let lines: Vec<&str> = md.split('\n').collect();
+    let lines: Vec<&str> = normalized.split('\n').collect();
     let mut i = 0;
     while i < lines.len() {
-        if let Some((_, ordered)) = list_item_body(lines[i]) {
+        if let Some((_, _, ordered)) = list_item_body(lines[i]) {
             let tag = if ordered { "ol" } else { "ul" };
             body.push_str(&format!("<{tag}>"));
             while i < lines.len() {
-                let Some((item, item_ordered)) = list_item_body(lines[i]) else {
+                let Some((number, item, item_ordered)) = list_item_body(lines[i]) else {
                     break;
                 };
                 if item_ordered != ordered {
                     break;
                 }
-                body.push_str("<li>");
+                if let Some(n) = number {
+                    body.push_str(&format!("<li value=\"{n}\">"));
+                } else {
+                    body.push_str("<li>");
+                }
                 render_inline_markdown(item, &mut body);
                 body.push_str("</li>");
                 i += 1;
@@ -261,5 +336,55 @@ mod markup_tests {
         assert!(list.contains("<li>one</li>"));
         assert!(list.contains("<li><strong>two</strong></li>"));
         assert!(!list.contains("<script"));
+
+        let numbered = html_from_constrained_markdown("tegelijk1. Data is)2. Disable");
+        assert!(numbered.contains("<ol>"));
+        assert!(numbered.contains("<li value=\"1\">Data is)</li>"));
+        assert!(numbered.contains("<li value=\"2\">Disable</li>"));
+        let smashed_script = html_from_constrained_markdown("tegelijk1. <script>alert(1)</script>");
+        assert!(
+            smashed_script.contains("<li value=\"1\">&lt;script&gt;alert(1)&lt;/script&gt;</li>")
+        );
+        assert!(!smashed_script.contains("<script"));
+        let paragraph = html_from_constrained_markdown("Schedule blijft paused.Niet alle");
+        assert!(paragraph.contains("paused.<br><br>Niet alle"));
+    }
+
+    #[test]
+    fn restore_smashed_structure_splits_glued_markers_only() {
+        let smashed = "één tegelijk1. DataForSEO (klaar)1. Grant is)2. Disable snapshot3. Zet op prod4. Eén dry_run5. Check login6. Unpause snapshot2. Asana\nscheduler.3. OpenRouter\nNiet. Schedule blijft paused.Niet alle";
+        let restored = restore_smashed_structure(smashed);
+        assert!(restored.contains("tegelijk\n1. DataForSEO"));
+        assert!(restored.contains("(klaar)\n1. Grant"));
+        assert!(restored.contains("is)\n2. Disable"));
+        assert!(restored.contains("snapshot\n3. Zet"));
+        assert!(restored.contains("prod\n4. Eén"));
+        assert!(restored.contains("dry_run\n5. Check"));
+        assert!(restored.contains("login\n6. Unpause"));
+        assert!(restored.contains("snapshot\n2. Asana"));
+        assert!(restored.contains("scheduler.\n3. OpenRouter"));
+        assert!(restored.contains("paused.\n\nNiet alle"));
+        assert!(restored.contains("Asana\nscheduler.\n3. OpenRouter"));
+        assert!(!restored.contains("tegelijk1."));
+        assert!(!restored.contains("paused.Niet"));
+        assert_eq!(restore_smashed_structure(&restored), restored);
+
+        assert_eq!(
+            restore_smashed_structure("see section 2. Next stays."),
+            "see section 2. Next stays."
+        );
+        assert_eq!(restore_smashed_structure("Hello. World"), "Hello. World");
+        assert_eq!(
+            restore_smashed_structure("Mr.Smith e.g.The i.e.Next Dr.Who"),
+            "Mr.Smith e.g.The i.e.Next Dr.Who"
+        );
+        assert_eq!(
+            restore_smashed_structure("version 1.2 and FE=357, FT=26, DEV=64"),
+            "version 1.2 and FE=357, FT=26, DEV=64"
+        );
+        assert_eq!(
+            restore_smashed_structure("1. first\n2. second\n- bullet"),
+            "1. first\n2. second\n- bullet"
+        );
     }
 }

@@ -18,7 +18,8 @@ use bronze_diagnostics::{
     SupportQueueCounts, SupportReport, SupportSourceApp, AUTOMATIC_UPLOAD, LAST_HOUR_MS,
 };
 use bronze_domain::{
-    default_output_profile, ComposerChord, OutputFormat, OutputProfile, PostCopyAction,
+    default_output_profile, restore_smashed_structure, ComposerChord, OutputFormat, OutputProfile,
+    PostCopyAction,
 };
 use bronze_platform_macos::{
     accept_settings_file_path, accept_support_file_path, read_settings_import_bytes,
@@ -294,7 +295,7 @@ impl From<QueueItemRow> for QueueItemDto {
         Self {
             id: row.id,
             section_id: row.section_id,
-            body: row.body,
+            body: restore_smashed_structure(&row.body),
             title: row.title,
             content_language: row.content_language,
             status: row.status,
@@ -2049,6 +2050,24 @@ mod live_session_tests {
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("bronze-live-{n}-{}", now_ms()));
         LiveSession::open(dir).expect("session")
+    }
+
+    #[test]
+    fn queue_dto_splits_glued_list_markers() {
+        let raw = "één tegelijk1. DataForSEO paused.Niet alle";
+        let dto = QueueItemDto::from(QueueItemRow {
+            id: "i1".into(),
+            section_id: "inbox".into(),
+            body: raw.into(),
+            title: Some("kept".into()),
+            content_language: "und".into(),
+            status: "queued".into(),
+            rank: "1".into(),
+            source_app_name: None,
+            source_bundle_id: None,
+        });
+        assert_eq!(dto.body, "één tegelijk\n1. DataForSEO paused.\n\nNiet alle");
+        assert_eq!(dto.title.as_deref(), Some("kept"));
     }
 
     #[test]

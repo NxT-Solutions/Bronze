@@ -22,7 +22,10 @@ pub use formatters::{
     default_output_profile, format_items, lifecycle_after_copy, AdvancePolicy, OutputFormat,
     OutputProfile, PostCopyAction,
 };
-pub use markup::{font_name_traits, html_from_constrained_markdown, markdown_from_runs, StyleRun};
+pub use markup::{
+    font_name_traits, html_from_constrained_markdown, markdown_from_runs,
+    restore_smashed_structure, StyleRun,
+};
 pub use purge::{
     can_purge_with_descendants, claims_forensic_erasure, empty_trash_requires_confirmation,
     TRASH_RETENTION_DAYS,
