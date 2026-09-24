@@ -87,6 +87,9 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /input\[type="checkbox"\][\s\S]*accent-color:\s*var\(--foreground\)/,
   );
+  assert.match(chrome, /input\[type="checkbox"\][\s\S]*padding:\s*0/);
+  assert.match(chrome, /input\[type="checkbox"\][\s\S]*min-height:\s*0/);
+  assert.match(chrome, /input\[type="checkbox"\][\s\S]*border:\s*0/);
   assert.match(chrome, /\.btn-icon/);
   assert.match(chrome, /#composer-error\[hidden\]/);
   assert.match(chrome, /#capture-status\[hidden\]/);

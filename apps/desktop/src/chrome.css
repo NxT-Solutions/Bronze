@@ -1477,15 +1477,18 @@ menu {
 }
 
 .field-row input[type="checkbox"] {
-  appearance: checkbox;
+  appearance: auto;
   -webkit-appearance: checkbox;
   accent-color: var(--foreground);
   flex: 0 0 auto;
-  width: 1.25rem;
-  height: 1.25rem;
-  min-width: 1.5rem;
-  min-height: 1.5rem;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
 }
 
