@@ -157,5 +157,7 @@ mod copy_tests {
             "/../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         assert!(!tap.contains("bronze_native_pasteboard_write"));
+        assert!(!tap.contains("bronze_native_bounded_copy_read"));
+        assert!(!tap.contains("changeCount"));
     }
 }

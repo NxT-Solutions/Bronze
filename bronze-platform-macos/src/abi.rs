@@ -30,6 +30,11 @@ pub const BRONZE_TAP_FEED_DOWN: u32 = 1;
 pub const BRONZE_TAP_FEED_UP: u32 = 2;
 pub const BRONZE_TAP_FEED_CANCEL: u32 = 3;
 
+pub const BRONZE_PASTEBOARD_KIND_NONE: u32 = 0;
+pub const BRONZE_PASTEBOARD_KIND_HTML: u32 = 1;
+pub const BRONZE_PASTEBOARD_KIND_RTF: u32 = 2;
+pub const BRONZE_PASTEBOARD_KIND_PLAIN: u32 = 3;
+
 /// Non-owning UTF-8 view. `ptr` may be null only when `len == 0`.
 /// Length-delimited; never NUL-terminated. Embedded 0x00 is valid UTF-8.
 #[repr(C)]
@@ -123,6 +128,17 @@ extern "C" {
     pub fn bronze_native_pasteboard_write(
         plain: BronzeNativeUtf8View,
         html: BronzeNativeUtf8View,
+    ) -> u32;
+    pub fn bronze_native_bounded_copy_read(
+        target_pid: i32,
+        kind: *mut u32,
+        post_copy_count: *mut u64,
+        payload: *mut BronzeNativeUtf8View,
+        snapshot: *mut BronzeNativeUtf8View,
+    ) -> u32;
+    pub fn bronze_native_pasteboard_restore_if_unchanged(
+        snapshot: BronzeNativeUtf8View,
+        expected_count: u64,
     ) -> u32;
     pub fn bronze_native_bundle_id_for_pid(pid: i32, out: *mut BronzeNativeUtf8View) -> u32;
     pub fn bronze_native_app_icon_png(

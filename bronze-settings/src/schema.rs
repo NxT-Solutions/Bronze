@@ -449,6 +449,12 @@ pub struct CaptureSettings {
     pub active_section_id: String,
 }
 
+impl CaptureSettings {
+    pub fn allows_unstyled_clipboard_markup(&self) -> bool {
+        !matches!(self.clipboard_fallback, ClipboardFallback::Off)
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PanelSettings {
@@ -486,6 +492,12 @@ impl PrivacySettings {
                 .excluded_bundle_ids
                 .iter()
                 .any(|id| id.trim().eq_ignore_ascii_case(needle))
+    }
+
+    pub fn denies_synthetic_fallback(&self, bundle_id: Option<&str>) -> bool {
+        bundle_id
+            .and_then(|id| self.app_policies.get(id))
+            .is_some_and(|policy| policy.synthetic_fallback == InheritAllowDenyAsk::Deny)
     }
 }
 
@@ -1097,6 +1109,13 @@ mod tests {
             settings.capture.clipboard_fallback,
             ClipboardFallback::Manual
         );
+        assert!(settings.capture.allows_unstyled_clipboard_markup());
+        assert!(!settings
+            .privacy
+            .denies_synthetic_fallback(Some("com.tinyspeck.slackmacgap")));
+        let mut off = settings.clone();
+        off.capture.clipboard_fallback = ClipboardFallback::Off;
+        assert!(!off.capture.allows_unstyled_clipboard_markup());
         assert_eq!(settings.privacy.source_metadata, SourceMetadata::None);
         assert!(!settings.general.launch_at_login);
     }

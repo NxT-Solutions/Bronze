@@ -12,7 +12,8 @@ pub use ax::{
     AX_MAX_SELECTION_BYTES,
 };
 pub use clipboard_manual::{
-    create_from_clipboard, ClipboardKind, ClipboardOutcome, ClipboardSettings, Pasteboard,
+    clipboard_restore_generation_matches, create_from_clipboard, ClipboardKind, ClipboardOutcome,
+    ClipboardSettings, Pasteboard,
 };
 pub use coordinator::{
     AlwaysPersist, CaptureCoordinator, CaptureReceipt, DiagnosticEvent, FeedbackHook, NoFeedback,

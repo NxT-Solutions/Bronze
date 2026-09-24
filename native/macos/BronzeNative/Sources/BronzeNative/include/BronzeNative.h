@@ -147,6 +147,27 @@ uint32_t bronze_native_ingress_test_end_inconsistent(void);
 // Writes string + HTML in one clearContents. Never logs body. DEGRADED if either type fails.
 uint32_t bronze_native_pasteboard_write(bronze_native_utf8_view plain, bronze_native_utf8_view html);
 
+#define BRONZE_PASTEBOARD_KIND_NONE  0u
+#define BRONZE_PASTEBOARD_KIND_HTML  1u
+#define BRONZE_PASTEBOARD_KIND_RTF   2u
+#define BRONZE_PASTEBOARD_KIND_PLAIN 3u
+
+// Bounded Command-C on the capture-request path. Snapshot textual types, wait
+// for modifiers, activate pid, post tagged copy, wait for a stable generation,
+// then read public.html / public.rtf / plain. payload is owned UTF-8; snapshot
+// is owned bytes (not UTF-8). Free both with bronze_native_utf8_free.
+uint32_t bronze_native_bounded_copy_read(
+    int32_t target_pid,
+    uint32_t *kind,
+    uint64_t *post_copy_count,
+    bronze_native_utf8_view *payload,
+    bronze_native_utf8_view *snapshot);
+
+// Restore the textual snapshot only when changeCount still equals expected.
+uint32_t bronze_native_pasteboard_restore_if_unchanged(
+    bronze_native_utf8_view snapshot,
+    uint64_t expected_count);
+
 // On OK, *out is owned UTF-8 (bronze_native_utf8_free). DEGRADED when the PID has no bundle.
 uint32_t bronze_native_bundle_id_for_pid(int32_t pid, bronze_native_utf8_view *out);
 

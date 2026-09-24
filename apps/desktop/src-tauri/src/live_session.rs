@@ -7,9 +7,9 @@ use crate::copy::{copy_items, CopyError, Pasteboard};
 use crate::portability::{accept_native_path, PathSource};
 use crate::window_edge::{TextDirection, CAPTURE_ONLY_REVEALS_PANEL};
 use bronze_capture::{
-    apply_capture_success, Announcer, AxOutcome, CaptureCoordinator, CaptureIngressContext,
-    CaptureMode, CapturedText, FocusOwner, FocusSnapshot, PersistError, PersistHook, Terminal,
-    INGRESS_ROUTE_MENU,
+    apply_capture_success, clipboard_restore_generation_matches, Announcer, AxOutcome,
+    CaptureCoordinator, CaptureIngressContext, CaptureMode, CapturedText, FocusOwner,
+    FocusSnapshot, PersistError, PersistHook, Terminal, INGRESS_ROUTE_MENU,
 };
 #[cfg(test)]
 use bronze_capture::{ax_capture, FakeAxTree};
@@ -18,8 +18,9 @@ use bronze_diagnostics::{
     SupportQueueCounts, SupportReport, SupportSourceApp, AUTOMATIC_UPLOAD, LAST_HOUR_MS,
 };
 use bronze_domain::{
-    default_output_profile, restore_smashed_structure, ComposerChord, OutputFormat, OutputProfile,
-    PostCopyAction,
+    capture_body_preferring_ax_marks, default_output_profile, markdown_from_clipboard_types,
+    markdown_has_style_marks, restore_smashed_structure, ComposerChord, OutputFormat,
+    OutputProfile, PostCopyAction,
 };
 use bronze_platform_macos::{
     accept_settings_file_path, accept_support_file_path, read_settings_import_bytes,
@@ -28,6 +29,8 @@ use bronze_platform_macos::{
 };
 #[cfg(not(test))]
 use bronze_platform_macos::{snapshot_from_preflight, MacosPreflightHost};
+#[cfg(test)]
+use bronze_settings::ClipboardFallback;
 use bronze_settings::{
     apply_recorded_double_tap_timing, default_shortcut_binding, effective_tap_count,
     export_settings_document, is_default_binding, logical_key_allowed, parse_settings_import,
@@ -60,9 +63,63 @@ pub fn is_overview_status(status: &str) -> bool {
     matches!(status, "queued" | "copied" | "active")
 }
 
+fn clipboard_offer_should_restore(offer: &ClipboardMarkupOffer) -> bool {
+    match offer {
+        ClipboardMarkupOffer::Types {
+            post_copy_generation,
+            current_generation,
+            ..
+        } => clipboard_restore_generation_matches(*post_copy_generation, *current_generation),
+        ClipboardMarkupOffer::None | ClipboardMarkupOffer::Failed => false,
+    }
+}
+
+#[derive(Clone)]
+pub enum ClipboardMarkupOffer {
+    None,
+    Failed,
+    Types {
+        html: Option<String>,
+        rtf: Option<String>,
+        plain: Option<String>,
+        post_copy_generation: u64,
+        current_generation: u64,
+        snapshot: Vec<u8>,
+    },
+}
+
+impl std::fmt::Debug for ClipboardMarkupOffer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::None => write!(f, "None"),
+            Self::Failed => write!(f, "Failed"),
+            Self::Types {
+                html,
+                rtf,
+                plain,
+                post_copy_generation,
+                current_generation,
+                snapshot,
+            } => f
+                .debug_struct("Types")
+                .field("html_len", &html.as_ref().map(String::len))
+                .field("rtf_len", &rtf.as_ref().map(String::len))
+                .field("plain_len", &plain.as_ref().map(String::len))
+                .field("post_copy_generation", post_copy_generation)
+                .field("current_generation", current_generation)
+                .field("snapshot_len", &snapshot.len())
+                .finish(),
+        }
+    }
+}
+
 pub trait SelectionHost {
     fn peek_bundle_id(&self) -> Option<String>;
     fn read(&self) -> (AxOutcome, Option<CapturedText>);
+    fn offer_clipboard_markup(&self) -> ClipboardMarkupOffer {
+        ClipboardMarkupOffer::None
+    }
+    fn restore_clipboard_markup(&self, _offer: &ClipboardMarkupOffer) {}
 }
 
 #[cfg(test)]
@@ -70,6 +127,8 @@ pub struct FakeSelectionHost {
     pub tree: FakeAxTree,
     pub source_app_name: Option<String>,
     pub source_bundle_id: Option<String>,
+    pub clipboard: ClipboardMarkupOffer,
+    pub clipboard_restored: std::cell::Cell<bool>,
 }
 
 #[cfg(test)]
@@ -88,6 +147,14 @@ impl SelectionHost for FakeSelectionHost {
                 captured
             }),
         )
+    }
+
+    fn offer_clipboard_markup(&self) -> ClipboardMarkupOffer {
+        self.clipboard.clone()
+    }
+
+    fn restore_clipboard_markup(&self, _offer: &ClipboardMarkupOffer) {
+        self.clipboard_restored.set(true);
     }
 }
 
@@ -157,6 +224,53 @@ impl SelectionHost for LiveCaptureHost {
                 (AxOutcome::SelectionTooLarge, None)
             }
             None => LiveAxHost.read(),
+        }
+    }
+
+    fn offer_clipboard_markup(&self) -> ClipboardMarkupOffer {
+        if self.own.is_some() {
+            return ClipboardMarkupOffer::None;
+        }
+        let Some(pid) = bronze_platform_macos::last_external_pid() else {
+            return ClipboardMarkupOffer::None;
+        };
+        match bronze_platform_macos::native_bounded_copy_read(pid) {
+            Ok(read) => {
+                let (html, rtf, plain) = match read.kind {
+                    bronze_platform_macos::ClipboardTextKind::Html => {
+                        (Some(read.payload), None, None)
+                    }
+                    bronze_platform_macos::ClipboardTextKind::Rtf => {
+                        (None, Some(read.payload), None)
+                    }
+                    bronze_platform_macos::ClipboardTextKind::Plain => {
+                        (None, None, Some(read.payload))
+                    }
+                };
+                ClipboardMarkupOffer::Types {
+                    html,
+                    rtf,
+                    plain,
+                    post_copy_generation: read.post_copy_generation,
+                    current_generation: read.post_copy_generation,
+                    snapshot: read.snapshot,
+                }
+            }
+            Err(_) => ClipboardMarkupOffer::Failed,
+        }
+    }
+
+    fn restore_clipboard_markup(&self, offer: &ClipboardMarkupOffer) {
+        if let ClipboardMarkupOffer::Types {
+            snapshot,
+            post_copy_generation,
+            ..
+        } = offer
+        {
+            let _ = bronze_platform_macos::native_pasteboard_restore_if_unchanged(
+                snapshot,
+                *post_copy_generation,
+            );
         }
     }
 }
@@ -685,7 +799,28 @@ impl LiveSession {
                         item_id: None,
                     });
                 }
-                let body = captured.text;
+                let mut body = captured.text;
+                let mut offer = ClipboardMarkupOffer::None;
+                if !markdown_has_style_marks(&body)
+                    && self.settings.capture.allows_unstyled_clipboard_markup()
+                    && !self
+                        .settings
+                        .privacy
+                        .denies_synthetic_fallback(captured.source_bundle_id.as_deref())
+                {
+                    offer = host.offer_clipboard_markup();
+                    if let ClipboardMarkupOffer::Types {
+                        html, rtf, plain, ..
+                    } = &offer
+                    {
+                        let md = markdown_from_clipboard_types(
+                            html.as_deref(),
+                            rtf.as_deref(),
+                            plain.as_deref(),
+                        );
+                        body = capture_body_preferring_ax_marks(&body, md.as_deref());
+                    }
+                }
                 let mut saved_id = None;
                 let mut coordinator = CaptureCoordinator::with_hooks(
                     8,
@@ -707,6 +842,9 @@ impl LiveSession {
                     .map(|receipt| receipt.terminal)
                     .unwrap_or(Terminal::Failed);
                 drop(coordinator);
+                if clipboard_offer_should_restore(&offer) {
+                    host.restore_clipboard_markup(&offer);
+                }
                 if terminal == Terminal::Saved {
                     let prior = FocusSnapshot {
                         owner: FocusOwner::Source,
@@ -2454,6 +2592,8 @@ mod live_session_tests {
             },
             source_app_name: Some("TextEdit".into()),
             source_bundle_id: Some("com.apple.TextEdit".into()),
+            clipboard: ClipboardMarkupOffer::None,
+            clipboard_restored: std::cell::Cell::new(false),
         };
         let mut announce = FakeAnnouncer::default();
         let persisted = session
@@ -2737,6 +2877,8 @@ mod live_session_tests {
             },
             source_app_name: Some("TextEdit".into()),
             source_bundle_id: Some("com.apple.TextEdit".into()),
+            clipboard: ClipboardMarkupOffer::None,
+            clipboard_restored: std::cell::Cell::new(false),
         };
         let mut announce = FakeAnnouncer::default();
         let persisted = session
@@ -2783,6 +2925,8 @@ mod live_session_tests {
             },
             source_app_name: Some("TextEdit".into()),
             source_bundle_id: Some("com.apple.TextEdit".into()),
+            clipboard: ClipboardMarkupOffer::None,
+            clipboard_restored: std::cell::Cell::new(false),
         };
         let mut announce = FakeAnnouncer::default();
         let persisted = session
@@ -2816,6 +2960,8 @@ mod live_session_tests {
             },
             source_app_name: None,
             source_bundle_id: None,
+            clipboard: ClipboardMarkupOffer::None,
+            clipboard_restored: std::cell::Cell::new(false),
         };
         let mut announce = FakeAnnouncer::default();
         let terminal = session
@@ -2840,6 +2986,8 @@ mod live_session_tests {
             },
             source_app_name: Some("TextEdit".into()),
             source_bundle_id: None,
+            clipboard: ClipboardMarkupOffer::None,
+            clipboard_restored: std::cell::Cell::new(false),
         };
         let terminal = session
             .persist_selection(&secret, &mut announce, false)
@@ -2874,6 +3022,8 @@ mod live_session_tests {
             },
             source_app_name: Some("Secret".into()),
             source_bundle_id: Some("com.secret.app".into()),
+            clipboard: ClipboardMarkupOffer::None,
+            clipboard_restored: std::cell::Cell::new(false),
         };
         let mut announce = FakeAnnouncer::default();
         let terminal = session
@@ -3004,5 +3154,147 @@ mod live_session_tests {
         let icon = include_str!("live_session.rs");
         assert!(icon.contains("[bundle, name]"));
         assert!(icon.contains("native_app_icon_png(key)"));
+    }
+
+    #[test]
+    fn unstyled_ax_takes_html_marks_and_restore_follows_generation() {
+        use bronze_capture::{AxRole, FakeAnnouncer, FakeAxNode, FakeAxTree, FakeSelection};
+        fn host(text: &str, clipboard: ClipboardMarkupOffer) -> FakeSelectionHost {
+            FakeSelectionHost {
+                tree: FakeAxTree {
+                    nodes: vec![FakeAxNode::new(
+                        AxRole::TextArea,
+                        None,
+                        FakeSelection::Text(text.into()),
+                        None,
+                    )],
+                    focused: Some(0),
+                    excluded: false,
+                    accessibility_granted: true,
+                },
+                source_app_name: Some("Slack".into()),
+                source_bundle_id: Some("com.tinyspeck.slackmacgap".into()),
+                clipboard,
+                clipboard_restored: std::cell::Cell::new(false),
+            }
+        }
+        let html_code = ClipboardMarkupOffer::Types {
+            html: Some("<code>openrouter</code>".into()),
+            rtf: None,
+            plain: None,
+            post_copy_generation: 4,
+            current_generation: 4,
+            snapshot: vec![1],
+        };
+        let mut session = open_session();
+        let marked = host("**keep ax**", html_code.clone());
+        let mut announce = FakeAnnouncer::default();
+        let persisted = session
+            .persist_selection(&marked, &mut announce, false)
+            .expect("ax marks");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert_eq!(
+            session
+                .item_body(persisted.item_id.as_deref().expect("ax id"))
+                .as_deref(),
+            Some("**keep ax**")
+        );
+        assert!(!marked.clipboard_restored.get());
+
+        let unstyled = host("openrouter", html_code);
+        let persisted = session
+            .persist_selection(&unstyled, &mut announce, false)
+            .expect("html marks");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert_eq!(
+            session
+                .item_body(persisted.item_id.as_deref().expect("html id"))
+                .as_deref(),
+            Some("`openrouter`")
+        );
+        assert!(unstyled.clipboard_restored.get());
+
+        let stale = host(
+            "plain",
+            ClipboardMarkupOffer::Types {
+                html: Some("<code>later</code>".into()),
+                rtf: None,
+                plain: None,
+                post_copy_generation: 4,
+                current_generation: 5,
+                snapshot: vec![1],
+            },
+        );
+        let persisted = session
+            .persist_selection(&stale, &mut announce, false)
+            .expect("stale");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert_eq!(
+            session
+                .item_body(persisted.item_id.as_deref().expect("stale id"))
+                .as_deref(),
+            Some("`later`")
+        );
+        assert!(!stale.clipboard_restored.get());
+
+        let failed = host("ax plain", ClipboardMarkupOffer::Failed);
+        let persisted = session
+            .persist_selection(&failed, &mut announce, false)
+            .expect("copy fail");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert!(persisted.item_id.is_some());
+        assert_eq!(
+            session
+                .item_body(persisted.item_id.as_deref().expect("fail id"))
+                .as_deref(),
+            Some("ax plain")
+        );
+        assert!(!failed.clipboard_restored.get());
+
+        let mut off = session.settings();
+        off.capture.clipboard_fallback = ClipboardFallback::Off;
+        session.replace_settings(off).expect("off");
+        let ignored = host(
+            "still plain",
+            ClipboardMarkupOffer::Types {
+                html: Some("<code>nope</code>".into()),
+                rtf: None,
+                plain: None,
+                post_copy_generation: 8,
+                current_generation: 8,
+                snapshot: vec![1],
+            },
+        );
+        let persisted = session
+            .persist_selection(&ignored, &mut announce, false)
+            .expect("off");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert_eq!(
+            session
+                .item_body(persisted.item_id.as_deref().expect("off id"))
+                .as_deref(),
+            Some("still plain")
+        );
+        assert!(!ignored.clipboard_restored.get());
+
+        let tap = include_str!(
+            "../../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        );
+        let callback = tap
+            .split("private static let callback")
+            .nth(1)
+            .expect("callback");
+        for needle in [
+            "NSPasteboard",
+            "changeCount",
+            "AXUIElement",
+            "sqlite",
+            "bronze_native_bounded_copy_read",
+            "bronze_native_pasteboard_restore_if_unchanged",
+        ] {
+            assert!(!callback.contains(needle), "callback has {needle}");
+            assert!(!tap.contains(needle), "engine has {needle}");
+        }
+        assert!(tap.contains("0x42524E5A434F5059"));
     }
 }

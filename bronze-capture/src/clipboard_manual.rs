@@ -1,7 +1,8 @@
 //! Explicit Create from Clipboard (story 3.7, CAP-003, CAP-005).
 //!
-//! Text is read only from this command. Synthetic fallback stays off.
-//! Stale `changeCount` is `clipboard_changed`. No restore. No files/images.
+//! Manual import reads text only from this command. Bounded markup copy
+//! restores a textual snapshot only when changeCount still matches the
+//! post-copy generation.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ClipboardKind {
@@ -57,6 +58,10 @@ pub fn create_from_clipboard<B: Pasteboard>(
         Some(body) if body.is_empty() => ClipboardOutcome::NoSelection,
         Some(body) => ClipboardOutcome::Imported { len: body.len() },
     }
+}
+
+pub fn clipboard_restore_generation_matches(post_copy: u64, current: u64) -> bool {
+    post_copy > 0 && post_copy == current
 }
 
 #[cfg(test)]
@@ -163,5 +168,41 @@ mod clipboard_manual_tests {
             ClipboardOutcome::ClipboardUnsupportedType
         );
         assert_eq!(images.reads.get(), 0);
+    }
+
+    #[test]
+    fn restore_only_when_change_count_still_matches_post_copy() {
+        assert!(clipboard_restore_generation_matches(4, 4));
+        assert!(!clipboard_restore_generation_matches(4, 5));
+        assert!(!clipboard_restore_generation_matches(0, 0));
+        let tap = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        ));
+        let callback = tap
+            .split("private static let callback")
+            .nth(1)
+            .expect("callback");
+        for needle in [
+            "NSPasteboard",
+            "changeCount",
+            "AXUIElement",
+            "AXSelectedText",
+            "sqlite",
+            "SQLite",
+            "bronze_native_bounded_copy_read",
+            "bronze_native_pasteboard_restore_if_unchanged",
+            "bronze_native_pasteboard_write",
+        ] {
+            assert!(
+                !callback.contains(needle),
+                "event-tap callback must not contain {needle}"
+            );
+            assert!(
+                !tap.contains(needle),
+                "event-tap engine must not contain {needle}"
+            );
+        }
+        assert!(tap.contains("0x42524E5A434F5059"));
     }
 }

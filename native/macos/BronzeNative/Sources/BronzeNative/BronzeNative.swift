@@ -23,6 +23,10 @@ public let BRONZE_STATUS_NOT_FOUND: UInt32          = 4
 public let BRONZE_STATUS_SHUTTING_DOWN: UInt32      = 5
 public let BRONZE_STATUS_DEGRADED: UInt32           = 6
 public let BRONZE_STATUS_CONTEXT_UNAVAILABLE: UInt32 = 7
+public let BRONZE_PASTEBOARD_KIND_NONE: UInt32 = 0
+public let BRONZE_PASTEBOARD_KIND_HTML: UInt32 = 1
+public let BRONZE_PASTEBOARD_KIND_RTF: UInt32 = 2
+public let BRONZE_PASTEBOARD_KIND_PLAIN: UInt32 = 3
 
 // Non-owning borrowed UTF-8 view. Exact layout to match C struct in BronzeNative.h for ABI.
 // (ptr may be null iff len==0). Used for both Swift API and C ABI export.

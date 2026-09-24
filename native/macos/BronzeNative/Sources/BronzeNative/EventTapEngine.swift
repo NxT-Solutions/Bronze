@@ -257,9 +257,11 @@ public final class EventTapEngine: @unchecked Sendable {
     }
 
     private static let callback: CGEventTapCallBack = { _, type, event, refcon in
-        if let refcon {
-            let engine = Unmanaged<EventTapEngine>.fromOpaque(refcon).takeUnretainedValue()
-            engine.handleLive(type: type, event: event)
+        if event.getIntegerValueField(.eventSourceUserData) != 0x42524E5A434F5059 {
+            if let refcon {
+                let engine = Unmanaged<EventTapEngine>.fromOpaque(refcon).takeUnretainedValue()
+                engine.handleLive(type: type, event: event)
+            }
         }
         return Unmanaged.passUnretained(event)
     }

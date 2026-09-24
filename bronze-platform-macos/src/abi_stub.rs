@@ -621,6 +621,54 @@ pub extern "C" fn bronze_native_pasteboard_write(
 }
 
 #[no_mangle]
+pub extern "C" fn bronze_native_bounded_copy_read(
+    _target_pid: i32,
+    kind: *mut u32,
+    post_copy_count: *mut u64,
+    payload: *mut BronzeNativeUtf8View,
+    snapshot: *mut BronzeNativeUtf8View,
+) -> u32 {
+    if !kind.is_null() {
+        unsafe {
+            *kind = crate::abi::BRONZE_PASTEBOARD_KIND_NONE;
+        }
+    }
+    if !post_copy_count.is_null() {
+        unsafe {
+            *post_copy_count = 0;
+        }
+    }
+    if !payload.is_null() {
+        unsafe {
+            *payload = BronzeNativeUtf8View {
+                ptr: std::ptr::null(),
+                len: 0,
+            };
+        }
+    }
+    if !snapshot.is_null() {
+        unsafe {
+            *snapshot = BronzeNativeUtf8View {
+                ptr: std::ptr::null(),
+                len: 0,
+            };
+        }
+    }
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_pasteboard_restore_if_unchanged(
+    snapshot: BronzeNativeUtf8View,
+    _expected_count: u64,
+) -> u32 {
+    if snapshot.len > 0 && snapshot.ptr.is_null() {
+        return BRONZE_STATUS_INVALID_UTF8;
+    }
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
 pub extern "C" fn bronze_native_bundle_id_for_pid(
     _pid: i32,
     _out: *mut BronzeNativeUtf8View,

@@ -47,7 +47,10 @@ pub use installed_apps::{
     InstalledApp, PickInstalledApp,
 };
 pub use login_item::{apply_login_item, login_item_status, LoginItemStatus};
-pub use pasteboard::native_pasteboard_write;
+pub use pasteboard::{
+    native_bounded_copy_read, native_pasteboard_restore_if_unchanged, native_pasteboard_write,
+    BoundedClipboardRead, ClipboardTextKind,
+};
 #[cfg(target_os = "macos")]
 pub use permission::MacosPreflightHost;
 pub use permission::{

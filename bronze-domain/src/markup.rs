@@ -934,6 +934,883 @@ fn append_text(out: &mut String, ch: char) {
     }
 }
 
+const CLIPBOARD_MARKUP_MAX_BYTES: usize = 1 << 20;
+
+#[derive(Clone, Copy, Default, Eq, PartialEq)]
+struct InlineStyle {
+    bold: bool,
+    italic: bool,
+    code: bool,
+}
+
+/// Unescaped `**` or `` ` `` means attributed marks, not a lone `*`.
+pub fn markdown_has_style_marks(text: &str) -> bool {
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '\\' && i + 1 < chars.len() {
+            i += 2;
+            continue;
+        }
+        if chars[i] == '`' {
+            return true;
+        }
+        if chars[i] == '*' && chars.get(i + 1) == Some(&'*') {
+            return true;
+        }
+        i += 1;
+    }
+    false
+}
+
+pub fn markdown_from_clipboard_types(
+    html: Option<&str>,
+    rtf: Option<&str>,
+    plain: Option<&str>,
+) -> Option<String> {
+    if let Some(html) = html.filter(|s| !s.is_empty()) {
+        let md = constrained_markdown_from_html(html);
+        if !md.is_empty() {
+            return Some(md);
+        }
+    }
+    if let Some(rtf) = rtf.filter(|s| !s.is_empty()) {
+        let md = constrained_markdown_from_rtf(rtf);
+        if !md.is_empty() {
+            return Some(md);
+        }
+    }
+    plain.filter(|s| !s.is_empty()).map(str::to_string)
+}
+
+pub fn capture_body_preferring_ax_marks(ax_text: &str, clipboard_md: Option<&str>) -> String {
+    if markdown_has_style_marks(ax_text) {
+        return ax_text.to_string();
+    }
+    match clipboard_md {
+        Some(md) if markdown_has_style_marks(md) => md.to_string(),
+        _ => ax_text.to_string(),
+    }
+}
+
+pub fn constrained_markdown_from_html(html: &str) -> String {
+    if html.is_empty() || html.len() > CLIPBOARD_MARKUP_MAX_BYTES {
+        return String::new();
+    }
+    markdown_from_runs(&html_style_runs(html))
+}
+
+pub fn constrained_markdown_from_rtf(rtf: &str) -> String {
+    if rtf.is_empty() || rtf.len() > CLIPBOARD_MARKUP_MAX_BYTES {
+        return String::new();
+    }
+    markdown_from_runs(&rtf_style_runs(rtf))
+}
+
+fn html_style_runs(html: &str) -> Vec<StyleRun> {
+    let bytes = html.as_bytes();
+    let mut i = 0;
+    let mut style = InlineStyle::default();
+    let mut stack = vec![style];
+    let mut skip = 0u32;
+    let mut pre = 0u32;
+    let mut lists: Vec<(bool, u32)> = Vec::new();
+    let mut runs = Vec::new();
+    let mut pending = String::new();
+    let mut pending_style = InlineStyle::default();
+    let mut last_was_ws = true;
+    while i < bytes.len() {
+        if bytes[i] == b'<' {
+            if bytes.get(i + 1..i + 4) == Some(b"!--") {
+                i += 4;
+                while i + 2 < bytes.len() && &bytes[i..i + 3] != b"-->" {
+                    i += 1;
+                }
+                i = (i + 3).min(bytes.len());
+                continue;
+            }
+            flush_html_run(&mut runs, &mut pending, pending_style);
+            let (next, tag) = parse_html_tag(bytes, i);
+            i = next;
+            match tag {
+                HtmlTag::Start {
+                    name,
+                    class,
+                    style_attr,
+                    self_closing,
+                } => {
+                    apply_html_start(
+                        &name,
+                        &class,
+                        &style_attr,
+                        self_closing,
+                        &mut style,
+                        &mut stack,
+                        &mut skip,
+                        &mut pre,
+                        &mut lists,
+                        &mut runs,
+                        &mut pending,
+                        &mut pending_style,
+                        &mut last_was_ws,
+                    );
+                }
+                HtmlTag::End { name } => {
+                    apply_html_end(
+                        &name,
+                        &mut style,
+                        &mut stack,
+                        &mut skip,
+                        &mut pre,
+                        &mut lists,
+                        &mut last_was_ws,
+                    );
+                }
+            }
+            continue;
+        }
+        let start = i;
+        while i < bytes.len() && bytes[i] != b'<' {
+            i += 1;
+        }
+        if skip == 0 {
+            if let Ok(raw) = std::str::from_utf8(&bytes[start..i]) {
+                push_html_text(
+                    &mut runs,
+                    &mut pending,
+                    &mut pending_style,
+                    &decode_entities(raw),
+                    style,
+                    pre > 0,
+                    &mut last_was_ws,
+                );
+            }
+        }
+    }
+    flush_html_run(&mut runs, &mut pending, pending_style);
+    runs
+}
+
+enum HtmlTag {
+    Start {
+        name: String,
+        class: String,
+        style_attr: String,
+        self_closing: bool,
+    },
+    End {
+        name: String,
+    },
+}
+
+fn parse_html_tag(bytes: &[u8], start: usize) -> (usize, HtmlTag) {
+    let mut i = start + 1;
+    let end_tag = bytes.get(i) == Some(&b'/');
+    if end_tag {
+        i += 1;
+    }
+    let name_start = i;
+    while i < bytes.len() && bytes[i].is_ascii_alphanumeric() {
+        i += 1;
+    }
+    let name = std::str::from_utf8(&bytes[name_start..i])
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    let mut class = String::new();
+    let mut style_attr = String::new();
+    let mut self_closing = false;
+    while i < bytes.len() && bytes[i] != b'>' {
+        if bytes[i] == b'/' && bytes.get(i + 1) == Some(&b'>') {
+            self_closing = true;
+            i += 1;
+            break;
+        }
+        if bytes[i].is_ascii_whitespace() {
+            i += 1;
+            continue;
+        }
+        let key_start = i;
+        while i < bytes.len() && bytes[i].is_ascii_alphanumeric() {
+            i += 1;
+        }
+        let key = std::str::from_utf8(&bytes[key_start..i])
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        let mut value = String::new();
+        if bytes.get(i) == Some(&b'=') {
+            i += 1;
+            while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+                i += 1;
+            }
+            if let Some(&q) = bytes.get(i) {
+                if q == b'"' || q == b'\'' {
+                    i += 1;
+                    let v0 = i;
+                    while i < bytes.len() && bytes[i] != q {
+                        i += 1;
+                    }
+                    value = std::str::from_utf8(&bytes[v0..i]).unwrap_or("").to_string();
+                    if i < bytes.len() {
+                        i += 1;
+                    }
+                } else {
+                    let v0 = i;
+                    while i < bytes.len() && !bytes[i].is_ascii_whitespace() && bytes[i] != b'>' {
+                        i += 1;
+                    }
+                    value = std::str::from_utf8(&bytes[v0..i]).unwrap_or("").to_string();
+                }
+            }
+        }
+        if key == "class" {
+            class = value;
+        } else if key == "style" {
+            style_attr = value;
+        }
+    }
+    if i < bytes.len() && bytes[i] == b'>' {
+        i += 1;
+    }
+    if matches!(
+        name.as_str(),
+        "br" | "img" | "hr" | "meta" | "link" | "input" | "source" | "wbr" | "col"
+    ) {
+        self_closing = true;
+    }
+    if end_tag {
+        (i, HtmlTag::End { name })
+    } else {
+        (
+            i,
+            HtmlTag::Start {
+                name,
+                class,
+                style_attr,
+                self_closing,
+            },
+        )
+    }
+}
+
+fn html_skip_tag(name: &str) -> bool {
+    matches!(
+        name,
+        "script"
+            | "style"
+            | "noscript"
+            | "iframe"
+            | "object"
+            | "embed"
+            | "svg"
+            | "template"
+            | "head"
+            | "link"
+            | "meta"
+    )
+}
+
+fn html_void_drop(name: &str) -> bool {
+    matches!(name, "img" | "source" | "track" | "input" | "hr")
+}
+
+fn html_code_hint(name: &str, class: &str, style_attr: &str) -> bool {
+    if matches!(name, "code" | "pre" | "kbd" | "samp" | "tt") {
+        return true;
+    }
+    let class_l = class.to_ascii_lowercase();
+    for token in class_l.split(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-') {
+        if matches!(
+            token,
+            "code" | "pre" | "kbd" | "monospace" | "hljs" | "token" | "prettyprint"
+        ) || token.contains("mrkdwn__code")
+            || token.contains("mrkdwn__pre")
+        {
+            return true;
+        }
+    }
+    font_family_is_mono(style_attr)
+}
+
+fn font_family_is_mono(style_attr: &str) -> bool {
+    let style_l = style_attr.to_ascii_lowercase();
+    let Some(fam) = style_prop(&style_l, "font-family") else {
+        return false;
+    };
+    fam.contains("mono")
+        || fam.contains("courier")
+        || fam.contains("menlo")
+        || fam.contains("monaco")
+        || fam.contains("consolas")
+        || fam.contains("cascadia")
+        || fam.contains("fira")
+        || fam.contains("jetbrains")
+        || fam.contains("source code")
+        || fam.contains("sf mono")
+        || fam.contains("sfmono")
+}
+
+fn style_prop<'a>(style: &'a str, name: &str) -> Option<&'a str> {
+    let needle = format!("{name}:");
+    let start = style.find(&needle)?;
+    let rest = style[start + needle.len()..].trim_start();
+    let end = rest.find(';').unwrap_or(rest.len());
+    Some(rest[..end].trim())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn apply_html_start(
+    name: &str,
+    class: &str,
+    style_attr: &str,
+    self_closing: bool,
+    style: &mut InlineStyle,
+    stack: &mut Vec<InlineStyle>,
+    skip: &mut u32,
+    pre: &mut u32,
+    lists: &mut Vec<(bool, u32)>,
+    runs: &mut Vec<StyleRun>,
+    pending: &mut String,
+    pending_style: &mut InlineStyle,
+    last_was_ws: &mut bool,
+) {
+    if html_skip_tag(name) {
+        if !self_closing {
+            *skip = skip.saturating_add(1);
+        }
+        return;
+    }
+    if *skip > 0 {
+        if !self_closing && html_skip_tag(name) {
+            *skip = skip.saturating_add(1);
+        }
+        return;
+    }
+    if html_void_drop(name) {
+        return;
+    }
+    if name == "br" {
+        push_html_text(
+            runs,
+            pending,
+            pending_style,
+            "\n",
+            InlineStyle::default(),
+            true,
+            last_was_ws,
+        );
+        *last_was_ws = true;
+        return;
+    }
+    if matches!(
+        name,
+        "p" | "div" | "tr" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "blockquote"
+    ) {
+        push_html_block_break(runs, pending, pending_style, last_was_ws);
+    }
+    if name == "ul" || name == "ol" {
+        push_html_block_break(runs, pending, pending_style, last_was_ws);
+        lists.push((name == "ol", 1));
+    }
+    if name == "li" {
+        push_html_block_break(runs, pending, pending_style, last_was_ws);
+        let depth = lists.len().saturating_sub(1);
+        let indent = "    ".repeat(depth);
+        let marker = match lists.last_mut() {
+            Some((true, n)) => {
+                let cur = *n;
+                *n = n.saturating_add(1);
+                format!("{indent}{cur}. ")
+            }
+            Some((false, _)) => format!("{indent}- "),
+            None => format!("{indent}- "),
+        };
+        push_html_text(
+            runs,
+            pending,
+            pending_style,
+            &marker,
+            InlineStyle::default(),
+            true,
+            last_was_ws,
+        );
+    }
+    if self_closing {
+        return;
+    }
+    let mut next = *style;
+    if matches!(name, "strong" | "b") {
+        next.bold = true;
+    }
+    if matches!(name, "em" | "i") {
+        next.italic = true;
+    }
+    if html_code_hint(name, class, style_attr) {
+        next.code = true;
+        if name == "pre" {
+            *pre = pre.saturating_add(1);
+        }
+    }
+    stack.push(next);
+    *style = next;
+}
+
+fn apply_html_end(
+    name: &str,
+    style: &mut InlineStyle,
+    stack: &mut Vec<InlineStyle>,
+    skip: &mut u32,
+    pre: &mut u32,
+    lists: &mut Vec<(bool, u32)>,
+    last_was_ws: &mut bool,
+) {
+    if html_skip_tag(name) {
+        *skip = skip.saturating_sub(1);
+        return;
+    }
+    if *skip > 0 {
+        return;
+    }
+    if name == "pre" {
+        *pre = pre.saturating_sub(1);
+    }
+    if name == "ul" || name == "ol" {
+        lists.pop();
+        *last_was_ws = true;
+    }
+    if stack.len() > 1 {
+        stack.pop();
+    }
+    *style = stack.last().copied().unwrap_or_default();
+}
+
+fn push_html_block_break(
+    runs: &mut Vec<StyleRun>,
+    pending: &mut String,
+    pending_style: &mut InlineStyle,
+    last_was_ws: &mut bool,
+) {
+    if pending.ends_with('\n') {
+        *last_was_ws = true;
+        return;
+    }
+    if pending.is_empty() && runs.last().is_some_and(|run| run.text.ends_with('\n')) {
+        *last_was_ws = true;
+        return;
+    }
+    if pending.is_empty() && runs.is_empty() {
+        *last_was_ws = true;
+        return;
+    }
+    push_html_text(
+        runs,
+        pending,
+        pending_style,
+        "\n",
+        InlineStyle::default(),
+        true,
+        last_was_ws,
+    );
+    *last_was_ws = true;
+}
+
+fn push_html_text(
+    runs: &mut Vec<StyleRun>,
+    pending: &mut String,
+    pending_style: &mut InlineStyle,
+    text: &str,
+    style: InlineStyle,
+    pre: bool,
+    last_was_ws: &mut bool,
+) {
+    let mut buf = String::new();
+    if pre {
+        buf.push_str(text);
+        if !text.is_empty() {
+            *last_was_ws = text.chars().last().is_some_and(char::is_whitespace);
+        }
+    } else {
+        for ch in text.chars() {
+            if ch == '\u{00a0}' {
+                buf.push(' ');
+                *last_was_ws = true;
+            } else if ch.is_whitespace() {
+                if !*last_was_ws {
+                    buf.push(' ');
+                    *last_was_ws = true;
+                }
+            } else {
+                buf.push(ch);
+                *last_was_ws = false;
+            }
+        }
+    }
+    if buf.is_empty() {
+        return;
+    }
+    if pending.is_empty() {
+        *pending_style = style;
+        pending.push_str(&buf);
+        return;
+    }
+    if *pending_style == style {
+        pending.push_str(&buf);
+        return;
+    }
+    flush_html_run(runs, pending, *pending_style);
+    *pending_style = style;
+    pending.push_str(&buf);
+}
+
+fn flush_html_run(runs: &mut Vec<StyleRun>, pending: &mut String, style: InlineStyle) {
+    if pending.is_empty() {
+        return;
+    }
+    runs.push(StyleRun {
+        text: std::mem::take(pending),
+        bold: style.bold,
+        italic: style.italic,
+        code: style.code,
+    });
+}
+
+fn decode_entities(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(amp) = rest.find('&') {
+        out.push_str(&rest[..amp]);
+        rest = &rest[amp..];
+        let Some(end) = rest.find(';') else {
+            out.push('&');
+            rest = &rest[1..];
+            continue;
+        };
+        let ent = &rest[1..end];
+        match ent {
+            "amp" => out.push('&'),
+            "lt" => out.push('<'),
+            "gt" => out.push('>'),
+            "quot" => out.push('"'),
+            "apos" | "#39" | "#x27" => out.push('\''),
+            "nbsp" => out.push('\u{00a0}'),
+            _ if ent.starts_with('#') => {
+                if let Some(ch) = decode_numeric_entity(ent) {
+                    out.push(ch);
+                }
+            }
+            _ => {}
+        }
+        rest = &rest[end + 1..];
+    }
+    out.push_str(rest);
+    out
+}
+
+fn decode_numeric_entity(ent: &str) -> Option<char> {
+    let digits = ent.strip_prefix('#')?;
+    let value = if let Some(hex) = digits
+        .strip_prefix('x')
+        .or_else(|| digits.strip_prefix('X'))
+    {
+        u32::from_str_radix(hex, 16).ok()?
+    } else {
+        digits.parse().ok()?
+    };
+    char::from_u32(value)
+}
+
+fn rtf_style_runs(rtf: &str) -> Vec<StyleRun> {
+    let bytes = rtf.as_bytes();
+    let mut i = 0;
+    let mut fonts = Vec::<(i32, bool)>::new();
+    let mut font = 0i32;
+    let mut bold = false;
+    let mut italic = false;
+    let mut highlight = 0i32;
+    let mut skip = 0i32;
+    let mut stack: Vec<(i32, bool, bool, i32)> = Vec::new();
+    let mut runs = Vec::new();
+    let mut pending = String::new();
+    let mut pending_style = InlineStyle::default();
+    let mut last_was_ws = true;
+    let mut in_fonttbl = false;
+    let mut fonttbl_depth = 0i32;
+    let mut dest_skip = 0i32;
+    while i < bytes.len() {
+        let ch = bytes[i];
+        if ch == b'{' {
+            stack.push((font, bold, italic, highlight));
+            i += 1;
+            if in_fonttbl {
+                fonttbl_depth += 1;
+            }
+            if bytes.get(i) == Some(&b'\\') && bytes.get(i + 1) == Some(&b'*') {
+                dest_skip += 1;
+            }
+            continue;
+        }
+        if ch == b'}' {
+            if dest_skip > 0 {
+                dest_skip -= 1;
+            }
+            if in_fonttbl {
+                fonttbl_depth -= 1;
+                if fonttbl_depth <= 0 {
+                    in_fonttbl = false;
+                }
+            }
+            if let Some((f, b, it, h)) = stack.pop() {
+                font = f;
+                bold = b;
+                italic = it;
+                highlight = h;
+            }
+            i += 1;
+            continue;
+        }
+        if ch == b'\\' {
+            i += 1;
+            if i >= bytes.len() {
+                break;
+            }
+            let next = bytes[i];
+            if next == b'\\' || next == b'{' || next == b'}' {
+                if dest_skip == 0 && !in_fonttbl {
+                    let style = rtf_inline(bold, italic, font, highlight, &fonts);
+                    push_html_text(
+                        &mut runs,
+                        &mut pending,
+                        &mut pending_style,
+                        std::str::from_utf8(&[next]).unwrap_or(""),
+                        style,
+                        true,
+                        &mut last_was_ws,
+                    );
+                }
+                i += 1;
+                continue;
+            }
+            if next == b'\'' {
+                i += 1;
+                if i + 1 < bytes.len() {
+                    let hex = &rtf[i..i + 2];
+                    if dest_skip == 0 && !in_fonttbl {
+                        if let Ok(byte) = u8::from_str_radix(hex, 16) {
+                            let style = rtf_inline(bold, italic, font, highlight, &fonts);
+                            push_html_text(
+                                &mut runs,
+                                &mut pending,
+                                &mut pending_style,
+                                &String::from_utf8_lossy(&[byte]),
+                                style,
+                                true,
+                                &mut last_was_ws,
+                            );
+                        }
+                    }
+                    i += 2;
+                }
+                continue;
+            }
+            let word_start = i;
+            while i < bytes.len() && bytes[i].is_ascii_alphabetic() {
+                i += 1;
+            }
+            let word = std::str::from_utf8(&bytes[word_start..i]).unwrap_or("");
+            let mut num: Option<i32> = None;
+            let num_start = i;
+            if bytes.get(i) == Some(&b'-') {
+                i += 1;
+            }
+            while i < bytes.len() && bytes[i].is_ascii_digit() {
+                i += 1;
+            }
+            if i > num_start {
+                num = std::str::from_utf8(&bytes[num_start..i])
+                    .ok()
+                    .and_then(|s| s.parse().ok());
+            }
+            if bytes.get(i) == Some(&b' ') {
+                i += 1;
+            }
+            if dest_skip > 0 {
+                continue;
+            }
+            match word {
+                "fonttbl" => {
+                    in_fonttbl = true;
+                    fonttbl_depth = 1;
+                }
+                "colortbl" | "stylesheet" | "info" | "pict" | "themedata"
+                | "colorschememapping" | "latentstyles" | "datastore" => {
+                    dest_skip += 1;
+                }
+                "f" if in_fonttbl => {
+                    if let Some(id) = num {
+                        font = id;
+                    }
+                }
+                "fmodern" if in_fonttbl => {
+                    upsert_font(&mut fonts, font, true);
+                }
+                "froman" | "fswiss" | "fscript" | "fdecor" | "ftech" if in_fonttbl => {
+                    upsert_font(&mut fonts, font, false);
+                }
+                "f" => {
+                    if let Some(id) = num {
+                        font = id;
+                    }
+                }
+                "b" => bold = num.unwrap_or(1) != 0,
+                "i" => italic = num.unwrap_or(1) != 0,
+                "highlight" => highlight = num.unwrap_or(0),
+                "par" | "line" => {
+                    let style = rtf_inline(bold, italic, font, highlight, &fonts);
+                    push_html_text(
+                        &mut runs,
+                        &mut pending,
+                        &mut pending_style,
+                        "\n",
+                        style,
+                        true,
+                        &mut last_was_ws,
+                    );
+                    last_was_ws = true;
+                }
+                "tab" => {
+                    let style = rtf_inline(bold, italic, font, highlight, &fonts);
+                    push_html_text(
+                        &mut runs,
+                        &mut pending,
+                        &mut pending_style,
+                        "\t",
+                        style,
+                        true,
+                        &mut last_was_ws,
+                    );
+                }
+                "u" => {
+                    if let Some(code) = num {
+                        let scalar = if code < 0 {
+                            (code as u16) as u32
+                        } else {
+                            code as u32
+                        };
+                        if let Some(ch) = char::from_u32(scalar) {
+                            let style = rtf_inline(bold, italic, font, highlight, &fonts);
+                            let mut tmp = [0u8; 4];
+                            push_html_text(
+                                &mut runs,
+                                &mut pending,
+                                &mut pending_style,
+                                ch.encode_utf8(&mut tmp),
+                                style,
+                                true,
+                                &mut last_was_ws,
+                            );
+                        }
+                    }
+                    skip = 1;
+                }
+                "bin" => {
+                    if let Some(n) = num {
+                        i = i.saturating_add(n.max(0) as usize).min(bytes.len());
+                    }
+                }
+                _ => {
+                    if in_fonttbl && !word.is_empty() {
+                        if let Some(name) = rtf[word_start..].split(';').next() {
+                            if font_name_is_mono(name) {
+                                upsert_font(&mut fonts, font, true);
+                            }
+                        }
+                    }
+                }
+            }
+            continue;
+        }
+        if dest_skip > 0 {
+            i += 1;
+            continue;
+        }
+        if in_fonttbl {
+            let start = i;
+            while i < bytes.len() && !matches!(bytes[i], b'\\' | b'{' | b'}' | b';') {
+                i += 1;
+            }
+            if let Ok(name) = std::str::from_utf8(&bytes[start..i]) {
+                if font_name_is_mono(name) {
+                    upsert_font(&mut fonts, font, true);
+                }
+            }
+            if bytes.get(i) == Some(&b';') {
+                i += 1;
+            }
+            continue;
+        }
+        if skip > 0 {
+            skip -= 1;
+            i += 1;
+            continue;
+        }
+        let start = i;
+        while i < bytes.len() && !matches!(bytes[i], b'\\' | b'{' | b'}') {
+            i += 1;
+        }
+        if let Ok(text) = std::str::from_utf8(&bytes[start..i]) {
+            let style = rtf_inline(bold, italic, font, highlight, &fonts);
+            push_html_text(
+                &mut runs,
+                &mut pending,
+                &mut pending_style,
+                text,
+                style,
+                true,
+                &mut last_was_ws,
+            );
+        }
+    }
+    flush_html_run(&mut runs, &mut pending, pending_style);
+    runs
+}
+
+fn upsert_font(fonts: &mut Vec<(i32, bool)>, id: i32, mono: bool) {
+    if let Some(slot) = fonts.iter_mut().find(|(fid, _)| *fid == id) {
+        slot.1 = slot.1 || mono;
+    } else {
+        fonts.push((id, mono));
+    }
+}
+
+fn rtf_inline(
+    bold: bool,
+    italic: bool,
+    font: i32,
+    highlight: i32,
+    fonts: &[(i32, bool)],
+) -> InlineStyle {
+    let mono = fonts
+        .iter()
+        .find(|(id, _)| *id == font)
+        .is_some_and(|(_, mono)| *mono);
+    InlineStyle {
+        bold,
+        italic,
+        code: mono || highlight > 0,
+    }
+}
+
+fn font_name_is_mono(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    lower.contains("courier")
+        || lower.contains("mono")
+        || lower.contains("menlo")
+        || lower.contains("consolas")
+        || lower.contains("monaco")
+}
+
 #[cfg(test)]
 mod markup_tests {
     use super::*;
@@ -1264,5 +2141,83 @@ mod markup_tests {
         assert!(again.contains("Niet alle drie tegelijk."));
         assert!(again.contains("<li value=\"6\">"));
         assert!(!again.contains("value=\"7\""));
+    }
+
+    #[test]
+    fn html_and_rtf_become_constrained_markdown_without_fetch() {
+        assert_eq!(
+            constrained_markdown_from_html("<p><strong>Hello</strong> <b>world</b></p>"),
+            "**Hello** **world**"
+        );
+        assert_eq!(
+            constrained_markdown_from_html("<div><code>openrouter</code> <pre>bin</pre></div>"),
+            "`openrouter` `bin`"
+        );
+        assert_eq!(
+            constrained_markdown_from_html(
+                "<span class=\"c-mrkdwn__code\">chip</span> \
+                 <span style=\"font-family: Menlo, monospace\">mono</span>"
+            ),
+            "`chip` `mono`"
+        );
+        assert_eq!(
+            constrained_markdown_from_html("<ul><li>one</li><li>two</li></ul>"),
+            "- one\n- two"
+        );
+        assert_eq!(
+            constrained_markdown_from_html("<ol><li>one</li><li>two</li></ol>"),
+            "1. one\n2. two"
+        );
+        let dirty = constrained_markdown_from_html(
+            "<p>keep<script>alert(1)</script><img src=\"https://evil.example/x.png\">\
+             <a href=\"https://evil.example\">link</a></p>",
+        );
+        assert_eq!(dirty, "keeplink");
+        assert!(!dirty.contains("<script"));
+        assert!(!dirty.contains("https:"));
+        assert!(!dirty.contains("evil.example"));
+        assert!(!dirty.contains("alert"));
+        let src = include_str!("markup.rs");
+        assert!(!src.contains(&["URL", "Session"].concat()));
+        assert!(!src.contains(&["req", "west"].concat()));
+        assert!(!src.contains(&["u", "req"].concat()));
+        assert_eq!(
+            constrained_markdown_from_rtf("{\\rtf1\\ansi\\b bold\\b0}"),
+            "**bold**"
+        );
+        assert_eq!(
+            constrained_markdown_from_rtf(
+                "{\\rtf1\\ansi{\\fonttbl{\\f0\\fswiss Helvetica;}{\\f1\\fmodern Courier New;}}\\f1 code}"
+            ),
+            "`code`"
+        );
+        assert!(markdown_has_style_marks("**bold**"));
+        assert!(markdown_has_style_marks("`code`"));
+        assert!(!markdown_has_style_marks("2 * 3"));
+        assert!(!markdown_has_style_marks("plain"));
+        assert_eq!(
+            capture_body_preferring_ax_marks("**ax**", Some("`clip`")),
+            "**ax**"
+        );
+        assert_eq!(
+            capture_body_preferring_ax_marks("plain", Some("`code`")),
+            "`code`"
+        );
+        assert_eq!(
+            capture_body_preferring_ax_marks("plain", Some("still plain")),
+            "plain"
+        );
+        assert_eq!(
+            markdown_from_clipboard_types(Some("<code>x</code>"), Some("{\\rtf1\\b y}"), Some("z")),
+            Some("`x`".into())
+        );
+        assert_eq!(
+            markdown_from_clipboard_types(None, Some("{\\rtf1\\ansi\\b y\\b0}"), Some("z")),
+            Some("**y**".into())
+        );
+        assert_eq!(
+            markdown_from_clipboard_types(None, None, Some("z")),
+            Some("z".into())
+        );
     }
 }

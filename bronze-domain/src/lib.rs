@@ -23,7 +23,9 @@ pub use formatters::{
     OutputProfile, PostCopyAction,
 };
 pub use markup::{
-    font_name_traits, html_from_constrained_markdown, inline_code_flags, markdown_from_runs,
+    capture_body_preferring_ax_marks, constrained_markdown_from_html,
+    constrained_markdown_from_rtf, font_name_traits, html_from_constrained_markdown,
+    inline_code_flags, markdown_from_clipboard_types, markdown_from_runs, markdown_has_style_marks,
     outline_captured_text, restore_smashed_structure, MarkSpan, StyleRun,
 };
 pub use purge::{

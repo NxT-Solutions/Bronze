@@ -996,6 +996,8 @@ mod ax_live_tests {
         assert!(!tap.contains("FoundationModels"));
         assert!(!tap.contains("NaturalLanguage"));
         assert!(!tap.contains("bronze_native_pasteboard_write"));
+        assert!(!tap.contains("bronze_native_bounded_copy_read"));
+        assert!(!tap.contains("bronze_native_pasteboard_restore_if_unchanged"));
         assert!(!tap.contains("bronze_native_app_icon_png"));
         assert!(!tap.contains("bronze_native_list_installed_apps"));
         assert!(!tap.contains("bronze_native_pick_installed_app"));
