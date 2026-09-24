@@ -23,8 +23,8 @@ pub use formatters::{
     OutputProfile, PostCopyAction,
 };
 pub use markup::{
-    font_name_traits, html_from_constrained_markdown, markdown_from_runs, outline_captured_text,
-    restore_smashed_structure, StyleRun,
+    font_name_traits, html_from_constrained_markdown, inline_code_flags, markdown_from_runs,
+    outline_captured_text, restore_smashed_structure, MarkSpan, StyleRun,
 };
 pub use purge::{
     can_purge_with_descendants, claims_forensic_erasure, empty_trash_requires_confirmation,

@@ -124,6 +124,21 @@ mod copy_tests {
         assert!(html.contains("&lt;script&gt;"));
         assert!(html.contains("white-space:pre-wrap"));
         copy_items(
+            &["**Nieuwe** `openrouter_activity_daily`"],
+            &profile,
+            &mut board,
+            &mut life,
+        )
+        .expect("marks");
+        let marked = board.last.as_deref().expect("marked plain");
+        assert!(marked.contains("**Nieuwe**"));
+        assert!(marked.contains("`openrouter_activity_daily`"));
+        let marked_html = board.last_html.as_deref().expect("marked html");
+        assert!(marked_html.contains("<strong>Nieuwe</strong>"));
+        assert!(marked_html.contains("<code"));
+        assert!(marked_html.contains("openrouter_activity_daily"));
+        assert!(!marked_html.contains("<script"));
+        copy_items(
             &["tegelijk1. Data paused.Niet"],
             &profile,
             &mut board,

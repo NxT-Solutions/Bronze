@@ -138,6 +138,17 @@ mod sys {
         ) -> CfStringRef;
         pub fn CFDictionaryGetTypeID() -> usize;
         pub fn CFDictionaryGetValue(the_dict: CfTypeRef, key: CfTypeRef) -> CfTypeRef;
+        pub fn CFBooleanGetTypeID() -> usize;
+        pub fn CFBooleanGetValue(boolean: CfTypeRef) -> u8;
+        pub fn CFNumberGetTypeID() -> usize;
+        pub fn CFNumberGetValue(number: CfTypeRef, the_type: isize, value_ptr: *mut c_void) -> u8;
+    }
+
+    #[link(name = "CoreGraphics", kind = "framework")]
+    extern "C" {
+        pub fn CGColorGetTypeID() -> usize;
+        pub fn CGColorGetNumberOfComponents(color: CfTypeRef) -> usize;
+        pub fn CGColorGetComponents(color: CfTypeRef) -> *const f64;
     }
 
     #[link(name = "ApplicationServices", kind = "framework")]
@@ -287,6 +298,68 @@ mod sys {
         }
     }
 
+    fn cf_is_true(value: CfTypeRef) -> bool {
+        if value.is_null() {
+            return false;
+        }
+        unsafe {
+            let type_id = CFGetTypeID(value);
+            if type_id == CFBooleanGetTypeID() {
+                return CFBooleanGetValue(value) != 0;
+            }
+            if type_id == CFNumberGetTypeID() {
+                let mut number: i32 = 0;
+                // kCFNumberSInt32Type
+                if CFNumberGetValue(value, 3, (&mut number as *mut i32).cast()) != 0 {
+                    return number != 0;
+                }
+            }
+        }
+        false
+    }
+
+    fn dict_bool(dict: CfTypeRef, key_name: &str) -> bool {
+        let Some(key) = cf_string(key_name) else {
+            return false;
+        };
+        let value = unsafe { CFDictionaryGetValue(dict, key) };
+        unsafe { CFRelease(key) };
+        cf_is_true(value)
+    }
+
+    fn pack_color(r: f64, g: f64, b: f64, a: f64) -> Option<u32> {
+        if a < 0.05 {
+            return None;
+        }
+        let channel = |n: f64| (n.clamp(0.0, 1.0) * 255.0).round() as u32;
+        Some((channel(r) << 24) | (channel(g) << 16) | (channel(b) << 8) | channel(a))
+    }
+
+    fn dict_color(dict: CfTypeRef, key_name: &str) -> Option<u32> {
+        let key = cf_string(key_name)?;
+        let value = unsafe { CFDictionaryGetValue(dict, key) };
+        unsafe { CFRelease(key) };
+        if value.is_null() {
+            return None;
+        }
+        unsafe {
+            if CFGetTypeID(value) != CGColorGetTypeID() {
+                return None;
+            }
+            let count = CGColorGetNumberOfComponents(value);
+            let ptr = CGColorGetComponents(value);
+            if ptr.is_null() || count < 2 {
+                return None;
+            }
+            let comps = std::slice::from_raw_parts(ptr, count);
+            if count >= 4 {
+                pack_color(comps[0], comps[1], comps[2], comps[3])
+            } else {
+                pack_color(comps[0], comps[0], comps[0], comps[1])
+            }
+        }
+    }
+
     fn font_traits_from_attrs(attrs: CfTypeRef) -> (bool, bool) {
         if attrs.is_null() {
             return (false, false);
@@ -309,13 +382,46 @@ mod sys {
                 return (false, false);
             }
         }
-        if let Some(name) = dict_string(font, "AXFontName") {
-            return bronze_domain::font_name_traits(&name);
+        // Chromium and WebKit set AXFontBold / AXFontItalic and leave the
+        // font name empty (crbug.com/41456329). Native apps often encode the
+        // face in AXFontName instead.
+        let (name_bold, name_italic) = if let Some(name) = dict_string(font, "AXFontName") {
+            bronze_domain::font_name_traits(&name)
+        } else if let Some(name) = dict_string(font, "AXFontFamily") {
+            bronze_domain::font_name_traits(&name)
+        } else {
+            (false, false)
+        };
+        (
+            name_bold || dict_bool(font, "AXFontBold"),
+            name_italic || dict_bool(font, "AXFontItalic"),
+        )
+    }
+
+    struct CapturedRun {
+        text: String,
+        bold: bool,
+        italic: bool,
+        highlight: bool,
+        background: Option<u32>,
+    }
+
+    fn style_from_attrs(attrs: CfTypeRef) -> (bool, bool, bool, Option<u32>) {
+        if attrs.is_null() {
+            return (false, false, false, None);
         }
-        if let Some(name) = dict_string(font, "AXFontFamily") {
-            return bronze_domain::font_name_traits(&name);
+        unsafe {
+            if CFGetTypeID(attrs) != CFDictionaryGetTypeID() {
+                return (false, false, false, None);
+            }
         }
-        (false, false)
+        let (bold, italic) = font_traits_from_attrs(attrs);
+        (
+            bold,
+            italic,
+            dict_bool(attrs, "AXHighlight"),
+            dict_color(attrs, "AXBackgroundColor"),
+        )
     }
 
     fn attributed_to_markdown(value: CfTypeRef) -> Result<String, super::LiveAxOutcome> {
@@ -349,9 +455,15 @@ mod sys {
                 if total > super::LIVE_AX_MAX_BYTES {
                     return Err(super::LiveAxOutcome::SelectionTooLarge);
                 }
-                let (bold, italic) = font_traits_from_attrs(attrs);
+                let (bold, italic, highlight, background) = style_from_attrs(attrs);
                 if !text.is_empty() {
-                    runs.push(bronze_domain::StyleRun { text, bold, italic });
+                    runs.push(CapturedRun {
+                        text,
+                        bold,
+                        italic,
+                        highlight,
+                        background,
+                    });
                 }
                 let next = effective.location.saturating_add(effective.length);
                 if next <= loc {
@@ -359,7 +471,26 @@ mod sys {
                 }
                 loc = next;
             }
-            Ok(bronze_domain::markdown_from_runs(&runs))
+            let spans: Vec<bronze_domain::MarkSpan> = runs
+                .iter()
+                .map(|run| bronze_domain::MarkSpan {
+                    len: run.text.chars().count(),
+                    highlight: run.highlight,
+                    background: run.background,
+                })
+                .collect();
+            let flags = bronze_domain::inline_code_flags(&spans);
+            let styled: Vec<bronze_domain::StyleRun> = runs
+                .into_iter()
+                .zip(flags)
+                .map(|(run, code)| bronze_domain::StyleRun {
+                    text: run.text,
+                    bold: run.bold,
+                    italic: run.italic,
+                    code,
+                })
+                .collect();
+            Ok(bronze_domain::markdown_from_runs(&styled))
         }
     }
 
@@ -848,6 +979,10 @@ mod ax_live_tests {
         assert!(walk_src.contains("take_owned(&mut owned)"));
         assert!(walk_src.contains("None => break"));
         assert!(src.contains("AXAttributedStringForRange"));
+        assert!(src.contains("AXFontBold"));
+        assert!(src.contains("AXFontItalic"));
+        assert!(src.contains("AXHighlight"));
+        assert!(src.contains("AXBackgroundColor"));
         assert!(src.contains("AXUIElementSetMessagingTimeout"));
         assert!(src.contains("CFAttributedStringGetAttributes"));
         assert!(src.contains("set_messaging_timeout(system)"));
@@ -872,6 +1007,8 @@ mod ax_live_tests {
         assert!(!tap.contains("NSOpenPanel"));
         assert!(!tap.contains("bronze_native_bundle_id_for_pid"));
         assert!(!tap.contains("AXAttributedStringForRange"));
+        assert!(!tap.contains("AXFontBold"));
+        assert!(!tap.contains("AXBackgroundColor"));
         assert!(tap.contains("setGestureTapCount"));
         assert!(src.contains("bronze_is_frontmost"));
         assert!(src.contains("prefer_own_capture"));

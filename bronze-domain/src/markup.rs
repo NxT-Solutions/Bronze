@@ -5,35 +5,123 @@ pub struct StyleRun {
     pub text: String,
     pub bold: bool,
     pub italic: bool,
+    pub code: bool,
+}
+
+/// One attributed run, measured in Unicode scalars. `background` is an opaque
+/// color id: equal ids are the same color. `highlight` is `AXHighlight`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct MarkSpan {
+    pub len: usize,
+    pub highlight: bool,
+    pub background: Option<u32>,
+}
+
+/// `AXHighlight`, or a background that is not the selection's shared
+/// background, is an inline mark. A uniform background stays plain.
+pub fn inline_code_flags(spans: &[MarkSpan]) -> Vec<bool> {
+    let shared = shared_background(spans);
+    spans
+        .iter()
+        .map(|span| {
+            span.highlight
+                || match shared {
+                    SharedBackground::One(body) => {
+                        span.background.is_some() && span.background != body
+                    }
+                    SharedBackground::Ambiguous => false,
+                }
+        })
+        .collect()
+}
+
+#[derive(Clone, Copy)]
+enum SharedBackground {
+    One(Option<u32>),
+    Ambiguous,
+}
+
+fn shared_background(spans: &[MarkSpan]) -> SharedBackground {
+    let mut counts: Vec<(Option<u32>, usize)> = Vec::new();
+    for span in spans {
+        if span.len == 0 {
+            continue;
+        }
+        if let Some(slot) = counts
+            .iter_mut()
+            .find(|(color, _)| *color == span.background)
+        {
+            slot.1 += span.len;
+        } else {
+            counts.push((span.background, span.len));
+        }
+    }
+    let max = counts.iter().map(|(_, n)| *n).max().unwrap_or(0);
+    if max == 0 {
+        return SharedBackground::One(None);
+    }
+    let leaders: Vec<Option<u32>> = counts
+        .into_iter()
+        .filter(|(_, n)| *n == max)
+        .map(|(color, _)| color)
+        .collect();
+    if leaders.len() == 1 {
+        SharedBackground::One(leaders[0])
+    } else if leaders.contains(&None) {
+        SharedBackground::One(None)
+    } else {
+        SharedBackground::Ambiguous
+    }
 }
 
 pub fn markdown_from_runs(runs: &[StyleRun]) -> String {
     let mut out = String::new();
+    let mut pending: Option<StyleRun> = None;
     for run in runs {
         if run.text.is_empty() {
             continue;
         }
-        let escaped = escape_inline(&run.text);
-        match (run.bold, run.italic) {
-            (true, true) => {
-                out.push_str("***");
-                out.push_str(&escaped);
-                out.push_str("***");
+        if let Some(acc) = pending.as_mut() {
+            if acc.bold == run.bold && acc.italic == run.italic && acc.code == run.code {
+                acc.text.push_str(&run.text);
+                continue;
             }
-            (true, false) => {
-                out.push_str("**");
-                out.push_str(&escaped);
-                out.push_str("**");
-            }
-            (false, true) => {
-                out.push('*');
-                out.push_str(&escaped);
-                out.push('*');
-            }
-            (false, false) => out.push_str(&escaped),
+            push_run(&mut out, acc);
         }
+        pending = Some(run.clone());
+    }
+    if let Some(acc) = pending {
+        push_run(&mut out, &acc);
     }
     out
+}
+
+fn push_run(out: &mut String, run: &StyleRun) {
+    let code = run.code && !run.text.chars().all(char::is_whitespace);
+    let escaped = escape_inline(&run.text);
+    let body = if code {
+        format!("`{escaped}`")
+    } else {
+        escaped
+    };
+    match (run.bold, run.italic) {
+        (true, true) => {
+            out.push_str("***");
+            out.push_str(&body);
+            out.push_str("***");
+        }
+        (true, false) => {
+            out.push_str("**");
+            out.push_str(&body);
+            out.push_str("**");
+        }
+        (false, true) => {
+            out.push('*');
+            out.push_str(&body);
+            out.push('*');
+        }
+        (false, false) => out.push_str(&body),
+    }
 }
 
 pub fn font_name_traits(name: &str) -> (bool, bool) {
@@ -124,11 +212,15 @@ pub fn restore_smashed_structure(text: &str) -> String {
     out
 }
 
+const CODE_OPEN: &str =
+    "<code style=\"background-color:#f4f4f5;border-radius:4px;padding:0 0.2em\">";
+
 fn render_inline_markdown(md: &str, body: &mut String) {
     let chars: Vec<char> = md.chars().collect();
     let mut i = 0;
     let mut bold = false;
     let mut italic = false;
+    let mut code = false;
     while i < chars.len() {
         if chars[i] == '\\' && i + 1 < chars.len() {
             let next = chars[i + 1];
@@ -138,24 +230,92 @@ fn render_inline_markdown(md: &str, body: &mut String) {
                 continue;
             }
         }
-        if chars[i] == '*' {
+        if chars[i] == '`' && !code {
+            if let Some(close) = find_unescaped_backtick(&chars, i + 1) {
+                if close > i + 1 {
+                    let keep_bold = bold;
+                    let keep_italic = italic;
+                    set_style(
+                        body,
+                        &mut bold,
+                        &mut italic,
+                        &mut code,
+                        keep_bold,
+                        keep_italic,
+                        true,
+                    );
+                    let mut inner = i + 1;
+                    while inner < close {
+                        if chars[inner] == '\\'
+                            && inner + 1 < close
+                            && matches!(chars[inner + 1], '\\' | '*' | '`')
+                        {
+                            append_text(body, chars[inner + 1]);
+                            inner += 2;
+                            continue;
+                        }
+                        append_text(body, chars[inner]);
+                        inner += 1;
+                    }
+                    set_style(
+                        body,
+                        &mut bold,
+                        &mut italic,
+                        &mut code,
+                        keep_bold,
+                        keep_italic,
+                        false,
+                    );
+                    i = close + 1;
+                    continue;
+                }
+            }
+        }
+        if !code && chars[i] == '*' {
             if matches!(chars.get(i..i + 3), Some(['*', '*', '*'])) {
                 let want_bold = !bold;
                 let want_italic = !italic;
-                set_style(body, &mut bold, &mut italic, want_bold, want_italic);
+                let keep_code = code;
+                set_style(
+                    body,
+                    &mut bold,
+                    &mut italic,
+                    &mut code,
+                    want_bold,
+                    want_italic,
+                    keep_code,
+                );
                 i += 3;
                 continue;
             }
             if matches!(chars.get(i..i + 2), Some(['*', '*'])) {
                 let want_bold = !bold;
                 let keep_italic = italic;
-                set_style(body, &mut bold, &mut italic, want_bold, keep_italic);
+                let keep_code = code;
+                set_style(
+                    body,
+                    &mut bold,
+                    &mut italic,
+                    &mut code,
+                    want_bold,
+                    keep_italic,
+                    keep_code,
+                );
                 i += 2;
                 continue;
             }
             let keep_bold = bold;
             let want_italic = !italic;
-            set_style(body, &mut bold, &mut italic, keep_bold, want_italic);
+            let keep_code = code;
+            set_style(
+                body,
+                &mut bold,
+                &mut italic,
+                &mut code,
+                keep_bold,
+                want_italic,
+                keep_code,
+            );
             i += 1;
             continue;
         }
@@ -175,7 +335,22 @@ fn render_inline_markdown(md: &str, body: &mut String) {
         append_text(body, chars[i]);
         i += 1;
     }
-    set_style(body, &mut bold, &mut italic, false, false);
+    set_style(body, &mut bold, &mut italic, &mut code, false, false, false);
+}
+
+fn find_unescaped_backtick(chars: &[char], start: usize) -> Option<usize> {
+    let mut i = start;
+    while i < chars.len() {
+        if chars[i] == '\\' && i + 1 < chars.len() && matches!(chars[i + 1], '\\' | '*' | '`') {
+            i += 2;
+            continue;
+        }
+        if chars[i] == '`' {
+            return Some(i);
+        }
+        i += 1;
+    }
+    None
 }
 
 #[derive(Clone, Debug)]
@@ -715,26 +890,38 @@ fn set_style(
     out: &mut String,
     bold: &mut bool,
     italic: &mut bool,
+    code: &mut bool,
     want_bold: bool,
     want_italic: bool,
+    want_code: bool,
 ) {
-    if *bold == want_bold && *italic == want_italic {
+    if *bold == want_bold && *italic == want_italic && *code == want_code {
         return;
     }
-    if *italic {
+    if *code && (*code != want_code || *italic != want_italic || *bold != want_bold) {
+        out.push_str("</code>");
+        *code = false;
+    }
+    if *italic && (*italic != want_italic || *bold != want_bold) {
         out.push_str("</em>");
+        *italic = false;
     }
-    if *bold {
+    if *bold && *bold != want_bold {
         out.push_str("</strong>");
+        *bold = false;
     }
-    if want_bold {
+    if want_bold && !*bold {
         out.push_str("<strong>");
+        *bold = true;
     }
-    if want_italic {
+    if want_italic && !*italic {
         out.push_str("<em>");
+        *italic = true;
     }
-    *bold = want_bold;
-    *italic = want_italic;
+    if want_code && !*code {
+        out.push_str(CODE_OPEN);
+        *code = true;
+    }
 }
 
 fn append_text(out: &mut String, ch: char) {
@@ -758,16 +945,19 @@ mod markup_tests {
                 text: "Hello".into(),
                 bold: true,
                 italic: false,
+                code: false,
             },
             StyleRun {
                 text: "\n".into(),
                 bold: false,
                 italic: false,
+                code: false,
             },
             StyleRun {
                 text: "world".into(),
                 bold: false,
                 italic: true,
+                code: false,
             },
         ]);
         assert_eq!(md, "**Hello**\n*world*");
@@ -919,6 +1109,106 @@ mod markup_tests {
         );
         assert!(kept.find(">body line</p>").unwrap() < kept.find("<strong>Next</strong>").unwrap());
     }
+
+    #[test]
+    fn inline_marks_keep_bold_code_and_plain_prose() {
+        let gray = 0x00e4_e4e7_ff;
+        let flags = inline_code_flags(&[
+            MarkSpan {
+                len: 20,
+                highlight: false,
+                background: None,
+            },
+            MarkSpan {
+                len: 8,
+                highlight: false,
+                background: Some(gray),
+            },
+            MarkSpan {
+                len: 6,
+                highlight: true,
+                background: None,
+            },
+        ]);
+        assert_eq!(flags, vec![false, true, true]);
+        let uniform = inline_code_flags(&[
+            MarkSpan {
+                len: 4,
+                highlight: false,
+                background: Some(gray),
+            },
+            MarkSpan {
+                len: 9,
+                highlight: false,
+                background: Some(gray),
+            },
+        ]);
+        assert_eq!(uniform, vec![false, false]);
+        let tied = inline_code_flags(&[
+            MarkSpan {
+                len: 4,
+                highlight: false,
+                background: Some(1),
+            },
+            MarkSpan {
+                len: 4,
+                highlight: false,
+                background: Some(2),
+            },
+        ]);
+        assert_eq!(tied, vec![false, false]);
+
+        let md = markdown_from_runs(&[
+            StyleRun {
+                text: "Nieuwe ".into(),
+                bold: true,
+                italic: false,
+                code: false,
+            },
+            StyleRun {
+                text: "openrouter_activity_daily".into(),
+                bold: false,
+                italic: false,
+                code: true,
+            },
+        ]);
+        assert_eq!(md, "**Nieuwe **`openrouter_activity_daily`");
+        assert_eq!(
+            markdown_from_runs(&[StyleRun {
+                text: "a`b".into(),
+                bold: false,
+                italic: false,
+                code: true,
+            }]),
+            "`a\\`b`"
+        );
+
+        let html = html_from_constrained_markdown(
+            "1. **Nieuwe OpenRouter management-key** uses `openrouter_activity_daily`",
+        );
+        assert!(html.contains("<strong>Nieuwe OpenRouter management-key</strong>"));
+        assert!(html.contains("<code style=\"background-color:#f4f4f5;border-radius:4px;padding:0 0.2em\">openrouter_activity_daily</code>"));
+        assert!(html.contains("<li value=\"1\">"));
+        assert!(!html.contains("font-weight:650"));
+        assert!(!html.contains("<script"));
+        let both = html_from_constrained_markdown("**`v_fact_cost_openrouter`**");
+        assert!(both.contains("<strong><code"));
+        assert!(both.contains("v_fact_cost_openrouter</code></strong>"));
+        let leaked = html_from_constrained_markdown("`<script>alert(1)</script>`");
+        assert!(!leaked.contains("<script"));
+        assert!(leaked.contains("&lt;script&gt;"));
+
+        assert!(!html_from_constrained_markdown("see section 2. Next").contains("<ol"));
+        assert!(!html_from_constrained_markdown("version 1.2").contains("<ol"));
+        assert!(!html_from_constrained_markdown("Hello. World").contains("<ol"));
+        assert_eq!(
+            restore_smashed_structure("see section 2. Next"),
+            "see section 2. Next"
+        );
+        assert_eq!(restore_smashed_structure("version 1.2"), "version 1.2");
+        assert_eq!(restore_smashed_structure("Hello. World"), "Hello. World");
+    }
+
     #[test]
     fn outline_keeps_lead_and_paragraph_after_period() {
         let smashed = "Jij kiest welk pad je overzet — één tegelijk1. DataForSEO (klaar om te knippen)1. Grant2. Disable3. Zet4. Eén5. Check6. Unpause2. Asana (Rutger: low risk)\n--dry-run op prod\n3. OpenRouter\nNiet. Eerst management key + finance. Schedule blijft paused.Niet alle drie tegelijk.";
