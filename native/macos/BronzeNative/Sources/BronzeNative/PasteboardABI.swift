@@ -53,15 +53,16 @@ public func bronze_native_bounded_copy_read(
     guard let kind, let post_copy_count, let payload, let snapshot else {
         return BRONZE_STATUS_NOT_FOUND
     }
+    if Thread.isMainThread {
+        return BRONZE_STATUS_DEGRADED
+    }
     let out = BoundedCopyOut(
         kind: kind,
         post: post_copy_count,
         payload: payload,
         snapshot: snapshot
     )
-    return bronzeOnAppKitCopy {
-        bronzeBoundedCopyRead(targetPid: target_pid, out: out)
-    }
+    return bronzeBoundedCopyRead(targetPid: target_pid, out: out)
 }
 
 @_silgen_name("bronze_native_pasteboard_restore_if_unchanged")
@@ -118,60 +119,65 @@ private final class BoundedCopyOut: @unchecked Sendable {
     }
 }
 
-private final class CopyStatusBox: @unchecked Sendable {
-    var value: UInt32 = BRONZE_STATUS_DEGRADED
+private final class SnapshotBox: @unchecked Sendable {
+    var bytes: [UInt8] = []
+    var baseline: Int = 0
 }
 
-private func bronzeOnAppKitCopy(_ work: @escaping @Sendable () -> UInt32) -> UInt32 {
-    if Thread.isMainThread {
-        return work()
-    }
-    let box = CopyStatusBox()
-    let lock = DispatchSemaphore(value: 0)
-    DispatchQueue.main.async {
-        box.value = work()
-        lock.signal()
-    }
-    if lock.wait(timeout: .now() + 3.5) == .timedOut {
-        return BRONZE_STATUS_DEGRADED
-    }
-    return box.value
+private final class ChangeCountBox: @unchecked Sendable {
+    var value: Int = 0
+}
+
+private final class PreferredTextBox: @unchecked Sendable {
+    var kind: UInt32 = BRONZE_PASTEBOARD_KIND_NONE
+    var text: String = ""
 }
 
 private func bronzeBoundedCopyRead(targetPid: Int32, out: BoundedCopyOut) -> UInt32 {
+    if Thread.isMainThread {
+        return BRONZE_STATUS_DEGRADED
+    }
+    if targetPid <= 0 {
+        return BRONZE_STATUS_DEGRADED
+    }
     if !waitPhysicalModifiersUp(until: Date().addingTimeInterval(0.4)) {
         return BRONZE_STATUS_DEGRADED
     }
-    let board = NSPasteboard.general
-    let snapBytes = encodeTextualSnapshot(board)
-    if targetPid > 0 {
-        guard let app = NSRunningApplication(processIdentifier: pid_t(targetPid)) else {
-            return BRONZE_STATUS_DEGRADED
-        }
-        if #available(macOS 14.0, *) {
-            app.activate()
-        } else {
-            app.activate(options: [.activateIgnoringOtherApps])
-        }
-        Thread.sleep(forTimeInterval: 0.03)
+    let snap = SnapshotBox()
+    let snapStatus = bronzeOnAppKit {
+        let board = NSPasteboard.general
+        snap.bytes = encodeTextualSnapshot(board)
+        snap.baseline = board.changeCount
+        return BRONZE_STATUS_OK
     }
-    let baseline = board.changeCount
+    if snapStatus != BRONZE_STATUS_OK {
+        return BRONZE_STATUS_DEGRADED
+    }
     if !postTaggedCopy() {
         return BRONZE_STATUS_DEGRADED
     }
     guard let generation = waitStableGeneration(
-        board,
-        baseline: baseline,
+        baseline: snap.baseline,
         until: Date().addingTimeInterval(0.8)
     ) else {
         return BRONZE_STATUS_DEGRADED
     }
-    guard let preferred = readPreferredText(board), preferred.1.utf8.count <= bronzeMarkupMaxBytes else {
+    let preferred = PreferredTextBox()
+    let readStatus = bronzeOnAppKit {
+        let board = NSPasteboard.general
+        guard let found = readPreferredText(board), found.1.utf8.count <= bronzeMarkupMaxBytes else {
+            return BRONZE_STATUS_DEGRADED
+        }
+        preferred.kind = found.0
+        preferred.text = found.1
+        return BRONZE_STATUS_OK
+    }
+    if readStatus != BRONZE_STATUS_OK {
         return BRONZE_STATUS_DEGRADED
     }
-    out.kind.pointee = preferred.0
+    out.kind.pointee = preferred.kind
     out.post.pointee = UInt64(generation)
-    let payloadBytes = Array(preferred.1.utf8)
+    let payloadBytes = Array(preferred.text.utf8)
     let payloadStatus = payloadBytes.withUnsafeBufferPointer { buf in
         bronze_native_utf8_owned_copy(
             bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(buf.count)),
@@ -181,21 +187,24 @@ private func bronzeBoundedCopyRead(targetPid: Int32, out: BoundedCopyOut) -> UIn
     if payloadStatus != BRONZE_STATUS_OK {
         return payloadStatus
     }
-    let snap = snapBytes.count > bronzeSnapshotMaxBytes ? [] : snapBytes
-    let snapStatus = snap.withUnsafeBufferPointer { buf in
+    let snapBytes = snap.bytes.count > bronzeSnapshotMaxBytes ? [] : snap.bytes
+    let snapStatusOwned = snapBytes.withUnsafeBufferPointer { buf in
         bronzeOwnedBytesCopy(
             bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(buf.count)),
             out.snapshot
         )
     }
-    if snapStatus != BRONZE_STATUS_OK {
+    if snapStatusOwned != BRONZE_STATUS_OK {
         _ = bronze_native_utf8_free(out.payload.pointee)
-        return snapStatus
+        return snapStatusOwned
     }
     return BRONZE_STATUS_OK
 }
 
 private func waitPhysicalModifiersUp(until deadline: Date) -> Bool {
+    if Thread.isMainThread {
+        return false
+    }
     while Date() < deadline {
         let flags = CGEventSource.flagsState(.hidSystemState)
         if !flags.contains(.maskCommand)
@@ -259,13 +268,33 @@ private func postTaggedCopy() -> Bool {
     return true
 }
 
-private func waitStableGeneration(_ board: NSPasteboard, baseline: Int, until deadline: Date) -> Int? {
-    var last = board.changeCount
+private func hopPasteboardChangeCount() -> Int? {
+    if Thread.isMainThread {
+        return nil
+    }
+    let box = ChangeCountBox()
+    let status = bronzeOnAppKit {
+        box.value = NSPasteboard.general.changeCount
+        return BRONZE_STATUS_OK
+    }
+    if status != BRONZE_STATUS_OK {
+        return nil
+    }
+    return box.value
+}
+
+private func waitStableGeneration(baseline: Int, until deadline: Date) -> Int? {
+    if Thread.isMainThread {
+        return nil
+    }
+    var last = baseline
     var stable = 0
     var delay: TimeInterval = 0.008
     while Date() < deadline {
         Thread.sleep(forTimeInterval: delay)
-        let now = board.changeCount
+        guard let now = hopPasteboardChangeCount() else {
+            return nil
+        }
         if now > baseline {
             if now == last {
                 stable += 1

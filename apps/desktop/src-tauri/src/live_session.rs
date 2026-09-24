@@ -193,6 +193,7 @@ pub struct LiveAxHost;
 
 pub struct LiveCaptureHost {
     pub own: Option<crate::own_selection::OwnSelection>,
+    pub clipboard: Option<ClipboardMarkupOffer>,
 }
 
 impl SelectionHost for LiveCaptureHost {
@@ -230,6 +231,9 @@ impl SelectionHost for LiveCaptureHost {
     fn offer_clipboard_markup(&self) -> ClipboardMarkupOffer {
         if self.own.is_some() {
             return ClipboardMarkupOffer::None;
+        }
+        if let Some(offer) = &self.clipboard {
+            return offer.clone();
         }
         let Some(pid) = bronze_platform_macos::last_external_pid() else {
             return ClipboardMarkupOffer::None;
@@ -3057,6 +3061,7 @@ mod live_session_tests {
             own: Some(crate::own_selection::OwnSelection::Text(
                 "inside bronze".into(),
             )),
+            clipboard: None,
         };
         let (own_outcome, own_text) = own_host.read();
         assert!(matches!(own_outcome, AxOutcome::Captured { .. }));
@@ -3066,9 +3071,13 @@ mod live_session_tests {
         assert!(!format!("{own_captured:?}").contains("inside"));
         let too_large = LiveCaptureHost {
             own: Some(crate::own_selection::OwnSelection::TooLarge),
+            clipboard: None,
         };
         assert!(matches!(too_large.read().0, AxOutcome::SelectionTooLarge));
-        let fallback = LiveCaptureHost { own: None };
+        let fallback = LiveCaptureHost {
+            own: None,
+            clipboard: None,
+        };
         let _ = fallback.peek_bundle_id();
         let used = include_str!("../permissions/used-permissions.toml");
         assert!(used.contains("list_shortcuts"));
@@ -3098,6 +3107,7 @@ mod live_session_tests {
             own: Some(crate::own_selection::OwnSelection::Text(
                 "from the queue".into(),
             )),
+            clipboard: None,
         };
         let mut announce = FakeAnnouncer::default();
         let persisted = session
@@ -3237,6 +3247,14 @@ mod live_session_tests {
         );
         assert!(!stale.clipboard_restored.get());
 
+        let prefetched = LiveCaptureHost {
+            own: None,
+            clipboard: Some(ClipboardMarkupOffer::Failed),
+        };
+        assert!(matches!(
+            prefetched.offer_clipboard_markup(),
+            ClipboardMarkupOffer::Failed
+        ));
         let failed = host("ax plain", ClipboardMarkupOffer::Failed);
         let persisted = session
             .persist_selection(&failed, &mut announce, false)

@@ -1031,6 +1031,10 @@ fn html_style_runs(html: &str) -> Vec<StyleRun> {
             }
             flush_html_run(&mut runs, &mut pending, pending_style);
             let (next, tag) = parse_html_tag(bytes, i);
+            if next <= i {
+                i += 1;
+                continue;
+            }
             i = next;
             match tag {
                 HtmlTag::Start {
@@ -1103,6 +1107,10 @@ enum HtmlTag {
     },
 }
 
+fn is_html_name_byte(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b':'
+}
+
 fn parse_html_tag(bytes: &[u8], start: usize) -> (usize, HtmlTag) {
     let mut i = start + 1;
     let end_tag = bytes.get(i) == Some(&b'/');
@@ -1110,7 +1118,7 @@ fn parse_html_tag(bytes: &[u8], start: usize) -> (usize, HtmlTag) {
         i += 1;
     }
     let name_start = i;
-    while i < bytes.len() && bytes[i].is_ascii_alphanumeric() {
+    while i < bytes.len() && is_html_name_byte(bytes[i]) {
         i += 1;
     }
     let name = std::str::from_utf8(&bytes[name_start..i])
@@ -1130,8 +1138,12 @@ fn parse_html_tag(bytes: &[u8], start: usize) -> (usize, HtmlTag) {
             continue;
         }
         let key_start = i;
-        while i < bytes.len() && bytes[i].is_ascii_alphanumeric() {
+        while i < bytes.len() && is_html_name_byte(bytes[i]) {
             i += 1;
+        }
+        if i == key_start {
+            i += 1;
+            continue;
         }
         let key = std::str::from_utf8(&bytes[key_start..i])
             .unwrap_or("")
@@ -2159,6 +2171,24 @@ mod markup_tests {
                  <span style=\"font-family: Menlo, monospace\">mono</span>"
             ),
             "`chip` `mono`"
+        );
+        assert_eq!(
+            constrained_markdown_from_html(
+                "<span data-qa=\"code\" class=\"c-mrkdwn__code\">fn</span>"
+            ),
+            "`fn`"
+        );
+        assert_eq!(
+            constrained_markdown_from_html("<?xml version=\"1.0\"?><p>hi</p>"),
+            "hi"
+        );
+        assert_eq!(
+            constrained_markdown_from_html("<div aria-label=\"n\"><b>x</b></div>"),
+            "**x**"
+        );
+        assert_eq!(
+            constrained_markdown_from_html("<!DOCTYPE html><p>ok</p>"),
+            "ok"
         );
         assert_eq!(
             constrained_markdown_from_html("<ul><li>one</li><li>two</li></ul>"),

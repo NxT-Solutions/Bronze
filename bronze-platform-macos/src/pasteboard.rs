@@ -160,6 +160,33 @@ mod pasteboard_tests {
         assert!(swift.contains("0x42524E5A434F5059"));
         assert!(swift.contains("changeCount"));
         assert!(!swift.contains("URLSession"));
+        assert!(!swift.contains("bronzeOnAppKitCopy"));
+        let copy_fn = swift
+            .split("public func bronze_native_bounded_copy_read")
+            .nth(1)
+            .expect("copy");
+        let copy_end = copy_fn.find("@_silgen_name").unwrap_or(copy_fn.len());
+        let copy_body = &copy_fn[..copy_end];
+        assert!(copy_body.contains("Thread.isMainThread"));
+        assert!(copy_body.contains("BRONZE_STATUS_DEGRADED"));
+        assert!(!copy_body.contains("Thread.sleep"));
+        assert!(!copy_body.contains("activate"));
+        let bounded = swift
+            .split("func bronzeBoundedCopyRead")
+            .nth(1)
+            .expect("bounded");
+        let bounded_end = bounded.find("\nprivate func ").unwrap_or(bounded.len());
+        let bounded_body = &bounded[..bounded_end];
+        assert!(bounded_body.contains("Thread.isMainThread"));
+        assert!(bounded_body.contains("BRONZE_STATUS_DEGRADED"));
+        assert!(!bounded_body.contains("Thread.sleep"));
+        assert!(!bounded_body.contains("activate"));
+        let wait = swift
+            .split("func waitStableGeneration")
+            .nth(1)
+            .expect("wait");
+        assert!(wait.contains("Thread.sleep"));
+        assert!(wait.contains("Thread.isMainThread"));
         let err = native_bounded_copy_read(1).expect_err("stub copy");
         assert_eq!(err, NativeError::Degraded);
         assert!(!format!("{err:?}").contains("secret"));

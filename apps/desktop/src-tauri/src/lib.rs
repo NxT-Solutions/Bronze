@@ -625,10 +625,7 @@ pub fn on_capture_requested(app: &tauri::AppHandle) {
             .name("bronze-own-selection".into())
             .spawn(move || {
                 let own = own_selection::read_own_webview_selection(&handle);
-                let app = handle.clone();
-                let _ = handle.run_on_main_thread(move || {
-                    persist_capture_request(&app, own);
-                });
+                persist_capture_request(&handle, own);
             });
         return;
     }
@@ -639,19 +636,61 @@ pub fn on_capture_requested(app: &tauri::AppHandle) {
 fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::OwnSelection>) {
     use bronze_capture::FakeAnnouncer;
     use bronze_capture::Terminal;
-    use live_session::{CaptureResultDto, LiveCaptureHost};
+    use live_session::{CaptureResultDto, ClipboardMarkupOffer, LiveCaptureHost, SelectionHost};
     use tauri::{Emitter, Manager};
+    if objc2_foundation::NSThread::isMainThread_class() {
+        let handle = app.clone();
+        let _ = std::thread::Builder::new()
+            .name("bronze-capture-persist".into())
+            .spawn(move || persist_capture_request(&handle, own));
+        return;
+    }
     let visible = app
         .get_webview_window("quick")
         .and_then(|window| window.is_visible().ok())
         .unwrap_or(false);
     let session_state = app.state::<std::sync::Mutex<live_session::LiveSession>>();
+    let clipboard = if own.is_some() {
+        Some(ClipboardMarkupOffer::None)
+    } else {
+        let probe = LiveCaptureHost {
+            own: None,
+            clipboard: None,
+        };
+        let allow = {
+            let session = session_state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let settings = session.settings();
+            let bundle = probe.peek_bundle_id();
+            !bundle
+                .as_deref()
+                .is_some_and(|b| settings.privacy.excludes_bundle(b))
+                && settings.capture.allows_unstyled_clipboard_markup()
+                && !settings
+                    .privacy
+                    .denies_synthetic_fallback(bundle.as_deref())
+        };
+        if !allow {
+            Some(ClipboardMarkupOffer::None)
+        } else {
+            match probe.read() {
+                (bronze_capture::AxOutcome::Captured { .. }, Some(captured))
+                    if !bronze_domain::markdown_has_style_marks(&captured.text) =>
+                {
+                    Some(probe.offer_clipboard_markup())
+                }
+                _ => Some(ClipboardMarkupOffer::None),
+            }
+        }
+    };
     let mut session = session_state
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     let mut announce = FakeAnnouncer::default();
     let catalog = session.ui_catalog();
-    let persisted = session.persist_selection(&LiveCaptureHost { own }, &mut announce, visible);
+    let persisted =
+        session.persist_selection(&LiveCaptureHost { own, clipboard }, &mut announce, visible);
     let refine = persisted.as_ref().ok().and_then(|outcome| {
         if outcome.terminal == Terminal::Saved {
             outcome
@@ -1047,6 +1086,16 @@ mod tests {
             .expect("persist");
         let persist_end = persist.find("\nmod ").unwrap_or(persist.len());
         assert!(!persist[..persist_end].contains("native_item_title"));
+        assert!(persist[..persist_end].contains("isMainThread"));
+        assert!(persist[..persist_end].contains("bronze-capture-persist"));
+        assert!(persist[..persist_end].contains("offer_clipboard_markup"));
+        let hop_at = persist[..persist_end]
+            .find("isMainThread")
+            .expect("main hop");
+        let lock_at = persist[..persist_end]
+            .rfind("session_state")
+            .expect("persist lock");
+        assert!(hop_at < lock_at);
         let emit_at = persist[..persist_end].find("capture-result").expect("emit");
         let schedule_at = persist[..persist_end]
             .find("title_refine::schedule")

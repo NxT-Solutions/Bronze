@@ -152,10 +152,12 @@ uint32_t bronze_native_pasteboard_write(bronze_native_utf8_view plain, bronze_na
 #define BRONZE_PASTEBOARD_KIND_RTF   2u
 #define BRONZE_PASTEBOARD_KIND_PLAIN 3u
 
-// Bounded Command-C on the capture-request path. Snapshot textual types, wait
-// for modifiers, activate pid, post tagged copy, wait for a stable generation,
-// then read public.html / public.rtf / plain. payload is owned UTF-8; snapshot
-// is owned bytes (not UTF-8). Free both with bronze_native_utf8_free.
+// Bounded Command-C on the capture-request path. Must not run on the AppKit
+// main thread (returns DEGRADED). Snapshot textual types, wait for modifiers
+// off-main, post tagged copy, wait for a stable generation off-main, then
+// read public.html / public.rtf / plain on brief AppKit hops. payload is
+// owned UTF-8; snapshot is owned bytes (not UTF-8). Free both with
+// bronze_native_utf8_free.
 uint32_t bronze_native_bounded_copy_read(
     int32_t target_pid,
     uint32_t *kind,
