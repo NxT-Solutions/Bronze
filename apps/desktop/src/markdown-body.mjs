@@ -116,7 +116,91 @@ function astToNodes(doc, ast) {
 }
 
 const UL_ITEM = /^(?:[ \t]*)(?:[-+•]|\*(?= ))[ \t]+(.*)$/;
-const OL_ITEM = /^(?:[ \t]*)\d+\.[ \t]+(.*)$/;
+const OL_ITEM = /^(?:[ \t]*)(\d+)\.[ \t]+(.*)$/;
+
+function isAnyWhitespace(ch) {
+  return /\s/u.test(ch);
+}
+
+function isMarkerGap(ch) {
+  return (
+    isAnyWhitespace(ch) &&
+    ch !== "\n" &&
+    ch !== "\r" &&
+    ch !== "\u2028" &&
+    ch !== "\u2029"
+  );
+}
+
+function isLowerLetter(ch) {
+  return ch !== ch.toUpperCase() && ch === ch.toLowerCase();
+}
+
+function isUpperLetter(ch) {
+  return ch !== ch.toLowerCase() && ch === ch.toUpperCase();
+}
+
+function gluedListMarker(chars, index) {
+  if (index === 0 || isAnyWhitespace(chars[index - 1])) {
+    return 0;
+  }
+  let end = index;
+  if (end >= chars.length || chars[end] < "0" || chars[end] > "9") {
+    return 0;
+  }
+  while (end < chars.length && chars[end] >= "0" && chars[end] <= "9") {
+    end += 1;
+  }
+  if (end >= chars.length || chars[end] !== ".") {
+    return 0;
+  }
+  end += 1;
+  if (end >= chars.length || !isMarkerGap(chars[end])) {
+    return 0;
+  }
+  while (end < chars.length && isMarkerGap(chars[end])) {
+    end += 1;
+  }
+  return end - index;
+}
+
+function jammedSentence(chars, index) {
+  if (chars[index] !== "." || index < 2) {
+    return false;
+  }
+  if (!isLowerLetter(chars[index - 1]) || !isLowerLetter(chars[index - 2])) {
+    return false;
+  }
+  const next = chars[index + 1];
+  return Boolean(next) && isUpperLetter(next);
+}
+
+// Accessibility selections often omit block separators. A list marker glued
+// to the previous word, or a sentence end jammed onto the next capital,
+// is restored. Spaced prose is left as captured.
+export function restoreSmashedStructure(markdown) {
+  const source = typeof markdown === "string" ? markdown : "";
+  const chars = Array.from(source);
+  let out = "";
+  let index = 0;
+  while (index < chars.length) {
+    const marker = gluedListMarker(chars, index);
+    if (marker > 0) {
+      out += "\n";
+      out += chars.slice(index, index + marker).join("");
+      index += marker;
+      continue;
+    }
+    if (jammedSentence(chars, index)) {
+      out += ".\n\n";
+      index += 1;
+      continue;
+    }
+    out += chars[index];
+    index += 1;
+  }
+  return out;
+}
 
 function matchListRun(lines, start, pattern) {
   if (!pattern.test(lines[start] ?? "")) {
@@ -130,6 +214,23 @@ function matchListRun(lines, start, pattern) {
       break;
     }
     items.push(match[1]);
+    index += 1;
+  }
+  return items.length > 0 ? { items, next: index } : null;
+}
+
+function matchOlRun(lines, start) {
+  if (!OL_ITEM.test(lines[start] ?? "")) {
+    return null;
+  }
+  const items = [];
+  let index = start;
+  while (index < lines.length) {
+    const match = lines[index].match(OL_ITEM);
+    if (!match) {
+      break;
+    }
+    items.push({ value: match[1], text: match[2] });
     index += 1;
   }
   return items.length > 0 ? { items, next: index } : null;
@@ -171,7 +272,7 @@ function pushParagraph(blocks, text) {
 }
 
 export function parseConstrainedDocument(markdown) {
-  const source = typeof markdown === "string" ? markdown : "";
+  const source = restoreSmashedStructure(markdown);
   const lines = source.split(/\r?\n/);
   const blocks = [];
   let index = 0;
@@ -185,11 +286,14 @@ export function parseConstrainedDocument(markdown) {
       index = ul.next;
       continue;
     }
-    const ol = matchListRun(lines, index, OL_ITEM);
+    const ol = matchOlRun(lines, index);
     if (ol) {
       blocks.push({
         type: "ol",
-        items: ol.items.map((item) => parseConstrainedMarkdown(item)),
+        items: ol.items.map((item) => ({
+          value: item.value,
+          children: parseConstrainedMarkdown(item.text),
+        })),
       });
       index = ol.next;
       continue;
@@ -222,7 +326,11 @@ function documentToNodes(doc, blocks) {
     const list = doc.createElement(block.type === "ol" ? "ol" : "ul");
     for (const item of block.items) {
       const li = doc.createElement("li");
-      for (const child of astToNodes(doc, item)) {
+      const ast = block.type === "ol" ? item.children : item;
+      if (block.type === "ol" && item.value != null) {
+        li.setAttribute("value", item.value);
+      }
+      for (const child of astToNodes(doc, ast)) {
         appendChild(li, child);
       }
       appendChild(list, li);

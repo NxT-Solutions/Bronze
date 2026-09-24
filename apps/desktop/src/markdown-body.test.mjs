@@ -7,6 +7,7 @@ import {
   parseConstrainedDocument,
   parseConstrainedMarkdown,
   renderMarkdownBody,
+  restoreSmashedStructure,
   serializeComposerDom,
 } from "./markdown-body.mjs";
 
@@ -171,6 +172,9 @@ test("line-start markers become lists and leaked HTML stays text", () => {
   assert.equal(target.querySelector("strong").textContent, "two");
   renderMarkdownBody(target, "1. first\n2. second");
   assert.deepEqual(tagsUnder(target), ["ol", "li", "li"]);
+  const numbered = target.querySelectorAll("li");
+  assert.equal(numbered[0].getAttribute("value"), "1");
+  assert.equal(numbered[1].getAttribute("value"), "2");
   renderMarkdownBody(target, "- <script>alert(1)</script>");
   assert.equal(target.querySelector("script"), null);
   assert.match(target.textContent, /<script>alert\(1\)<\/script>/);
@@ -246,6 +250,55 @@ test("composer DOM serializes to constrained markdown and drops scripts", () => 
     }),
     "**Hello**",
   );
+});
+
+test("smashed lists keep source numbers and jammed sentences break", () => {
+  const smashed =
+    "één tegelijk1. DataForSEO (klaar)1. Grant is)2. Disable prod4. Eén login6. Unpause snapshot2. Asana\nscheduler.3. OpenRouter\nNiet. Schedule blijft paused.Niet alle";
+  const restored = restoreSmashedStructure(smashed);
+  assert.match(restored, /tegelijk\n1\. DataForSEO/);
+  assert.match(restored, /\(klaar\)\n1\. Grant/);
+  assert.match(restored, /is\)\n2\. Disable/);
+  assert.match(restored, /prod\n4\. Eén/);
+  assert.match(restored, /login\n6\. Unpause/);
+  assert.match(restored, /snapshot\n2\. Asana/);
+  assert.match(restored, /scheduler\.\n3\. OpenRouter/);
+  assert.match(restored, /paused\.\n\nNiet alle/);
+  assert.equal(restoreSmashedStructure(restored), restored);
+  assert.equal(
+    restoreSmashedStructure("see section 2. Next stays."),
+    "see section 2. Next stays.",
+  );
+  assert.equal(restoreSmashedStructure("Hello. World"), "Hello. World");
+  assert.equal(
+    restoreSmashedStructure("Mr.Smith e.g.The version 1.2"),
+    "Mr.Smith e.g.The version 1.2",
+  );
+
+  const doc = createDocument();
+  const target = doc.createElement("div");
+  renderMarkdownBody(
+    target,
+    "één tegelijk1. DataForSEO (klaar)1. Grant is)2. Disable",
+  );
+  assert.deepEqual(tagsUnder(target), ["p", "ol", "li", "li", "li"]);
+  const lis = target.querySelectorAll("li");
+  assert.equal(lis[0].getAttribute("value"), "1");
+  assert.equal(lis[0].textContent, "DataForSEO (klaar)");
+  assert.equal(lis[1].getAttribute("value"), "1");
+  assert.equal(lis[1].textContent, "Grant is)");
+  assert.equal(lis[2].getAttribute("value"), "2");
+  assert.equal(lis[2].textContent, "Disable");
+  assert.equal(target.querySelector("script"), null);
+
+  renderMarkdownBody(target, "Schedule blijft paused.Niet alle");
+  assert.equal(target.textContent, "Schedule blijft paused.\n\nNiet alle");
+  assert.equal(target.querySelector("ol"), null);
+
+  renderMarkdownBody(target, "1. <script>alert(1)</script>");
+  assert.equal(target.querySelector("script"), null);
+  assert.match(target.textContent, /<script>alert\(1\)<\/script>/);
+  assert.equal(target.querySelector("li").getAttribute("value"), "1");
 });
 
 test("missing document is unavailable rather than assigned as HTML", () => {
