@@ -344,6 +344,73 @@ test("smashed lists keep source numbers and jammed sentences break", () => {
   assert.equal(target.querySelector("li").getAttribute("value"), "1");
 });
 
+test("restored outline keeps the lead and the paragraph after a period", () => {
+  const smashed =
+    "Jij kiest welk pad je overzet — één tegelijk1. DataForSEO (klaar om te knippen)1. Grant2. Disable3. Zet4. Eén5. Check6. Unpause2. Asana (Rutger: low risk)\n--dry-run op prod\n3. OpenRouter\nNiet. Eerst management key + finance. Schedule blijft paused.Niet alle drie tegelijk.";
+  const restored = [
+    "Jij kiest welk pad je overzet — één tegelijk",
+    "1. DataForSEO (klaar om te knippen)",
+    "1. Grant",
+    "2. Disable",
+    "3. Zet",
+    "4. Eén",
+    "5. Check",
+    "6. Unpause",
+    "2. Asana (Rutger: low risk)",
+    "--dry-run op prod",
+    "3. OpenRouter",
+    "Niet. Eerst management key + finance. Schedule blijft paused.",
+    "Niet alle drie tegelijk.",
+  ].join("\n");
+  const doc = createDocument();
+  const target = doc.createElement("div");
+  for (const source of [smashed, restored]) {
+    renderMarkdownBody(target, source);
+    const text = target.textContent;
+    assert.match(text, /Jij kiest welk pad je overzet — één tegelijk/);
+    assert.match(
+      text,
+      /Niet\. Eerst management key \+ finance\. Schedule blijft paused\./,
+    );
+    assert.match(text, /Niet alle drie tegelijk\./);
+    assert.equal(
+      target.querySelector("p").textContent,
+      "Jij kiest welk pad je overzet — één tegelijk",
+    );
+    const lis = [...target.querySelectorAll("li")];
+    const grant = lis.find((li) => li.textContent === "Grant");
+    const unpause = lis.find((li) => li.textContent === "Unpause");
+    assert.equal(grant.getAttribute("value"), "1");
+    assert.equal(unpause.getAttribute("value"), "6");
+    assert.equal(
+      lis.some((li) => li.getAttribute("value") === "7"),
+      false,
+    );
+    const open = lis.find(
+      (li) => li.querySelector("strong")?.textContent === "OpenRouter",
+    );
+    const parts = [...open.querySelectorAll("p")].map((p) => p.textContent);
+    assert.deepEqual(parts, [
+      "Niet. Eerst management key + finance. Schedule blijft paused.",
+      "Niet alle drie tegelijk.",
+    ]);
+    const asana = lis.find(
+      (li) =>
+        li.querySelector("strong")?.textContent === "Asana (Rutger: low risk)",
+    );
+    assert.match(asana.querySelector("p").textContent, /^--dry-run/);
+  }
+  renderMarkdownBody(target, "see section 2. Next");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "see section 2. Next");
+  renderMarkdownBody(target, "version 1.2");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "version 1.2");
+  renderMarkdownBody(target, "Hello. World");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "Hello. World");
+});
+
 test("missing document is unavailable rather than assigned as HTML", () => {
   assert.throws(
     () => renderMarkdownBody({ replaceChildren() {} }, "**x**"),
