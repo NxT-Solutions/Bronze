@@ -9,6 +9,7 @@ members = [
     "bronze-platform",
     "bronze-platform-macos",
     "bronze-title-model",
+    "bronze-title-remote",
     "apps/desktop/src-tauri",
 ]
 

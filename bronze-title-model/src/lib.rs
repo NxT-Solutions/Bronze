@@ -1,18 +1,28 @@
-//! Local title refine. Loads a hash-pinned GGUF allow-list only. No hub, no network.
+//! Local title refine. Loads hash-pinned bundled GGUFs or one imported file. No hub, no HTTP.
 
+mod bundle;
+mod custom;
 mod infer;
 mod prompt;
 mod status;
 mod tiers;
 mod weights;
 
+pub use bundle::{stage_bundled_models, staged_model_filenames, vendor_dir, BUNDLE_MODELS_DIR};
+pub use custom::{
+    custom_gguf_path, custom_id_ok, custom_weights_path, display_name_from, gguf_magic_ok,
+    import_custom_gguf, is_gguf_magic, set_custom_path, CustomGguf, CustomGgufError, GGUF_MAGIC,
+    MAX_CUSTOM_BYTES,
+};
 pub use infer::{
-    classify_refine_reject, classify_weights_error, desired_tier, refine_outcome, refine_title,
-    request_tier, should_attempt_refine, warmup, FallbackReason, RefineOutcome,
+    classify_refine_reject, classify_weights_error, desired_tier, refine_outcome, refine_tier,
+    refine_title, request_custom, request_tier, should_attempt_refine, warmup, FallbackReason,
+    RefineOutcome,
 };
 pub use prompt::{
-    clean_title, format_prompt, format_prompt_for, raw_preview, take_generated_piece,
-    title_echoes_opening, title_is_grounded, MAX_INPUT_CHARS, MAX_NEW_TOKENS, PROMPT_VERSION,
+    accept_refined_title, clean_title, format_prompt, format_prompt_for, raw_preview,
+    take_generated_piece, title_echoes_opening, title_is_grounded, truncate_input, MAX_INPUT_CHARS,
+    MAX_NEW_TOKENS, PROMPT_VERSION, SYSTEM_PROMPT,
 };
 pub use status::{
     apply_diag, current_status, observe_diag, subscribe_status, EnginePhase, TitleEngineStatus,

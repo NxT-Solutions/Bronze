@@ -4,8 +4,29 @@ use std::process::Command;
 
 fn main() {
     println!("cargo:rustc-check-cfg=cfg(bronze_native_linked)");
+    stage_bundled_title_models();
     link_bronze_native();
     tauri_build::build();
+}
+
+fn stage_bundled_title_models() {
+    let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let vendor = manifest.join("../../../bronze-title-model/vendor");
+    let dest = manifest.join("models");
+    let files = [
+        "SmolLM2-135M-Instruct-Q4_K_M.gguf",
+        "SmolLM2-360M-Instruct-Q4_K_M.gguf",
+        "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+    ];
+    let _ = std::fs::create_dir_all(&dest);
+    println!("cargo:rerun-if-changed={}", vendor.display());
+    for name in files {
+        let src = vendor.join(name);
+        println!("cargo:rerun-if-changed={}", src.display());
+        if src.is_file() {
+            let _ = std::fs::copy(&src, dest.join(name));
+        }
+    }
 }
 
 fn link_bronze_native() {

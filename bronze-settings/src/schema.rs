@@ -209,11 +209,37 @@ pub enum TitleModelId {
     Smol360,
     #[serde(rename = "qwen-05")]
     Qwen05,
+    #[serde(rename = "custom")]
+    Custom,
+    #[serde(rename = "ollama")]
+    Ollama,
+    #[serde(rename = "hosted-openai")]
+    HostedOpenai,
+    #[serde(rename = "hosted-anthropic")]
+    HostedAnthropic,
+    #[serde(rename = "hosted-openrouter")]
+    HostedOpenrouter,
 }
 
 impl TitleModelId {
-    pub const ALL_CHOICES: [Self; 4] =
-        [Self::Extractive, Self::Smol135, Self::Smol360, Self::Qwen05];
+    pub const ALL_CHOICES: [Self; 9] = [
+        Self::Extractive,
+        Self::Smol135,
+        Self::Smol360,
+        Self::Qwen05,
+        Self::Custom,
+        Self::Ollama,
+        Self::HostedOpenai,
+        Self::HostedAnthropic,
+        Self::HostedOpenrouter,
+    ];
+
+    pub const fn is_hosted(self) -> bool {
+        matches!(
+            self,
+            Self::HostedOpenai | Self::HostedAnthropic | Self::HostedOpenrouter
+        )
+    }
 
     pub const fn is_unset(&self) -> bool {
         matches!(self, Self::Unset)
@@ -226,6 +252,11 @@ impl TitleModelId {
             Self::Smol135 => "smol-135",
             Self::Smol360 => "smol-360",
             Self::Qwen05 => "qwen-05",
+            Self::Custom => "custom",
+            Self::Ollama => "ollama",
+            Self::HostedOpenai => "hosted-openai",
+            Self::HostedAnthropic => "hosted-anthropic",
+            Self::HostedOpenrouter => "hosted-openrouter",
         }
     }
 
@@ -236,6 +267,11 @@ impl TitleModelId {
             "smol-135" => Ok(Self::Smol135),
             "smol-360" => Ok(Self::Smol360),
             "qwen-05" => Ok(Self::Qwen05),
+            "custom" => Ok(Self::Custom),
+            "ollama" => Ok(Self::Ollama),
+            "hosted-openai" => Ok(Self::HostedOpenai),
+            "hosted-anthropic" => Ok(Self::HostedAnthropic),
+            "hosted-openrouter" => Ok(Self::HostedOpenrouter),
             _ => Err(SchemaError::UnknownTitleModel),
         }
     }
@@ -426,8 +462,24 @@ pub struct GeneralSettings {
     pub start_view: StartView,
     #[serde(default, skip_serializing_if = "TitleModelId::is_unset")]
     pub title_model: TitleModelId,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub title_custom_id: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub title_custom_name: String,
+    #[serde(default, skip_serializing_if = "is_zero_u64")]
+    pub title_custom_bytes: u64,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub title_ollama_model: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub title_hosted_base: String,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub title_hosted_confirmed: bool,
     #[serde(default)]
     pub reduce_motion: MotionPref,
+}
+
+fn is_zero_u64(value: &u64) -> bool {
+    *value == 0
 }
 
 pub const PERSISTED_LOCALE_TAGS: &[&str] = &[
@@ -618,7 +670,22 @@ pub const SETTINGS_FIELDS: &[SettingsField] = &[
     SettingsField {
         id: "general.titleModel",
         group: SettingsGroup::General,
-        tokens: &["title", "model", "smol", "qwen"],
+        tokens: &["title", "model", "smol", "qwen", "ollama", "hosted"],
+    },
+    SettingsField {
+        id: "general.titleCustomId",
+        group: SettingsGroup::General,
+        tokens: &["custom", "gguf"],
+    },
+    SettingsField {
+        id: "general.titleOllamaModel",
+        group: SettingsGroup::General,
+        tokens: &["ollama"],
+    },
+    SettingsField {
+        id: "general.titleHostedBase",
+        group: SettingsGroup::General,
+        tokens: &["hosted", "openai", "anthropic"],
     },
     SettingsField {
         id: "general.reduceMotion",
@@ -806,6 +873,12 @@ impl SettingsV1 {
                 locale: "system".into(),
                 start_view: StartView::Last,
                 title_model: TitleModelId::Unset,
+                title_custom_id: String::new(),
+                title_custom_name: String::new(),
+                title_custom_bytes: 0,
+                title_ollama_model: String::new(),
+                title_hosted_base: String::new(),
+                title_hosted_confirmed: false,
                 reduce_motion: MotionPref::System,
             },
             capture: CaptureSettings {
@@ -972,6 +1045,18 @@ impl SettingsV1 {
             "general.locale" => self.general.locale = defaults.general.locale,
             "general.startView" => self.general.start_view = defaults.general.start_view,
             "general.titleModel" => self.general.title_model = defaults.general.title_model,
+            "general.titleCustomId" => {
+                self.general.title_custom_id = defaults.general.title_custom_id;
+                self.general.title_custom_name = defaults.general.title_custom_name;
+                self.general.title_custom_bytes = defaults.general.title_custom_bytes;
+            }
+            "general.titleOllamaModel" => {
+                self.general.title_ollama_model = defaults.general.title_ollama_model
+            }
+            "general.titleHostedBase" => {
+                self.general.title_hosted_base = defaults.general.title_hosted_base;
+                self.general.title_hosted_confirmed = defaults.general.title_hosted_confirmed;
+            }
             "general.reduceMotion" => {
                 self.general.reduce_motion = defaults.general.reduce_motion;
                 self.sync_motion_fields();
@@ -1230,9 +1315,28 @@ mod tests {
         );
         settings.reset_field("general.titleModel").expect("reset");
         assert!(settings.general.title_model.is_unset());
+        settings.general.title_model = TitleModelId::Custom;
+        settings.general.title_custom_id = "ab".repeat(32);
+        let custom = SettingsV1::from_json(&settings.to_json().expect("custom")).expect("ok");
+        assert_eq!(custom.general.title_model, TitleModelId::Custom);
+        assert_eq!(custom.general.title_custom_id, "ab".repeat(32));
+        assert!(!custom.to_json().expect("json").contains('/'));
+        settings.general.title_model = TitleModelId::Ollama;
+        assert_eq!(
+            SettingsV1::from_json(&settings.to_json().expect("ollama"))
+                .expect("ok")
+                .general
+                .title_model,
+            TitleModelId::Ollama
+        );
+        settings.general.title_model = TitleModelId::HostedOpenai;
+        assert!(settings.general.title_model.is_hosted());
         assert!(search_settings("title")
             .iter()
             .any(|field| field.id == "general.titleModel"));
+        assert!(search_settings("ollama")
+            .iter()
+            .any(|field| field.id == "general.titleOllamaModel"));
     }
 
     #[test]

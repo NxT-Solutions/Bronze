@@ -1,3 +1,4 @@
+use crate::custom::gguf_magic_ok;
 use crate::prompt::{
     accept_refined_title, clean_title, format_prompt_for, raw_preview, take_generated_piece,
     title_echoes_opening, title_is_grounded, MAX_NEW_TOKENS,
@@ -12,6 +13,7 @@ use llama_cpp_2::model::{AddBos, LlamaModel};
 use llama_cpp_2::sampling::LlamaSampler;
 use llama_cpp_2::{send_logs_to_tracing, LogOptions};
 use std::num::NonZeroU32;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Mutex, OnceLock};
@@ -60,6 +62,11 @@ enum Job {
         body: String,
         reply: Sender<InferReply>,
     },
+    InferTier {
+        tier: TitleTier,
+        body: String,
+        reply: Sender<InferReply>,
+    },
     SetModel {
         tier: TitleTier,
     },
@@ -89,6 +96,9 @@ pub fn desired_tier() -> TitleTier {
 }
 
 pub fn request_tier(tier: TitleTier) {
+    if tier != TitleTier::Custom {
+        crate::custom::set_custom_path(None);
+    }
     {
         let mut desired = DESIRED
             .lock()
@@ -99,6 +109,11 @@ pub fn request_tier(tier: TitleTier) {
     if let Some(tx) = JOBS.get() {
         let _ = tx.send(Job::SetModel { tier });
     }
+}
+
+pub fn request_custom(path: PathBuf) {
+    crate::custom::set_custom_path(Some(path));
+    request_tier(TitleTier::Custom);
 }
 
 pub fn should_attempt_refine(
@@ -131,6 +146,23 @@ pub fn refine_title(body: &str) -> Option<String> {
 
 pub fn refine_outcome(body: &str) -> RefineOutcome {
     let tier = desired_tier();
+    dispatch_infer(body, tier, InferKind::Desired)
+}
+
+pub fn refine_tier(tier: TitleTier, body: &str) -> RefineOutcome {
+    if tier == TitleTier::Extractive || tier == TitleTier::Custom {
+        crate::emit_diag("fallback reason=extractive");
+        return RefineOutcome::Fallback(FallbackReason::Extractive);
+    }
+    dispatch_infer(body, tier, InferKind::Bundled(tier))
+}
+
+enum InferKind {
+    Desired,
+    Bundled(TitleTier),
+}
+
+fn dispatch_infer(body: &str, tier: TitleTier, kind: InferKind) -> RefineOutcome {
     if let Err(reason) =
         should_attempt_refine_for(tier, body, crate::weights::weights_present_for(tier))
     {
@@ -139,13 +171,18 @@ pub fn refine_outcome(body: &str) -> RefineOutcome {
     }
     crate::emit_diag("refine attempted");
     let (reply_tx, reply_rx) = mpsc::channel();
-    if sender()
-        .send(Job::Infer {
+    let job = match kind {
+        InferKind::Desired => Job::Infer {
             body: body.to_string(),
             reply: reply_tx,
-        })
-        .is_err()
-    {
+        },
+        InferKind::Bundled(tier) => Job::InferTier {
+            tier,
+            body: body.to_string(),
+            reply: reply_tx,
+        },
+    };
+    if sender().send(job).is_err() {
         crate::emit_diag("fallback reason=unreadable");
         return RefineOutcome::Fallback(FallbackReason::Unreadable);
     }
@@ -213,36 +250,45 @@ fn worker_loop(rx: Receiver<Job>) {
                 let _ = apply_tier(&mut state, tier);
             }
             Job::Infer { body, reply } => {
-                let tier = desired_tier();
-                if apply_tier(&mut state, tier).is_err() {
-                    let reason = match should_attempt_refine_for(
-                        tier,
-                        &body,
-                        crate::weights::weights_present_for(tier),
-                    ) {
-                        Err(reason) => reason,
-                        Ok(()) => FallbackReason::Unreadable,
-                    };
-                    let _ = reply.send(InferReply::Fallback(reason));
-                    continue;
-                }
-                let Some(model) = state.model.as_ref() else {
-                    let _ = reply.send(InferReply::Fallback(FallbackReason::Extractive));
-                    continue;
-                };
-                let Some(backend) = state.backend.as_ref() else {
-                    let _ = reply.send(InferReply::Fallback(FallbackReason::Unreadable));
-                    continue;
-                };
-                let loaded = state.loaded.unwrap_or(tier);
-                let out = match infer_once(backend, model, loaded, &body) {
-                    Ok(title) => InferReply::Title(title),
-                    Err(reason) => InferReply::Fallback(reason),
-                };
-                let _ = reply.send(out);
+                run_infer_job(&mut state, desired_tier(), body, reply);
+            }
+            Job::InferTier { tier, body, reply } => {
+                run_infer_job(&mut state, tier, body, reply);
             }
         }
     }
+}
+
+fn run_infer_job(
+    state: &mut WorkerState,
+    tier: TitleTier,
+    body: String,
+    reply: Sender<InferReply>,
+) {
+    if apply_tier(state, tier).is_err() {
+        let reason =
+            match should_attempt_refine_for(tier, &body, crate::weights::weights_present_for(tier))
+            {
+                Err(reason) => reason,
+                Ok(()) => FallbackReason::Unreadable,
+            };
+        let _ = reply.send(InferReply::Fallback(reason));
+        return;
+    }
+    let Some(model) = state.model.as_ref() else {
+        let _ = reply.send(InferReply::Fallback(FallbackReason::Extractive));
+        return;
+    };
+    let Some(backend) = state.backend.as_ref() else {
+        let _ = reply.send(InferReply::Fallback(FallbackReason::Unreadable));
+        return;
+    };
+    let loaded = state.loaded.unwrap_or(tier);
+    let out = match infer_once(backend, model, loaded, &body) {
+        Ok(title) => InferReply::Title(title),
+        Err(reason) => InferReply::Fallback(reason),
+    };
+    let _ = reply.send(out);
 }
 
 fn apply_tier(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackReason> {
@@ -277,7 +323,18 @@ fn apply_tier(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackRe
 }
 
 fn load_model(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackReason> {
-    let path = verified_weights_for(tier).map_err(classify_weights_error)?;
+    let path = if tier == TitleTier::Custom {
+        let path = crate::custom::custom_weights_path().ok_or(FallbackReason::MissingWeights)?;
+        if !gguf_magic_ok(&path) {
+            return Err(FallbackReason::Unreadable);
+        }
+        crate::emit_diag("weights resolved source=custom");
+        path
+    } else {
+        verified_weights_for(tier)
+            .map_err(classify_weights_error)?
+            .0
+    };
     send_logs_to_tracing(LogOptions::default().with_logs_enabled(false));
     if state.backend.is_none() {
         state.backend = Some(LlamaBackend::init().map_err(|_| FallbackReason::Unreadable)?);
@@ -286,7 +343,7 @@ fn load_model(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackRe
     // CPU only: do not silently add Metal/JIT entitlements. llama-cpp-2 still
     // compiles Metal on Apple Silicon; n_gpu_layers(0) keeps inference on CPU.
     let params = LlamaModelParams::default().with_n_gpu_layers(0);
-    let model = LlamaModel::load_from_file(backend, &path.0, &params)
+    let model = LlamaModel::load_from_file(backend, &path, &params)
         .map_err(|_| FallbackReason::Unreadable)?;
     state.model = Some(model);
     state.loaded = Some(tier);
@@ -449,6 +506,18 @@ mod infer_tests {
     }
 
     #[test]
+    fn bundled_fallback_skips_extractive_and_custom() {
+        assert_eq!(
+            refine_tier(TitleTier::Extractive, LONG_BODY),
+            RefineOutcome::Fallback(FallbackReason::Extractive)
+        );
+        assert_eq!(
+            refine_tier(TitleTier::Custom, LONG_BODY),
+            RefineOutcome::Fallback(FallbackReason::Extractive)
+        );
+    }
+
+    #[test]
     fn short_body_is_skipped() {
         assert_eq!(
             should_attempt_refine_for(TitleTier::Smol360, "Park me", Ok(())),
@@ -584,7 +653,15 @@ mod infer_tests {
             .split("#[cfg(test)]")
             .next()
             .expect("prod");
-        for src in [infer, weights, prompt, lib, tiers, status] {
+        let bundle = include_str!("bundle.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("prod");
+        let custom = include_str!("custom.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("prod");
+        for src in [infer, weights, prompt, lib, tiers, status, bundle, custom] {
             let lower = src.to_ascii_lowercase();
             for needle in [
                 "huggingface.co",

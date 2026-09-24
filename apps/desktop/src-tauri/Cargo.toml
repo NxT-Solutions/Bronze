@@ -24,6 +24,8 @@ tauri = { version = "2.11.3", features = ["tray-icon", "image-png"] }
 bronze-platform-macos = { path = "../../../bronze-platform-macos", default-features = false }
 bronze-domain = { path = "../../../bronze-domain" }
 bronze-title-model = { path = "../../../bronze-title-model" }
+bronze-title-remote = { path = "../../../bronze-title-remote" }
+rfd = "0.15"
 bronze-storage = { path = "../../../bronze-storage" }
 bronze-settings = { path = "../../../bronze-settings" }
 bronze-capture = { path = "../../../bronze-capture" }

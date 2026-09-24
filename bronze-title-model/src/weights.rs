@@ -32,6 +32,7 @@ pub enum WeightsSource {
     Exe,
     Resources,
     BundleDir,
+    Custom,
 }
 
 impl WeightsSource {
@@ -44,6 +45,7 @@ impl WeightsSource {
             Self::Exe => "exe",
             Self::Resources => "resources",
             Self::BundleDir => "bundle",
+            Self::Custom => "custom",
         }
     }
 }
@@ -89,6 +91,12 @@ pub fn weights_present() -> Result<(), WeightsError> {
 pub fn weights_present_for(tier: TitleTier) -> Result<(), WeightsError> {
     if tier == TitleTier::Extractive {
         return Ok(());
+    }
+    if tier == TitleTier::Custom {
+        return match crate::custom::custom_weights_path() {
+            Some(path) if path.is_file() => Ok(()),
+            _ => Err(WeightsError::Missing),
+        };
     }
     let spec = tier.spec().ok_or(WeightsError::Missing)?;
     if candidate_paths_for(spec)

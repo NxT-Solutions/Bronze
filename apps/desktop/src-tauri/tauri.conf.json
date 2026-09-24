@@ -90,6 +90,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": ["models/*"],
     "macOS": {
       "entitlements": "entitlements/macos.release.plist"
     }

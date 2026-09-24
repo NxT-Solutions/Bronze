@@ -655,7 +655,7 @@ impl LiveSession {
         if resolve_title_model(&mut settings) {
             persist_settings_file(&data_dir, &settings)?;
         }
-        apply_title_engine(&settings);
+        apply_title_engine(&settings, &data_dir);
         apply_login_item(&settings);
         let shortcuts = store
             .load_shortcuts()
@@ -1083,6 +1083,26 @@ impl LiveSession {
         self.settings.clone()
     }
 
+    pub fn import_custom_gguf_from(
+        &mut self,
+        src: &Path,
+    ) -> Result<crate::title_engines::CustomTitleDto, String> {
+        let imported =
+            bronze_title_model::import_custom_gguf(src, &self.data_dir.join("title-engines"))
+                .map_err(|err| err.as_str().to_string())?;
+        self.settings.general.title_model = TitleModelId::Custom;
+        self.settings.general.title_custom_id = imported.id.clone();
+        self.settings.general.title_custom_name = imported.display_name.clone();
+        self.settings.general.title_custom_bytes = imported.bytes;
+        persist_settings_file(&self.data_dir, &self.settings)?;
+        apply_title_engine(&self.settings, &self.data_dir);
+        Ok(crate::title_engines::CustomTitleDto {
+            id: imported.id,
+            display_name: imported.display_name,
+            bytes: imported.bytes,
+        })
+    }
+
     pub fn replace_settings(&mut self, next: SettingsV1) -> Result<SettingsV1, String> {
         next.validate().map_err(|_| "settings_invalid")?;
         let mut next = next;
@@ -1091,7 +1111,7 @@ impl LiveSession {
         let chord = next.capture.standard_chord.clone();
         self.settings = next;
         persist_settings_file(&self.data_dir, &self.settings)?;
-        apply_title_engine(&self.settings);
+        apply_title_engine(&self.settings, &self.data_dir);
         apply_login_item(&self.settings);
         self.shortcuts
             .register(chord, &mut SessionRegistrar, keep_menu_manual())
@@ -1116,7 +1136,7 @@ impl LiveSession {
         if field_id == "general.titleModel" {
             let _ = resolve_title_model(&mut self.settings);
         }
-        apply_title_engine(&self.settings);
+        apply_title_engine(&self.settings, &self.data_dir);
         apply_login_item(&self.settings);
         self.sync_standard_chord()?;
         Ok(self.settings.clone())
@@ -1137,7 +1157,7 @@ impl LiveSession {
         if parsed == SettingsGroup::General {
             let _ = resolve_title_model(&mut self.settings);
         }
-        apply_title_engine(&self.settings);
+        apply_title_engine(&self.settings, &self.data_dir);
         apply_login_item(&self.settings);
         self.sync_standard_chord()?;
         Ok(self.settings.clone())
@@ -1146,7 +1166,7 @@ impl LiveSession {
     pub fn reset_all(&mut self) -> Result<SettingsV1, String> {
         self.settings.reset_all_preserving_content();
         let _ = resolve_title_model(&mut self.settings);
-        apply_title_engine(&self.settings);
+        apply_title_engine(&self.settings, &self.data_dir);
         apply_login_item(&self.settings);
         self.shortcuts = ShortcutRegistry::seeded();
         self.sync_standard_chord()?;
@@ -1557,7 +1577,7 @@ fn parse_group(group: &str) -> Result<SettingsGroup, String> {
     }
 }
 
-fn physical_ram_bytes() -> Option<u64> {
+pub(crate) fn physical_ram_bytes() -> Option<u64> {
     #[cfg(target_os = "macos")]
     {
         let output = std::process::Command::new("/usr/sbin/sysctl")
@@ -1581,15 +1601,22 @@ fn title_model_from_tier(tier: TitleTier) -> TitleModelId {
         TitleTier::Smol135 => TitleModelId::Smol135,
         TitleTier::Smol360 => TitleModelId::Smol360,
         TitleTier::Qwen05 => TitleModelId::Qwen05,
+        TitleTier::Custom => TitleModelId::Custom,
     }
 }
 
 fn title_tier_from_model(id: TitleModelId) -> TitleTier {
     match id {
-        TitleModelId::Unset | TitleModelId::Extractive => TitleTier::Extractive,
+        TitleModelId::Unset
+        | TitleModelId::Extractive
+        | TitleModelId::Ollama
+        | TitleModelId::HostedOpenai
+        | TitleModelId::HostedAnthropic
+        | TitleModelId::HostedOpenrouter => TitleTier::Extractive,
         TitleModelId::Smol135 => TitleTier::Smol135,
         TitleModelId::Smol360 => TitleTier::Smol360,
         TitleModelId::Qwen05 => TitleTier::Qwen05,
+        TitleModelId::Custom => TitleTier::Custom,
     }
 }
 
@@ -1604,8 +1631,26 @@ fn resolve_title_model(settings: &mut SettingsV1) -> bool {
     true
 }
 
-fn apply_title_engine(settings: &SettingsV1) {
-    request_tier(title_tier_from_model(settings.general.title_model));
+fn apply_title_engine(settings: &SettingsV1, data_dir: &Path) {
+    match settings.general.title_model {
+        TitleModelId::Custom => {
+            if let Some(path) = bronze_title_model::custom_gguf_path(
+                &data_dir.join("title-engines"),
+                &settings.general.title_custom_id,
+            ) {
+                if path.is_file() {
+                    bronze_title_model::request_custom(path);
+                    return;
+                }
+            }
+            request_tier(TitleTier::Extractive);
+        }
+        TitleModelId::Ollama
+        | TitleModelId::HostedOpenai
+        | TitleModelId::HostedAnthropic
+        | TitleModelId::HostedOpenrouter => request_tier(TitleTier::Extractive),
+        other => request_tier(title_tier_from_model(other)),
+    }
 }
 
 fn apply_login_item(settings: &SettingsV1) {
@@ -2564,6 +2609,10 @@ mod live_session_tests {
         assert!(used.contains("export_settings_file"));
         assert!(used.contains("import_settings_file"));
         assert!(used.contains("list_title_models"));
+        assert!(used.contains("import_title_gguf"));
+        assert!(used.contains("list_ollama_title_models"));
+        assert!(used.contains("set_hosted_title_key"));
+        assert!(used.contains("hosted_title_disclosure"));
         assert!(used.contains("login_item_status"));
         assert!(used.contains("preview_support_bundle"));
         assert!(used.contains("export_support_file"));
@@ -2644,10 +2693,16 @@ mod live_session_tests {
         let body = fs::read_to_string(&dest).expect("read");
         let strip_clock = |text: &str| {
             text.lines()
-                .filter(|line| !line.starts_with("generated_at_ms="))
+                .filter(|line| {
+                    !line.starts_with("generated_at_ms=")
+                        && !line.starts_with("  tier=")
+                        && !line.starts_with("  phase=")
+                })
                 .collect::<Vec<_>>()
                 .join("\n")
         };
+        assert!(preview.contains("Title engine"));
+        assert!(body.contains("Title engine"));
         assert_eq!(strip_clock(&preview), strip_clock(&body));
         assert!(body.contains("3.9"));
         assert!(!body.contains("hunter2"));
@@ -3091,6 +3146,11 @@ mod live_session_tests {
         assert!(used.contains("import_settings_file"));
         assert!(used.contains("list_title_models"));
         assert!(used.contains("title_engine_status"));
+        assert!(used.contains("import_title_gguf"));
+        assert!(used.contains("list_ollama_title_models"));
+        assert!(used.contains("set_hosted_title_key"));
+        assert!(used.contains("clear_hosted_title_key"));
+        assert!(used.contains("hosted_title_disclosure"));
         assert!(used.contains("login_item_status"));
         assert!(used.contains("preview_support_bundle"));
         assert!(used.contains("export_support_file"));

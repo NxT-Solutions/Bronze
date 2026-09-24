@@ -81,5 +81,11 @@ mod packaging_tests {
         assert!(build.contains("Bronze Notice"));
         assert!(build.contains("bronze-notice-signing.keychain"));
         assert!(!build.contains("externalBin"));
+        assert!(conf.contains("\"resources\""));
+        assert!(conf.contains("models/*"));
+        assert!(build.contains("stage_bundled_title_models"));
+        assert!(build.contains("qwen2.5-0.5b-instruct-q4_k_m.gguf"));
+        assert!(build.contains("SmolLM2-135M-Instruct-Q4_K_M.gguf"));
+        assert!(build.contains("SmolLM2-360M-Instruct-Q4_K_M.gguf"));
     }
 }

@@ -1,5 +1,11 @@
-use crate::live_session::LiveSession;
-use bronze_title_model::{current_status, subscribe_status, RefineOutcome, TitleEngineStatus};
+use crate::live_session::{physical_ram_bytes, LiveSession};
+use crate::title_engines::secret_store;
+use bronze_settings::{SettingsV1, TitleModelId};
+use bronze_title_model::{
+    auto_pick_title_tier, current_status, present_gguf_tiers, refine_outcome, refine_tier,
+    subscribe_status, RefineOutcome, TitleEngineStatus, TitleTier,
+};
+use bronze_title_remote::{hosted_refine, ollama_refine, HostedProvider};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -49,7 +55,18 @@ pub fn schedule(app: &AppHandle, item_id: String, body: String) {
     let _ = std::thread::Builder::new()
         .name("bronze-item-title".into())
         .spawn(move || {
-            let RefineOutcome::Title(title) = bronze_title_model::refine_outcome(&body) else {
+            let settings = handle
+                .try_state::<std::sync::Mutex<LiveSession>>()
+                .map(|state| {
+                    state
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner())
+                        .settings()
+                });
+            let Some(settings) = settings else {
+                return;
+            };
+            let RefineOutcome::Title(title) = resolve_title(&settings, &body) else {
                 return;
             };
             let Some(state) = handle.try_state::<std::sync::Mutex<LiveSession>>() else {
@@ -76,8 +93,55 @@ pub fn warmup() {
     bronze_title_model::warmup();
 }
 
+fn resolve_title(settings: &SettingsV1, body: &str) -> RefineOutcome {
+    match settings.general.title_model {
+        TitleModelId::Unset | TitleModelId::Extractive => {
+            RefineOutcome::Fallback(bronze_title_model::FallbackReason::Extractive)
+        }
+        TitleModelId::Smol135
+        | TitleModelId::Smol360
+        | TitleModelId::Qwen05
+        | TitleModelId::Custom => refine_outcome(body),
+        TitleModelId::Ollama => match ollama_refine(&settings.general.title_ollama_model, body) {
+            Ok(title) => RefineOutcome::Title(title),
+            Err(_) => bundled_fallback(body),
+        },
+        TitleModelId::HostedOpenai
+        | TitleModelId::HostedAnthropic
+        | TitleModelId::HostedOpenrouter => {
+            if !settings.general.title_hosted_confirmed {
+                return bundled_fallback(body);
+            }
+            let Some(provider) = HostedProvider::parse(settings.general.title_model.as_str())
+            else {
+                return bundled_fallback(body);
+            };
+            match hosted_refine(
+                provider,
+                &settings.general.title_hosted_base,
+                body,
+                secret_store().as_ref(),
+            ) {
+                Ok(title) => RefineOutcome::Title(title),
+                Err(_) => bundled_fallback(body),
+            }
+        }
+    }
+}
+
+fn bundled_fallback(body: &str) -> RefineOutcome {
+    let tier = auto_pick_title_tier(physical_ram_bytes(), &present_gguf_tiers());
+    if tier == TitleTier::Extractive {
+        return RefineOutcome::Fallback(bronze_title_model::FallbackReason::Extractive);
+    }
+    refine_tier(tier, body)
+}
+
 #[cfg(test)]
 mod title_refine_tests {
+    use super::TitleEngineStatusDto;
+    use bronze_title_remote::{parse_hosted_base, resolve_ollama_base, RemoteError};
+
     #[test]
     fn schedule_is_after_persist_not_in_tap() {
         let lib = include_str!("lib.rs");
@@ -98,6 +162,10 @@ mod title_refine_tests {
             "../../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         )
         .contains("refine_title"));
+        assert!(!include_str!(
+            "../../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+        )
+        .contains("ollama"));
     }
 
     #[test]
@@ -121,8 +189,24 @@ mod title_refine_tests {
     }
 
     #[test]
+    fn resolver_never_hosts_on_local_failure() {
+        let src = include_str!("title_refine.rs");
+        let local = src.split("TitleModelId::Custom").nth(1).expect("custom");
+        let local_end = local.find("TitleModelId::Ollama").expect("ollama arm");
+        assert!(!local[..local_end].contains("hosted_refine"));
+        assert!(!local[..local_end].contains("ollama_refine"));
+        assert_eq!(
+            resolve_ollama_base(Some("http://example.com:11434")),
+            "http://127.0.0.1:11434"
+        );
+        assert_eq!(
+            parse_hosted_base("https://10.0.0.8"),
+            Err(RemoteError::BlockedHost)
+        );
+    }
+
+    #[test]
     fn title_engine_status_dto_maps_lifecycle() {
-        use super::TitleEngineStatusDto;
         use bronze_title_model::{apply_diag, EnginePhase, TitleEngineStatus};
         let loading = apply_diag(TitleEngineStatus::idle(), "switch scheduled tier=qwen-05");
         let dto = TitleEngineStatusDto::from(loading);
