@@ -1,6 +1,6 @@
 # Bronze planning pack
 
-Bronze is a local-first macOS selection-to-action queue: capture selected text, add prompts or notes, order work, copy it back into any app, then complete or archive it. Planning authority is `docs/`. Application code lives on `bmad/bronze-autonomous` (Tauri 2, React/HTML WebView, Rust, in-process Swift).
+Bronze is a local-first macOS selection-to-action queue: capture selected text, add prompts or notes, order work, copy it back into any app, then complete or archive it. Planning authority is `docs/`. Application code lives on `main` (Tauri 2, React/HTML WebView, Rust, in-process Swift). New work lands on a feature branch from `main`.
 
 Research cutoff: **2026-08-27**. Working name: **Bronze**.
 
@@ -125,6 +125,6 @@ Original visual direction: [Bronze UI concept](assets/bronze-ui-concept.png). It
 
 ## Scope status
 
-Planning pack IDs in [docs/03-prd.md](docs/03-prd.md) and [docs/18-adrs.md](docs/18-adrs.md) remain authority. Implementation is on local branch `bmad/bronze-autonomous`. `main` stays at the planning baseline until explicitly merged.
+Planning pack IDs in [docs/03-prd.md](docs/03-prd.md) and [docs/18-adrs.md](docs/18-adrs.md) remain authority. Implementation lives on `main`. New work uses a feature branch from `main`.
 
 Local debug package (SEC-005): `tooling/package-debug.sh` — arm64 unless DG-01 says otherwise, checksums + SBOM stub, no `get-task-allow`, no notarization.

@@ -39,7 +39,7 @@ Local-first macOS selection-to-action queue. Tauri 2, React, Rust, in-process Sw
 
 ## Policy
 
-- Work only on `bmad/bronze-autonomous` unless the user names another branch. Never push.
+- Work on a feature branch from `main`. Do not commit on `main`. Never push `main`. Push a feature branch only when the user asks to open or update a PR.
 - Never accept ADR-002, ADR-009, or ADR-018 silently.
 - Never claim WCAG, VoiceOver, or notarization without `docs/evidence/` artifacts.
 - Never copy Cooper source or Copper trade dress.
