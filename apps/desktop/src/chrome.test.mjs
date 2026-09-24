@@ -187,6 +187,20 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /article \[data-slot="body"\] ol \{[\s\S]*list-style-type:\s*decimal/,
   );
+  const bodyListPosition = chrome.match(
+    /article \[data-slot="body"\] ul,\s*article \[data-slot="body"\] ol\s*\{[^}]+\}/,
+  );
+  assert.ok(bodyListPosition, "body lists keep an outside marker gutter");
+  assert.match(bodyListPosition[0], /list-style-position:\s*outside/);
+  const collapsedListMarkers = chrome.match(
+    /article:not\(\.is-expanded\) \[data-slot="body"\] > :is\(ul, ol\)\s*\{[^}]+\}/,
+  );
+  assert.ok(
+    collapsedListMarkers,
+    "collapsed body lists keep markers inside the clip",
+  );
+  assert.match(collapsedListMarkers[0], /list-style-position:\s*inside/);
+  assert.match(collapsedListMarkers[0], /padding-inline-start:\s*0\.2em/);
   assert.match(
     chrome,
     /article \[data-slot="body"\] strong \{[\s\S]*font-weight:\s*650/,

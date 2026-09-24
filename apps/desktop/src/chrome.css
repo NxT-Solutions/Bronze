@@ -933,6 +933,12 @@ article:not(.is-expanded) [data-slot="body"] {
   overflow: hidden;
 }
 
+article:not(.is-expanded) [data-slot="body"] > :is(ul, ol) {
+  /* Outside markers paint past the padding edge; this overflow box would clip them. */
+  list-style-position: inside;
+  padding-inline-start: 0.2em;
+}
+
 article.is-expanded [data-slot="body"] {
   max-height: none;
   overflow: visible;
