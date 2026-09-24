@@ -911,15 +911,22 @@ article [data-slot="body"] em {
   font-style: italic;
 }
 
+article [data-slot="body"] code {
+  font-family: var(--font-mono);
+  background: color-mix(in srgb, var(--foreground) 8%, var(--muted));
+  border-radius: 4px;
+  padding: 0 0.2em;
+}
+
 article [data-slot="body"] li {
   margin-block: 0.15em;
 }
 
-article [data-slot="body"] li:has(> strong:first-child) {
+article [data-slot="body"] li[style*="font-weight:650"] {
   font-weight: 650;
 }
 
-article [data-slot="body"] li:has(> strong:first-child) :is(ol, ul, p) {
+article [data-slot="body"] li[style*="font-weight:650"] :is(ol, ul, p) {
   font-weight: 400;
 }
 

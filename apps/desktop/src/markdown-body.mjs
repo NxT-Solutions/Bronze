@@ -23,6 +23,21 @@ function findUnescaped(source, start, marker) {
   return -1;
 }
 
+function unescapeLiteral(source) {
+  let out = "";
+  let index = 0;
+  while (index < source.length) {
+    if (isEscapedPair(source, index)) {
+      out += source[index + 1];
+      index += 2;
+      continue;
+    }
+    out += source[index];
+    index += 1;
+  }
+  return out;
+}
+
 function flushText(nodes, buffer) {
   if (buffer.value.length === 0) {
     return;
@@ -31,7 +46,7 @@ function flushText(nodes, buffer) {
   buffer.value = "";
 }
 
-// Only unescaped * / ** / *** are markup. Every other character, including
+// Unescaped * / ** / *** and ` are markup. Every other character, including
 // HTML tags and attributes, stays a text node.
 export function parseConstrainedMarkdown(markdown) {
   const source = typeof markdown === "string" ? markdown : "";
@@ -44,6 +59,24 @@ export function parseConstrainedMarkdown(markdown) {
       buffer.value += source[index + 1];
       index += 2;
       continue;
+    }
+
+    if (source.startsWith("`", index)) {
+      const close = findUnescaped(source, index + 1, "`");
+      if (close > index + 1) {
+        flushText(nodes, buffer);
+        nodes.push({
+          type: "code",
+          children: [
+            {
+              type: "text",
+              value: unescapeLiteral(source.slice(index + 1, close)),
+            },
+          ],
+        });
+        index = close + 1;
+        continue;
+      }
     }
 
     let matched = false;
@@ -102,6 +135,14 @@ function astToNodes(doc, ast) {
         appendChild(em, child);
       }
       nodes.push(em);
+      continue;
+    }
+    if (node.type === "code") {
+      const code = doc.createElement("code");
+      for (const child of astToNodes(doc, node.children)) {
+        appendChild(code, child);
+      }
+      nodes.push(code);
       continue;
     }
     const strong = doc.createElement("strong");
@@ -729,6 +770,9 @@ function serializeInline(node) {
   }
   if (tag === "em" || tag === "i") {
     return inner ? `*${inner}*` : "";
+  }
+  if (tag === "code") {
+    return inner ? `\`${inner}\`` : "";
   }
   return inner;
 }

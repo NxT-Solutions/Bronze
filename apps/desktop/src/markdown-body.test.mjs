@@ -411,6 +411,60 @@ test("restored outline keeps the lead and the paragraph after a period", () => {
   assert.equal(target.textContent, "Hello. World");
 });
 
+test("bold lead-ins and inline code render without HTML injection", () => {
+  const doc = createDocument();
+  const target = doc.createElement("div");
+  renderMarkdownBody(
+    target,
+    "1. **Nieuwe OpenRouter management-key** uses `openrouter_activity_daily`",
+  );
+  assert.equal(target.querySelector("script"), null);
+  assert.equal(target.querySelector("a"), null);
+  assert.equal(target.querySelector("img"), null);
+  assert.equal(
+    target.querySelector("strong").textContent,
+    "Nieuwe OpenRouter management-key",
+  );
+  assert.equal(
+    target.querySelector("code").textContent,
+    "openrouter_activity_daily",
+  );
+  assert.equal(target.querySelector("li").getAttribute("style"), null);
+  assert.equal(target.querySelector("li").getAttribute("value"), "1");
+
+  renderMarkdownBody(target, "**`v_fact_cost_openrouter`**");
+  const strong = target.querySelector("strong");
+  assert.equal(
+    strong.querySelector("code").textContent,
+    "v_fact_cost_openrouter",
+  );
+
+  renderMarkdownBody(target, "`<script>alert(1)</script>`");
+  assert.equal(target.querySelector("script"), null);
+  assert.match(target.textContent, /<script>alert\(1\)<\/script>/);
+
+  renderMarkdownBody(target, "see section 2. Next");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "see section 2. Next");
+  renderMarkdownBody(target, "version 1.2");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "version 1.2");
+  renderMarkdownBody(target, "Hello. World");
+  assert.equal(target.querySelector("ol"), null);
+  assert.equal(target.textContent, "Hello. World");
+
+  assert.equal(
+    serializeComposerDom({
+      childNodes: [
+        el("strong", [textNode("Nieuwe")]),
+        textNode(" "),
+        el("code", [textNode("openrouter_activity_daily")]),
+      ],
+    }),
+    "**Nieuwe** `openrouter_activity_daily`",
+  );
+});
+
 test("missing document is unavailable rather than assigned as HTML", () => {
   assert.throws(
     () => renderMarkdownBody({ replaceChildren() {} }, "**x**"),
