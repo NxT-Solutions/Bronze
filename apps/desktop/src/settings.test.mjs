@@ -257,6 +257,21 @@ test("settings window is searchable grouped with daily weekly backup and export 
   );
   assert.match(html, /data-title-model-spinner/);
   assert.match(html, /aria-live="polite"/);
+  assert.equal(
+    en["settings.field.titleModel.custom"],
+    "Imported GGUF — 2 CPU threads",
+  );
+  assert.equal(en["settings.field.titleModel.ollama"], "Ollama on this Mac");
+  assert.equal(
+    en["settings.field.titleModel.infoHosted"],
+    "**Sends truncated capture text** to {host}.",
+  );
+  assert.equal(
+    en["settings.field.titleModel.hosted.keyHelp"],
+    "Paste the key once — Bronze never shows it again.",
+  );
+  assert.match(html, /data-import-title-gguf/);
+  assert.match(html, /id="title-hosted-key"/);
   assert.doesNotMatch(html, /Title:/);
   assert.doesNotMatch(html, /download/i);
 });

@@ -496,9 +496,22 @@ test("settings search matches visible labels and not reset chrome", () => {
 test("title model status shows present vs vendor command and never fetches", async () => {
   assert.deepEqual(
     [...TITLE_MODEL_IDS],
-    ["extractive", "smol-135", "smol-360", "qwen-05"],
+    [
+      "extractive",
+      "smol-135",
+      "smol-360",
+      "qwen-05",
+      "custom",
+      "ollama",
+      "hosted-openai",
+      "hosted-anthropic",
+      "hosted-openrouter",
+    ],
   );
   assert.equal(parseTitleModelId("qwen-05"), "qwen-05");
+  assert.equal(parseTitleModelId("custom"), "custom");
+  assert.equal(parseTitleModelId("ollama"), "ollama");
+  assert.equal(parseTitleModelId("hosted-openai"), "hosted-openai");
   assert.equal(parseTitleModelId("needle"), "");
   assert.equal(
     formatTitleModelStatus({ id: "extractive", present: true }),
@@ -608,15 +621,45 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.match(html, /value="smol-135"/);
   assert.match(html, /value="smol-360"/);
   assert.match(html, /value="qwen-05"/);
+  assert.match(html, /value="custom"/);
+  assert.match(html, /value="ollama"/);
+  assert.match(html, /value="hosted-openai"/);
+  assert.match(html, /data-import-title-gguf/);
+  assert.match(html, /id="title-hosted-key"/);
+  assert.match(html, /type="password"/);
+  assert.match(html, /id="title-hosted-confirmed"/);
   assert.doesNotMatch(html, /download/i);
   assert.doesNotMatch(html, /huggingface/i);
   assert.match(live, /list_title_models/);
+  assert.match(live, /list_ollama_title_models/);
+  assert.match(live, /import_title_gguf/);
+  assert.match(live, /set_hosted_title_key/);
+  assert.match(live, /hosted_title_disclosure/);
   assert.match(live, /title_engine_status/);
   assert.match(live, /title-engine-status/);
   assert.match(live, /#title-model/);
   assert.equal(TITLE_ENGINE_STATUS_EVENT, "title-engine-status");
   assert.doesNotMatch(live, /huggingface/i);
   assert.doesNotMatch(live, /https:\/\//);
+  assert.doesNotMatch(live, /apikey/i);
+  assert.equal(
+    formatTitleModelStatus({
+      id: "custom",
+      present: true,
+      displayName: "tiny.gguf",
+    }),
+    "This imported file can title the next capture.",
+  );
+  assert.equal(
+    formatTitleModelStatus({ id: "ollama" }),
+    "Ollama will title the next capture when it is running.",
+  );
+  assert.equal(
+    formatTitleModelStatus({ id: "hosted-openai" }, { host: "api.openai.com" }),
+    "The next capture sends truncated text to api.openai.com.",
+  );
+  assert.match(html, /never sends text off this device/);
+  assert.match(html, /Sends truncated capture text/);
 });
 
 test("setting info opens on hover and focus, not click, and dismisses on Escape", () => {

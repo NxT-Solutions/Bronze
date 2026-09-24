@@ -26,7 +26,12 @@ describe("settings schema (SET-001)", () => {
   it("title model is exportable, searchable, and reset does not invent a choice", () => {
     expect(parseTitleModelId("qwen-05")).toBe("qwen-05");
     expect(parseTitleModelId("smol-360")).toBe("smol-360");
+    expect(parseTitleModelId("custom")).toBe("custom");
+    expect(parseTitleModelId("ollama")).toBe("ollama");
+    expect(parseTitleModelId("hosted-openai")).toBe("hosted-openai");
     expect(parseTitleModelId("needle")).toBeNull();
+    expect(settingsKeyExportable("hostedKey")).toBe(false);
+    expect(settingsKeyExportable("apiKey")).toBe(false);
     expect(
       searchSettingsFields("qwen").some(
         (field) => field.id === "general.titleModel",
@@ -39,6 +44,16 @@ describe("settings schema (SET-001)", () => {
     });
     expect(preview.included["general.titleModel"]).toBe("smol-360");
     expect(preview.sensitiveLiteralKeys).not.toContain("general.titleModel");
+    const customPreview = previewSettingsExport({
+      ...defaultSettingsDraft(),
+      titleModel: "custom",
+      titleCustomId: "ab".repeat(32),
+      titleCustomName: "tiny.gguf",
+    });
+    expect(customPreview.included["general.titleCustomId"]).toBe(
+      "ab".repeat(32),
+    );
+    expect(JSON.stringify(customPreview.included)).not.toContain("/");
     const reset = resetSettingsField(
       { ...defaultSettingsDraft(), titleModel: "qwen-05" },
       "general.titleModel",

@@ -273,6 +273,9 @@
                   <p data-i18n="settings.field.titleModel.infoExtractive">
                     <strong>Extractive</strong> uses no model.
                   </p>
+                  <p data-i18n="settings.field.titleModel.infoHosted">
+                    <strong>Sends truncated capture text</strong> to {host}.
+                  </p>
                 </div>
               </details>
             </div>
@@ -299,6 +302,24 @@
               data-i18n="settings.field.titleModel.helpUse"
             >
               <strong>Holds that much memory</strong> and uses 2 CPU threads while it writes a title.
+            </p>
+            <p
+              id="title-model-help-ollama"
+              class="muted field-help"
+              data-title-model-help
+              hidden
+              data-i18n="settings.field.titleModel.ollama.help"
+            >
+              Uses a model already in Ollama on this Mac.
+            </p>
+            <p
+              id="title-model-help-hosted"
+              class="muted field-help"
+              data-title-model-help
+              hidden
+              data-i18n="settings.field.titleModel.helpHosted"
+            >
+              Before the first send, confirm the host and the payload class.
             </p>
             <div class="field-row">
               <select
@@ -331,6 +352,36 @@
                 >
                   Qwen2.5 0.5B — about 490 MB of RAM, 2 CPU threads
                 </option>
+                <option
+                  value="custom"
+                  data-i18n="settings.field.titleModel.custom"
+                >
+                  Imported GGUF — 2 CPU threads
+                </option>
+                <option
+                  value="ollama"
+                  data-i18n="settings.field.titleModel.ollama"
+                >
+                  Ollama on this Mac
+                </option>
+                <option
+                  value="hosted-openai"
+                  data-i18n="settings.field.titleModel.hostedOpenai"
+                >
+                  OpenAI — sends text off this Mac
+                </option>
+                <option
+                  value="hosted-anthropic"
+                  data-i18n="settings.field.titleModel.hostedAnthropic"
+                >
+                  Anthropic — sends text off this Mac
+                </option>
+                <option
+                  value="hosted-openrouter"
+                  data-i18n="settings.field.titleModel.hostedOpenrouter"
+                >
+                  OpenRouter — sends text off this Mac
+                </option>
               </select>
               <span
                 class="title-engine-spinner"
@@ -346,6 +397,88 @@
               >
                 Reset field
               </button>
+            </div>
+            <div data-title-engine-panel="custom" hidden>
+              <div class="field-row">
+                <button
+                  type="button"
+                  class="btn-ghost"
+                  data-import-title-gguf
+                  data-i18n="settings.field.titleModel.import"
+                >
+                  Import GGUF…
+                </button>
+              </div>
+              <p
+                id="title-custom-file"
+                class="muted field-help"
+                data-title-custom-file
+              ></p>
+            </div>
+            <div data-title-engine-panel="ollama" hidden>
+              <label for="title-ollama-model" data-i18n="settings.field.titleModel.ollama.label">Ollama model</label>
+              <div class="field-row">
+                <select
+                  id="title-ollama-model"
+                  name="titleOllamaModel"
+                ></select>
+              </div>
+            </div>
+            <div data-title-engine-panel="hosted" hidden>
+              <p
+                id="title-hosted-disclosure"
+                class="muted field-help"
+                data-title-hosted-disclosure
+              ></p>
+              <label for="title-hosted-base" data-i18n="settings.field.titleModel.hosted.base">Custom HTTPS host</label>
+              <div class="field-row">
+                <input
+                  id="title-hosted-base"
+                  name="titleHostedBase"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </div>
+              <label for="title-hosted-key" data-i18n="settings.field.titleModel.hosted.key">Hosted key</label>
+              <p
+                id="title-hosted-key-help"
+                class="muted field-help"
+                data-i18n="settings.field.titleModel.hosted.keyHelp"
+              >
+                Paste the key once — Bronze never shows it again.
+              </p>
+              <div class="field-row">
+                <input
+                  id="title-hosted-key"
+                  name="titleHostedKey"
+                  type="password"
+                  autocomplete="off"
+                  spellcheck="false"
+                  aria-describedby="title-hosted-key-help"
+                />
+                <button
+                  type="button"
+                  class="btn-ghost"
+                  data-clear-hosted-key
+                  data-i18n="settings.field.titleModel.hosted.clear"
+                >
+                  Remove stored key
+                </button>
+              </div>
+              <div class="field-row">
+                <input
+                  id="title-hosted-confirmed"
+                  name="titleHostedConfirmed"
+                  type="checkbox"
+                />
+                <label
+                  for="title-hosted-confirmed"
+                  data-i18n="settings.field.titleModel.hosted.confirm"
+                >
+                  I understand this send leaves this Mac
+                </label>
+              </div>
             </div>
             <p
               id="title-model-status"

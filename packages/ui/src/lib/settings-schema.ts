@@ -4,7 +4,12 @@ export type TitleModelId =
   | "extractive"
   | "smol-135"
   | "smol-360"
-  | "qwen-05";
+  | "qwen-05"
+  | "custom"
+  | "ollama"
+  | "hosted-openai"
+  | "hosted-anthropic"
+  | "hosted-openrouter";
 export type SettingsGroupId =
   | "general"
   | "capture"
@@ -37,7 +42,18 @@ export const SETTINGS_FIELDS: readonly SettingsFieldDef[] = [
   {
     id: "general.titleModel",
     group: "general",
-    tokens: ["title", "model", "smol", "qwen", "extractive", "engine"],
+    tokens: [
+      "title",
+      "model",
+      "smol",
+      "qwen",
+      "extractive",
+      "engine",
+      "ollama",
+      "hosted",
+      "custom",
+      "gguf",
+    ],
   },
   {
     id: "capture.standardChord",
@@ -64,6 +80,12 @@ export const SETTINGS_FIELDS: readonly SettingsFieldDef[] = [
 export type SettingsDraft = {
   launchAtLogin: boolean;
   titleModel: TitleModelId;
+  titleCustomId: string;
+  titleCustomName: string;
+  titleCustomBytes: number;
+  titleOllamaModel: string;
+  titleHostedBase: string;
+  titleHostedConfirmed: boolean;
   backupSchedule: BackupSchedule;
   excludedBundleIds: string;
   appPolicies: string;
@@ -74,6 +96,12 @@ export function defaultSettingsDraft(): SettingsDraft {
   return {
     launchAtLogin: false,
     titleModel: "",
+    titleCustomId: "",
+    titleCustomName: "",
+    titleCustomBytes: 0,
+    titleOllamaModel: "",
+    titleHostedBase: "",
+    titleHostedConfirmed: false,
     backupSchedule: "daily",
     excludedBundleIds: "",
     appPolicies: "",
@@ -87,7 +115,12 @@ export function parseTitleModelId(raw: string): TitleModelId | null {
     raw === "extractive" ||
     raw === "smol-135" ||
     raw === "smol-360" ||
-    raw === "qwen-05"
+    raw === "qwen-05" ||
+    raw === "custom" ||
+    raw === "ollama" ||
+    raw === "hosted-openai" ||
+    raw === "hosted-anthropic" ||
+    raw === "hosted-openrouter"
   ) {
     return raw;
   }
@@ -124,7 +157,16 @@ export function resetSettingsField(
     case "general.launchAtLogin":
       return { ...draft, launchAtLogin: defaults.launchAtLogin };
     case "general.titleModel":
-      return { ...draft, titleModel: defaults.titleModel };
+      return {
+        ...draft,
+        titleModel: defaults.titleModel,
+        titleCustomId: defaults.titleCustomId,
+        titleCustomName: defaults.titleCustomName,
+        titleCustomBytes: defaults.titleCustomBytes,
+        titleOllamaModel: defaults.titleOllamaModel,
+        titleHostedBase: defaults.titleHostedBase,
+        titleHostedConfirmed: defaults.titleHostedConfirmed,
+      };
     case "capture.standardChord":
       return { ...draft, standardChordEnabled: defaults.standardChordEnabled };
     case "privacy.excludedBundleIds":
@@ -158,6 +200,8 @@ const FORBIDDEN = [
   "secret",
   "installidentity",
   "diagnosticevent",
+  "apikey",
+  "hostedkey",
 ];
 
 export function settingsKeyExportable(key: string): boolean {
@@ -186,6 +230,15 @@ export function previewSettingsExport(
   };
   if (draft.titleModel) {
     included["general.titleModel"] = draft.titleModel;
+  }
+  if (draft.titleCustomId) {
+    included["general.titleCustomId"] = draft.titleCustomId;
+  }
+  if (draft.titleOllamaModel) {
+    included["general.titleOllamaModel"] = draft.titleOllamaModel;
+  }
+  if (draft.titleHostedBase) {
+    included["general.titleHostedBase"] = draft.titleHostedBase;
   }
   if (draft.excludedBundleIds.trim()) {
     included["privacy.excludedBundleIds"] = draft.excludedBundleIds;
