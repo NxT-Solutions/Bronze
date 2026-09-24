@@ -181,6 +181,18 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /article \[data-slot="body"\] ul/);
   assert.match(
     chrome,
+    /article \[data-slot="body"\] ul \{[\s\S]*list-style-type:\s*disc/,
+  );
+  assert.match(
+    chrome,
+    /article \[data-slot="body"\] ol \{[\s\S]*list-style-type:\s*decimal/,
+  );
+  assert.match(
+    chrome,
+    /article \[data-slot="body"\] strong \{[\s\S]*font-weight:\s*650/,
+  );
+  assert.match(
+    chrome,
     /article \[data-slot="body"\][\s\S]*-webkit-user-select:\s*text/,
   );
   assert.match(

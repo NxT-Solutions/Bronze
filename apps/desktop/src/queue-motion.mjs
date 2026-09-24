@@ -144,7 +144,11 @@ function fillQueueNode(node, item, labels) {
   node.querySelectorAll("[data-queue-action]").forEach((button) => {
     button.dataset.itemId = item.id;
   });
-  syncExpandVisibility(article);
+}
+
+function placeQueueNode(list, node) {
+  list.append(node);
+  syncExpandVisibility(node.querySelector("article"));
 }
 
 export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
@@ -165,7 +169,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
         node.style.setProperty("--enter-delay", `${Math.min(index, 8) * 24}ms`);
       }
       fillQueueNode(node, item, labels);
-      list.append(node);
+      placeQueueNode(list, node);
     }
     syncMoveAvailability(list);
   }
@@ -184,7 +188,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
         node = template.content.firstElementChild.cloneNode(true);
         fillQueueNode(node, item, labels);
       }
-      list.append(node);
+      placeQueueNode(list, node);
     }
     for (const [id, node] of byId) {
       if (!items.some((item) => item.id === id)) {

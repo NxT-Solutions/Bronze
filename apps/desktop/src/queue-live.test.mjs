@@ -126,6 +126,10 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(motion, /sourceAppIcon/);
   assert.match(motion, /applySourceRow/);
   assert.match(motion, /fillItemChrome/);
+  assert.match(
+    motion,
+    /function placeQueueNode\(list, node\) \{\n\s+list\.append\(node\);\n\s+syncExpandVisibility/,
+  );
   assert.match(motion, /is-entering/);
   assert.match(live, /queue-motion\.mjs/);
   assert.match(live, /applyQueueItemMutation/);
