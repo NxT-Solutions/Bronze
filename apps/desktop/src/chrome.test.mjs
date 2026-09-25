@@ -118,6 +118,10 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /\[data-title-engine-panel\] \.field-block[\s\S]*gap:\s*var\(--space-1\)/,
   );
+  assert.match(
+    chrome,
+    /\[data-title-engine-source="integration"\] \[data-title-engine-local\][\s\S]*display:\s*none/,
+  );
   assert.match(chrome, /prefers-reduced-motion:\s*reduce/);
   assert.match(chrome, /html:not\(\[data-motion="full"\]\)/);
   assert.match(chrome, /html\[data-motion="reduce"\]/);

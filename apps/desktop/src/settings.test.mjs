@@ -182,6 +182,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.equal(en["settings.field.reduceMotion.off"], "Play animations");
   assert.match(html, /<option\s+value="off"/);
   assert.match(html, /data-settings-group="titles"/);
+  assert.match(html, /data-title-engine-local/);
   assert.match(html, /data-reset-field="general.titleModel"/);
   assert.match(html, /data-i18n="settings.field.titleModel.local"/);
   assert.match(html, /data-i18n="settings.field.titleModel.integrations"/);

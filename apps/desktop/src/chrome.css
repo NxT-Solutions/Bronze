@@ -1928,6 +1928,10 @@ article [data-slot="source-label"],
   gap: var(--space-1);
 }
 
+.page-shell [data-title-engine-source="integration"] [data-title-engine-local] {
+  display: none;
+}
+
 .page-shell article {
   padding: var(--space-5);
   border-radius: var(--radius-page-card);

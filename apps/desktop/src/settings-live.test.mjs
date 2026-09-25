@@ -713,6 +713,39 @@ test("imported GGUF option shows RAM from file size and keeps two CPU threads", 
   assert.match(file.textContent, /105 MB/);
 });
 
+test("title engine shows one source: local picker or integration form", () => {
+  const titles = { dataset: {} };
+  const hosted = { hidden: true };
+  const ollama = { hidden: true };
+  const custom = { hidden: true };
+  const titleIntegration = { value: "hosted-openai" };
+  const titleModel = { value: "smol-360" };
+  const root = {
+    querySelector(sel) {
+      if (sel === '[data-settings-group="titles"]') return titles;
+      if (sel === "#title-integration") return titleIntegration;
+      if (sel === "#title-model") return titleModel;
+      if (sel === '[data-title-engine-panel="hosted"]') return hosted;
+      if (sel === '[data-title-engine-panel="ollama"]') return ollama;
+      if (sel === '[data-title-engine-panel="custom"]') return custom;
+      return null;
+    },
+  };
+  syncTitleEnginePanels(root, { general: { titleModel: "hosted-openai" } });
+  assert.equal(titles.dataset.titleEngineSource, "integration");
+  assert.equal(hosted.hidden, false);
+  assert.equal(ollama.hidden, true);
+  titleIntegration.value = "none";
+  syncTitleEnginePanels(root, { general: { titleModel: "smol-360" } });
+  assert.equal(titles.dataset.titleEngineSource, "local");
+  assert.equal(hosted.hidden, true);
+  titleIntegration.value = "ollama";
+  syncTitleEnginePanels(root, { general: { titleModel: "ollama" } });
+  assert.equal(titles.dataset.titleEngineSource, "integration");
+  assert.equal(ollama.hidden, false);
+  assert.equal(hosted.hidden, true);
+});
+
 test("setting info opens on hover and focus, not click, and dismisses on Escape", () => {
   const listeners = [];
   const makeInfo = (name) => {

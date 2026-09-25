@@ -427,6 +427,13 @@ export function syncTitleEnginePanels(root, settings = {}) {
   const showCustom = id === "custom";
   const showOllama = id === "ollama";
   const showHosted = isHostedTitleModel(id);
+  const usingIntegration = isIntegrationTitleModel(id);
+  const titles = root.querySelector('[data-settings-group="titles"]');
+  if (titles?.dataset) {
+    titles.dataset.titleEngineSource = usingIntegration
+      ? "integration"
+      : "local";
+  }
   const custom = root.querySelector('[data-title-engine-panel="custom"]');
   const ollama = root.querySelector('[data-title-engine-panel="ollama"]');
   const hosted = root.querySelector('[data-title-engine-panel="hosted"]');
