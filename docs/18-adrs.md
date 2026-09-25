@@ -22,7 +22,7 @@ An ADR change must name affected PRD IDs, migration impact, tests, distribution/
 | ID | Decision | Status | Primary requirements |
 | --- | --- | --- | --- |
 | ADR-001 | Local selection-to-action queue; no recorder/account/sync | Accepted | G-05, SEC-004, product non-goals |
-| ADR-002 | macOS minimum and architecture range | Proposed | G-01, SEC-005, WIN-002 |
+| ADR-002 | macOS minimum and architecture range | Accepted | G-01, SEC-005, WIN-002 |
 | ADR-003 | Tauri/React/Rust monorepo stack | Accepted | all P0 |
 | ADR-004 | In-process Swift native bridge | Accepted | CAP-001 through CAP-010, WIN-001 through WIN-004 |
 | ADR-005 | Standard chord plus passive modifier event tap | Accepted | CAP-001 through CAP-004, A11Y-001, SET-002 |
@@ -90,42 +90,35 @@ File/image attachments, OCR, sync, hosted actions, and other platforms remain P1
 
 ## ADR-002: macOS minimum and architecture range
 
-Status: Proposed  
-Planning hypothesis: macOS 15 or later; Apple Silicon-first development
+Status: Accepted  
+Accepted: 2026-09-25  
+This is not a silent accept. The operator explicitly asked for a separate Intel (`x86_64`) build in addition to Apple Silicon, and named the two artifacts.
 
 ### Context
 
-PRD requires Spike 0 choice based on evidence. Tauri uses OS WKWebView, so unsupported macOS stops receiving WebKit security fixes. macOS API behavior, TCC, AX compatibility, protected containers, Intel support, binary size, CI cost, and user reach differ by version/architecture. [Tauri WebView versions](https://v2.tauri.app/reference/webview-versions/)
+PRD required a Spike 0 / DG-01 choice. Tauri uses OS WKWebView, so unsupported macOS stops receiving WebKit security fixes. Intel support, binary size, CI cost, and user reach differ by architecture. [Tauri WebView versions](https://v2.tauri.app/reference/webview-versions/)
 
-### Options
+Planning options were: (1) macOS 15+, arm64 only; (2) macOS 15+, universal2; (3) current supported macOS range including 14, universal2. An arm64-only first package was a temporary CI default, not an Accepted range.
 
-1. macOS 15+, arm64 only.
-2. macOS 15+, universal2.
-3. Current supported macOS range, likely including macOS 14, universal2.
+### Decision
 
-### Decision gate
+v0.1.0 and later ship a **split** macOS release:
 
-Do not mark Accepted until Spike 0 records:
+- Minimum: macOS 14.0 (Sonoma). `MACOSX_DEPLOYMENT_TARGET=14.0` and `CMAKE_OSX_DEPLOYMENT_TARGET=14.0`.
+- Architectures: Apple Silicon (`aarch64-apple-darwin` → `bronze-macos-arm64.pkg`) and Intel (`x86_64-apple-darwin` → `bronze-macos-x86_64.pkg`).
+- Not a silent universal2 blob. Two named packages so Homebrew can use `on_arm` / `on_intel` and users can pick one file.
+- Release CI: `macos-15` (Swift 6 for `BronzeNative` `swift-tools-version: 6.0`) for arm64; `macos-15-intel` for the Intel job when that runner exists. Reuse tag `v0.1.0`; do not push `main`.
+- Notarization is still not claimed. ADR-009 and ADR-018 stay Proposed.
 
-- Apple-supported OS set at release date.
-- Tauri/WKWebView security status.
-- Event tap, Input Monitoring, AX, Secure Input, pasteboard, Spaces/full-screen behavior per OS.
-- Developer ID/TCC continuity per OS.
-- Protected container availability and entitlements.
-- Intel hardware/user need and CI access.
-- Binary and Swift static-library universal build proof.
+### Consequences
 
-No production architecture default exists before gate. Select universal2 only if DG-01 commits to Intel support and test capacity; otherwise ship arm64 and state Apple Silicon-only support clearly. Development may begin arm64. Code must use availability checks and must not accidentally raise deployment target before gate.
-
-### Consequences while Proposed
-
-- CI/config uses one central minimum-version value.
-- No marketing claim names supported range.
-- Release is blocked until evidence matrix and ADR update exist.
+- README and the Homebrew cask may name Sonoma+ and both arches.
+- `recorded_arch()` is the cargo target (`arm64` or `x86_64`), not a hardcoded arm64-only contract.
+- Availability checks remain required. Do not raise the deployment target without a superseding ADR.
 
 ### Reversal trigger
 
-Apple security support change, Tauri minimum change, unavailable Intel CI, or measured native API incompatibility.
+Apple security support change, Tauri minimum change, retirement of Intel GitHub runners without a working cross-compile, or measured native API incompatibility on one arch.
 
 ## ADR-003: Tauri, React, TypeScript, Rust, pnpm, and Turborepo
 
@@ -770,7 +763,7 @@ Planning gate: TITLE-01
 
 ### Context
 
-Captured bodies can be long. The inbox and status-menu overview need a title that is not the first sentence by policy. First-sentence-only is not the shipped title. Hosted AI, Private Cloud Compute, and a runtime Hugging Face Hub download violate ADR-017 and SEC-004. An OS-AI entitlement (`SystemLanguageModel`, NLEmbedding, Foundation Models) is not portable to Linux or Windows. T-10 allows only an offline SHA-256-pinned GGUF allow-list plus extractive `compact_title`; it does not allow hosted AI, PCC, or runtime fetch. ADR-017 remains Accepted. ADR-002, ADR-009, and ADR-018 remain Proposed.
+Captured bodies can be long. The inbox and status-menu overview need a title that is not the first sentence by policy. First-sentence-only is not the shipped title. Hosted AI, Private Cloud Compute, and a runtime Hugging Face Hub download violate ADR-017 and SEC-004. An OS-AI entitlement (`SystemLanguageModel`, NLEmbedding, Foundation Models) is not portable to Linux or Windows. T-10 allows only an offline SHA-256-pinned GGUF allow-list plus extractive `compact_title`; it does not allow hosted AI, PCC, or runtime fetch. ADR-017 remains Accepted. ADR-002 is Accepted (split arm64 and x86_64 packages; operator asked for the Intel build). ADR-009 and ADR-018 remain Proposed.
 
 ### Decision gate
 
@@ -877,7 +870,7 @@ ADR-017 and T-10 forbid a hosted AI API in the default app. Operators want an op
 - Before the first send, Settings shows the host and the payload class: truncated capture text (2048 characters) plus the fixed title instruction.
 - Adapters: `POST {base}/v1/chat/completions` for OpenAI and OpenRouter, `POST https://api.anthropic.com/v1/messages` for Anthropic. Default bases are those official hosts. A custom `general.titleHostedBase` must be HTTPS, shown as a host, and confirmed. The hosted adapter refuses loopback, link-local, and private addresses.
 - Failure, a missing key, or no network uses the bundled engine for this Mac, then `compact_title`. A local failure never calls a hosted API.
-- T-10 still forbids hosted AI by default. This record is the opt-in carve-out. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-015 stays Accepted.
+- T-10 still forbids hosted AI by default. This record is the opt-in carve-out. ADR-002 is Accepted. ADR-009 and ADR-018 stay Proposed. ADR-015 stays Accepted.
 - Local and Ollama rows keep copy that text stays on this Mac. The hosted row names the host.
 
 ### Verification
@@ -903,7 +896,7 @@ ADR-017 forbids a production-default HTTP client and says security advisories an
 - WebView CSP `connect-src` stays ipc-only. `open_release_page` opens only `https://github.com/NxT-Solutions/Bronze/releases` URLs in the default browser.
 - A newer tag shows parsed release notes and an install action for the detected source: `brew upgrade --cask bronze` for Caskroom/Cellar, Open release for a direct `/Applications/Bronze.app` package, and debug copy for `target/` or `debug_assertions`. Debug does not offer an in-place install.
 - No Sparkle. No Tauri updater plugin. No silent download. Unsigned `.pkg` is allowed when Apple secrets are missing. Do not claim notarization.
-- ADR-017 stays Accepted for every other client. This record stays Proposed. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-015 stays Accepted.
+- ADR-017 stays Accepted for every other client. This record stays Proposed. ADR-002 is Accepted. ADR-009 and ADR-018 stay Proposed. ADR-015 stays Accepted.
 
 ### Consequences
 
