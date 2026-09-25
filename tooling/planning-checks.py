@@ -292,11 +292,18 @@ def check_oss_release() -> list[str]:
             "workflow_dispatch",
             "pkgbuild",
             "app.bronze.desktop",
-            "bronze-macos.pkg",
+            "bronze-macos-arm64.pkg",
+            "bronze-macos-x86_64.pkg",
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "macos-15",
+            "macos-15-intel",
             "This package is not a notarization claim.",
         ):
             if needle not in release_text:
                 errors.append(f"release.yml missing {needle}")
+        if "git push origin main" in release_text or "git push origin HEAD" in release_text:
+            errors.append("release.yml must not push main")
 
     brew = ROOT / ".github" / "workflows" / "publish-homebrew.yml"
     brew_text = brew.read_text() if brew.is_file() else ""
@@ -317,6 +324,36 @@ def check_oss_release() -> list[str]:
             errors.append("publish-homebrew.yml must not write Formula/bronze.rb")
         if "brew upgrade --cask bronze" not in brew_text and "pkgutil" not in brew_text:
             errors.append("publish-homebrew.yml missing cask uninstall identity")
+        if "on_arm" not in brew_text:
+            errors.append("publish-homebrew.yml must emit on_arm")
+        if "on_intel" not in brew_text:
+            errors.append("publish-homebrew.yml must emit on_intel")
+        if "bronze-macos-arm64.pkg" not in brew_text:
+            errors.append("publish-homebrew.yml must download bronze-macos-arm64.pkg")
+        if "bronze-macos-x86_64.pkg" not in brew_text:
+            errors.append("publish-homebrew.yml must download bronze-macos-x86_64.pkg")
+        if re.search(r"if:.*secrets\.", brew_text):
+            errors.append("publish-homebrew.yml must not use secrets in if:")
+
+    adrs_text = (DOCS / "18-adrs.md").read_text() if (DOCS / "18-adrs.md").is_file() else ""
+    start_002 = adrs_text.find("## ADR-002:")
+    if start_002 < 0:
+        errors.append("ADR-002 section missing")
+    else:
+        nxt_002 = adrs_text.find("\n## ", start_002 + 1)
+        body_002 = adrs_text[start_002 : nxt_002 if nxt_002 > 0 else None]
+        if "Status: Accepted" not in body_002:
+            errors.append("ADR-002 must be Accepted")
+        if "operator explicitly asked" not in body_002:
+            errors.append("ADR-002 must record that the operator asked for Intel")
+        if "bronze-macos-arm64.pkg" not in body_002 or "bronze-macos-x86_64.pkg" not in body_002:
+            errors.append("ADR-002 must name both split packages")
+        row_002 = next(
+            (line for line in adrs_text.splitlines() if line.startswith("| ADR-002 |")),
+            "",
+        )
+        if "Accepted" not in row_002:
+            errors.append("ADR-002 index row must be Accepted")
 
     readme = (ROOT / "README.md").read_text() if (ROOT / "README.md").is_file() else ""
     if "brew tap NxT-Solutions/nxt-solutions-packages" not in readme:
