@@ -130,6 +130,11 @@ jobs:
             ~/.cargo/git
             target
           key: rust-macos-15-app-${{ hashFiles('Cargo.lock') }}
+      - name: Satisfy the title-model resource glob
+        run: |
+          set -euo pipefail
+          mkdir -p crates/bronze-title-model/vendor
+          printf 'GGUF' > crates/bronze-title-model/vendor/ci-placeholder.gguf
       - run: cargo test -p bronze-desktop --locked
 
   mutation-rust:
