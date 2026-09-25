@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """Require Dock icon artwork to cover the canvas.
 
-macOS clips an app icon to a squircle. Pixels inside that mask have to be
-the Bronze mark. A pale margin at the canvas edge stays visible as padding.
+macOS clips an app icon to a squircle. Pixels on that mask, including its
+rim, have to be the bronze plate. A pale or transparent margin stays
+visible as padding around a smaller rounded rect.
+
+The cream mark is three dots in a column. A cream frame around an inset
+plate is much wider than one dot. The 32px representation is the smallest
+span that still counts.
 """
 
 from __future__ import annotations
@@ -13,6 +18,12 @@ import zlib
 from pathlib import Path
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+# Superellipse n=5 approximates the Dock mask. The check samples that rim;
+# it does not draw a second shape into the artwork.
+SQUIRCLE_POWER = 5.0
+DOT_MIN_WIDTH = 0.18
+DOT_MAX_WIDTH = 0.45
+DOT_MIN_HEIGHT = 0.74
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ICONS = (
     ROOT / "apps/desktop/src-tauri/icons/icon.icns",
@@ -109,6 +120,29 @@ def is_margin(pixel: tuple[int, int, int, int]) -> bool:
     return green >= 210 and blue >= 175 and _red >= 220
 
 
+def is_dot(pixel: tuple[int, int, int, int]) -> bool:
+    red, green, blue, alpha = pixel
+    return alpha > 200 and red >= 230 and green >= 210 and blue >= 185
+
+
+def in_squircle(x: int, y: int, width: int, height: int) -> bool:
+    nx = 2 * ((x + 0.5) / width) - 1
+    ny = 2 * ((y + 0.5) / height) - 1
+    return abs(nx) ** SQUIRCLE_POWER + abs(ny) ** SQUIRCLE_POWER <= 1.0
+
+
+def on_squircle_rim(x: int, y: int, width: int, height: int) -> bool:
+    if not in_squircle(x, y, width, height):
+        return False
+    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        nx, ny = x + dx, y + dy
+        if nx < 0 or ny < 0 or nx >= width or ny >= height:
+            return True
+        if not in_squircle(nx, ny, width, height):
+            return True
+    return False
+
+
 def bbox(width: int, height: int, rows: list[bytearray], predicate) -> tuple[int, int]:
     min_x, min_y, max_x, max_y = width, height, -1, -1
     for y in range(height):
@@ -142,21 +176,43 @@ def check_image(label: str, data: bytes) -> list[str]:
         pixel = tuple(rows[y][x * 4 : x * 4 + 4])
         if is_margin(pixel):
             errors.append(f"{label} {width}x{height} ({x},{y}) is margin {pixel}")
+    rim_bad = 0
+    band = max(1, int(min(width, height) * 0.2))
+    for y in range(height):
+        row = rows[y]
+        for x in range(width):
+            if band <= x < width - band and band <= y < height - band:
+                continue
+            on_edge = x in (0, width - 1) or y in (0, height - 1)
+            if not on_edge and not on_squircle_rim(x, y, width, height):
+                continue
+            pixel = tuple(row[x * 4 : x * 4 + 4])
+            if not is_margin(pixel):
+                continue
+            rim_bad += 1
+            if rim_bad <= 4 and (x, y) not in points:
+                errors.append(f"{label} {width}x{height} ({x},{y}) is margin {pixel}")
+    if rim_bad > 4:
+        errors.append(
+            f"{label} {width}x{height} has {rim_bad} margin pixels on the squircle rim"
+        )
     opaque_w, opaque_h = bbox(
         width, height, rows, lambda pixel: pixel[3] > 200
     )
-    mark_w, mark_h = bbox(
-        width,
-        height,
-        rows,
-        lambda pixel: pixel[3] > 200 and pixel[1] < 210 and pixel[2] < 190,
-    )
+    mark_w, mark_h = bbox(width, height, rows, is_dot)
+    mark_wf = mark_w / width
+    mark_hf = mark_h / height
     print(
         f"{label} {width}x{height} "
         f"opaque {opaque_w}x{opaque_h} ({opaque_w / width:.2%} x {opaque_h / height:.2%}) "
-        f"mark {mark_w}x{mark_h} ({mark_w / width:.2%} x {mark_h / height:.2%})",
+        f"dots {mark_w}x{mark_h} ({mark_wf:.2%} x {mark_hf:.2%})",
         flush=True,
     )
+    if mark_hf < DOT_MIN_HEIGHT or not (DOT_MIN_WIDTH <= mark_wf <= DOT_MAX_WIDTH):
+        errors.append(
+            f"{label} {width}x{height} dot span {mark_wf:.2%} x {mark_hf:.2%} "
+            f"is outside {DOT_MIN_WIDTH:.0%}–{DOT_MAX_WIDTH:.0%} by {DOT_MIN_HEIGHT:.0%}"
+        )
     return errors
 
 

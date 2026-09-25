@@ -236,6 +236,32 @@ jobs:
             exit 1
           fi
           python3 tooling/dock-icon-fill.py "$app/Contents/Resources/icon.icns"
+          source_icon="apps/desktop/src-tauri/icons/icon.icns"
+          source_hash=$(shasum -a 256 "$source_icon" | awk '{print $1}')
+          bundle_hash=$(shasum -a 256 "$app/Contents/Resources/icon.icns" | awk '{print $1}')
+          if [[ "$bundle_hash" != "$source_hash" ]]; then
+            echo "Bundled icon.icns ${bundle_hash} differs from icon.icns ${source_hash}."
+            exit 1
+          fi
+          notices=()
+          while IFS= read -r notice; do
+            notices+=("$notice")
+          done < <(find target apps/desktop/src-tauri/target "$app" \( \
+            -path '*/release/BronzeNotice.app/Contents/Resources/AppIcon.icns' \
+            -o -path '*/Contents/MacOS/BronzeNotice.app/Contents/Resources/AppIcon.icns' \
+            \) -type f 2>/dev/null || true)
+          if [[ ${#notices[@]} -eq 0 ]]; then
+            echo "BronzeNotice AppIcon.icns was not produced from icon.icns."
+            exit 1
+          fi
+          for notice in "${notices[@]}"; do
+            notice_hash=$(shasum -a 256 "$notice" | awk '{print $1}')
+            if [[ "$notice_hash" != "$source_hash" ]]; then
+              echo "AppIcon.icns ${notice} ${notice_hash} differs from icon.icns ${source_hash}."
+              exit 1
+            fi
+            python3 tooling/dock-icon-fill.py "$notice"
+          done
           rm -rf pkgroot
           mkdir -p pkgroot/Applications
           cp -R "$app" pkgroot/Applications/
