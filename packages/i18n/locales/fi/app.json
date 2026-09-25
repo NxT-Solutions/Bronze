@@ -313,7 +313,7 @@
   "settings.permission.composer.available": "Käsin kirjoitus pysyy käytössä",
   "settings.permission.openSystemSettings": "Avaa Järjestelmäasetukset",
   "settings.permission.runningCopy": "Tämä kopio on {name} {version}.",
-  "settings.permission.staleCopy": "Jos Järjestelmäasetukset näyttää tämän apin jo päällä olevana, kytke kytkin pois, napsauta Lisää ja valitse appi, jonka Finder paljastaa, ja lopeta sitten Bronze ja avaa se uudelleen.",
+  "settings.permission.staleCopy": "Jos Järjestelmäasetukset näyttää tämän sovelluksen jo päällä olevana, kytke kytkin pois, napsauta Lisää ja valitse sovellus, jonka Finder paljastaa, ja lopeta sitten Bronze ja avaa se uudelleen.",
   "settings.permission.notifications.why": "Tarvitaan Ilmoituskeskuksen nauhoihin",
   "settings.permission.notifications.alternative": "Apin sisäinen ilmoitus näkyy yhä",
   "settings.permission.notifications.allow": "Salli ilmoitukset",
