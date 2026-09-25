@@ -333,7 +333,6 @@ jobs:
             "dist/${ARTIFACT}.pkg"
           shasum -a 256 "dist/${ARTIFACT}.pkg" | awk -v name="${ARTIFACT}.pkg" '{print $1 "  " name}' \
             > "dist/${ARTIFACT}.pkg.sha256"
-          echo "This package is not a notarization claim." > dist/NOTARIZATION.txt
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -342,7 +341,6 @@ jobs:
           path: |
             dist/${{ matrix.artifact }}.pkg
             dist/${{ matrix.artifact }}.pkg.sha256
-            dist/NOTARIZATION.txt
 
   release:
     runs-on: ubuntu-22.04
@@ -367,12 +365,35 @@ jobs:
             exit 1
           fi
 
+      # action-gh-release deletes by basename. Two NOTARIZATION.txt files in
+      # the upload set 404 on the second delete and fail the job.
+      - name: Stage unique release files
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p staged
+          cp -f dist/bronze-macos-arm64/bronze-macos-arm64.pkg staged/
+          cp -f dist/bronze-macos-arm64/bronze-macos-arm64.pkg.sha256 staged/
+          cp -f dist/bronze-macos-x86_64/bronze-macos-x86_64.pkg staged/
+          cp -f dist/bronze-macos-x86_64/bronze-macos-x86_64.pkg.sha256 staged/
+          echo "This package is not a notarization claim." > staged/NOTARIZATION.txt
+          ls -la staged
+          if gh release view "$RELEASE_TAG" -R "$REPO" >/dev/null 2>&1; then
+            for name in bronze-macos.pkg bronze-macos.pkg.sha256; do
+              gh release delete-asset "$RELEASE_TAG" "$name" -R "$REPO" --yes || true
+            done
+          fi
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ needs.prepare.outputs.release_tag }}
           name: ${{ needs.prepare.outputs.release_tag }}
           generate_release_notes: true
-          files: dist/**/*
+          files: staged/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
