@@ -327,10 +327,44 @@ jobs:
           rm -rf pkgroot
           mkdir -p pkgroot/Applications
           cp -R "$app" pkgroot/Applications/
+          # pkg-info relocatable="false" still emits <relocate> for each bundle.
+          # PackageKit then installs onto any existing app.bronze.desktop bundle
+          # instead of /Applications/Bronze.app.
+          pkgbuild --analyze --root pkgroot components.plist
+          i=0
+          while /usr/libexec/PlistBuddy -c "Print :${i}:BundleIsRelocatable" components.plist >/dev/null 2>&1; do
+            /usr/libexec/PlistBuddy -c "Set :${i}:BundleIsRelocatable false" components.plist
+            i=$((i + 1))
+          done
+          if [[ "$i" -eq 0 ]]; then
+            echo "pkgbuild --analyze found no components."
+            exit 1
+          fi
+          found=0
+          for ((j = 0; j < i; j++)); do
+            path=$(/usr/libexec/PlistBuddy -c "Print :${j}:RootRelativeBundlePath" components.plist)
+            if [[ "$path" == "Applications/Bronze.app" ]]; then
+              found=1
+            fi
+          done
+          if [[ "$found" -ne 1 ]]; then
+            echo "Package root is missing Applications/Bronze.app."
+            /usr/libexec/PlistBuddy -c 'Print' components.plist
+            exit 1
+          fi
           pkgbuild --identifier app.bronze.desktop \
             --version "${{ needs.prepare.outputs.version }}" \
             --root pkgroot \
+            --component-plist components.plist \
             "dist/${ARTIFACT}.pkg"
+          meta=$(mktemp -d)
+          xar -xf "dist/${ARTIFACT}.pkg" -C "$meta" PackageInfo
+          if awk '/<relocate>/,/<\/relocate>/' "$meta/PackageInfo" | grep -q '<bundle '; then
+            echo "Bronze.app is still relocatable and will not stay in /Applications."
+            cat "$meta/PackageInfo"
+            exit 1
+          fi
+          rm -rf "$meta"
           shasum -a 256 "dist/${ARTIFACT}.pkg" | awk -v name="${ARTIFACT}.pkg" '{print $1 "  " name}' \
             > "dist/${ARTIFACT}.pkg.sha256"
 
