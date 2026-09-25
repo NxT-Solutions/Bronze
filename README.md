@@ -190,6 +190,7 @@ Permissions: Accessibility and Input Monitoring. Bronze never asks for Screen Re
 | Planning-pack gates | `quality-docs` |
 | `cargo fmt`, Clippy, portable crate tests | `quality-rust` |
 | macOS Clippy and tests except `bronze-desktop` | `quality-macos` |
+| Desktop crate tests | `quality-app` on macos-15 |
 | Full workspace including Swift | `pnpm verify` on a Mac |
 
 Do not claim WCAG, VoiceOver, or notarization without files in `docs/evidence/`.
