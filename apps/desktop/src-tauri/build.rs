@@ -2,10 +2,32 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+#[path = "notice_signing.rs"]
+mod notice_signing;
+#[path = "title_model_bundle.rs"]
+mod title_model_bundle;
+
 fn main() {
     println!("cargo:rustc-check-cfg=cfg(bronze_native_linked)");
     link_bronze_native();
+    relax_missing_title_gguf();
     tauri_build::build();
+}
+
+fn relax_missing_title_gguf() {
+    let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
+    let vendor = manifest.join("../../../crates/bronze-title-model/vendor");
+    println!("cargo:rerun-if-changed={}", vendor.display());
+    let profile = env::var("PROFILE").unwrap_or_default();
+    let present = title_model_bundle::gguf_files_present(&vendor);
+    if !title_model_bundle::omit_unvendored_title_gguf(&profile, present) {
+        return;
+    }
+    let existing = env::var("TAURI_CONFIG").ok();
+    env::set_var(
+        "TAURI_CONFIG",
+        title_model_bundle::tauri_config_without_title_gguf(existing.as_deref()),
+    );
 }
 
 fn link_bronze_native() {
@@ -113,19 +135,17 @@ fn sign_notice_helper(app: &Path, dest_dir: &Path) {
     let identity = ensure_notice_signing_identity(target_dir);
     let previous = user_keychains();
     if let Some(keychain) = identity.as_ref() {
-        let mut next = vec![keychain.clone()];
-        for path in &previous {
-            if path != keychain {
-                next.push(path.clone());
-            }
-        }
-        set_user_keychains(&next);
+        // codesign matches the common name in every notice keychain on the
+        // search list. --keychain does not drop the other matches.
+        set_user_keychains(&notice_signing::notice_signing_search_list(
+            keychain, &previous,
+        ));
         unlock_notice_keychain(Path::new(keychain));
     }
     let mut sign = Command::new("/usr/bin/codesign");
     sign.args(["--force", "--deep", "--sign"]);
-    if identity.is_some() {
-        sign.arg("Bronze Notice");
+    if let Some(keychain) = identity.as_ref() {
+        sign.arg("Bronze Notice").arg("--keychain").arg(keychain);
     } else {
         sign.arg("-");
     }
