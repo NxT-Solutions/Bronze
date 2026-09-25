@@ -19,7 +19,7 @@ export function SearchField({
         type="search"
         value={value}
         onChange={(event) => onQuery(event.target.value)}
-        className="h-8 w-full rounded-[8px] border border-input bg-background px-3 text-[0.8125rem]"
+        className="h-8 w-full rounded-md border border-input bg-background px-3 text-[0.8125rem]"
       />
       <p role="status" data-search-count>
         {countLabel}

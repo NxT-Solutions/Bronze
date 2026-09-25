@@ -39,7 +39,7 @@ Purpose: data, privacy, permission truth, shortcut inventory.
   live). Record field and Skip test sit on one row without overlap.
 - Registry rows: localized action name leading, assignment trailing.
   Raw IDs stay on `data-action` only.
-- Help opener is ghost, trailing, not a second primary.
+- Help opener is an outlined button, trailing, not a second primary.
 
 ## Library — `apps/desktop/src/library.html`
 
@@ -53,7 +53,7 @@ the live queue.
 - Empty state is a quiet caption, hidden when the list is non-empty.
 - Same item chrome as Queue, without row actions (no silent drop of
   body or source).
-- Footer tools are secondary (ghost). Do not promote five filled pills.
+- Footer tools use the outlined button. Do not fill every tool.
 
 ## Help — `apps/desktop/src/help.html`
 

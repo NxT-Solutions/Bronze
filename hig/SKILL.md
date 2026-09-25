@@ -21,7 +21,9 @@ Official authority: `hig/README.md`.
 ## Hard stops (do not violate)
 
 - Purpose first: Bronze is a selection-to-action queue. Chrome recedes.
-- One filled primary control per view. Secondary is borderless or ghost.
+- One filled primary control per view. Other actions use the outlined
+  push button (stroke, padding, `--radius-control`). `.btn-ghost` keeps
+  that outline.
 - System SF only. No remote fonts, CDN, or bundled SF files (SEC-001).
 - Live tokens stay zinc (`#fafafa` / `#18181b` / `#e4e4e7`). DESIGN.md
   warm bronze hexes are inspiration, not live chrome.
@@ -57,7 +59,7 @@ Surface: ________
 - [ ] Purpose: content is the first thing the eye hits
 - [ ] Agency: chrome stays out of the way; mistakes are reversible
 - [ ] Hierarchy: title > body > meta > actions (weight/size/color)
-- [ ] One primary; other actions ghost or in a compact menu
+- [ ] One primary; other actions outlined or in a compact menu
 - [ ] Fields and adjacent buttons do not overlap (no width:100% in a row)
 - [ ] Lists show human labels, not raw IDs
 - [ ] SF as designed (no extra letter-spacing on body)

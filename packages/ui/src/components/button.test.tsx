@@ -21,6 +21,14 @@ describe("Button (React Aria base)", () => {
     expect(btn.className).not.toMatch(/outline-none/);
   });
 
+  it("outlines the ghost variant like other push buttons", () => {
+    render(<Button variant="ghost">Reset</Button>);
+    const btn = screen.getByRole("button", { name: "Reset" });
+    expect(btn.className).toMatch(/border/);
+    expect(btn.className).toMatch(/rounded-md/);
+    expect(btn.className).not.toMatch(/tracking-/);
+  });
+
   it("does not use clickable div", () => {
     const { container } = render(<Button>ok</Button>);
     const divs = container.querySelectorAll('div[role="button"], div[onclick]');

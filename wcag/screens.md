@@ -36,7 +36,7 @@ Purpose: data, privacy, permission truth, shortcut inventory.
   only name.
 - Permission status is a text pill plus why-text. Color is not the
   only signal (1.4.1).
-- Help opener is a trailing ghost, not a second primary. One Help
+- Help opener is a trailing outlined button, not a second primary. One Help
   surface (3.2.6 stays N/A).
 
 ## Library — `apps/desktop/src/library.html`
