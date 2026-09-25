@@ -219,11 +219,11 @@ jobs:
           fi
           tag="v${{ steps.set_tag.outputs.version }}"
           if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag $tag already exists."
-            exit 1
+            echo "Using existing tag $tag"
+          else
+            git tag "$tag"
+            git push origin "$tag"
           fi
-          git tag "$tag"
-          git push origin "$tag"
 
   build:
     needs: prepare
@@ -274,7 +274,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --filter desktop tauri build -- --bundles app --config '{"bundle":{"macOS":{"signingIdentity":"-"}}}'
+          pnpm --filter desktop exec tauri build --bundles app --config '{"bundle":{"macOS":{"signingIdentity":"-"}}}'
 
       - name: Package pkg
         shell: bash
