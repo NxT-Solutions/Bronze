@@ -20,7 +20,14 @@ fn link_bronze_native() {
         _ => "debug",
     };
 
-    let status = swift_command(&package, profile, false)
+    let status = Command::new("swift")
+        .args([
+            "build",
+            "--package-path",
+            package.to_str().unwrap(),
+            "-c",
+            profile,
+        ])
         .status()
         .expect("swift build");
     assert!(
@@ -28,7 +35,15 @@ fn link_bronze_native() {
         "swift build --package-path native/macos/BronzeNative failed"
     );
 
-    let bin = swift_command(&package, profile, true)
+    let bin = Command::new("swift")
+        .args([
+            "build",
+            "--package-path",
+            package.to_str().unwrap(),
+            "-c",
+            profile,
+            "--show-bin-path",
+        ])
         .output()
         .expect("swift --show-bin-path");
     assert!(bin.status.success(), "swift --show-bin-path failed");
@@ -315,46 +330,11 @@ const NOTICE_HELPER_PLIST: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 "#;
 
-fn swift_arch() -> Option<&'static str> {
-    match env::var("CARGO_CFG_TARGET_ARCH").ok().as_deref() {
-        Some("x86_64") => Some("x86_64"),
-        Some("aarch64") => Some("arm64"),
-        _ => None,
-    }
-}
-
-fn swift_target_triple() -> Option<String> {
-    swift_arch().map(|arch| format!("{arch}-apple-macosx14.0"))
-}
-
-fn swift_command(package: &Path, profile: &str, show_bin_path: bool) -> Command {
-    let mut cmd = Command::new("swift");
-    cmd.args([
-        "build",
-        "--package-path",
-        package.to_str().unwrap(),
-        "-c",
-        profile,
-    ]);
-    if let Some(arch) = swift_arch() {
-        cmd.args(["--arch", arch]);
-    }
-    if let Some(triple) = swift_target_triple() {
-        cmd.args(["-Xswiftc", "-target", "-Xswiftc", &triple]);
-    }
-    if show_bin_path {
-        cmd.arg("--show-bin-path");
-    }
-    cmd
-}
-
 fn swift_runtime_dirs() -> Vec<PathBuf> {
-    let mut cmd = Command::new("swift");
-    cmd.arg("-print-target-info");
-    if let Some(triple) = swift_target_triple() {
-        cmd.args(["-target", &triple]);
-    }
-    let out = cmd.output().expect("swift -print-target-info");
+    let out = Command::new("swift")
+        .arg("-print-target-info")
+        .output()
+        .expect("swift -print-target-info");
     let text = String::from_utf8_lossy(&out.stdout);
     let mut dirs = Vec::new();
     for line in text.lines() {
