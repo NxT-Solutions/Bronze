@@ -91,7 +91,7 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../../../bronze-title-model/vendor/*.gguf": "models/"
+      "../../../crates/bronze-title-model/vendor/*.gguf": "models/"
     },
     "macOS": {
       "entitlements": "entitlements/macos.release.plist"

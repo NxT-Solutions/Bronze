@@ -21,16 +21,16 @@ tauri-build = { version = "2.6.3", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "2.11.5", features = ["tray-icon", "image-png"] }
-bronze-platform-macos = { path = "../../../bronze-platform-macos", default-features = false }
-bronze-domain = { path = "../../../bronze-domain" }
-bronze-title-model = { path = "../../../bronze-title-model" }
-bronze-title-remote = { path = "../../../bronze-title-remote" }
+bronze-platform-macos = { path = "../../../crates/bronze-platform-macos", default-features = false }
+bronze-domain = { path = "../../../crates/bronze-domain" }
+bronze-title-model = { path = "../../../crates/bronze-title-model" }
+bronze-title-remote = { path = "../../../crates/bronze-title-remote" }
 rfd = "0.17"
 ureq = { version = "2.12", default-features = false, features = ["json", "tls"] }
-bronze-storage = { path = "../../../bronze-storage" }
-bronze-settings = { path = "../../../bronze-settings" }
-bronze-capture = { path = "../../../bronze-capture" }
-bronze-diagnostics = { path = "../../../bronze-diagnostics" }
+bronze-storage = { path = "../../../crates/bronze-storage" }
+bronze-settings = { path = "../../../crates/bronze-settings" }
+bronze-capture = { path = "../../../crates/bronze-capture" }
+bronze-diagnostics = { path = "../../../crates/bronze-diagnostics" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"

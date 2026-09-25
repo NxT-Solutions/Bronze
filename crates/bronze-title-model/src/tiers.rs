@@ -87,9 +87,9 @@ impl TitleTier {
     pub fn vendor_command(self) -> &'static str {
         match self {
             Self::Extractive | Self::Custom => "",
-            Self::Smol135 => "sh bronze-title-model/scripts/vendor-gguf.sh smol-135",
-            Self::Smol360 => "sh bronze-title-model/scripts/vendor-gguf.sh smol-360",
-            Self::Qwen05 => "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+            Self::Smol135 => "sh crates/bronze-title-model/scripts/vendor-gguf.sh smol-135",
+            Self::Smol360 => "sh crates/bronze-title-model/scripts/vendor-gguf.sh smol-360",
+            Self::Qwen05 => "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
         }
     }
 }

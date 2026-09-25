@@ -1,11 +1,40 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "noUpdateNotifier": true,
+  "remoteCache": {
+    "enabled": false,
+    "signature": false
+  },
+  "globalDependencies": ["biome.json", "pnpm-lock.yaml"],
   "tasks": {
-    "lint": {},
-    "build": { "cache": false },
-    "test": {},
-    "typecheck": {},
+    "lint": {
+      "dependsOn": ["^lint"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/biome.json"],
+      "outputs": [],
+      "cache": true
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "inputs": ["$TURBO_DEFAULT$", "tsconfig*.json"],
+      "outputs": [],
+      "cache": true
+    },
+    "test": {
+      "dependsOn": ["^test", "typecheck"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": [],
+      "cache": true
+    },
     "validate": {
+      "dependsOn": ["^validate", "typecheck"],
+      "inputs": ["$TURBO_DEFAULT$", "locales/**", "scripts/**"],
+      "outputs": [],
+      "cache": true
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["dist/**"],
       "cache": false
     }
   }

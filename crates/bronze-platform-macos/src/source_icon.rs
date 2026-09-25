@@ -65,7 +65,7 @@ mod source_icon_tests {
         assert!(!format!("{:?}", native_bundle_id_for_pid(42)).contains("42"));
         let swift = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/SourceIconABI.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/SourceIconABI.swift"
         ));
         assert!(!swift.contains("URLSession"));
         assert!(!swift.contains("http://"));
@@ -76,7 +76,7 @@ mod source_icon_tests {
         assert!(!swift.contains("com.mitchellh.ghostty"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         assert!(!tap.contains("bronze_native_app_icon_png"));
         assert!(!tap.contains("bronze_native_bundle_id_for_pid"));

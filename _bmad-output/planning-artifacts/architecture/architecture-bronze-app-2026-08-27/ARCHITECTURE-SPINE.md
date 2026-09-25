@@ -209,6 +209,8 @@ crates/
   bronze-diagnostics/
   bronze-platform/
   bronze-platform-macos/
+  bronze-title-model/
+  bronze-title-remote/
 native/
   macos/
     BronzeNative/

@@ -150,7 +150,7 @@ mod pasteboard_tests {
         assert!(!format!("{err:?}").contains("secret"));
         let swift = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/PasteboardABI.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/PasteboardABI.swift"
         ));
         assert!(swift.contains("writeObjects"));
         assert!(swift.contains("forType: .string"));

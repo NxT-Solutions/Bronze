@@ -177,7 +177,7 @@ mod clipboard_manual_tests {
         assert!(!clipboard_restore_generation_matches(0, 0));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         let callback = tap
             .split("private static let callback")

@@ -7,11 +7,11 @@ Local title refine after persist. Persist still writes `compact_title` first.
 Developer or CI vendors hash-pinned GGUFs. Runtime never fetches.
 
 ```
-sh bronze-title-model/scripts/vendor-gguf.sh
-sh bronze-title-model/scripts/vendor-gguf.sh smol-135
-sh bronze-title-model/scripts/vendor-gguf.sh smol-360
-sh bronze-title-model/scripts/vendor-gguf.sh qwen-05
-sh bronze-title-model/scripts/vendor-gguf.sh all
+sh crates/bronze-title-model/scripts/vendor-gguf.sh
+sh crates/bronze-title-model/scripts/vendor-gguf.sh smol-135
+sh crates/bronze-title-model/scripts/vendor-gguf.sh smol-360
+sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05
+sh crates/bronze-title-model/scripts/vendor-gguf.sh all
 ```
 
 Allow-list (Apache-2.0):

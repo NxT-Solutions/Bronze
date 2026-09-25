@@ -1,15 +1,15 @@
 [workspace]
 resolver = "2"
 members = [
-    "bronze-domain",
-    "bronze-capture",
-    "bronze-storage",
-    "bronze-settings",
-    "bronze-diagnostics",
-    "bronze-platform",
-    "bronze-platform-macos",
-    "bronze-title-model",
-    "bronze-title-remote",
+    "crates/bronze-domain",
+    "crates/bronze-capture",
+    "crates/bronze-storage",
+    "crates/bronze-settings",
+    "crates/bronze-diagnostics",
+    "crates/bronze-platform",
+    "crates/bronze-platform-macos",
+    "crates/bronze-title-model",
+    "crates/bronze-title-remote",
     "apps/desktop/src-tauri",
 ]
 

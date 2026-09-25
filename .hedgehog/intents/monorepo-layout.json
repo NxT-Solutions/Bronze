@@ -1,0 +1,79 @@
+{
+  "id": "monorepo-layout",
+  "goal": "Make the Bronze root a workspace entry point: runnable apps under apps/, shared JS/TS under packages/, library Rust crates under crates/, and Turborepo driving the existing lint, typecheck, test, and validate scripts with dependsOn, outputs, and a local cache.",
+  "outcome": "apps/desktop stays the desktop app. packages/ stays the shared JS/TS libraries. Library crates bronze-domain, bronze-capture, bronze-storage, bronze-settings, bronze-diagnostics, bronze-platform, bronze-platform-macos, bronze-title-model, and bronze-title-remote live under crates/ with Cargo workspace members, sibling path deps, build.rs, and tests still correct. Root keeps package.json, pnpm-workspace.yaml, turbo.json, Cargo.toml, Cargo.lock, rust-toolchain.toml, biome.json, configs, .github, docs, hig, wcag, native, and tooling/planning-checks.py. turbo.json caches lint, typecheck, test, and validate locally with dependsOn and outputs. Remote cache and Turbo telemetry stay off. Root scripts call turbo for those JS tasks and pnpm verify still passes. CI, tauri resource paths, and planning docs match the move. release.yml still builds bronze-macos-arm64.pkg on macos-15 and bronze-macos-x86_64.pkg on macos-15-intel. ADR-002 stays Accepted.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "MONOREPO-LAYOUT-RULE-1",
+      "kind": "rule",
+      "statement": "Do not implement QUEUE-ATTACHMENTS."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-RULE-2",
+      "kind": "rule",
+      "statement": "Do not switch to full-stack-app, pwa-app, or landing-page. Do not rewrite .hedgehog/adoption.md into a different project."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-RULE-3",
+      "kind": "rule",
+      "statement": "Do not edit release.yml to drop macos-15-intel. Do not touch the in-flight Release run. Do not merge the PR while that fix is in flight."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-RULE-4",
+      "kind": "rule",
+      "statement": "No Turbo remote cache and no network or telemetry. ADR-017 stays Accepted for the default app."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-RULE-5",
+      "kind": "rule",
+      "statement": "Keep SHA-pinned GitHub Actions. Update workflow paths only when a move requires it."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-RULE-6",
+      "kind": "rule",
+      "statement": "If moving a crate would break Cargo members, build.rs, CI, or docs in a way this layer cannot keep correct, leave that crate and say why."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-RULE-7",
+      "kind": "rule",
+      "statement": "Do not claim WCAG, VoiceOver, or notarization."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-CONSTRAINT-1",
+      "kind": "constraint",
+      "statement": "Adopted core stays Tauri 2, React, Rust, and in-process Swift."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-CONSTRAINT-2",
+      "kind": "constraint",
+      "statement": "Vendor command strings and release GGUF paths must name crates/bronze-title-model after the crate moves."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-CONSTRAINT-3",
+      "kind": "constraint",
+      "statement": "native/ stays the Swift package home. hig/ and wcag/ stay at the root."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "Library crates are under crates/ or an explicit refusal names the crate and the reason."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "pnpm verify passes."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "turbo run typecheck, test, and validate use dependsOn, outputs, and cache, with remote cache disabled."
+    },
+    {
+      "id": "MONOREPO-LAYOUT-ACCEPTANCE-4",
+      "kind": "acceptance",
+      "statement": "release.yml still contains macos-15-intel and bronze-macos-x86_64."
+    }
+  ],
+  "depends_on": []
+}

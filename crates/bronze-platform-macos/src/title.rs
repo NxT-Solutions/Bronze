@@ -43,7 +43,7 @@ mod title_tests {
     #[test]
     fn title_abi_has_no_vendor_or_apple_model() {
         let src =
-            include_str!("../../native/macos/BronzeNative/Sources/BronzeNative/TitleABI.swift");
+            include_str!("../../../native/macos/BronzeNative/Sources/BronzeNative/TitleABI.swift");
         let lower = src.to_ascii_lowercase();
         for needle in [
             "privatecloudcompute",

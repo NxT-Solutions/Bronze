@@ -143,7 +143,7 @@ mod settings_file_tests {
         );
         let swift = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/SourceIconABI.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/SourceIconABI.swift"
         ));
         assert!(swift.contains("bronze_native_pick_settings_export_path"));
         assert!(swift.contains("bronze_native_pick_settings_import_path"));
@@ -154,7 +154,7 @@ mod settings_file_tests {
         assert!(!swift.contains("URLSession"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         assert!(!tap.contains("bronze_native_pick_settings_export_path"));
         assert!(!tap.contains("bronze_native_pick_settings_import_path"));
