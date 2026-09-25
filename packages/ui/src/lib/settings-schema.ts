@@ -1,3 +1,5 @@
+import { FUZZY_SUBSTRING, fuzzyBestScore, localeLower } from "./fuzzy-match";
+
 export type BackupSchedule = "daily" | "weekly";
 export type TitleModelId =
   | ""
@@ -134,18 +136,36 @@ export function parseBackupSchedule(raw: string): BackupSchedule | null {
   return null;
 }
 
-export function searchSettingsFields(query: string): SettingsFieldDef[] {
-  const q = query.trim().toLowerCase();
-  return SETTINGS_FIELDS.filter((field) => {
-    if (q.length === 0) {
-      return true;
+export function searchSettingsFields(
+  query: string,
+  locale = "en",
+): SettingsFieldDef[] {
+  const foldedQuery = localeLower(query.trim(), locale);
+  if (!foldedQuery) {
+    return [...SETTINGS_FIELDS];
+  }
+  const ranked: { field: SettingsFieldDef; score: number; index: number }[] =
+    [];
+  SETTINGS_FIELDS.forEach((field, index) => {
+    const parts = [field.id, field.group, ...field.tokens];
+    let score = fuzzyBestScore(parts, query, locale);
+    if (score == null || score === 0) {
+      const tokenHit = field.tokens.some((token) => {
+        const folded = localeLower(token, locale);
+        return folded.length > 0 && foldedQuery.includes(folded);
+      });
+      if (tokenHit) {
+        score = FUZZY_SUBSTRING;
+      }
     }
-    return (
-      field.id.toLowerCase().includes(q) ||
-      field.group.includes(q) ||
-      field.tokens.some((token) => token.includes(q) || q.includes(token))
-    );
+    if (score != null && score > 0) {
+      ranked.push({ field, score, index });
+    }
   });
+  ranked.sort(
+    (left, right) => right.score - left.score || left.index - right.index,
+  );
+  return ranked.map((row) => row.field);
 }
 
 export function resetSettingsField(
