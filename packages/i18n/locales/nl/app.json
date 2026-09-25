@@ -311,6 +311,8 @@
   "settings.permission.selfTest.alternative": "Probeer later opnieuw vanuit deze lijst",
   "settings.permission.composer.available": "Handmatige invoer blijft beschikbaar",
   "settings.permission.openSystemSettings": "Open Systeeminstellingen",
+  "settings.permission.runningCopy": "Dit exemplaar is {name} {version}.",
+  "settings.permission.staleCopy": "Als Systeeminstellingen deze app al als aan toont, zet die schakelaar uit, klik op het plusje en kies de app die in Finder verschijnt, en stop Bronze daarna en open het opnieuw.",
   "settings.permission.notifications.why": "Nodig voor banners in Berichtencentrum",
   "settings.permission.notifications.alternative": "De melding in de app verschijnt nog",
   "settings.permission.notifications.allow": "Sta meldingen toe",

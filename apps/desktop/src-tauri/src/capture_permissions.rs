@@ -16,10 +16,14 @@ pub struct PermissionPromptDto {
     pub screen_recording_requested: bool,
     pub privacy_settings_input_monitoring: Option<String>,
     pub privacy_settings_accessibility: Option<String>,
+    pub bundle_name: String,
+    pub bundle_version: String,
+    pub bundle_path: String,
 }
 
 impl PermissionPromptDto {
     pub fn from_attempt(attempt: PromptAttempt) -> Self {
+        let bundle = crate::running_bundle::current_running_bundle();
         Self {
             input_monitoring: attempt.snapshot.input_monitoring.as_str().to_string(),
             accessibility: attempt.snapshot.accessibility.as_str().to_string(),
@@ -34,6 +38,9 @@ impl PermissionPromptDto {
                 bronze_settings::PermissionCapability::Accessibility,
             )
             .map(str::to_string),
+            bundle_name: bundle.name,
+            bundle_version: bundle.version,
+            bundle_path: bundle.bundle_path,
         }
     }
 }
@@ -223,12 +230,45 @@ pub fn privacy_settings_open_target(capability: &str) -> Option<&'static str> {
     }
 }
 
+pub struct PrivacyOpenPlan {
+    pub url: &'static str,
+    pub reveal_running_bundle: bool,
+}
+
+pub fn privacy_open_plan(capability: &str) -> Option<PrivacyOpenPlan> {
+    let url = privacy_settings_open_target(capability)?;
+    Some(PrivacyOpenPlan {
+        url,
+        reveal_running_bundle: matches!(capability, "inputMonitoring" | "accessibility"),
+    })
+}
+
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn open_privacy_settings(capability: String) -> Result<(), String> {
-    let Some(url) = privacy_settings_open_target(&capability) else {
+    let Some(plan) = privacy_open_plan(&capability) else {
         return Err("capability_not_used".into());
     };
+    if plan.reveal_running_bundle {
+        reveal_running_bundle();
+    }
+    open_url(plan.url)
+}
+
+#[cfg(target_os = "macos")]
+fn reveal_running_bundle() {
+    let bundle = crate::running_bundle::current_running_bundle();
+    if bundle.bundle_path.is_empty() {
+        return;
+    }
+    let _ = std::process::Command::new("/usr/bin/open")
+        .arg("-R")
+        .arg(&bundle.bundle_path)
+        .status();
+}
+
+#[cfg(target_os = "macos")]
+fn open_url(url: &str) -> Result<(), String> {
     std::process::Command::new("/usr/bin/open")
         .arg(url)
         .status()
@@ -244,8 +284,9 @@ pub fn open_privacy_settings(capability: String) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::FilePromptLedger;
-    use super::{privacy_settings_open_target, PermissionPromptDto};
+    use super::{
+        privacy_open_plan, privacy_settings_open_target, FilePromptLedger, PermissionPromptDto,
+    };
     use bronze_platform_macos::{
         prompt_used_permissions, PermissionRequestHost, PreflightError, PreflightHost, PromptReason,
     };
@@ -289,7 +330,16 @@ mod tests {
         assert!(!dto.screen_recording_requested);
         assert!(dto.privacy_settings_input_monitoring.is_some());
         assert!(dto.privacy_settings_accessibility.is_some());
+        assert!(!dto.bundle_path.is_empty());
+        assert_eq!(dto.bundle_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(privacy_settings_open_target("screenRecording"), None);
+        let accessibility = privacy_open_plan("accessibility").expect("accessibility pane");
+        assert!(accessibility.reveal_running_bundle);
+        assert!(accessibility.url.contains("Privacy_Accessibility"));
+        let listen = privacy_open_plan("inputMonitoring").expect("listen pane");
+        assert!(listen.reveal_running_bundle);
+        let notices = privacy_open_plan("notifications").expect("notices pane");
+        assert!(!notices.reveal_running_bundle);
         assert_eq!(privacy_settings_open_target("automation"), None);
         assert!(privacy_settings_open_target("inputMonitoring").is_some());
         assert!(privacy_settings_open_target("accessibility").is_some());

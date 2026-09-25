@@ -425,6 +425,8 @@ export const MessageIds = {
     "settings.permission.composer.available",
   "settings.permission.openSystemSettings":
     "settings.permission.openSystemSettings",
+  "settings.permission.runningCopy": "settings.permission.runningCopy",
+  "settings.permission.staleCopy": "settings.permission.staleCopy",
   "settings.permission.notifications.why":
     "settings.permission.notifications.why",
   "settings.permission.notifications.alternative":

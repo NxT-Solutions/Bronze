@@ -311,6 +311,8 @@
   "settings.permission.selfTest.alternative": "Réessayez plus tard depuis cette liste",
   "settings.permission.composer.available": "La saisie manuelle reste disponible",
   "settings.permission.openSystemSettings": "Ouvrir Réglages Système",
+  "settings.permission.runningCopy": "Cette copie est {name} {version}.",
+  "settings.permission.staleCopy": "Si Réglages Système affiche déjà cette app comme activée, désactivez l’interrupteur, cliquez sur le bouton plus et choisissez l’app affichée dans le Finder, puis quittez Bronze et rouvrez-le.",
   "settings.permission.notifications.why": "Nécessaire pour les bandes du Centre de notifications",
   "settings.permission.notifications.alternative": "L’avis dans l’app apparaît encore",
   "settings.permission.notifications.allow": "Autoriser les notifications",

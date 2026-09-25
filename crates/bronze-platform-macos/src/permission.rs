@@ -96,6 +96,17 @@ fn map_probe(result: Result<bool, PreflightError>) -> PermissionState {
     }
 }
 
+/// A no-prompt preflight grant wins over a request that returns false.
+fn grant_if_either_trusted(
+    preflight: Result<bool, PreflightError>,
+    request: Result<bool, PreflightError>,
+) -> Result<bool, PreflightError> {
+    if matches!(preflight, Ok(true)) || matches!(request, Ok(true)) {
+        return Ok(true);
+    }
+    request
+}
+
 fn map_request(result: Result<bool, PreflightError>) -> PermissionState {
     match result {
         Ok(granted) => PermissionState::from_request_granted(granted),
@@ -122,7 +133,10 @@ fn snapshot_from_request(
 /// that capability is not already granted and this binary has not shown the
 /// prompt. A later launch of the same binary reads the ledger and does not
 /// call the request APIs again. Health retest always attempts the OS request
-/// APIs so the badge can refresh. Requests stay off the event-tap callback.
+/// APIs so the badge can refresh. A live preflight grant stays granted when
+/// that request returns false: `AXIsProcessTrustedWithOptions` can report
+/// false for a process `AXIsProcessTrusted` already accepts. Requests stay
+/// off the event-tap callback.
 pub fn prompt_used_permissions<H, L>(host: &H, reason: PromptReason, ledger: &L) -> PromptAttempt
 where
     H: PreflightHost + PermissionRequestHost + ?Sized,
@@ -130,14 +144,19 @@ where
 {
     match reason {
         PromptReason::HealthRetest => {
-            let listen = host.request_listen_event_access();
-            let accessibility = host.request_accessibility_trusted();
+            let listen_preflight = host.listen_event_access();
+            let accessibility_preflight = host.accessibility_trusted();
+            let listen_request = host.request_listen_event_access();
+            let accessibility_request = host.request_accessibility_trusted();
             let mut shown = ledger.shown();
             shown.listen = true;
             shown.accessibility = true;
             ledger.remember(shown);
             PromptAttempt {
-                snapshot: snapshot_from_request(listen, accessibility),
+                snapshot: snapshot_from_request(
+                    grant_if_either_trusted(listen_preflight, listen_request),
+                    grant_if_either_trusted(accessibility_preflight, accessibility_request),
+                ),
                 listen_requested: true,
                 accessibility_requested: true,
                 screen_recording_requested: false,
@@ -534,8 +553,14 @@ mod tests {
         assert!(attempt.listen_requested);
         assert!(attempt.accessibility_requested);
         assert!(!attempt.screen_recording_requested);
-        assert_eq!(attempt.snapshot.input_monitoring, PermissionState::Denied);
-        assert_eq!(attempt.snapshot.accessibility, PermissionState::Denied);
+        assert_eq!(
+            attempt.snapshot.input_monitoring,
+            PermissionState::GrantedUnverified
+        );
+        assert_eq!(
+            attempt.snapshot.accessibility,
+            PermissionState::GrantedUnverified
+        );
         assert!(manual_composer_available(&attempt.snapshot));
         assert!(privacy_settings_url(PermissionCapability::InputMonitoring).is_some());
         assert!(privacy_settings_url(PermissionCapability::Accessibility).is_some());
@@ -621,6 +646,49 @@ mod tests {
         assert_eq!(host.listen_requests.get(), 2);
         assert_eq!(host.accessibility_requests.get(), 2);
         assert!(!retest.snapshot.accessibility.is_healthy());
+    }
+
+    #[test]
+    fn health_retest_denied_when_preflight_and_request_are_false() {
+        let host = RecordingHost {
+            listen: Ok(false),
+            accessibility: Ok(false),
+            listen_grant: Ok(false),
+            accessibility_grant: Ok(false),
+            listen_requests: Cell::new(0),
+            accessibility_requests: Cell::new(0),
+        };
+        let attempt = prompt_used_permissions(
+            &host,
+            PromptReason::HealthRetest,
+            &MemoryPromptLedger::default(),
+        );
+        assert_eq!(host.listen_requests.get(), 1);
+        assert_eq!(host.accessibility_requests.get(), 1);
+        assert_eq!(attempt.snapshot.input_monitoring, PermissionState::Denied);
+        assert_eq!(attempt.snapshot.accessibility, PermissionState::Denied);
+    }
+
+    #[test]
+    fn health_retest_keeps_listen_grant_when_accessibility_is_false() {
+        let host = RecordingHost {
+            listen: Ok(true),
+            accessibility: Ok(false),
+            listen_grant: Ok(false),
+            accessibility_grant: Ok(false),
+            listen_requests: Cell::new(0),
+            accessibility_requests: Cell::new(0),
+        };
+        let attempt = prompt_used_permissions(
+            &host,
+            PromptReason::HealthRetest,
+            &MemoryPromptLedger::default(),
+        );
+        assert_eq!(
+            attempt.snapshot.input_monitoring,
+            PermissionState::GrantedUnverified
+        );
+        assert_eq!(attempt.snapshot.accessibility, PermissionState::Denied);
     }
 
     #[test]
