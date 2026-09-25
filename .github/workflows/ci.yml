@@ -11,10 +11,17 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
+  quality-visual:
+    name: quality-visual
+    uses: ./.github/workflows/visual.yml
+
   quality-js:
     name: quality-js
+    # A visual miss skips this job, so the required CI check fails with it.
+    needs: [quality-visual]
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     env:

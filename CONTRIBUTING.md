@@ -15,7 +15,7 @@ Maintainer bar:
 pnpm verify
 ```
 
-Pull requests must stay green on `.github/workflows/ci.yml` (JS, docs, portable Rust, macOS Rust except `bronze-desktop`). That is not a notarization or WCAG claim.
+Pull requests must stay green on `.github/workflows/ci.yml` (JS, docs, portable Rust, macOS Rust except `bronze-desktop`, and WebView screenshot baselines). That is not a notarization or WCAG claim.
 
 Local debug package (not notarized):
 
@@ -26,6 +26,7 @@ tooling/package-debug.sh
 ## Pull requests
 
 - Keep changes focused.
+- When a pull request adds or changes a screen, control, or layout, update the visual scenario and baselines in that pull request (`pnpm visual:update`). See README Develop.
 - Preserve requirement IDs in notes and tests.
 - Add a changelog line under `## Unreleased` when behavior changes.
 - Do not claim WCAG, VoiceOver, or notarization without `docs/evidence/`.
