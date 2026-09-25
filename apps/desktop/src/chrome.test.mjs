@@ -69,7 +69,7 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\.field-help strong[\s\S]*font-weight:\s*600/);
   assert.match(chrome, /\.setting-info > summary[\s\S]*cursor:\s*help/);
   assert.match(pages[2].html, /class="setting-info"/);
-  assert.equal((pages[2].html.match(/class="setting-info"/g) || []).length, 14);
+  assert.equal((pages[2].html.match(/class="setting-info"/g) || []).length, 15);
   assert.match(pages[2].html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(pages[2].html, /settings\.field\.titleModel\.helpExtractive/);
   assert.match(pages[2].html, /settings\.field\.titleModel\.infoExtractive/);

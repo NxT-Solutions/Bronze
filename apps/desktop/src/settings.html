@@ -97,7 +97,7 @@
                   data-setting-info
                   data-i18n="settings.group.general.info"
                 >
-                  Launch at login, language, and motion on this Mac.
+                  Launch at login, language, motion, and version on this Mac.
                 </p>
               </details>
             </div>
@@ -253,6 +253,55 @@
                 data-i18n="settings.reset.field"
               >
                 Reset field
+              </button>
+            </div>
+          </div>
+          <div class="field-block" data-settings-unit data-app-version>
+            <div class="setting-heading">
+              <span
+                id="app-version-label"
+                data-i18n="settings.field.version"
+              >Version</span>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.version.infoName"
+                  aria-label="About Version"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.field.version.info"
+                >
+                  <strong>Shows the installed Bronze version</strong> on this Mac.
+                </p>
+              </details>
+            </div>
+            <p
+              id="app-version-number"
+              class="muted field-help"
+              data-app-version-number
+            ></p>
+            <p
+              class="muted field-help"
+              data-app-version-source
+              hidden
+            ></p>
+            <p
+              class="muted field-help"
+              data-app-version-status
+              hidden
+              role="status"
+            ></p>
+            <div class="field-row">
+              <button
+                type="button"
+                class="btn-ghost"
+                data-check-update
+                data-i18n="settings.field.version.check"
+              >
+                Check for updates
               </button>
             </div>
           </div>
@@ -1267,6 +1316,40 @@
         </button>
       </p>
     </main>
+    <dialog id="update-sheet" class="sheet" aria-labelledby="update-sheet-title">
+      <form method="dialog" class="sheet-card">
+        <h2 id="update-sheet-title" data-i18n="settings.field.version.whatsNew">
+          What’s new
+        </h2>
+        <p data-update-available></p>
+        <div class="update-notes" data-update-notes></div>
+        <p
+          class="muted field-help"
+          data-update-debug
+          data-i18n="settings.field.version.debug"
+          hidden
+        >
+          This debug build cannot install an update in place.
+        </p>
+        <code class="update-command" data-update-command hidden></code>
+        <div class="toolbar sheet-actions">
+          <button
+            type="submit"
+            value="cancel"
+            class="btn-ghost"
+            data-i18n="settings.field.version.close"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            class="btn-ghost"
+            data-update-action
+            hidden
+          ></button>
+        </div>
+      </form>
+    </dialog>
     <script type="module" src="./apply-locale.mjs"></script>
     <script type="module" src="./permission-health.mjs"></script>
     <script type="module" src="./settings-live.mjs"></script>

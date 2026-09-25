@@ -1028,6 +1028,230 @@ const LOGIN_ITEM_STATUS_FALLBACK = Object.freeze({
   unavailable: "This debug build cannot register as a login item.",
 });
 
+const VERSION_SOURCE_KEYS = {
+  debug: "settings.field.version.source.debug",
+  homebrew: "settings.field.version.source.homebrew",
+  direct: "settings.field.version.source.direct",
+  unknown: "settings.field.version.source.unknown",
+};
+
+const VERSION_SOURCE_FALLBACK = {
+  debug: "Debug build",
+  homebrew: "Installed with Homebrew",
+  direct: "Installed from a package",
+  unknown: "Install source unknown",
+};
+
+export function parseInstallSource(raw) {
+  if (
+    raw === "debug" ||
+    raw === "homebrew" ||
+    raw === "direct" ||
+    raw === "unknown"
+  ) {
+    return raw;
+  }
+  return "unknown";
+}
+
+export function parseUpdateAction(raw) {
+  if (
+    raw === "open-release" ||
+    raw === "brew-upgrade" ||
+    raw === "debug" ||
+    raw === "none"
+  ) {
+    return raw;
+  }
+  return "none";
+}
+
+function formatAvailableVersion(version) {
+  return (
+    catalogMessage("settings.field.version.available") ||
+    "Version {version} is available."
+  ).replaceAll("{version}", version || "—");
+}
+
+export function applyAppVersionInfo(root, info) {
+  const version = String(info?.version ?? "").trim();
+  const number = root.querySelector("[data-app-version-number]");
+  const sourceEl = root.querySelector("[data-app-version-source]");
+  if (number) {
+    number.textContent =
+      version ||
+      catalogMessage("settings.field.version.unknown") ||
+      "Version unavailable";
+  }
+  if (sourceEl) {
+    const source = parseInstallSource(info?.installSource);
+    sourceEl.hidden = false;
+    sourceEl.dataset.appVersionSource = source;
+    sourceEl.textContent =
+      catalogMessage(VERSION_SOURCE_KEYS[source]) ||
+      VERSION_SOURCE_FALLBACK[source];
+  }
+}
+
+export async function refreshAppVersion(root, invokeFn) {
+  try {
+    const info = await invokeFn("app_version_info");
+    applyAppVersionInfo(root, info);
+    return info;
+  } catch {
+    applyAppVersionInfo(root, { version: "", installSource: "unknown" });
+    return null;
+  }
+}
+
+export function renderUpdateNotes(container, notes) {
+  if (!container?.replaceChildren) {
+    return;
+  }
+  const items = (Array.isArray(notes) ? notes : [])
+    .map((note) => String(note ?? "").trim())
+    .filter(Boolean);
+  if (!items.length) {
+    const empty = container.ownerDocument.createElement("p");
+    empty.className = "muted";
+    empty.textContent =
+      catalogMessage("settings.field.version.notesEmpty") ||
+      "Release notes were not published for this version.";
+    container.replaceChildren(empty);
+    return;
+  }
+  const list = container.ownerDocument.createElement("ul");
+  for (const note of items) {
+    const item = container.ownerDocument.createElement("li");
+    item.textContent = note.replace(/^•\s*/, "");
+    list.append(item);
+  }
+  container.replaceChildren(list);
+}
+
+export function applyUpdateCheck(root, check) {
+  const status = root.querySelector("[data-app-version-status]");
+  const dialog = root.querySelector("#update-sheet");
+  const actionBtn = root.querySelector("[data-update-action]");
+  const availableLine = root.querySelector("[data-update-available]");
+  const notes = root.querySelector("[data-update-notes]");
+  const debugLine = root.querySelector("[data-update-debug]");
+  const commandEl = root.querySelector("[data-update-command]");
+  const latest = String(check?.latestVersion ?? "").trim();
+  const available = Boolean(check?.available);
+  if (status) {
+    status.hidden = false;
+    status.textContent = available
+      ? formatAvailableVersion(latest)
+      : catalogMessage("settings.field.version.current") ||
+        "This is the latest version.";
+  }
+  if (!available) {
+    return check;
+  }
+  if (availableLine) {
+    availableLine.textContent = formatAvailableVersion(latest);
+  }
+  renderUpdateNotes(notes, check?.notes);
+  const action = parseUpdateAction(check?.action);
+  if (actionBtn) {
+    actionBtn.hidden = action === "none" || action === "debug";
+    actionBtn.dataset.updateAction = action;
+    actionBtn.dataset.releaseUrl = String(check?.releaseUrl ?? "");
+    actionBtn.dataset.actionCommand = String(check?.actionCommand ?? "");
+    if (action === "brew-upgrade") {
+      actionBtn.className = "btn-primary";
+      actionBtn.textContent =
+        catalogMessage("settings.field.version.brew") ||
+        "Copy Homebrew command";
+    } else if (action === "open-release") {
+      actionBtn.className = "btn-primary";
+      actionBtn.textContent =
+        catalogMessage("settings.field.version.openRelease") || "Open release";
+    } else {
+      actionBtn.className = "btn-ghost";
+    }
+  }
+  if (debugLine) {
+    debugLine.hidden = action !== "debug";
+  }
+  if (commandEl) {
+    commandEl.hidden = true;
+    commandEl.textContent = "";
+  }
+  if (typeof dialog?.showModal === "function") {
+    dialog.showModal();
+  }
+  return check;
+}
+
+export async function checkForAppUpdate(root, invokeFn) {
+  const status = root.querySelector("[data-app-version-status]");
+  const button = root.querySelector("[data-check-update]");
+  if (status) {
+    status.hidden = false;
+    status.textContent =
+      catalogMessage("settings.field.version.checking") ||
+      "Checking for updates";
+  }
+  if (button) {
+    button.disabled = true;
+  }
+  try {
+    const check = await invokeFn("check_for_update");
+    return applyUpdateCheck(root, check);
+  } catch {
+    if (status) {
+      status.textContent =
+        catalogMessage("settings.field.version.failed") ||
+        "The update check could not reach GitHub.";
+    }
+    return null;
+  } finally {
+    if (button) {
+      button.disabled = false;
+    }
+  }
+}
+
+export function bindAppVersion(root, invokeFn) {
+  root.querySelector("[data-check-update]")?.addEventListener("click", () => {
+    void checkForAppUpdate(root, invokeFn);
+  });
+  root
+    .querySelector("[data-update-action]")
+    ?.addEventListener("click", async () => {
+      const actionBtn = root.querySelector("[data-update-action]");
+      const action = parseUpdateAction(actionBtn?.dataset?.updateAction);
+      const url = String(actionBtn?.dataset?.releaseUrl ?? "");
+      const command = String(actionBtn?.dataset?.actionCommand ?? "");
+      if (action === "open-release") {
+        if (
+          !url.startsWith("https:") ||
+          !url.includes("//github.com/NxT-Solutions/Bronze/releases")
+        ) {
+          return;
+        }
+        await invokeFn("open_release_page", { url });
+        return;
+      }
+      if (action !== "brew-upgrade" || !command) {
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(command);
+        actionBtn.textContent =
+          catalogMessage("settings.field.version.brewCopied") || "Copied";
+      } catch {
+        const commandEl = root.querySelector("[data-update-command]");
+        if (commandEl) {
+          commandEl.hidden = false;
+          commandEl.textContent = command;
+        }
+      }
+    });
+}
+
 export function parseLoginItemStatus(raw) {
   if (raw && LOGIN_ITEM_STATUS_KEYS[raw]) {
     return raw;
@@ -1184,6 +1408,7 @@ async function applySavedLocale(root, settings, invokeFn) {
   syncTitleEnginePanels(root, settings);
   await refreshTitleModelStatus(root, invokeFn, settings);
   await refreshLoginItemStatus(root, invokeFn);
+  await refreshAppVersion(root, invokeFn);
 }
 
 export function bindSearchClear(root = document) {
@@ -1339,6 +1564,7 @@ export async function bindSettingsLive(
     appSearch.disabled = appsUnavailable;
   }
   await applySavedLocale(root, settings, invokeFn);
+  bindAppVersion(root, invokeFn);
   bindTitleEngineStatus(root);
   await refreshExcludedIcons(root, invokeFn);
   bindExcludedPicker(root, invokeFn, () => persist());
