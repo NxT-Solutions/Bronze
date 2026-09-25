@@ -714,6 +714,18 @@ pub extern "C" fn bronze_native_pick_support_export_path(_out: *mut BronzeNative
 }
 
 #[no_mangle]
+pub extern "C" fn bronze_native_set_notice_item(_item: BronzeNativeUtf8View) -> u32 {
+    BRONZE_STATUS_DEGRADED
+}
+
+#[no_mangle]
+pub extern "C" fn bronze_native_set_notice_click_hook(
+    _hook: unsafe extern "C" fn(*const u8, u64),
+) -> u32 {
+    BRONZE_STATUS_OK
+}
+
+#[no_mangle]
 pub extern "C" fn bronze_native_deliver_user_notice(
     title: BronzeNativeUtf8View,
     body: BronzeNativeUtf8View,

@@ -171,6 +171,8 @@ pub struct CapturePersistOutcome {
 pub struct CaptureResultDto {
     pub terminal: String,
     pub reason: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_id: Option<String>,
 }
 
 impl CaptureResultDto {
@@ -186,8 +188,17 @@ impl CaptureResultDto {
             }
             .into(),
             reason: outcome.reason.into(),
+            item_id: outcome.item_id,
         }
     }
+}
+
+fn is_safe_item_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 80
+        && id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
 }
 
 pub struct LiveAxHost;
@@ -619,6 +630,9 @@ pub fn deliver_capture_user_notice(
         .map(String::as_str)
         .unwrap_or("Bronze");
     let body = catalog.messages.get(key).map(String::as_str).unwrap_or("");
+    if let Some(id) = dto.item_id.as_deref().filter(|id| is_safe_item_id(id)) {
+        let _ = bronze_platform_macos::set_notice_item(id);
+    }
     bronze_platform_macos::try_deliver_user_notice(title, body)
         .map_err(|_| "notice_unavailable".into())
 }
@@ -3367,6 +3381,13 @@ mod live_session_tests {
         });
         assert_eq!(dto.terminal, "rejected");
         assert_eq!(dto.reason, "no_selection");
+        assert_eq!(dto.item_id, None);
+        let saved = CaptureResultDto::from_persist(CapturePersistOutcome {
+            terminal: Terminal::Saved,
+            reason: "ok",
+            item_id: Some("i1".into()),
+        });
+        assert_eq!(saved.item_id.as_deref(), Some("i1"));
         assert_eq!(
             capture_notice_catalog_key("saved", "ok"),
             "capture.announce.saved"

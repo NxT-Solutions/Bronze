@@ -198,6 +198,12 @@ uint32_t bronze_native_deliver_user_notice(
     bronze_native_utf8_view title,
     bronze_native_utf8_view body);
 
+// Optional queue item id for the next notice click. Charset is [A-Za-z0-9_-].
+uint32_t bronze_native_set_notice_item(bronze_native_utf8_view item_id);
+
+typedef void (*bronze_notice_click_fn)(const uint8_t *bytes, uint64_t len);
+uint32_t bronze_native_set_notice_click_hook(bronze_notice_click_fn hook);
+
 // Login item via SMAppService.mainApp when bundled. Unbundled processes write
 // ~/Library/LaunchAgents/app.bronze.desktop.login.plist. CANCELLED when Login
 // Items requires approval. NOT_FOUND when not registered.
