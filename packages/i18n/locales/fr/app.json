@@ -134,7 +134,6 @@
   "settings.field.version.whatsNew": "Nouveautés",
   "settings.field.version.notesEmpty": "Aucune note de version n’a été publiée pour cette version.",
   "settings.field.version.note.checkForUpdates": "« Rechercher des mises à jour » est plus facile à voir.",
-  "settings.field.version.note.dockIcon": "L’icône du Dock remplit sa tuile.",
   "settings.field.version.note.engineSwitch": "Changer le moteur de titre sur ce Mac se termine au lieu de rester sur Chargement.",
   "settings.field.version.note.permissions": "Bronze demande une seule fois les autorisations macOS qu’il utilise.",
   "settings.field.version.openRelease": "Ouvrir la version",

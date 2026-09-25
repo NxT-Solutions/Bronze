@@ -134,7 +134,6 @@
   "settings.field.version.whatsNew": "Nyheter",
   "settings.field.version.notesEmpty": "Utgivelsesnotater ble ikke publisert for denne versjonen.",
   "settings.field.version.note.checkForUpdates": "„Se etter oppdateringer“ er lettere å se.",
-  "settings.field.version.note.dockIcon": "Dock-symbolet fyller flisen sin.",
   "settings.field.version.note.engineSwitch": "Bytte av tittelmotoren på denne Macen fullføres i stedet for å bli stående på Laster.",
   "settings.field.version.note.permissions": "Bronze spør én gang om macOS-tillatelsene den bruker.",
   "settings.field.version.openRelease": "Åpne utgivelse",

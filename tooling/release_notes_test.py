@@ -3,7 +3,6 @@ import unittest
 
 from release_notes import (
     NOTE_CHECK_FOR_UPDATES,
-    NOTE_DOCK_ICON,
     NOTE_ENGINE_SWITCH,
     NOTE_PERMISSIONS,
     extract_whats_new,
@@ -41,7 +40,6 @@ class ReleaseNotesTest(unittest.TestCase):
             notes,
             [
                 NOTE_CHECK_FOR_UPDATES,
-                NOTE_DOCK_ICON,
                 NOTE_ENGINE_SWITCH,
                 NOTE_PERMISSIONS,
             ],
@@ -50,6 +48,8 @@ class ReleaseNotesTest(unittest.TestCase):
             self.assertNotIn("http", note)
             self.assertNotIn("@", note)
             self.assertNotIn("fix(", note)
+            self.assertNotIn("Dock", note)
+            self.assertNotIn("tile", note)
             self.assertGreaterEqual(len(note.split()), 2)
 
     def test_whats_new_section_is_preferred(self):
@@ -61,9 +61,9 @@ class ReleaseNotesTest(unittest.TestCase):
 
     def test_version_line_is_unchanged_and_not_a_bullet(self):
         notes = release_notes_from_markdown(
-            "Version 0.1.2 is available.\n### What's new\n- The Dock icon fills its tile.\n"
+            "Version 0.1.2 is available.\n### What's new\n- Check for updates is easier to see.\n"
         )
-        self.assertEqual(notes, [NOTE_DOCK_ICON])
+        self.assertEqual(notes, [NOTE_CHECK_FOR_UPDATES])
         self.assertTrue(all("Version" not in note for note in notes))
 
     def test_existing_version_section_is_not_rewritten(self):

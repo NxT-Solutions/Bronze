@@ -233,10 +233,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
     en["settings.field.version.note.checkForUpdates"],
     "Check for updates is easier to see.",
   );
-  assert.equal(
-    en["settings.field.version.note.dockIcon"],
-    "The Dock icon fills its tile.",
-  );
+  assert.equal(en["settings.field.version.note.dockIcon"], undefined);
   assert.equal(
     en["settings.field.version.note.engineSwitch"],
     "Switching the on-this-Mac title engine finishes instead of staying on Loading.",

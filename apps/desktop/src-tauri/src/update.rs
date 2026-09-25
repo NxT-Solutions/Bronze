@@ -110,7 +110,6 @@ pub fn allowed_release_url(url: &str) -> bool {
 
 const MAX_UPDATE_NOTES: usize = 5;
 const NOTE_CHECK_FOR_UPDATES: &str = "Check for updates is easier to see.";
-const NOTE_DOCK_ICON: &str = "The Dock icon fills its tile.";
 const NOTE_ENGINE_SWITCH: &str =
     "Switching the on-this-Mac title engine finishes instead of staying on Loading.";
 const NOTE_PERMISSIONS: &str = "Bronze asks once for the macOS permissions it uses.";
@@ -392,13 +391,6 @@ fn map_user_change(kind: &str, desc: &str) -> Option<String> {
     }
     if description.contains("check for updates") && description.contains("push button") {
         return Some(NOTE_CHECK_FOR_UPDATES.to_string());
-    }
-    if description.contains("dock")
-        && (description.contains("canvas")
-            || description.contains("bleed")
-            || description.contains("fills"))
-    {
-        return Some(NOTE_DOCK_ICON.to_string());
     }
     if (description.contains("on-this-mac") || description.contains("on this mac"))
         && description.contains("engine")
@@ -733,7 +725,6 @@ mod tests {
             notes,
             vec![
                 NOTE_CHECK_FOR_UPDATES.to_string(),
-                NOTE_DOCK_ICON.to_string(),
                 NOTE_ENGINE_SWITCH.to_string(),
                 NOTE_PERMISSIONS.to_string(),
             ]
@@ -742,6 +733,8 @@ mod tests {
             assert!(!note.contains("http"), "{note}");
             assert!(!note.contains('@'), "{note}");
             assert!(!note.contains("fix("), "{note}");
+            assert!(!note.to_ascii_lowercase().contains("dock"), "{note}");
+            assert!(!note.to_ascii_lowercase().contains("tile"), "{note}");
             assert!(
                 note.split_whitespace().count() >= 2,
                 "wrap on words: {note}"
@@ -752,20 +745,23 @@ mod tests {
     #[test]
     fn whats_new_section_wins_over_commit_subjects() {
         let notes = release_notes_from_markdown(
-            "### What's new\n\n- Search is faster.\n- The Dock icon fills its tile.\n\n## What's Changed\n* fix(storage): retune sqlite wal checkpoint pragma by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/9\n",
+            "### What's new\n\n- Search is faster.\n- Check for updates is easier to see.\n\n## What's Changed\n* fix(release): bleed the Dock mark to the icon canvas by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/45\n",
         );
         assert_eq!(
             notes,
-            vec!["Search is faster.".to_string(), NOTE_DOCK_ICON.to_string(),]
+            vec![
+                "Search is faster.".to_string(),
+                NOTE_CHECK_FOR_UPDATES.to_string(),
+            ]
         );
     }
 
     #[test]
     fn version_line_stays_out_of_the_notes() {
         let notes = release_notes_from_markdown(
-            "Version 0.1.2 is available.\n### What's new\n- The Dock icon fills its tile.\n",
+            "Version 0.1.2 is available.\n### What's new\n- Check for updates is easier to see.\n",
         );
-        assert_eq!(notes, vec![NOTE_DOCK_ICON.to_string()]);
+        assert_eq!(notes, vec![NOTE_CHECK_FOR_UPDATES.to_string()]);
         assert!(notes.iter().all(|note| !note.contains("Version")));
     }
 

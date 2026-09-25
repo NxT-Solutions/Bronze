@@ -134,7 +134,6 @@
   "settings.field.version.whatsNew": "Nyheter",
   "settings.field.version.notesEmpty": "Inga versionsanteckningar publicerades för den här versionen.",
   "settings.field.version.note.checkForUpdates": "„Leta efter uppdateringar“ är lättare att se.",
-  "settings.field.version.note.dockIcon": "Dock-symbolen fyller sin ruta.",
   "settings.field.version.note.engineSwitch": "Byte av titelmotorn på den här Macen slutförs i stället för att stanna på Läser in.",
   "settings.field.version.note.permissions": "Bronze frågar en gång efter de macOS-behörigheter som används.",
   "settings.field.version.openRelease": "Öppna utgåva",

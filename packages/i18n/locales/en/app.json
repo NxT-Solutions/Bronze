@@ -134,7 +134,6 @@
   "settings.field.version.whatsNew": "What’s new",
   "settings.field.version.notesEmpty": "Release notes were not published for this version.",
   "settings.field.version.note.checkForUpdates": "Check for updates is easier to see.",
-  "settings.field.version.note.dockIcon": "The Dock icon fills its tile.",
   "settings.field.version.note.engineSwitch": "Switching the on-this-Mac title engine finishes instead of staying on Loading.",
   "settings.field.version.note.permissions": "Bronze asks once for the macOS permissions it uses.",
   "settings.field.version.openRelease": "Open release",

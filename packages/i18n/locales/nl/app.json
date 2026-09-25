@@ -134,7 +134,6 @@
   "settings.field.version.whatsNew": "Wat is er nieuw",
   "settings.field.version.notesEmpty": "Voor deze versie zijn geen opmerkingen gepubliceerd.",
   "settings.field.version.note.checkForUpdates": "„Controleren op updates” is makkelijker te zien.",
-  "settings.field.version.note.dockIcon": "Het Dock-symbool vult zijn tegel.",
   "settings.field.version.note.engineSwitch": "Wisselen van de titel-engine op deze Mac eindigt in plaats van op laden te blijven.",
   "settings.field.version.note.permissions": "Bronze vraagt één keer om de macOS-machtigingen die het gebruikt.",
   "settings.field.version.openRelease": "Release openen",

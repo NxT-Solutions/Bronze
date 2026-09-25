@@ -12,7 +12,6 @@ from pathlib import Path
 
 MAX_NOTES = 5
 NOTE_CHECK_FOR_UPDATES = "Check for updates is easier to see."
-NOTE_DOCK_ICON = "The Dock icon fills its tile."
 NOTE_ENGINE_SWITCH = (
     "Switching the on-this-Mac title engine finishes instead of staying on Loading."
 )
@@ -95,10 +94,6 @@ def map_user_change(kind: str, desc: str) -> str | None:
         return None
     if "check for updates" in description and "push button" in description:
         return NOTE_CHECK_FOR_UPDATES
-    if "dock" in description and (
-        "canvas" in description or "bleed" in description or "fills" in description
-    ):
-        return NOTE_DOCK_ICON
     if (
         ("on-this-mac" in description or "on this mac" in description)
         and "engine" in description

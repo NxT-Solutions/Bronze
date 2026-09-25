@@ -149,8 +149,6 @@ export const MessageIds = {
   "settings.field.version.notesEmpty": "settings.field.version.notesEmpty",
   "settings.field.version.note.checkForUpdates":
     "settings.field.version.note.checkForUpdates",
-  "settings.field.version.note.dockIcon":
-    "settings.field.version.note.dockIcon",
   "settings.field.version.note.engineSwitch":
     "settings.field.version.note.engineSwitch",
   "settings.field.version.note.permissions":

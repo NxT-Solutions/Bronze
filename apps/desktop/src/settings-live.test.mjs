@@ -1111,7 +1111,7 @@ test("app version loads locally and check is user-initiated", async () => {
     available: true,
     latestVersion: "0.2.0",
     notes: [
-      "The Dock icon fills its tile. https://github.com/NxT-Solutions/Bronze/pull/45",
+      "Check for updates is easier to see. https://github.com/NxT-Solutions/Bronze/pull/44",
       "",
     ],
     action: "brew-upgrade",
@@ -1127,7 +1127,7 @@ test("app version loads locally and check is user-initiated", async () => {
   assert.equal(notes.children[0].tag, "ul");
   assert.equal(
     notes.children[0].children[0].textContent,
-    "The Dock icon fills its tile.",
+    "Check for updates is easier to see.",
   );
   assert.ok(
     notes.children[0].children.every(

@@ -134,7 +134,6 @@
   "settings.field.version.whatsNew": "Що нового",
   "settings.field.version.notesEmpty": "Для цієї версії не опубліковано приміток до випуску.",
   "settings.field.version.note.checkForUpdates": "«Перевірити оновлення» легше побачити.",
-  "settings.field.version.note.dockIcon": "Іконка Dock заповнює свою плитку.",
   "settings.field.version.note.engineSwitch": "Перемикання рушія заголовка на цьому Mac завершується і не лишається на «Завантаження».",
   "settings.field.version.note.permissions": "Bronze один раз запитує дозволи macOS, які йому потрібні.",
   "settings.field.version.openRelease": "Відкрити випуск",

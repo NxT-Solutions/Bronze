@@ -1161,7 +1161,6 @@ export async function refreshAppVersion(root, invokeFn) {
 export const UPDATE_NOTE_MESSAGES = Object.freeze({
   "Check for updates is easier to see.":
     "settings.field.version.note.checkForUpdates",
-  "The Dock icon fills its tile.": "settings.field.version.note.dockIcon",
   "Switching the on-this-Mac title engine finishes instead of staying on Loading.":
     "settings.field.version.note.engineSwitch",
   "Bronze asks once for the macOS permissions it uses.":
