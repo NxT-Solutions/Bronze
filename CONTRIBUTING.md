@@ -7,7 +7,7 @@ recorder, task manager, note vault, or hosted AI client.
 
 ## Development
 
-See `README.md` for toolchain pins and `pnpm --filter desktop tauri dev`.
+See `README.md` (Develop) for the first-time macOS setup: Xcode, `rust-toolchain.toml`, Node 24.21.0, pnpm 12.4.2, CMake, clone, `pnpm install`, `pnpm --filter desktop tauri dev`, `pnpm verify`, and the GitNexus index command.
 
 Maintainer bar:
 

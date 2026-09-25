@@ -106,8 +106,12 @@ pub fn request_tier(tier: TitleTier) {
         *desired = tier;
     }
     crate::emit_diag(&format!("switch scheduled tier={}", tier.as_str()));
-    if let Some(tx) = JOBS.get() {
-        let _ = tx.send(Job::SetModel { tier });
+    enqueue_set_model(tier);
+}
+
+fn enqueue_set_model(tier: TitleTier) {
+    if sender().send(Job::SetModel { tier }).is_err() {
+        crate::emit_diag("fallback reason=unreadable");
     }
 }
 
@@ -214,8 +218,7 @@ pub fn warmup() {
         return;
     }
     if crate::weights::weights_present_for(tier).is_ok() {
-        let tx = sender();
-        let _ = tx.send(Job::SetModel { tier });
+        enqueue_set_model(tier);
     } else {
         crate::emit_diag("fallback reason=missing_weights");
     }
@@ -245,16 +248,29 @@ fn worker_loop(rx: Receiver<Job>) {
         loaded: None,
     };
     while let Ok(job) = rx.recv() {
-        match job {
-            Job::SetModel { tier } => {
-                let _ = apply_tier(&mut state, tier);
-            }
-            Job::Infer { body, reply } => {
-                run_infer_job(&mut state, desired_tier(), body, reply);
-            }
-            Job::InferTier { tier, body, reply } => {
-                run_infer_job(&mut state, tier, body, reply);
-            }
+        let ran = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            run_job(&mut state, job);
+        }));
+        if ran.is_err() {
+            state.backend = None;
+            state.model = None;
+            state.loaded = None;
+            ENGINE_READY.store(false, Ordering::Relaxed);
+            crate::emit_diag("fallback reason=unreadable");
+        }
+    }
+}
+
+fn run_job(state: &mut WorkerState, job: Job) {
+    match job {
+        Job::SetModel { tier } => {
+            let _ = apply_tier(state, tier);
+        }
+        Job::Infer { body, reply } => {
+            run_infer_job(state, desired_tier(), body, reply);
+        }
+        Job::InferTier { tier, body, reply } => {
+            run_infer_job(state, tier, body, reply);
         }
     }
 }
@@ -473,11 +489,76 @@ mod infer_tests {
             should_attempt_refine(LONG_BODY, Ok(())),
             Err(FallbackReason::Extractive)
         );
-        let infer = include_str!("infer.rs");
+        let infer = include_str!("infer.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("prod");
         assert!(infer.contains("Job::SetModel"));
         assert!(infer.contains("switch scheduled tier="));
+        let request = infer
+            .split("pub fn request_tier")
+            .nth(1)
+            .expect("request_tier");
+        let request = request
+            .split("fn enqueue_set_model")
+            .next()
+            .expect("enqueue");
+        assert!(request.contains("enqueue_set_model(tier)"));
+        assert!(!request.contains("JOBS.get()"));
+        let enqueue = infer
+            .split("fn enqueue_set_model")
+            .nth(1)
+            .expect("enqueue body");
+        let enqueue = enqueue
+            .split("pub fn request_custom")
+            .next()
+            .expect("custom");
+        assert!(enqueue.contains("sender().send(Job::SetModel"));
         request_tier(TitleTier::Smol360);
         assert_eq!(desired_tier(), TitleTier::Smol360);
+    }
+
+    #[test]
+    fn switch_without_prior_warmup_leaves_loading() {
+        let _guard = hold_desired_tier();
+        let missing =
+            std::env::temp_dir().join(format!("bronze-absent-switch-{}.gguf", std::process::id()));
+        let _ = std::fs::remove_file(&missing);
+        request_custom(missing);
+        let status = wait_for_settled_phase();
+        assert_ne!(status.phase, crate::EnginePhase::Loading);
+        assert_ne!(status.phase, crate::EnginePhase::Hashing);
+        assert!(
+            matches!(
+                status.phase,
+                crate::EnginePhase::Failed | crate::EnginePhase::Missing
+            ),
+            "{}",
+            status.phase.as_str()
+        );
+        request_tier(TitleTier::Extractive);
+        let idle = wait_for_settled_phase();
+        assert_eq!(idle.phase, crate::EnginePhase::Idle);
+        assert_eq!(desired_tier(), TitleTier::Extractive);
+    }
+
+    fn wait_for_settled_phase() -> crate::TitleEngineStatus {
+        let deadline = std::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            let status = crate::current_status();
+            if !matches!(
+                status.phase,
+                crate::EnginePhase::Loading | crate::EnginePhase::Hashing
+            ) {
+                return status;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "title engine stayed on {}",
+                status.phase.as_str()
+            );
+            std::thread::sleep(Duration::from_millis(10));
+        }
     }
 
     #[test]

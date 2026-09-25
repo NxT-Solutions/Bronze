@@ -7,6 +7,10 @@ This file is auto-updated by the release workflow.
 
 - Work in progress.
 
+## v0.1.2 - 2026-09-25
+
+- The Dock icon fills the tile.
+
 ## v0.1.1 - 2026-09-25
 
 - The package installs Bronze.app to /Applications and is not relocatable.

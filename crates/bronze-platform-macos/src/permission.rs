@@ -31,6 +31,37 @@ pub struct PromptAttempt {
     pub screen_recording_requested: bool,
 }
 
+/// Whether this binary has already shown each used-permission prompt.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct ShownPrompts {
+    pub accessibility: bool,
+    pub listen: bool,
+}
+
+/// Remembers a dismissed system prompt so the next launch does not show it again.
+///
+/// Health retest still calls the request APIs. Screen Recording is never stored.
+pub trait PromptLedger {
+    fn shown(&self) -> ShownPrompts;
+    fn remember(&self, shown: ShownPrompts);
+}
+
+/// In-memory ledger for tests and for a single process that has no data directory.
+#[derive(Clone, Debug, Default)]
+pub struct MemoryPromptLedger {
+    shown: std::cell::Cell<ShownPrompts>,
+}
+
+impl PromptLedger for MemoryPromptLedger {
+    fn shown(&self) -> ShownPrompts {
+        self.shown.get()
+    }
+
+    fn remember(&self, shown: ShownPrompts) {
+        self.shown.set(shown);
+    }
+}
+
 /// Host that reports Input Monitoring and Accessibility preflight bits.
 pub trait PreflightHost {
     fn listen_event_access(&self) -> Result<bool, PreflightError>;
@@ -65,6 +96,17 @@ fn map_probe(result: Result<bool, PreflightError>) -> PermissionState {
     }
 }
 
+/// A no-prompt preflight grant wins over a request that returns false.
+fn grant_if_either_trusted(
+    preflight: Result<bool, PreflightError>,
+    request: Result<bool, PreflightError>,
+) -> Result<bool, PreflightError> {
+    if matches!(preflight, Ok(true)) || matches!(request, Ok(true)) {
+        return Ok(true);
+    }
+    request
+}
+
 fn map_request(result: Result<bool, PreflightError>) -> PermissionState {
     match result {
         Ok(granted) => PermissionState::from_request_granted(granted),
@@ -86,48 +128,84 @@ fn snapshot_from_request(
 
 /// Request Accessibility and Input Monitoring. Never Screen Recording.
 ///
-/// Native start and first capture request only when preflight is not already
-/// granted. Health retest always attempts the OS request APIs (the OS may
-/// refuse to show a second dialog). Launch is not a prompt loop.
-pub fn prompt_used_permissions<H>(host: &H, reason: PromptReason) -> PromptAttempt
+/// Native start and first capture call `AXIsProcessTrustedWithOptions` with
+/// `kAXTrustedCheckOptionPrompt`, and `CGRequestListenEventAccess`, only when
+/// that capability is not already granted and this binary has not shown the
+/// prompt. A later launch of the same binary reads the ledger and does not
+/// call the request APIs again. Health retest always attempts the OS request
+/// APIs so the badge can refresh. A live preflight grant stays granted when
+/// that request returns false: `AXIsProcessTrustedWithOptions` can report
+/// false for a process `AXIsProcessTrusted` already accepts. Requests stay
+/// off the event-tap callback.
+pub fn prompt_used_permissions<H, L>(host: &H, reason: PromptReason, ledger: &L) -> PromptAttempt
 where
     H: PreflightHost + PermissionRequestHost + ?Sized,
+    L: PromptLedger + ?Sized,
 {
     match reason {
         PromptReason::HealthRetest => {
-            let listen = host.request_listen_event_access();
-            let accessibility = host.request_accessibility_trusted();
+            let listen_preflight = host.listen_event_access();
+            let accessibility_preflight = host.accessibility_trusted();
+            let listen_request = host.request_listen_event_access();
+            let accessibility_request = host.request_accessibility_trusted();
+            let mut shown = ledger.shown();
+            shown.listen = true;
+            shown.accessibility = true;
+            ledger.remember(shown);
             PromptAttempt {
-                snapshot: snapshot_from_request(listen, accessibility),
+                snapshot: snapshot_from_request(
+                    grant_if_either_trusted(listen_preflight, listen_request),
+                    grant_if_either_trusted(accessibility_preflight, accessibility_request),
+                ),
                 listen_requested: true,
                 accessibility_requested: true,
                 screen_recording_requested: false,
             }
         }
         PromptReason::NativeStart | PromptReason::FirstCapture => {
-            let (listen, listen_requested) = match host.listen_event_access() {
-                Ok(true) => (Ok(true), false),
-                _ => (host.request_listen_event_access(), true),
-            };
-            let (accessibility, accessibility_requested) = match host.accessibility_trusted() {
-                Ok(true) => (Ok(true), false),
-                _ => (host.request_accessibility_trusted(), true),
-            };
-            let snapshot = if listen_requested || accessibility_requested {
-                snapshot_from_request(listen, accessibility)
-            } else {
-                PermissionSnapshot {
-                    input_monitoring: PermissionState::from_preflight_granted(true),
-                    accessibility: PermissionState::from_preflight_granted(true),
-                    capture_pipeline_self_test: PermissionState::from_platform_unknown(),
-                }
-            };
+            let mut shown = ledger.shown();
+            let (input_monitoring, listen_requested) = prompt_unless_remembered(
+                host.listen_event_access(),
+                shown.listen,
+                || host.request_listen_event_access(),
+                &mut shown.listen,
+            );
+            let (accessibility, accessibility_requested) = prompt_unless_remembered(
+                host.accessibility_trusted(),
+                shown.accessibility,
+                || host.request_accessibility_trusted(),
+                &mut shown.accessibility,
+            );
+            if listen_requested || accessibility_requested {
+                ledger.remember(shown);
+            }
             PromptAttempt {
-                snapshot,
+                snapshot: PermissionSnapshot {
+                    input_monitoring,
+                    accessibility,
+                    capture_pipeline_self_test: PermissionState::from_platform_unknown(),
+                },
                 listen_requested,
                 accessibility_requested,
                 screen_recording_requested: false,
             }
+        }
+    }
+}
+
+fn prompt_unless_remembered(
+    preflight: Result<bool, PreflightError>,
+    already_shown: bool,
+    request: impl FnOnce() -> Result<bool, PreflightError>,
+    shown_flag: &mut bool,
+) -> (PermissionState, bool) {
+    match preflight {
+        Ok(true) => (PermissionState::from_preflight_granted(true), false),
+        Ok(false) if already_shown => (PermissionState::from_request_granted(false), false),
+        Err(err) if already_shown => (map_probe(Err(err)), false),
+        _ => {
+            *shown_flag = true;
+            (map_request(request()), true)
         }
     }
 }
@@ -232,8 +310,8 @@ impl PermissionRequestHost for MacosPreflightHost {
 #[cfg(test)]
 mod tests {
     use super::{
-        prompt_used_permissions, snapshot_from_preflight, PermissionRequestHost, PreflightError,
-        PreflightHost, PromptReason,
+        prompt_used_permissions, snapshot_from_preflight, MemoryPromptLedger,
+        PermissionRequestHost, PreflightError, PreflightHost, PromptLedger, PromptReason,
     };
     use bronze_settings::{
         manual_composer_available, privacy_settings_url, PermissionCapability, PermissionState,
@@ -387,7 +465,11 @@ mod tests {
             listen_requests: Cell::new(0),
             accessibility_requests: Cell::new(0),
         };
-        let attempt = prompt_used_permissions(&host, PromptReason::NativeStart);
+        let attempt = prompt_used_permissions(
+            &host,
+            PromptReason::NativeStart,
+            &MemoryPromptLedger::default(),
+        );
         assert_eq!(host.listen_requests.get(), 1);
         assert_eq!(host.accessibility_requests.get(), 1);
         assert!(attempt.listen_requested);
@@ -409,7 +491,11 @@ mod tests {
             listen_requests: Cell::new(0),
             accessibility_requests: Cell::new(0),
         };
-        let attempt = prompt_used_permissions(&host, PromptReason::FirstCapture);
+        let attempt = prompt_used_permissions(
+            &host,
+            PromptReason::FirstCapture,
+            &MemoryPromptLedger::default(),
+        );
         assert_eq!(host.listen_requests.get(), 1);
         assert_eq!(host.accessibility_requests.get(), 0);
         assert!(attempt.listen_requested);
@@ -435,7 +521,11 @@ mod tests {
             listen_requests: Cell::new(0),
             accessibility_requests: Cell::new(0),
         };
-        let attempt = prompt_used_permissions(&host, PromptReason::NativeStart);
+        let attempt = prompt_used_permissions(
+            &host,
+            PromptReason::NativeStart,
+            &MemoryPromptLedger::default(),
+        );
         assert_eq!(host.listen_requests.get(), 0);
         assert_eq!(host.accessibility_requests.get(), 0);
         assert!(!attempt.listen_requested);
@@ -453,14 +543,24 @@ mod tests {
             listen_requests: Cell::new(0),
             accessibility_requests: Cell::new(0),
         };
-        let attempt = prompt_used_permissions(&host, PromptReason::HealthRetest);
+        let attempt = prompt_used_permissions(
+            &host,
+            PromptReason::HealthRetest,
+            &MemoryPromptLedger::default(),
+        );
         assert_eq!(host.listen_requests.get(), 1);
         assert_eq!(host.accessibility_requests.get(), 1);
         assert!(attempt.listen_requested);
         assert!(attempt.accessibility_requested);
         assert!(!attempt.screen_recording_requested);
-        assert_eq!(attempt.snapshot.input_monitoring, PermissionState::Denied);
-        assert_eq!(attempt.snapshot.accessibility, PermissionState::Denied);
+        assert_eq!(
+            attempt.snapshot.input_monitoring,
+            PermissionState::GrantedUnverified
+        );
+        assert_eq!(
+            attempt.snapshot.accessibility,
+            PermissionState::GrantedUnverified
+        );
         assert!(manual_composer_available(&attempt.snapshot));
         assert!(privacy_settings_url(PermissionCapability::InputMonitoring).is_some());
         assert!(privacy_settings_url(PermissionCapability::Accessibility).is_some());
@@ -468,6 +568,127 @@ mod tests {
             privacy_settings_url(PermissionCapability::ScreenRecording),
             None
         );
+    }
+
+    #[test]
+    fn launch_prompts_once_when_untrusted_and_retest_refreshes_grant() {
+        struct FlipHost {
+            listen: Cell<bool>,
+            accessibility: Cell<bool>,
+            listen_requests: Cell<u32>,
+            accessibility_requests: Cell<u32>,
+        }
+
+        impl PreflightHost for FlipHost {
+            fn listen_event_access(&self) -> Result<bool, PreflightError> {
+                Ok(self.listen.get())
+            }
+
+            fn accessibility_trusted(&self) -> Result<bool, PreflightError> {
+                Ok(self.accessibility.get())
+            }
+        }
+
+        impl PermissionRequestHost for FlipHost {
+            fn request_listen_event_access(&self) -> Result<bool, PreflightError> {
+                self.listen_requests.set(self.listen_requests.get() + 1);
+                Ok(self.listen.get())
+            }
+
+            fn request_accessibility_trusted(&self) -> Result<bool, PreflightError> {
+                self.accessibility_requests
+                    .set(self.accessibility_requests.get() + 1);
+                Ok(self.accessibility.get())
+            }
+        }
+
+        let host = FlipHost {
+            listen: Cell::new(false),
+            accessibility: Cell::new(false),
+            listen_requests: Cell::new(0),
+            accessibility_requests: Cell::new(0),
+        };
+        let ledger = MemoryPromptLedger::default();
+        let first = prompt_used_permissions(&host, PromptReason::NativeStart, &ledger);
+        assert!(first.listen_requested);
+        assert!(first.accessibility_requested);
+        assert!(!first.screen_recording_requested);
+        assert_eq!(first.snapshot.input_monitoring, PermissionState::Denied);
+        assert_eq!(first.snapshot.accessibility, PermissionState::Denied);
+        assert!(ledger.shown().listen);
+        assert!(ledger.shown().accessibility);
+        assert_eq!(host.listen_requests.get(), 1);
+        assert_eq!(host.accessibility_requests.get(), 1);
+
+        let second = prompt_used_permissions(&host, PromptReason::NativeStart, &ledger);
+        assert!(!second.listen_requested);
+        assert!(!second.accessibility_requested);
+        assert!(!second.screen_recording_requested);
+        assert_eq!(second.snapshot.accessibility, PermissionState::Denied);
+        assert_eq!(second.snapshot.input_monitoring, PermissionState::Denied);
+        assert_eq!(host.listen_requests.get(), 1);
+        assert_eq!(host.accessibility_requests.get(), 1);
+
+        host.listen.set(true);
+        host.accessibility.set(true);
+        let retest = prompt_used_permissions(&host, PromptReason::HealthRetest, &ledger);
+        assert!(retest.listen_requested);
+        assert!(retest.accessibility_requested);
+        assert!(!retest.screen_recording_requested);
+        assert_eq!(
+            retest.snapshot.input_monitoring,
+            PermissionState::GrantedUnverified
+        );
+        assert_eq!(
+            retest.snapshot.accessibility,
+            PermissionState::GrantedUnverified
+        );
+        assert_eq!(host.listen_requests.get(), 2);
+        assert_eq!(host.accessibility_requests.get(), 2);
+        assert!(!retest.snapshot.accessibility.is_healthy());
+    }
+
+    #[test]
+    fn health_retest_denied_when_preflight_and_request_are_false() {
+        let host = RecordingHost {
+            listen: Ok(false),
+            accessibility: Ok(false),
+            listen_grant: Ok(false),
+            accessibility_grant: Ok(false),
+            listen_requests: Cell::new(0),
+            accessibility_requests: Cell::new(0),
+        };
+        let attempt = prompt_used_permissions(
+            &host,
+            PromptReason::HealthRetest,
+            &MemoryPromptLedger::default(),
+        );
+        assert_eq!(host.listen_requests.get(), 1);
+        assert_eq!(host.accessibility_requests.get(), 1);
+        assert_eq!(attempt.snapshot.input_monitoring, PermissionState::Denied);
+        assert_eq!(attempt.snapshot.accessibility, PermissionState::Denied);
+    }
+
+    #[test]
+    fn health_retest_keeps_listen_grant_when_accessibility_is_false() {
+        let host = RecordingHost {
+            listen: Ok(true),
+            accessibility: Ok(false),
+            listen_grant: Ok(false),
+            accessibility_grant: Ok(false),
+            listen_requests: Cell::new(0),
+            accessibility_requests: Cell::new(0),
+        };
+        let attempt = prompt_used_permissions(
+            &host,
+            PromptReason::HealthRetest,
+            &MemoryPromptLedger::default(),
+        );
+        assert_eq!(
+            attempt.snapshot.input_monitoring,
+            PermissionState::GrantedUnverified
+        );
+        assert_eq!(attempt.snapshot.accessibility, PermissionState::Denied);
     }
 
     #[test]

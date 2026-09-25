@@ -63,8 +63,7 @@ pub fn subscribe_status(listener: impl Fn(TitleEngineStatus) + Send + Sync + 'st
         .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(Box::new(listener));
 }
 
-fn publish(next: TitleEngineStatus) {
-    *snapshot() = next;
+fn notify(next: TitleEngineStatus) {
     if let Some(listener) = LISTENER
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -152,11 +151,16 @@ pub fn apply_diag(current: TitleEngineStatus, message: &str) -> TitleEngineStatu
 }
 
 pub fn observe_diag(message: &str) {
-    let current = current_status();
-    let next = apply_diag(current, message);
-    if next != current {
-        publish(next);
-    }
+    let next = {
+        let mut guard = snapshot();
+        let next = apply_diag(*guard, message);
+        if next == *guard {
+            return;
+        }
+        *guard = next;
+        next
+    };
+    notify(next);
 }
 
 #[cfg(test)]

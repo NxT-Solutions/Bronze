@@ -1,5 +1,6 @@
 import { catalogMessage, LOCALE_APPLIED_EVENT } from "./apply-locale.mjs";
 
+export const READ_COMMAND = "read_used_permissions";
 export const RETEST_COMMAND = "retest_used_permissions";
 export const OPEN_SETTINGS_COMMAND = "open_privacy_settings";
 export const NOTICE_STATUS_COMMAND = "notification_authorization_status";
@@ -43,7 +44,56 @@ export function pillStatusForState(state) {
   return "denied";
 }
 
+const LAST_PERMISSION_RESULT = new WeakMap();
+
+export function formatRunningCopy(template, name, version) {
+  return String(template || "This copy is {name} {version}.")
+    .replaceAll("{name}", name)
+    .replaceAll("{version}", version);
+}
+
+export function shouldShowStaleCopyHint(result) {
+  const ungranted = (state) =>
+    state !== "granted_unverified" && state !== "healthy";
+  return (
+    ungranted(result?.input_monitoring) || ungranted(result?.accessibility)
+  );
+}
+
+export function applyRunningBundle(root, result) {
+  const name = result?.bundle_name || "";
+  const version = result?.bundle_version || "";
+  const path = result?.bundle_path || "";
+  const copy = root.querySelector("[data-permission-running-copy]");
+  if (copy) {
+    copy.hidden = !name;
+    if (name) {
+      const template =
+        catalogMessage("settings.permission.runningCopy") ||
+        "This copy is {name} {version}.";
+      copy.textContent = formatRunningCopy(template, name, version);
+    }
+  }
+  const pathEl = root.querySelector("[data-permission-bundle-path]");
+  if (pathEl) {
+    pathEl.hidden = !path;
+    pathEl.textContent = path;
+  }
+  const stale = root.querySelector("[data-permission-stale-copy]");
+  if (stale) {
+    stale.hidden = !shouldShowStaleCopyHint(result);
+  }
+  const group = root.querySelector("[data-permission-copy]");
+  if (group) {
+    group.hidden = !name && !path;
+  }
+}
+
 export function applyPermissionResult(root, result) {
+  if (root && typeof root === "object") {
+    LAST_PERMISSION_RESULT.set(root, result);
+  }
+  applyRunningBundle(root, result);
   const rows = [
     ["inputMonitoring", result.input_monitoring],
     ["accessibility", result.accessibility],
@@ -171,7 +221,7 @@ export async function retestUsedPermission(capability, invokeFn = tauriInvoke) {
 }
 
 export function bindPermissionHealth(root = document, invokeFn = tauriInvoke) {
-  invokeFn(RETEST_COMMAND)
+  invokeFn(READ_COMMAND)
     .then((result) => applyPermissionResult(root, result))
     .catch(() => {});
   loadNoticeAuthorization(root, invokeFn).catch(() => {
@@ -179,6 +229,10 @@ export function bindPermissionHealth(root = document, invokeFn = tauriInvoke) {
   });
   if (globalThis.document) {
     globalThis.document.addEventListener(LOCALE_APPLIED_EVENT, () => {
+      const remembered = LAST_PERMISSION_RESULT.get(root);
+      if (remembered) {
+        applyRunningBundle(root, remembered);
+      }
       const status = root.querySelector('[data-capability="notifications"]')
         ?.dataset?.status;
       if (status === "granted") {

@@ -33,6 +33,8 @@ Purpose: data, privacy, permission truth, shortcut inventory.
 - Grouped fieldsets (Data, Privacy) with Reset as ghost.
 - Permission health: why-text leading, status pill trailing, alternative
   in muted caption, Retest when useful. Screen Recording stays Not used.
+  The section names the running app copy. Opening System Settings for
+  Accessibility or Input Monitoring also reveals that copy in Finder.
 - Shortcuts: section title + live status (only Shift double-tap is
   live). Record field and Skip test sit on one row without overlap.
 - Registry rows: localized action name leading, assignment trailing.

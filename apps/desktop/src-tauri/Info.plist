@@ -4,5 +4,9 @@
 <dict>
   <key>NSUserNotificationsUsageDescription</key>
   <string>Bronze shows a local banner when a capture finishes or is blocked.</string>
+  <key>NSAccessibilityUsageDescription</key>
+  <string>Bronze reads the current selection so a capture can use it.</string>
+  <key>NSInputMonitoringUsageDescription</key>
+  <string>Bronze watches the capture chord so a double-tap can add the selection.</string>
 </dict>
 </plist>

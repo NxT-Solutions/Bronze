@@ -105,12 +105,32 @@ mod packaging_tests {
         let info = fs::read_to_string(manifest.join("Info.plist")).unwrap();
         assert!(info.contains("NSUserNotificationsUsageDescription"));
         assert!(info.contains("local banner"));
+        assert!(info.contains("NSAccessibilityUsageDescription"));
+        assert!(info.contains("NSInputMonitoringUsageDescription"));
+        assert!(info.contains("Bronze reads the current selection so a capture can use it."));
+        assert!(info
+            .contains("Bronze watches the capture chord so a double-tap can add the selection."));
+        assert!(!info.contains("NSScreenCaptureUsageDescription"));
+        assert!(conf.contains("\"infoPlist\": \"Info.plist\""));
         assert!(manifest.join("icons/icon.icns").is_file());
         let icns = fs::read(manifest.join("icons/icon.icns")).unwrap();
         let sizes = icns_png_sizes(&icns);
         assert!(
             sizes.contains(&(1024, 1024)),
             "icon.icns must include the 1024px image, found {sizes:?}"
+        );
+        let checker = manifest.join("../../../tooling/dock-icon-fill.py");
+        let fill = std::process::Command::new("python3")
+            .arg(&checker)
+            .arg(manifest.join("icons/icon.icns"))
+            .arg(manifest.join("icons/icon.png"))
+            .arg(manifest.join("icons/128x128.png"))
+            .arg(manifest.join("icons/128x128@2x.png"))
+            .status()
+            .expect("dock icon fill check");
+        assert!(
+            fill.success(),
+            "Dock icon artwork must cover the canvas edge"
         );
         let icns_at = conf.find("\"icons/icon.icns\"").unwrap();
         let template_at = conf.find("\"icons/32x32.png\"").unwrap();
