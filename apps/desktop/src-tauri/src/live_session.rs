@@ -1109,7 +1109,7 @@ impl LiveSession {
     pub fn search_library(&self, query: &str) -> Result<(Vec<QueueItemDto>, usize), String> {
         let hits = self
             .store
-            .search_placeholder(query)
+            .search_placeholder_in_locale(query, self.ui_locale())
             .map_err(|_| "search_failed")?;
         let mut items = Vec::new();
         for hit in &hits {
@@ -2565,6 +2565,37 @@ mod live_session_tests {
         assert_eq!(count, 1);
         assert_eq!(hits[0].id, first.id);
         assert!(session.search_library("cafe").expect("ascii").0.is_empty());
+    }
+
+    #[test]
+    fn library_search_is_fuzzy_over_the_full_list() {
+        assert!(!QUE_007_COMPLETE);
+        assert_eq!(ADR_018_STATUS, "Proposed");
+        let mut session = open_session();
+        let cafe = session.add_composer("Café token".into()).expect("cafe");
+        session.add_composer("plain".into()).expect("plain");
+        let bronze = session.add_composer("Bronze notes".into()).expect("bronze");
+        let (hits, count) = session.search_library("brn").expect("fuzzy");
+        assert_eq!(count, 1);
+        assert_eq!(hits[0].id, bronze.id);
+        let (upper, upper_count) = session.search_library("BRONZE").expect("case");
+        assert_eq!(upper_count, 1);
+        assert_eq!(upper[0].id, bronze.id);
+        assert!(session.search_library("zzzz").expect("miss").0.is_empty());
+        assert!(session.search_library("cafe").expect("ascii").0.is_empty());
+        let (folded, folded_count) = session.search_library("CAFÉ").expect("folded");
+        assert_eq!(folded_count, 1);
+        assert_eq!(folded[0].id, cafe.id);
+        let (all, all_count) = session.search_library("  ").expect("empty");
+        let listed = session.list_queue(true).expect("list");
+        assert_eq!(all_count, listed.len());
+        assert_eq!(
+            all.iter().map(|item| item.id.as_str()).collect::<Vec<_>>(),
+            listed
+                .iter()
+                .map(|item| item.id.as_str())
+                .collect::<Vec<_>>()
+        );
     }
 
     #[test]

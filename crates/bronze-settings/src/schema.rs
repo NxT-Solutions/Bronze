@@ -1,5 +1,6 @@
 //! Typed SettingsV1 + ShortcutActionId (story 7.1, SET-001, WIN-005, docs/12).
 
+use bronze_domain::{fuzzy_best_score, locale_lowercase, FUZZY_SUBSTRING};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -1199,22 +1200,46 @@ impl SettingsV1 {
     }
 }
 
+fn settings_field_score(field: &SettingsField, query: &str, locale: &str) -> Option<i32> {
+    let direct = fuzzy_best_score(
+        std::iter::once(field.id)
+            .chain(std::iter::once(field.group.as_str()))
+            .chain(field.tokens.iter().copied()),
+        query,
+        locale,
+    );
+    if direct.is_some_and(|score| score > 0) {
+        return direct;
+    }
+    let folded_query = locale_lowercase(query.trim(), locale);
+    if folded_query.is_empty() {
+        return Some(0);
+    }
+    let token_hit = field.tokens.iter().any(|token| {
+        let folded = locale_lowercase(token, locale);
+        !folded.is_empty() && folded_query.contains(&folded)
+    });
+    if token_hit {
+        Some(FUZZY_SUBSTRING)
+    } else {
+        None
+    }
+}
+
 pub fn search_settings(query: &str) -> Vec<&'static SettingsField> {
-    let q = query.trim().to_ascii_lowercase();
-    SETTINGS_FIELDS
+    search_settings_in_locale(query, "en")
+}
+
+fn search_settings_in_locale(query: &str, locale: &str) -> Vec<&'static SettingsField> {
+    let mut ranked: Vec<(i32, usize, &'static SettingsField)> = SETTINGS_FIELDS
         .iter()
-        .filter(|field| {
-            if q.is_empty() {
-                return true;
-            }
-            field.id.to_ascii_lowercase().contains(&q)
-                || field.group.as_str().contains(q.as_str())
-                || field
-                    .tokens
-                    .iter()
-                    .any(|token| token.contains(&q) || q.contains(token))
+        .enumerate()
+        .filter_map(|(index, field)| {
+            settings_field_score(field, query, locale).map(|score| (score, index, field))
         })
-        .collect()
+        .collect();
+    ranked.sort_by(|left, right| right.0.cmp(&left.0).then(left.1.cmp(&right.1)));
+    ranked.into_iter().map(|(_, _, field)| field).collect()
 }
 
 #[cfg(test)]
@@ -1397,6 +1422,19 @@ mod tests {
         assert!(search_settings("language")
             .iter()
             .any(|field| field.id == "general.locale"));
+        assert_eq!(search_settings("backup")[0].id, "data.backupSchedule");
+        assert!(search_settings("BCKP")
+            .iter()
+            .any(|field| field.id == "data.backupSchedule"));
+        assert!(search_settings("TITLE")
+            .iter()
+            .any(|field| field.id == "general.titleModel"));
+        assert!(search_settings("weekly backup")
+            .iter()
+            .any(|field| field.id == "data.backupSchedule"));
+        assert!(search_settings("zzzz").is_empty());
+        assert_eq!(search_settings("  ").len(), SETTINGS_FIELDS.len());
+        assert_eq!(search_settings("").len(), SETTINGS_FIELDS.len());
     }
 
     #[test]

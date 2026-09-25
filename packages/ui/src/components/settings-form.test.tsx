@@ -81,4 +81,16 @@ describe("SettingsForm (SET-001, WIN-005)", () => {
     expect(screen.queryByLabelText("Launch at login")).toBeNull();
     expect(screen.getByRole("heading", { name: "Settings" })).toBeTruthy();
   });
+
+  it("matches backup without case and restores the list when cleared", async () => {
+    const user = userEvent.setup();
+    render(<SettingsForm labels={labels} />);
+    const search = screen.getByRole("searchbox", { name: "Search settings" });
+    await user.type(search, "BCKP");
+    expect(screen.getByLabelText("Backup schedule")).toBeTruthy();
+    expect(screen.queryByLabelText("Launch at login")).toBeNull();
+    await user.clear(search);
+    expect(screen.getByLabelText("Launch at login")).toBeTruthy();
+    expect(screen.getByLabelText("Backup schedule")).toBeTruthy();
+  });
 });

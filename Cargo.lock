@@ -222,6 +222,7 @@ dependencies = [
 name = "bronze-settings"
 version = "0.0.0"
 dependencies = [
+ "bronze-domain",
  "serde",
  "serde_json",
 ]

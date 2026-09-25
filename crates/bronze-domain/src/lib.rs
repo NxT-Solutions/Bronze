@@ -6,6 +6,7 @@
 mod composer;
 mod entities;
 mod formatters;
+mod fuzzy;
 mod markup;
 mod purge;
 mod reflow;
@@ -21,6 +22,10 @@ pub use entities::{
 pub use formatters::{
     default_output_profile, format_items, lifecycle_after_copy, AdvancePolicy, OutputFormat,
     OutputProfile, PostCopyAction,
+};
+pub use fuzzy::{
+    fuzzy_best_score, fuzzy_match_score, locale_lowercase, FUZZY_EXACT, FUZZY_PREFIX,
+    FUZZY_SUBSEQUENCE, FUZZY_SUBSTRING, FUZZY_TYPO,
 };
 pub use markup::{
     capture_body_preferring_ax_marks, constrained_markdown_from_html,
