@@ -1,11 +1,8 @@
-name: 🍺 Publish Homebrew
+name: Publish Homebrew
 
 on:
   release:
     types: [published]
-  workflow_run:
-    workflows: ["🔖 Release"]
-    types: [completed]
   workflow_dispatch:
     inputs:
       tag:
@@ -17,31 +14,42 @@ permissions:
 
 jobs:
   homebrew:
-    if: ${{ github.event_name == 'release' || github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
       - name: Guard missing packages repo token
+        id: token
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_REPO_TOKEN }}
         run: |
-          if [[ -z "${{ secrets.PACKAGES_REPO_TOKEN }}" ]]; then
-            echo "PACKAGES_REPO_TOKEN not set; skipping."
-            exit 0
+          if [[ -z "${PACKAGES_TOKEN}" ]]; then
+            echo "PACKAGES_REPO_TOKEN not set; skipping tap publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Resolve release tag
+        if: steps.token.outputs.skip != 'true'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG_INPUT: ${{ github.event.release.tag_name }}
+          DISPATCH_TAG: ${{ github.event.inputs.tag }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> "$GITHUB_ENV"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.tag }}" ]]; then
-            echo "RELEASE_TAG=${{ github.event.inputs.tag }}" >> "$GITHUB_ENV"
+          set -euo pipefail
+          if [[ "${EVENT_NAME}" == "release" ]]; then
+            echo "RELEASE_TAG=${RELEASE_TAG_INPUT}" >> "$GITHUB_ENV"
+          elif [[ "${EVENT_NAME}" == "workflow_dispatch" && -n "${DISPATCH_TAG}" ]]; then
+            echo "RELEASE_TAG=${DISPATCH_TAG}" >> "$GITHUB_ENV"
           else
-            tag=$(curl -sS "https://api.github.com/repos/${{ github.repository }}/releases/latest" \
-              | python3 -c "import sys, json; print(json.load(sys.stdin)['tag_name'])")
-            echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+            tag=$(gh release view -R "${REPO}" --json tagName --jq .tagName)
+            echo "RELEASE_TAG=${tag}" >> "$GITHUB_ENV"
           fi
 
       - name: Checkout packages repo
-        if: ${{ secrets.PACKAGES_REPO_TOKEN != '' }}
-        shell: bash
+        if: steps.token.outputs.skip != 'true'
         env:
           PACKAGES_TOKEN: ${{ secrets.PACKAGES_REPO_TOKEN }}
         run: |
@@ -63,55 +71,70 @@ jobs:
           git clone "$remote" --branch "${default_branch}" --depth 1 homebrew-nxt-solutions-packages
 
       - name: Download release assets
-        if: ${{ secrets.PACKAGES_REPO_TOKEN != '' }}
+        if: steps.token.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release download "$RELEASE_TAG" -R "${{ github.repository }}" -p "bronze-macos.pkg" -D /tmp/releases
 
       - name: Generate Homebrew cask
-        if: ${{ secrets.PACKAGES_REPO_TOKEN != '' }}
+        if: steps.token.outputs.skip != 'true'
         working-directory: homebrew-nxt-solutions-packages
+        env:
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          tag="${RELEASE_TAG}"
-          version="${tag#v}"
-          echo "VERSION=${version}" >> "$GITHUB_ENV"
-          pkg="/tmp/releases/bronze-macos.pkg"
-          if [[ ! -f "$pkg" ]]; then
-            echo "Missing bronze-macos.pkg"
-            ls -la /tmp/releases || true
-            exit 1
-          fi
-          sha=$(shasum -a 256 "$pkg" | awk '{print $1}')
-          mkdir -p Casks
-          rm -f Formula/bronze.rb
-          cat > Casks/bronze.rb <<EOF
-          cask "bronze" do
-            version "${version}"
-            sha256 "${sha}"
+          python3 <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
 
-            url "https://github.com/${{ github.repository }}/releases/download/${tag}/bronze-macos.pkg"
-            name "Bronze"
-            desc "Local-first macOS selection-to-action queue"
-            homepage "https://github.com/${{ github.repository }}"
-
-            depends_on macos: ">= :sonoma"
-            depends_on arch: :arm64
-
-            pkg "bronze-macos.pkg"
-
-            uninstall pkgutil: "app.bronze.desktop"
-
-            caveats <<~EOS
-              Bronze ships an arm64 package. Intel/universal2 stays Proposed (ADR-002).
-              This cask does not claim Apple notarization.
-            EOS
-          end
-          EOF
+          tag = os.environ["RELEASE_TAG"]
+          version = tag[1:] if tag.startswith("v") else tag
+          repo = os.environ["REPO"]
+          pkg = Path("/tmp/releases/bronze-macos.pkg")
+          if not pkg.is_file():
+              raise SystemExit("Missing bronze-macos.pkg")
+          sha = hashlib.sha256(pkg.read_bytes()).hexdigest()
+          Path("Casks").mkdir(exist_ok=True)
+          formula = Path("Formula/bronze.rb")
+          if formula.exists():
+              formula.unlink()
+          Path("Casks/bronze.rb").write_text(
+              "\n".join(
+                  [
+                      'cask "bronze" do',
+                      f'  version "{version}"',
+                      f'  sha256 "{sha}"',
+                      "",
+                      f'  url "https://github.com/{repo}/releases/download/{tag}/bronze-macos.pkg"',
+                      '  name "Bronze"',
+                      '  desc "Local-first macOS selection-to-action queue"',
+                      f'  homepage "https://github.com/{repo}"',
+                      "",
+                      '  depends_on macos: ">= :sonoma"',
+                      "  depends_on arch: :arm64",
+                      "",
+                      '  pkg "bronze-macos.pkg"',
+                      "",
+                      '  uninstall pkgutil: "app.bronze.desktop"',
+                      "",
+                      "  caveats <<~EOS",
+                      "    Bronze ships an arm64 package. Intel/universal2 stays Proposed (ADR-002).",
+                      "    This cask does not claim Apple notarization.",
+                      "  EOS",
+                      "end",
+                      "",
+                  ]
+              ),
+              encoding="utf-8",
+          )
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as fh:
+              fh.write(f"VERSION={version}\n")
+          PY
 
       - name: Commit and push
-        if: ${{ secrets.PACKAGES_REPO_TOKEN != '' }}
+        if: steps.token.outputs.skip != 'true'
         working-directory: homebrew-nxt-solutions-packages
         run: |
           git config user.name "github-actions"
