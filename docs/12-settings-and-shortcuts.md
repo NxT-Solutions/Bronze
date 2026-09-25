@@ -92,6 +92,7 @@ type SettingsV1 = {
   copy: {
     defaultProfileId: string
     returnToPriorApp: boolean
+    queueSort: "newest" | "oldest"
   }
   privacy: {
     excludedBundleIds: string[]
@@ -124,6 +125,8 @@ Internal safety ceilings (AX timeout, payload size) may be advanced-only or not 
 
 Accessibility overrides for Increase Contrast, Reduce Transparency, and Differentiate Without Color are one-way strengthening: effective value equals the active macOS preference OR a stronger Bronze override. Native display-option bridge still only strengthens Reduce Motion. WebView motion is `SettingsV1.general.reduceMotion` (`system` | `on` | `off`, default `system`). `system` follows `matchMedia('(prefers-reduced-motion: reduce)')` plus a change listener. `on` always sets `document.documentElement.dataset.motion` to `reduce`. `off` always sets `full` so queue animations play even when macOS Reduce Motion is on (explicit Tools test override, not a silent weaken). Missing `general.reduceMotion` on load maps `accessibility.motion` (`system`, `reduce`, `on`, `off`). Persist copies `general.reduceMotion` onto `accessibility.motion`. Settings apply live; no restart. Persist broadcasts `ui-motion-changed`. Queue and Library first load call `load_settings_v1` (`allow-queue-live` / `allow-library-live`) plus the media query. `chrome.css` gates with `html[data-motion="reduce"]` (no anim) and `html[data-motion="full"]` (anim). `@media (prefers-reduced-motion: reduce)` is first-paint fallback only and must not win over `data-motion=full`. Existing JS still honors `data-reduce-motion`.
 
+`SettingsV1.copy.queueSort` is `newest` or `oldest`. The factory value is `newest`. A settings file or settings import that omits the field loads `newest`. Overview cards order by `created_at_ms`, then `id`, both descending for `newest` and both ascending for `oldest`. Saving a different value broadcasts `queue-sort-changed`, and the queue reloads with no cursor. A cursor page passes that same sort on the request and inside the cursor. A cursor whose sort differs from the request is ignored, and the list starts at the first page. Settings → Copy `#queue-sort` is the labeled select.
+
 `SettingsV1.general.launchAtLogin` defaults to `false`. Settings → General `#launch-at-login` is a real labeled checkbox with circled-i catalog info. Save, reset field/group/all, and `LiveSession::open` apply the stored value through `SMAppService.mainApp` `register` / `unregister`. Persist does not flip the checkbox when status is `requires_approval` or `not_found`. Command `login_item_status` (`allow-settings-live`) returns `enabled` | `not_registered` | `requires_approval` | `unavailable`. Unbundled `tauri dev` and cargo-test binaries are not a `.app` and report `unavailable` without calling `register`. Cargo tests never invoke live `SMAppService`. Event-tap callbacks do not register, unregister, or read login items. `open_privacy_settings` `launchAtLogin` opens the Login Items pane. The permission-health row stays optional; the General checkbox is the user control.
 
 ## 3. Defaults
@@ -149,6 +152,7 @@ Shipped defaults:
 | translucency | system with opaque accessibility fallback | style without sacrificing contrast |
 | trash | 30 days | recovery |
 | automatic backup | daily | DAT-002 safety baseline; Back Up Now remains available |
+| queue order | newest first | overview cards sort by created time; id breaks ties the same direction; a sort change reloads the first page |
 | diagnostics | 7 days, redacted | local troubleshooting |
 | network | none | privacy promise |
 

@@ -11,6 +11,11 @@ import {
 } from "./apply-motion.mjs";
 import { runBusy } from "./control.mjs";
 import { sourceIconSrc } from "./item-view.mjs";
+import {
+  emitQueueSortChanged,
+  parseQueueSort,
+  queueSortChange,
+} from "./queue-sort.mjs";
 import { bindShortcutRegistry } from "./shortcuts.mjs";
 import { showChromeWindow, tauriInvoke, tauriListen } from "./tauri-bridge.mjs";
 
@@ -1381,6 +1386,10 @@ export function applySettingsForm(root, settings) {
       settings?.general?.reduceMotion ?? settings?.accessibility?.motion,
     );
   }
+  const queueSort = root.querySelector("#queue-sort");
+  if (queueSort) {
+    queueSort.value = parseQueueSort(settings?.copy?.queueSort);
+  }
 }
 
 export function patchSettingsFromForm(settings, root) {
@@ -1434,7 +1443,18 @@ export function patchSettingsFromForm(settings, root) {
   if (launchAtLogin && typeof launchAtLogin.checked === "boolean") {
     next.general.launchAtLogin = launchAtLogin.checked;
   }
+  const queueSort = root.querySelector("#queue-sort")?.value;
+  if (queueSort === "newest" || queueSort === "oldest") {
+    next.copy = { ...(next.copy ?? {}), queueSort };
+  }
   return next;
+}
+
+async function publishQueueSort(before, after) {
+  const change = queueSortChange(before, after);
+  if (change) {
+    await emitQueueSortChanged(change);
+  }
 }
 
 async function applySavedLocale(root, settings, invokeFn) {
@@ -1643,6 +1663,7 @@ export async function bindSettingsLive(
 
   async function persist() {
     const before = settings?.general?.locale;
+    const beforeSort = settings?.copy?.queueSort;
     settings = await invokeFn("save_settings_v1", {
       settings: patchSettingsFromForm(settings, root),
     });
@@ -1664,6 +1685,7 @@ export async function bindSettingsLive(
     if (settings?.general?.locale !== before) {
       await emitUiLocaleChanged({ locale: settings.general.locale });
     }
+    await publishQueueSort(beforeSort, settings?.copy?.queueSort);
   }
 
   async function refreshExportPreview() {
@@ -1697,6 +1719,7 @@ export async function bindSettingsLive(
     runBusy(importButton, async () => {
       try {
         const before = settings?.general?.locale;
+        const beforeSort = settings?.copy?.queueSort;
         settings = await invokeFn("import_settings_file", {
           requestedPath: null,
         });
@@ -1712,6 +1735,7 @@ export async function bindSettingsLive(
         if (settings?.general?.locale !== before) {
           await emitUiLocaleChanged({ locale: settings.general.locale });
         }
+        await publishQueueSort(beforeSort, settings?.copy?.queueSort);
       } catch (error) {
         const code = settingsExportFailureCode(error);
         showExportStatus(root, code ? EXPORT_FAILURE_KEYS[code] : "");
@@ -1728,6 +1752,7 @@ export async function bindSettingsLive(
   await refreshExportPreview();
 
   root.querySelector("#backup-schedule")?.addEventListener("change", persist);
+  root.querySelector("#queue-sort")?.addEventListener("change", persist);
   root.querySelector("#ui-locale")?.addEventListener("change", persist);
   root.querySelector("#title-model")?.addEventListener("change", () => {
     const integration = root.querySelector("#title-integration");
@@ -1806,6 +1831,7 @@ export async function bindSettingsLive(
       runBusy(button, async () => {
         const fieldId = button.getAttribute("data-reset-field");
         const before = settings?.general?.locale;
+        const beforeSort = settings?.copy?.queueSort;
         settings = await invokeFn("reset_settings_field", { fieldId });
         await applySavedLocale(root, settings, invokeFn);
         await refreshExcludedIcons(root, invokeFn);
@@ -1817,6 +1843,7 @@ export async function bindSettingsLive(
         if (settings?.general?.locale !== before) {
           await emitUiLocaleChanged({ locale: settings.general.locale });
         }
+        await publishQueueSort(beforeSort, settings?.copy?.queueSort);
       });
     });
   });
@@ -1825,6 +1852,7 @@ export async function bindSettingsLive(
     runBusy(resetGroup, async () => {
       const group = resetGroup.getAttribute("data-reset-group");
       const before = settings?.general?.locale;
+      const beforeSort = settings?.copy?.queueSort;
       settings = await invokeFn("reset_settings_group", { group });
       await applySavedLocale(root, settings, invokeFn);
       await refreshExcludedIcons(root, invokeFn);
@@ -1836,12 +1864,14 @@ export async function bindSettingsLive(
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }
+      await publishQueueSort(beforeSort, settings?.copy?.queueSort);
     });
   });
   const resetAll = root.querySelector("[data-reset-all]");
   resetAll?.addEventListener("click", () => {
     runBusy(resetAll, async () => {
       const before = settings?.general?.locale;
+      const beforeSort = settings?.copy?.queueSort;
       settings = await invokeFn("reset_settings_all");
       await applySavedLocale(root, settings, invokeFn);
       await refreshExcludedIcons(root, invokeFn);
@@ -1853,6 +1883,7 @@ export async function bindSettingsLive(
       if (settings?.general?.locale !== before) {
         await emitUiLocaleChanged({ locale: settings.general.locale });
       }
+      await publishQueueSort(beforeSort, settings?.copy?.queueSort);
     });
   });
 

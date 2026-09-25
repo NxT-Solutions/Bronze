@@ -388,6 +388,32 @@ impl BackupSchedule {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+pub enum QueueSort {
+    #[default]
+    #[serde(rename = "newest")]
+    Newest,
+    #[serde(rename = "oldest")]
+    Oldest,
+}
+
+impl QueueSort {
+    pub fn parse(raw: &str) -> Result<Self, SchemaError> {
+        match raw.trim() {
+            "newest" => Ok(Self::Newest),
+            "oldest" => Ok(Self::Oldest),
+            _ => Err(SchemaError::UnknownQueueSort),
+        }
+    }
+
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Newest => "newest",
+            Self::Oldest => "oldest",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ContrastPref {
@@ -526,6 +552,8 @@ pub struct PanelSettings {
 pub struct CopySettings {
     pub default_profile_id: String,
     pub return_to_prior_app: bool,
+    #[serde(default)]
+    pub queue_sort: QueueSort,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -603,6 +631,7 @@ pub enum SchemaError {
     UnknownLocale,
     UnknownTitleModel,
     UnknownMotion,
+    UnknownQueueSort,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -774,6 +803,11 @@ pub const SETTINGS_FIELDS: &[SettingsField] = &[
         tokens: &["prior", "focus"],
     },
     SettingsField {
+        id: "copy.queueSort",
+        group: SettingsGroup::Copy,
+        tokens: &["sort", "order", "newest", "oldest", "queue"],
+    },
+    SettingsField {
         id: "privacy.excludedBundleIds",
         group: SettingsGroup::Privacy,
         tokens: &["exclude", "bundle"],
@@ -911,6 +945,7 @@ impl SettingsV1 {
             copy: CopySettings {
                 default_profile_id: "plain".into(),
                 return_to_prior_app: true,
+                queue_sort: QueueSort::Newest,
             },
             privacy: PrivacySettings {
                 excluded_bundle_ids: Vec::new(),
@@ -1015,6 +1050,15 @@ impl SettingsV1 {
         {
             Self::parse_motion_node(node)?;
         }
+        if let Some(node) = value.get("copy").and_then(|copy| copy.get("queueSort")) {
+            match node {
+                serde_json::Value::String(raw) => {
+                    QueueSort::parse(raw)?;
+                }
+                serde_json::Value::Null => {}
+                _ => return Err(SchemaError::UnknownQueueSort),
+            }
+        }
         let reduce_motion_present = value
             .get("general")
             .and_then(|general| general.get("reduceMotion"))
@@ -1090,6 +1134,7 @@ impl SettingsV1 {
             "copy.returnToPriorApp" => {
                 self.copy.return_to_prior_app = defaults.copy.return_to_prior_app
             }
+            "copy.queueSort" => self.copy.queue_sort = defaults.copy.queue_sort,
             "privacy.excludedBundleIds" => {
                 self.privacy.excluded_bundle_ids = defaults.privacy.excluded_bundle_ids
             }
@@ -1367,6 +1412,39 @@ mod tests {
         assert_eq!(settings.validate().unwrap_err(), SchemaError::UnknownLocale);
         settings.general.locale = "nl-BE".into();
         assert_eq!(settings.validate().unwrap_err(), SchemaError::UnknownLocale);
+    }
+
+    #[test]
+    fn queue_sort_persists_and_defaults_when_missing() {
+        let defaults = SettingsV1::defaults();
+        assert_eq!(defaults.copy.queue_sort, QueueSort::Newest);
+        let mut settings = defaults;
+        settings.copy.queue_sort = QueueSort::Oldest;
+        let json = settings.to_json().expect("json");
+        assert!(json.contains("\"queueSort\":\"oldest\""));
+        let parsed = SettingsV1::from_json(&json).expect("parse");
+        assert_eq!(parsed.copy.queue_sort, QueueSort::Oldest);
+        settings.reset_field("copy.queueSort").expect("reset");
+        assert_eq!(settings.copy.queue_sort, QueueSort::Newest);
+        let mut value: serde_json::Value =
+            serde_json::from_str(&SettingsV1::defaults().to_json().expect("defaults"))
+                .expect("value");
+        value["copy"]
+            .as_object_mut()
+            .expect("copy")
+            .remove("queueSort");
+        let legacy = SettingsV1::from_json(&value.to_string()).expect("legacy");
+        assert_eq!(legacy.copy.queue_sort, QueueSort::Newest);
+        value["copy"]["queueSort"] = serde_json::Value::String("rank".into());
+        assert_eq!(
+            SettingsV1::from_json(&value.to_string()).expect_err("bad"),
+            SchemaError::UnknownQueueSort
+        );
+        assert_eq!(
+            QueueSort::parse("newest").expect("newest"),
+            QueueSort::Newest
+        );
+        assert_eq!(QueueSort::Oldest.as_str(), "oldest");
     }
 
     #[test]

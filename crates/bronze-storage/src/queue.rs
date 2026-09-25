@@ -2,7 +2,10 @@
 
 use crate::migrate::Store;
 use bronze_domain::{can_transition, compact_title, Lifecycle};
+use bronze_settings::QueueSort;
 use rusqlite::OptionalExtension;
+
+const QUEUE_ITEM_COLUMNS: &str = "items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id, items.created_at_ms";
 
 pub const QUEUE_MOVE_UP_KEY: &str = "queue.item.moveUp";
 pub const QUEUE_MOVE_DOWN_KEY: &str = "queue.item.moveDown";
@@ -69,6 +72,40 @@ pub fn decode_queue_cursor(cursor: &str) -> Result<(String, String), QueueError>
     Ok((rank, id))
 }
 
+pub fn encode_sorted_queue_cursor(sort: QueueSort, created_at_ms: i64, id: &str) -> String {
+    format!(
+        "v2.{}.{}.{}",
+        sort.as_str(),
+        created_at_ms,
+        hex_encode(id.as_bytes())
+    )
+}
+
+pub fn decode_sorted_queue_cursor(cursor: &str) -> Result<(QueueSort, i64, String), QueueError> {
+    let mut parts = cursor.split('.');
+    let version = parts.next();
+    let sort_raw = parts.next();
+    let created_raw = parts.next();
+    let id_hex = parts.next();
+    if parts.next().is_some() || version != Some("v2") {
+        return Err(QueueError::InvalidCursor);
+    }
+    let sort = match sort_raw {
+        Some("newest") => QueueSort::Newest,
+        Some("oldest") => QueueSort::Oldest,
+        _ => return Err(QueueError::InvalidCursor),
+    };
+    let created_at_ms = created_raw
+        .ok_or(QueueError::InvalidCursor)?
+        .parse::<i64>()
+        .map_err(|_| QueueError::InvalidCursor)?;
+    let id = hex_to_string(id_hex.ok_or(QueueError::InvalidCursor)?)?;
+    if id.is_empty() {
+        return Err(QueueError::InvalidCursor);
+    }
+    Ok((sort, created_at_ms, id))
+}
+
 fn page_limit(limit: usize) -> usize {
     match limit {
         0 => QUEUE_PAGE_SIZE,
@@ -122,6 +159,7 @@ pub struct QueueItemRow {
     pub rank: String,
     pub source_app_name: Option<String>,
     pub source_bundle_id: Option<String>,
+    pub created_at_ms: i64,
 }
 
 pub fn queue_action_key(action: QueueAction) -> &'static str {
@@ -168,11 +206,11 @@ impl Store {
 
     pub fn list_items(&self, include_trashed: bool) -> Result<Vec<QueueItemRow>, QueueError> {
         let sql = if include_trashed {
-            "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id ORDER BY items.rank, items.id"
+            format!("SELECT {QUEUE_ITEM_COLUMNS} FROM items LEFT JOIN sources ON sources.id = items.source_id ORDER BY items.rank, items.id")
         } else {
-            "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status != 'trashed' ORDER BY items.rank, items.id"
+            format!("SELECT {QUEUE_ITEM_COLUMNS} FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status != 'trashed' ORDER BY items.rank, items.id")
         };
-        let mut stmt = self.conn.prepare(sql).map_err(|_| QueueError::Store)?;
+        let mut stmt = self.conn.prepare(&sql).map_err(|_| QueueError::Store)?;
         let rows = stmt
             .query_map([], queue_item_from_row)
             .map_err(|_| QueueError::Store)?;
@@ -191,6 +229,20 @@ impl Store {
         }
     }
 
+    pub fn query_queue_page_sorted(
+        &self,
+        cursor: Option<&str>,
+        filter: QueueListFilter,
+        limit: usize,
+        sort: QueueSort,
+    ) -> Result<QueuePage, QueueError> {
+        match filter {
+            QueueListFilter::Overview => {
+                self.query_overview_sorted(cursor, page_limit(limit), sort)
+            }
+        }
+    }
+
     fn query_overview_page(
         &self,
         cursor: Option<&str>,
@@ -199,12 +251,10 @@ impl Store {
         let fetch = limit + 1;
         let mut rows = match cursor {
             None => {
-                let mut stmt = self
-                    .conn
-                    .prepare(
-                        "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status IN ('queued','copied','active') ORDER BY items.rank, items.id LIMIT ?1",
-                    )
-                    .map_err(|_| QueueError::Store)?;
+                let sql = format!(
+                    "SELECT {QUEUE_ITEM_COLUMNS} FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status IN ('queued','copied','active') ORDER BY items.rank, items.id LIMIT ?1"
+                );
+                let mut stmt = self.conn.prepare(&sql).map_err(|_| QueueError::Store)?;
                 let mapped = stmt
                     .query_map([fetch as i64], queue_item_from_row)
                     .map_err(|_| QueueError::Store)?;
@@ -214,12 +264,10 @@ impl Store {
             }
             Some(token) => {
                 let (rank, id) = decode_queue_cursor(token)?;
-                let mut stmt = self
-                    .conn
-                    .prepare(
-                        "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status IN ('queued','copied','active') AND (items.rank, items.id) > (?1, ?2) ORDER BY items.rank, items.id LIMIT ?3",
-                    )
-                    .map_err(|_| QueueError::Store)?;
+                let sql = format!(
+                    "SELECT {QUEUE_ITEM_COLUMNS} FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status IN ('queued','copied','active') AND (items.rank, items.id) > (?1, ?2) ORDER BY items.rank, items.id LIMIT ?3"
+                );
+                let mut stmt = self.conn.prepare(&sql).map_err(|_| QueueError::Store)?;
                 let mapped = stmt
                     .query_map(
                         rusqlite::params![rank, id, fetch as i64],
@@ -244,10 +292,80 @@ impl Store {
         })
     }
 
+    fn query_overview_sorted(
+        &self,
+        cursor: Option<&str>,
+        limit: usize,
+        sort: QueueSort,
+    ) -> Result<QueuePage, QueueError> {
+        let positioned = cursor.and_then(|token| {
+            decode_sorted_queue_cursor(token)
+                .ok()
+                .filter(|(cursor_sort, _, _)| *cursor_sort == sort)
+        });
+        let fetch = limit + 1;
+        let order = match sort {
+            QueueSort::Newest => "items.created_at_ms DESC, items.id DESC",
+            QueueSort::Oldest => "items.created_at_ms ASC, items.id ASC",
+        };
+        let mut rows = match positioned {
+            None => {
+                let sql = format!(
+                    "SELECT {QUEUE_ITEM_COLUMNS} FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status IN ('queued','copied','active') ORDER BY {order} LIMIT ?1"
+                );
+                let mut stmt = self.conn.prepare(&sql).map_err(|_| QueueError::Store)?;
+                let mapped = stmt
+                    .query_map([fetch as i64], queue_item_from_row)
+                    .map_err(|_| QueueError::Store)?;
+                mapped
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| QueueError::Store)?
+            }
+            Some((_, created_at_ms, id)) => {
+                let predicate = match sort {
+                    QueueSort::Newest => {
+                        "(items.created_at_ms < ?1 OR (items.created_at_ms = ?1 AND items.id < ?2))"
+                    }
+                    QueueSort::Oldest => {
+                        "(items.created_at_ms > ?1 OR (items.created_at_ms = ?1 AND items.id > ?2))"
+                    }
+                };
+                let sql = format!(
+                    "SELECT {QUEUE_ITEM_COLUMNS} FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status IN ('queued','copied','active') AND {predicate} ORDER BY {order} LIMIT ?3"
+                );
+                let mut stmt = self.conn.prepare(&sql).map_err(|_| QueueError::Store)?;
+                let mapped = stmt
+                    .query_map(
+                        rusqlite::params![created_at_ms, id, fetch as i64],
+                        queue_item_from_row,
+                    )
+                    .map_err(|_| QueueError::Store)?;
+                mapped
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| QueueError::Store)?
+            }
+        };
+        let next_cursor = if rows.len() > limit {
+            let boundary = &rows[limit - 1];
+            Some(encode_sorted_queue_cursor(
+                sort,
+                boundary.created_at_ms,
+                &boundary.id,
+            ))
+        } else {
+            None
+        };
+        rows.truncate(limit);
+        Ok(QueuePage {
+            items: rows,
+            next_cursor,
+        })
+    }
+
     pub fn get_item(&self, id: &str) -> Result<QueueItemRow, QueueError> {
         self.conn
             .query_row(
-                "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.id=?1",
+                &format!("SELECT {QUEUE_ITEM_COLUMNS} FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.id=?1"),
                 [id],
                 queue_item_from_row,
             )
@@ -391,6 +509,7 @@ fn queue_item_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<QueueItemRow
         rank: row.get(6)?,
         source_app_name: row.get(7)?,
         source_bundle_id: row.get(8)?,
+        created_at_ms: row.get(9)?,
     })
 }
 
@@ -653,5 +772,102 @@ mod queue_tests {
             .expect("exact");
         assert_eq!(only.items.len(), 20);
         assert!(only.next_cursor.is_none());
+    }
+
+    #[test]
+    fn queue_sort_is_stable_across_a_page_boundary() {
+        let store = open_store();
+        store.conn.execute("DELETE FROM items", []).expect("clear");
+        for (id, created) in [("c", 30), ("e", 20), ("b", 20), ("a", 20), ("d", 10)] {
+            store
+                .conn
+                .execute(
+                    "INSERT INTO items VALUES (?1,'s1','note',?1,'und','queued',?1,NULL,1,?2,?2,NULL,NULL,NULL)",
+                    rusqlite::params![id, created],
+                )
+                .expect("insert");
+        }
+        store
+            .conn
+            .execute(
+                "INSERT INTO items VALUES ('z','s1','note','z','und','trashed','z',NULL,1,40,40,NULL,40,NULL)",
+                [],
+            )
+            .expect("trash");
+
+        let collect = |sort| -> Vec<String> {
+            let full = store
+                .query_queue_page_sorted(None, QueueListFilter::Overview, 20, sort)
+                .expect("full");
+            let mut ids = Vec::new();
+            let mut cursor: Option<String> = None;
+            for _ in 0..8 {
+                let page = store
+                    .query_queue_page_sorted(cursor.as_deref(), QueueListFilter::Overview, 2, sort)
+                    .expect("page");
+                let again = store
+                    .query_queue_page_sorted(cursor.as_deref(), QueueListFilter::Overview, 2, sort)
+                    .expect("repeat");
+                assert_eq!(page, again);
+                if page.items.is_empty() {
+                    break;
+                }
+                ids.extend(page.items.iter().map(|row| row.id.clone()));
+                let next = page.next_cursor.clone();
+                if next.is_none() {
+                    break;
+                }
+                cursor = next;
+            }
+            assert_eq!(
+                ids,
+                full.items
+                    .iter()
+                    .map(|row| row.id.clone())
+                    .collect::<Vec<_>>()
+            );
+            assert!(!ids.contains(&"z".to_string()));
+            ids
+        };
+
+        let newest = collect(QueueSort::Newest);
+        assert_eq!(newest, vec!["c", "e", "b", "a", "d"]);
+        let oldest = collect(QueueSort::Oldest);
+        assert_eq!(oldest, vec!["d", "a", "b", "e", "c"]);
+
+        let first_newest = store
+            .query_queue_page_sorted(None, QueueListFilter::Overview, 2, QueueSort::Newest)
+            .expect("newest page");
+        assert_eq!(first_newest.items[0].id, "c");
+        assert_eq!(first_newest.items[1].id, "e");
+        let continued = store
+            .query_queue_page_sorted(
+                first_newest.next_cursor.as_deref(),
+                QueueListFilter::Overview,
+                2,
+                QueueSort::Newest,
+            )
+            .expect("next");
+        assert_eq!(continued.items[0].id, "b");
+        assert_eq!(
+            continued.items[0].created_at_ms,
+            first_newest.items[1].created_at_ms
+        );
+        let restarted = store
+            .query_queue_page_sorted(
+                first_newest.next_cursor.as_deref(),
+                QueueListFilter::Overview,
+                2,
+                QueueSort::Oldest,
+            )
+            .expect("sort changed");
+        assert_eq!(
+            restarted
+                .items
+                .iter()
+                .map(|row| row.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["d", "a"]
+        );
     }
 }

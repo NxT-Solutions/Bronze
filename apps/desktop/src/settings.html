@@ -315,6 +315,76 @@
           </div>
         </fieldset>
         <fieldset
+          data-settings-group="copy"
+          data-settings-section
+          aria-labelledby="settings-group-copy"
+        >
+          <legend>
+            <div class="setting-heading setting-heading-group">
+              <span
+                id="settings-group-copy"
+                data-settings-title
+                data-i18n="settings.group.copy"
+              >Copy</span>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.group.copy.infoName"
+                  aria-label="About Copy"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.group.copy.info"
+                >
+                  How Bronze orders the copies in the queue.
+                </p>
+              </details>
+            </div>
+          </legend>
+          <div class="field-block" data-settings-unit>
+            <div class="setting-heading">
+              <label for="queue-sort" data-i18n="settings.field.queueSort">
+                Queue order
+              </label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.queueSort.infoName"
+                  aria-label="About Queue order"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.field.queueSort.info"
+                >
+                  Bronze lists queue cards in this order until you change it.
+                </p>
+              </details>
+            </div>
+            <div class="field-row">
+              <select id="queue-sort" name="queueSort">
+                <option value="newest" selected data-i18n="settings.field.queueSort.newest">
+                  Newest first
+                </option>
+                <option value="oldest" data-i18n="settings.field.queueSort.oldest">
+                  Oldest first
+                </option>
+              </select>
+              <button
+                type="button"
+                class="btn-ghost"
+                data-reset-field="copy.queueSort"
+                data-i18n="settings.reset.field"
+              >
+                Reset field
+              </button>
+            </div>
+          </div>
+        </fieldset>
+        <fieldset
           data-settings-group="titles"
           data-settings-section
           aria-labelledby="settings-group-titles"

@@ -13,6 +13,27 @@ const en = JSON.parse(
   ),
 );
 
+test("settings copy group persists newest and oldest queue order", () => {
+  assert.match(html, /data-settings-group="copy"/);
+  assert.match(html, /id="queue-sort"/);
+  assert.match(html, /data-reset-field="copy.queueSort"/);
+  assert.match(html, /<option value="newest" selected/);
+  assert.match(html, /<option value="oldest"/);
+  assert.equal(en["settings.field.queueSort"], "Queue order");
+  assert.equal(en["settings.field.queueSort.newest"], "Newest first");
+  assert.equal(en["settings.field.queueSort.oldest"], "Oldest first");
+  assert.equal(
+    en["settings.field.queueSort.info"],
+    "Bronze lists queue cards in this order until you change it.",
+  );
+  assert.match(html, />\s*Newest first\s*</);
+  assert.match(html, />\s*Oldest first\s*</);
+  assert.match(
+    html,
+    />\s*Bronze lists queue cards in this order until you change it\.\s*</,
+  );
+});
+
 test("settings window is searchable grouped with daily weekly backup and export preview", () => {
   assert.match(html, /id="settings"/);
   assert.match(html, /id="settings-search"/);
@@ -233,8 +254,8 @@ test("settings window is searchable grouped with daily weekly backup and export 
     "**Extractive** uses no model.",
   );
   assert.match(html, /class="setting-info"/);
-  assert.equal((html.match(/class="setting-info"/g) || []).length, 15);
-  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 15);
+  assert.equal((html.match(/class="setting-info"/g) || []).length, 17);
+  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 17);
   assert.match(html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(html, /data-i18n="settings.field.titleModel.info"/);
   assert.match(html, /data-i18n="settings.field.titleModel.infoExtractive"/);
