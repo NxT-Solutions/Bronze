@@ -6,13 +6,6 @@ mod title_engines;
 mod title_refine;
 mod update;
 
-#[cfg(test)]
-#[path = "../notice_signing.rs"]
-mod notice_signing;
-#[cfg(test)]
-#[path = "../title_model_bundle.rs"]
-mod title_model_bundle;
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "macos")]
@@ -831,6 +824,13 @@ pub use packaging::{
     forbids_get_task_allow, recorded_arch, sbom_stub, supported_release_arches, DG01_INTEL_SUPPORT,
     GET_TASK_ALLOW_FORBIDDEN, PACKAGE_ARCH, PACKAGE_SCRIPT, RELEASE_ARCHES,
 };
+
+#[cfg(test)]
+#[path = "../notice_signing.rs"]
+mod notice_signing;
+#[cfg(test)]
+#[path = "../title_model_bundle.rs"]
+mod title_model_bundle;
 
 #[cfg(test)]
 mod abi_ownership;
