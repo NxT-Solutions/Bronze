@@ -33,6 +33,17 @@ test("hand-test locale stays en unless a shipped or pseudo locale is explicit", 
   assert.equal(resolveUiLocale("de"), "de");
   assert.equal(resolveUiLocale("es"), "es");
   assert.equal(resolveUiLocale("it"), "it");
+  assert.equal(resolveUiLocale("ru"), "ru");
+  assert.equal(resolveUiLocale("uk"), "uk");
+  assert.equal(resolveUiLocale("hr"), "hr");
+  assert.equal(resolveUiLocale("sl"), "sl");
+  assert.equal(resolveUiLocale("da"), "da");
+  assert.equal(resolveUiLocale("sv"), "sv");
+  assert.equal(resolveUiLocale("nb"), "nb");
+  assert.equal(resolveUiLocale("fi"), "fi");
+  assert.equal(resolveUiLocale("tr"), "tr");
+  assert.equal(resolveUiLocale("sv-SE"), "sv");
+  assert.equal(resolveUiLocale("nn"), "en");
   assert.equal(resolveUiLocale("en-XA"), "en-XA");
   assert.equal(resolveUiLocale(undefined), "en");
   assert.deepEqual(SHIPPED_UI_LOCALES, [
@@ -42,10 +53,21 @@ test("hand-test locale stays en unless a shipped or pseudo locale is explicit", 
     "de",
     "es",
     "it",
+    "ru",
+    "uk",
+    "hr",
+    "sl",
+    "da",
+    "sv",
+    "nb",
+    "fi",
+    "tr",
     "en-XA",
     "ar-XB",
   ]);
   assert.equal(htmlLangFor("nl"), "nl");
+  assert.equal(htmlLangFor("ru"), "ru");
+  assert.equal(htmlLangFor("tr"), "tr");
   assert.equal(htmlLangFor("ar-XB"), "ar");
   assert.equal(
     catalogHasRealSpaces("Needed for the global capture chord"),
@@ -145,6 +167,13 @@ test("formatQueueCount uses ICU branches without concatenation", () => {
   assert.equal(formatQueueCount(1, fr), "1 élément");
   assert.equal(formatQueueCount(3, fr), "3 éléments");
   assert.equal(formatQueueCount(2, ""), "2 items");
+  const ru =
+    "{count, plural, =0 {0 элементов} one {# элемент} few {# элемента} many {# элементов} other {# элемента}}";
+  assert.equal(formatQueueCount(0, ru, "ru"), "0 элементов");
+  assert.equal(formatQueueCount(1, ru, "ru"), "1 элемент");
+  assert.equal(formatQueueCount(2, ru, "ru"), "2 элемента");
+  assert.equal(formatQueueCount(5, ru, "ru"), "5 элементов");
+  assert.equal(formatQueueCount(21, ru, "ru"), "21 элемент");
 });
 
 test("locale change is broadcast so every open window can reapply", async () => {

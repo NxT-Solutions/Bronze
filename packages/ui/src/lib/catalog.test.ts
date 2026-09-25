@@ -16,9 +16,21 @@ describe("catalog glossary (I18N-001)", () => {
       "de",
       "es",
       "it",
+      "ru",
+      "uk",
+      "hr",
+      "sl",
+      "da",
+      "sv",
+      "nb",
+      "fi",
+      "tr",
       "en-XA",
       "ar-XB",
     ]);
+    for (const tag of ["ru", "uk", "hr", "sl", "da", "sv", "nb", "fi", "tr"]) {
+      expect(chromeDir(tag)).toBe("ltr");
+    }
     expect(NATIVE_GLOSSARY_KEYS).toContain("menu.status.capture");
     expect(INFOPLIST_GLOSSARY.map(([, key]) => key)).toContain("app.name");
     expect(chromeDir("ar-XB")).toBe("rtl");

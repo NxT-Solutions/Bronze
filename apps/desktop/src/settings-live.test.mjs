@@ -355,6 +355,15 @@ test("settings language switcher uses endonyms and option lang", () => {
   assert.match(html, /<option value="de" lang="de">🇩🇪 Deutsch<\/option>/);
   assert.match(html, /<option value="es" lang="es">🇪🇸 Español<\/option>/);
   assert.match(html, /<option value="it" lang="it">🇮🇹 Italiano<\/option>/);
+  assert.match(html, /<option value="ru" lang="ru">🇷🇺 Русский<\/option>/);
+  assert.match(html, /<option value="uk" lang="uk">🇺🇦 Українська<\/option>/);
+  assert.match(html, /<option value="hr" lang="hr">🇭🇷 Hrvatski<\/option>/);
+  assert.match(html, /<option value="sl" lang="sl">🇸🇮 Slovenščina<\/option>/);
+  assert.match(html, /<option value="da" lang="da">🇩🇰 Dansk<\/option>/);
+  assert.match(html, /<option value="sv" lang="sv">🇸🇪 Svenska<\/option>/);
+  assert.match(html, /<option value="nb" lang="nb">🇳🇴 Norsk bokmål<\/option>/);
+  assert.match(html, /<option value="fi" lang="fi">🇫🇮 Suomi<\/option>/);
+  assert.match(html, /<option value="tr" lang="tr">🇹🇷 Türkçe<\/option>/);
   assert.match(html, /data-reset-field="general.locale"/);
   assert.match(html, /data-reset-field="general.reduceMotion"/);
   assert.match(html, /data-reset-field="general.launchAtLogin"/);

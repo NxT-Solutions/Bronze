@@ -9,7 +9,10 @@ use crate::window_edge::TextDirection;
 
 pub const ADVERTISED_LOCALES: &[&str] = &["en", "en-XA", "ar-XB"];
 
-pub const SHIPPED_UI_LOCALES: &[&str] = &["en", "nl", "fr", "de", "es", "it", "en-XA", "ar-XB"];
+pub const SHIPPED_UI_LOCALES: &[&str] = &[
+    "en", "nl", "fr", "de", "es", "it", "ru", "uk", "hr", "sl", "da", "sv", "nb", "fi", "tr",
+    "en-XA", "ar-XB",
+];
 
 pub fn html_lang(locale: &str) -> &'static str {
     match locale {
@@ -18,6 +21,15 @@ pub fn html_lang(locale: &str) -> &'static str {
         "de" => "de",
         "es" => "es",
         "it" => "it",
+        "ru" => "ru",
+        "uk" => "uk",
+        "hr" => "hr",
+        "sl" => "sl",
+        "da" => "da",
+        "sv" => "sv",
+        "nb" => "nb",
+        "fi" => "fi",
+        "tr" => "tr",
         "ar-XB" => "ar",
         _ => "en",
     }
@@ -175,14 +187,23 @@ mod catalog_tests {
     fn shipped_ui_locales_resolve_html_lang_and_fallback_catalog() {
         assert_eq!(
             SHIPPED_UI_LOCALES,
-            ["en", "nl", "fr", "de", "es", "it", "en-XA", "ar-XB"]
+            [
+                "en", "nl", "fr", "de", "es", "it", "ru", "uk", "hr", "sl", "da", "sv", "nb", "fi",
+                "tr", "en-XA", "ar-XB",
+            ]
         );
         assert!(SHIPPED_UI_LOCALES.contains(&"nl"));
+        assert!(SHIPPED_UI_LOCALES.contains(&"nb"));
+        assert!(!SHIPPED_UI_LOCALES.contains(&"nn"));
         assert!(!SHIPPED_UI_LOCALES.contains(&"system"));
         assert_eq!(html_lang("nl"), "nl");
         assert_eq!(html_lang("ar-XB"), "ar");
         assert_eq!(html_lang("en-XA"), "en");
         assert_eq!(html_lang("zz"), "en");
+        for tag in ["ru", "uk", "hr", "sl", "da", "sv", "nb", "fi", "tr"] {
+            assert_eq!(html_lang(tag), tag);
+            assert_eq!(catalog_dir(tag), TextDirection::Ltr);
+        }
         let root = locales_root();
         assert!(catalog_exists(&root, "en"));
         let loaded = load_ui_catalog_map(&root, "nl");

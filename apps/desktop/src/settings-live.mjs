@@ -14,7 +14,23 @@ import { sourceIconSrc } from "./item-view.mjs";
 import { bindShortcutRegistry } from "./shortcuts.mjs";
 import { showChromeWindow, tauriInvoke, tauriListen } from "./tauri-bridge.mjs";
 
-const SWITCHER_LOCALES = ["en", "nl", "fr", "de", "es", "it"];
+const SWITCHER_LOCALES = [
+  "en",
+  "nl",
+  "fr",
+  "de",
+  "es",
+  "it",
+  "ru",
+  "uk",
+  "hr",
+  "sl",
+  "da",
+  "sv",
+  "nb",
+  "fi",
+  "tr",
+];
 
 export const TITLE_MODEL_IDS = Object.freeze([
   "extractive",

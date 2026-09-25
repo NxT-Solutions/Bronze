@@ -200,7 +200,7 @@ Flaky test is defect. Quarantine requires issue, owner, reason, scope, expiry, a
 4. Capture and app matrices meet success thresholds.
 5. Migration from all supported schemas and restore drill pass.
 6. A11y matrix/known limitations reviewed; independent audit status clear.
-7. i18n catalogs complete for advertised locales (`en`, `en-XA`, `ar-XB`); shipped nl/fr/de/es/it catalogs are not a public QA claim; RTL/IME passes.
+7. i18n catalogs complete for advertised locales (`en`, `en-XA`, `ar-XB`); shipped nl/fr/de/es/it/ru/uk/hr/sl/da/sv/nb/fi/tr catalogs are not a public QA claim; RTL/IME passes.
 8. Threat model, dependency audit, CSP/capabilities, network test pass.
 9. Performance and 24-hour soak pass.
 10. Split arm64 and x86_64 packages selected by ADR-002. Notarization is not claimed without `docs/evidence/`.

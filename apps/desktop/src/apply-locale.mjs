@@ -13,6 +13,15 @@ export const SHIPPED_UI_LOCALES = [
   "de",
   "es",
   "it",
+  "ru",
+  "uk",
+  "hr",
+  "sl",
+  "da",
+  "sv",
+  "nb",
+  "fi",
+  "tr",
   "en-XA",
   "ar-XB",
 ];
@@ -99,22 +108,30 @@ export function applyCatalogRichText(el, value) {
   el.replaceChildren(frag);
 }
 
-export function formatQueueCount(count, template) {
+function pluralBranch(src, keyword) {
+  return src.match(new RegExp(`\\b${keyword}\\s*\\{([^}]*)\\}`))?.[1];
+}
+
+export function formatQueueCount(count, template, locale) {
   const fallback = "{count, plural, =0 {0 items} one {1 item} other {# items}}";
   const src =
     typeof template === "string" && isIcuMessage(template)
       ? template
       : fallback;
   const n = Number(count);
-  const zero = src.match(/=0\s*\{([^}]*)\}/)?.[1];
-  const one = src.match(/\bone\s*\{([^}]*)\}/)?.[1];
-  const other = src.match(/\bother\s*\{([^}]*)\}/)?.[1];
-  let chosen = other ?? `${n} items`;
-  if (n === 0 && zero !== undefined) {
-    chosen = zero;
-  } else if (n === 1 && one !== undefined) {
-    chosen = one;
+  const exact = src.match(new RegExp(`=${n}\\s*\\{([^}]*)\\}`));
+  if (exact) {
+    return exact[1].replaceAll("#", String(n));
   }
+  const lang = locale || lastCatalog.locale || HAND_TEST_DEFAULT_LOCALE;
+  let category = "other";
+  try {
+    category = new Intl.PluralRules(lang).select(n);
+  } catch {
+    category = "other";
+  }
+  const chosen =
+    pluralBranch(src, category) ?? pluralBranch(src, "other") ?? `${n} items`;
   return chosen.replaceAll("#", String(n));
 }
 
