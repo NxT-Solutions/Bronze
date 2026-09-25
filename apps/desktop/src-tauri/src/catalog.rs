@@ -115,8 +115,33 @@ pub fn require_key(map: &BTreeMap<String, String>, key: &str) -> Result<String, 
     }
 }
 
+/// Prefer `Contents/Resources/locales` beside the executable.
+/// The compile-time checkout exists for `tauri dev` and tests; an installed
+/// copy does not have that directory.
 pub fn locales_root() -> std::path::PathBuf {
+    resolve_locales_root(
+        std::env::current_exe().ok().as_deref(),
+        &compile_locales_root(),
+    )
+}
+
+fn compile_locales_root() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../packages/i18n/locales")
+}
+
+fn resolve_locales_root(exe: Option<&Path>, compile_root: &Path) -> std::path::PathBuf {
+    if let Some(exe) = exe {
+        if let Some(bundled) = bundled_locales_dir(exe) {
+            if catalog_exists(&bundled, "en") {
+                return bundled;
+            }
+        }
+    }
+    compile_root.to_path_buf()
+}
+
+fn bundled_locales_dir(exe: &Path) -> Option<std::path::PathBuf> {
+    Some(exe.parent()?.join("../Resources/locales"))
 }
 
 #[cfg(test)]
@@ -203,6 +228,55 @@ mod catalog_tests {
         for key in PANEL_CHROME_KEYS {
             assert!(!require_key(&map, key).expect(key).is_empty());
         }
+    }
+
+    #[test]
+    fn installed_app_reads_bundled_locales_not_the_compile_checkout() {
+        let tmp = std::env::temp_dir().join(format!(
+            "bronze-locales-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let exe = tmp.join("Bronze.app/Contents/MacOS/bronze-desktop");
+        let bundled = tmp.join("Bronze.app/Contents/Resources/locales");
+        std::fs::create_dir_all(bundled.join("en")).expect("bundled locale dir");
+        std::fs::create_dir_all(exe.parent().expect("macos dir")).expect("macos dir");
+        std::fs::write(&exe, b"").expect("exe");
+        std::fs::write(
+            bundled.join("en/app.json"),
+            r#"{"app":{"name":"FromBundle"}}"#,
+        )
+        .expect("catalog");
+        let missing_checkout = tmp.join("runner/work/Bronze/packages/i18n/locales");
+        let resolved = resolve_locales_root(Some(&exe), &missing_checkout);
+        assert_eq!(
+            resolved.canonicalize().expect("bundle locales"),
+            bundled.canonicalize().expect("bundled dir")
+        );
+        assert_eq!(
+            load_locale_map(&resolved, "en")
+                .get("app.name")
+                .map(String::as_str),
+            Some("FromBundle")
+        );
+
+        let loose = tmp.join("target/release/bronze-desktop");
+        std::fs::create_dir_all(loose.parent().expect("target dir")).expect("target dir");
+        std::fs::write(&loose, b"").expect("loose exe");
+        let dev = resolve_locales_root(Some(&loose), &compile_locales_root());
+        assert!(catalog_exists(&dev, "en"));
+        assert!(dev.join("en/app.json").is_file());
+
+        let empty = tmp.join("Empty.app/Contents/MacOS/bronze-desktop");
+        std::fs::create_dir_all(empty.parent().expect("empty macos")).expect("empty macos");
+        std::fs::write(&empty, b"").expect("empty exe");
+        let fallback = resolve_locales_root(Some(&empty), &compile_locales_root());
+        assert!(catalog_exists(&fallback, "en"));
+
+        std::fs::remove_dir_all(&tmp).expect("cleanup");
     }
 
     #[test]
