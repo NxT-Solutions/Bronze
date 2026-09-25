@@ -124,7 +124,7 @@ Deletion claims apply only to Bronze-controlled primary data/backups. Time Machi
 
 ## 10. Permissions
 
-- Request Accessibility and Input Monitoring on native start and first capture when not already granted (SET-003, SET-004). Health Retest is an explicit user action that re-requests those same APIs.
+- Request Accessibility and Input Monitoring on native start and first capture when not already granted and this binary has not shown that prompt (SET-003, SET-004). A dismissed prompt is remembered and is not shown on the next launch. Health Retest is an explicit user action that re-requests those same APIs and refreshes the badge. Notifications are requested only while authorization is not determined. Screen Recording is not requested.
 - Input Monitoring status separate from Accessibility.
 - Denial does not loop or block the manual composer (CAP-003).
 - Secure Keyboard Entry is respected, never bypassed, and user is not told to disable it.
