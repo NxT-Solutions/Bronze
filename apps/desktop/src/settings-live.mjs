@@ -1158,12 +1158,47 @@ export async function refreshAppVersion(root, invokeFn) {
   }
 }
 
+export const UPDATE_NOTE_MESSAGES = Object.freeze({
+  "Check for updates is easier to see.":
+    "settings.field.version.note.checkForUpdates",
+  "The Dock icon fills its tile.": "settings.field.version.note.dockIcon",
+  "Switching the on-this-Mac title engine finishes instead of staying on Loading.":
+    "settings.field.version.note.engineSwitch",
+  "Bronze asks once for the macOS permissions it uses.":
+    "settings.field.version.note.permissions",
+});
+
+export function displayUpdateNote(note, lookup = catalogMessage) {
+  const text = String(note ?? "")
+    .trim()
+    .replace(/^•\s*/, "")
+    .replace(/\s+by\s+@\S+(?:\s+in\b)?/gi, " ")
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (
+    /^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)(\([^)]+\))?!?:/i.test(
+      text,
+    )
+  ) {
+    return "";
+  }
+  const key = UPDATE_NOTE_MESSAGES[text];
+  if (!key) {
+    return text;
+  }
+  const translated = lookup(key);
+  return typeof translated === "string" && translated.trim()
+    ? translated
+    : text;
+}
+
 export function renderUpdateNotes(container, notes) {
   if (!container?.replaceChildren) {
     return;
   }
   const items = (Array.isArray(notes) ? notes : [])
-    .map((note) => String(note ?? "").trim())
+    .map((note) => displayUpdateNote(note))
     .filter(Boolean);
   if (!items.length) {
     const empty = container.ownerDocument.createElement("p");
@@ -1177,7 +1212,7 @@ export function renderUpdateNotes(container, notes) {
   const list = container.ownerDocument.createElement("ul");
   for (const note of items) {
     const item = container.ownerDocument.createElement("li");
-    item.textContent = note.replace(/^•\s*/, "");
+    item.textContent = note;
     list.append(item);
   }
   container.replaceChildren(list);
