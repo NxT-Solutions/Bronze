@@ -9,7 +9,7 @@
     "validate": "tsx scripts/validate.ts"
   },
   "dependencies": {
-    "i18next": "26.4.0",
+    "i18next": "26.4.2",
     "i18next-icu": "2.4.4",
     "react-i18next": "17.0.12"
   },
