@@ -311,6 +311,8 @@
   "settings.permission.selfTest.alternative": "tsil siht morf retal yrteR",
   "settings.permission.composer.available": "elbaliava sniamer resopmoc launaM",
   "settings.permission.openSystemSettings": "sgnitteS metsyS nepO",
+  "settings.permission.runningCopy": " si ypoc sihT⁧{name}⁩ ⁧{version}⁩.",
+  "settings.permission.staleCopy": ".eznorB nepoer dna tiuq neht ,redniF ni delaever ppa eht esoohc dna ,ddA kcilc ,ffo hctiws taht nrut ,no sa ppa siht swohs ydaerla sgnitteS metsyS fI",
   "settings.permission.notifications.why": "srennab retneC noitacifitoN rof dedeeN",
   "settings.permission.notifications.alternative": "sraeppa llits eciton ppa-ni ehT",
   "settings.permission.notifications.allow": "snoitacifiton wollA",

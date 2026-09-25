@@ -311,6 +311,8 @@
   "settings.permission.selfTest.alternative": "Später erneut aus dieser Liste versuchen",
   "settings.permission.composer.available": "Die manuelle Eingabe bleibt verfügbar",
   "settings.permission.openSystemSettings": "Systemeinstellungen öffnen",
+  "settings.permission.runningCopy": "Diese Kopie ist {name} {version}.",
+  "settings.permission.staleCopy": "Wenn die Systemeinstellungen diese App bereits als aktiv zeigen, schalten Sie den Schalter aus, klicken Sie auf das Plus und wählen Sie die im Finder gezeigte App, und beenden Sie Bronze danach und öffnen Sie es erneut.",
   "settings.permission.notifications.why": "Für Mitteilungszentrale-Banner nötig",
   "settings.permission.notifications.alternative": "Der Hinweis in der App erscheint weiter",
   "settings.permission.notifications.allow": "Mitteilungen erlauben",

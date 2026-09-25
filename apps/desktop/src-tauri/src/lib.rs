@@ -1,6 +1,7 @@
 mod capture_permissions;
 mod live_session;
 mod own_selection;
+mod running_bundle;
 mod title_engines;
 mod title_refine;
 mod update;

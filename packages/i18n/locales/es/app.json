@@ -311,6 +311,8 @@
   "settings.permission.selfTest.alternative": "Vuelve a intentarlo más tarde desde esta lista",
   "settings.permission.composer.available": "La escritura manual sigue disponible",
   "settings.permission.openSystemSettings": "Abrir Ajustes del Sistema",
+  "settings.permission.runningCopy": "Esta copia es {name} {version}.",
+  "settings.permission.staleCopy": "Si Ajustes del Sistema ya muestra esta app como activada, apaga ese interruptor, pulsa el botón de añadir y elige la app que aparece en el Finder, y luego sal de Bronze y ábrelo de nuevo.",
   "settings.permission.notifications.why": "Necesario para los avisos del Centro de notificaciones",
   "settings.permission.notifications.alternative": "El aviso en la app sigue apareciendo",
   "settings.permission.notifications.allow": "Permitir notificaciones",

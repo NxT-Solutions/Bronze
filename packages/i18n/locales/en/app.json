@@ -311,6 +311,8 @@
   "settings.permission.selfTest.alternative": "Retry later from this list",
   "settings.permission.composer.available": "Manual composer remains available",
   "settings.permission.openSystemSettings": "Open System Settings",
+  "settings.permission.runningCopy": "This copy is {name} {version}.",
+  "settings.permission.staleCopy": "If System Settings already shows this app as on, turn that switch off, click Add, and choose the app revealed in Finder, then quit and reopen Bronze.",
   "settings.permission.notifications.why": "Needed for Notification Center banners",
   "settings.permission.notifications.alternative": "The in-app notice still appears",
   "settings.permission.notifications.allow": "Allow notifications",

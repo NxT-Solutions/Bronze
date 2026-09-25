@@ -311,6 +311,8 @@
   "settings.permission.selfTest.alternative": "【RRéettrryy lláattéerr ffrróomm tthhíiss llíisstt】",
   "settings.permission.composer.available": "【MMáañnúuáall çcóommppóosséerr rréemmáaíiñnss áavváaíilláabbllée】",
   "settings.permission.openSystemSettings": "【ÓOppéeñn SSyyssttéemm SSéettttíiñnggss】",
+  "settings.permission.runningCopy": "【TThhíiss çcóoppyy íiss {name} {version}. [·]  [·]  [·] 】",
+  "settings.permission.staleCopy": "【ÍIff SSyyssttéemm SSéettttíiñnggss áallrréeáaddyy sshhóowwss tthhíiss áapppp áass óoñn, ttúurrñn tthháatt sswwíittçchh óoffff, çcllíiçckk ÁAdddd, áañndd çchhóoóossée tthhée áapppp rréevvéeáalléedd íiñn FFíiñnddéerr, tthhéeñn qqúuíitt áañndd rréeóoppéeñn BBrróoñnzzée.】",
   "settings.permission.notifications.why": "【NNéeéeddéedd ffóorr NNóottíiffíiçcáattíióoñn CCéeñnttéerr bbáañnñnéerrss】",
   "settings.permission.notifications.alternative": "【TThhée íiñn-áapppp ñnóottíiçcée ssttíillll áappppéeáarrss】",
   "settings.permission.notifications.allow": "【ÁAllllóoww ñnóottíiffíiçcáattíióoñnss】",
