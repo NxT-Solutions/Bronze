@@ -11,3 +11,5 @@ Original concept image generated and scope-corrected with OpenAI ImageGen on 202
 - Status: concept only. Validate actual components, text scale, contrast, focus, transparency, and assistive-technology behavior in running app.
 
 Do not add screenshots or frames taken from Copper. Product analysis may describe behavior, but Bronze needs independent brand and trade dress.
+
+Public README stills live under `docs/images/` (`bronze-mark`, `bronze-hero`, `bronze-queue`, `bronze-settings`). Those are original Bronze visuals, not Copper frames.
