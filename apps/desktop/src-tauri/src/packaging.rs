@@ -98,6 +98,7 @@ mod packaging_tests {
         assert!(conf.contains("\"resources\""));
         assert!(conf.contains("bronze-title-model/vendor/*.gguf"));
         assert!(conf.contains("\"models/\""));
+        assert!(conf.contains("\"../../../packages/i18n/locales\": \"locales/\""));
         assert!(!build.contains("stage_bundled_title_models"));
         assert!(!build.contains("same_len"));
         assert!(!build.contains("manifest.join(\"models\")"));

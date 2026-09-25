@@ -115,8 +115,45 @@ pub fn require_key(map: &BTreeMap<String, String>, key: &str) -> Result<String, 
     }
 }
 
-pub fn locales_root() -> std::path::PathBuf {
+/// Directory under Tauri's resource dir (`Contents/Resources` on macOS).
+pub const BUNDLED_LOCALES_DIR: &str = "locales";
+
+pub fn workspace_locales_root() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../packages/i18n/locales")
+}
+
+pub fn locales_root() -> std::path::PathBuf {
+    resolve_locales_root(
+        std::env::current_exe().ok().as_deref(),
+        &workspace_locales_root(),
+    )
+}
+
+/// Packaged apps read `Contents/Resources/locales`. `tauri dev` keeps `workspace`.
+pub fn resolve_locales_root(exe: Option<&Path>, workspace: &Path) -> std::path::PathBuf {
+    if let Some(exe) = exe {
+        if let Some(bundled) = bundled_locales_root(exe) {
+            return bundled;
+        }
+    }
+    workspace.to_path_buf()
+}
+
+fn bundled_locales_root(exe: &Path) -> Option<std::path::PathBuf> {
+    let macos = exe.parent()?;
+    if macos.file_name()? != "MacOS" {
+        return None;
+    }
+    let contents = macos.parent()?;
+    if contents.file_name()? != "Contents" {
+        return None;
+    }
+    let locales = contents.join("Resources").join(BUNDLED_LOCALES_DIR);
+    if catalog_exists(&locales, "en") {
+        Some(locales)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -214,5 +251,54 @@ mod catalog_tests {
         assert_eq!(en.card_lang(), "en");
         assert_eq!(en.card_dir(), "auto");
         assert_ne!(ar.card_lang(), en.card_lang());
+    }
+
+    #[test]
+    fn packaged_lookup_ignores_build_machine_absolute_path() {
+        let root = std::env::temp_dir().join(format!(
+            "bronze-catalog-bundle-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        let exe = root.join("Bronze.app/Contents/MacOS/bronze-desktop");
+        std::fs::create_dir_all(exe.parent().expect("macos dir")).expect("macos dir");
+        std::fs::write(&exe, b"").expect("exe");
+        let bundled = root.join("Bronze.app/Contents/Resources/locales");
+        std::fs::create_dir_all(bundled.join("en")).expect("locales");
+        std::fs::write(bundled.join("en/app.json"), r#"{"app":{"name":"Bronze"}}"#).expect("json");
+
+        let runner = Path::new("/Users/runner/work/Bronze/Bronze/packages/i18n/locales");
+        let resolved = resolve_locales_root(Some(&exe), runner);
+        assert_eq!(resolved, bundled);
+        assert_ne!(resolved, runner);
+        assert_ne!(resolved, workspace_locales_root());
+        assert!(!resolved.starts_with(env!("CARGO_MANIFEST_DIR")));
+        let map = load_locale_map(&resolved, "en");
+        assert_eq!(map.get("app.name").map(String::as_str), Some("Bronze"));
+
+        let dev_exe = root.join("target/debug/bronze-desktop");
+        std::fs::create_dir_all(dev_exe.parent().expect("debug dir")).expect("debug dir");
+        std::fs::write(&dev_exe, b"").expect("dev exe");
+        let dev_workspace = root.join("workspace-locales");
+        std::fs::create_dir_all(dev_workspace.join("en")).expect("dev locales");
+        std::fs::write(
+            dev_workspace.join("en/app.json"),
+            r#"{"app":{"name":"Dev"}}"#,
+        )
+        .expect("dev json");
+        assert_eq!(
+            resolve_locales_root(Some(&dev_exe), &dev_workspace),
+            dev_workspace
+        );
+
+        let conf =
+            std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("tauri.conf.json"))
+                .expect("tauri.conf");
+        assert!(conf.contains("\"../../../packages/i18n/locales\": \"locales/\""));
+        let _ = std::fs::remove_dir_all(&root);
     }
 }
