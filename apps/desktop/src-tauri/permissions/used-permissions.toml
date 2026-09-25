@@ -27,6 +27,7 @@ description = "Composer, queue mutations, and copy for the Quick Panel"
 commands.allow = [
   "list_queue_items",
   "list_overview_items",
+  "queue_query",
   "add_composer_item",
   "apply_queue_item_action",
   "edit_queue_item",

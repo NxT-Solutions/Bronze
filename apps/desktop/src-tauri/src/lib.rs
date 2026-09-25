@@ -23,6 +23,7 @@ pub fn run() {
                 show_chrome_window,
                 live_session::list_queue_items,
                 live_session::list_overview_items,
+                live_session::queue_query,
                 live_session::add_composer_item,
                 live_session::apply_queue_item_action,
                 live_session::edit_queue_item,
@@ -849,6 +850,10 @@ mod tests {
                     fs::read_to_string(manifest_dir().join("permissions/used-permissions.toml"))
                         .expect("permissions");
                 assert!(used.contains("list_overview_items"));
+                assert!(
+                    permission_block(&used, "allow-queue-live").contains("queue_query"),
+                    "allow-queue-live must include queue_query (SEC-002)"
+                );
                 assert!(
                     permission_block(&used, "allow-queue-live").contains("load_settings_v1"),
                     "allow-queue-live must include load_settings_v1"
