@@ -551,9 +551,10 @@ test("title model status shows present vs vendor command and never fetches", asy
     formatTitleModelStatus({
       id: "qwen-05",
       present: false,
-      vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+      vendorCommand:
+        "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
     }),
-    "Vendored file missing — titles stay extractive until you run sh bronze-title-model/scripts/vendor-gguf.sh qwen-05.",
+    "Vendored file missing — titles stay extractive until you run sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05.",
   );
   assert.equal(
     formatTitleModelStatus(
@@ -576,7 +577,8 @@ test("title model status shows present vs vendor command and never fetches", asy
   applyTitleModelStatus(root, {
     id: "qwen-05",
     present: false,
-    vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+    vendorCommand:
+      "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
   });
   assert.match(status.textContent, /vendor-gguf\.sh qwen-05/);
   assert.doesNotMatch(status.textContent, /Title:/);
@@ -590,7 +592,8 @@ test("title model status shows present vs vendor command and never fetches", asy
       {
         id: "qwen-05",
         present: false,
-        vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+        vendorCommand:
+          "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
       },
     ];
   });
@@ -631,7 +634,8 @@ test("title model status shows present vs vendor command and never fetches", asy
     {
       id: "qwen-05",
       present: false,
-      vendorCommand: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+      vendorCommand:
+        "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
     },
   );
   assert.match(status.textContent, /Vendored file missing/);

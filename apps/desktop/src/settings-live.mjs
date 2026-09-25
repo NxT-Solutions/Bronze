@@ -52,9 +52,9 @@ const INTEGRATION_TITLE_MODEL_IDS = Object.freeze([
 ]);
 
 const TITLE_MODEL_VENDOR = {
-  "smol-135": "sh bronze-title-model/scripts/vendor-gguf.sh smol-135",
-  "smol-360": "sh bronze-title-model/scripts/vendor-gguf.sh smol-360",
-  "qwen-05": "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+  "smol-135": "sh crates/bronze-title-model/scripts/vendor-gguf.sh smol-135",
+  "smol-360": "sh crates/bronze-title-model/scripts/vendor-gguf.sh smol-360",
+  "qwen-05": "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
 };
 
 export const TITLE_ENGINE_STATUS_EVENT = "title-engine-status";

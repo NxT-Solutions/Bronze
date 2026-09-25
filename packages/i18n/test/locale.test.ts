@@ -66,10 +66,10 @@ describe("i18n ICU plural", () => {
     ).toBe("Chargement de Qwen2.5 0.5B…");
     expect(
       tfr("settings.field.titleModel.missing", {
-        command: "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",
+        command: "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
       }),
     ).toBe(
-      "Fichier vendor manquant — les titres restent extractifs jusqu’à sh bronze-title-model/scripts/vendor-gguf.sh qwen-05.",
+      "Fichier vendor manquant — les titres restent extractifs jusqu’à sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05.",
     );
     expect(tfr("capture.source", { appName: "Mail" })).toBe("De Mail");
   });
