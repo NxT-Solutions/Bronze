@@ -1,4 +1,5 @@
 {
   "defaultBranch": "main",
+  "noStats": true,
   "skipContextFiles": true
 }
