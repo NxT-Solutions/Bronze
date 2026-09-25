@@ -159,6 +159,39 @@ mod user_notice_tests {
         assert!(!helper.contains("URLSession"));
         assert!(!helper.contains("http://"));
         assert!(!helper.contains("https://"));
+        assert!(!helper.contains("UNNotificationAttachment"));
+        assert!(!helper.contains("content.attachments"));
+        assert!(!helper.contains("NSImage"));
+        assert!(!helper.contains("32x32"));
+        assert!(!helper.contains("128x128"));
+        assert!(!swift.contains("UNNotificationAttachment"));
+        assert!(!swift.contains("content.attachments"));
+        assert!(!swift.contains("NSImage"));
+        assert!(!swift.contains("32x32"));
+        assert!(!swift.contains("128x128"));
+        let build = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../apps/desktop/src-tauri/build.rs"
+        ));
+        let wrap_at = build
+            .find("fn wrap_notice_helper")
+            .expect("notice helper wrapper");
+        let wrap = &build[wrap_at..];
+        let wrap_end = wrap.find("\nfn ").unwrap_or(wrap.len());
+        let wrap = &wrap[..wrap_end];
+        assert!(wrap.contains("icons/icon.icns") || build.contains("icons/icon.icns"));
+        assert!(wrap.contains("AppIcon.icns"));
+        assert!(wrap.contains("notification banner must use the Dock icon.icns"));
+        assert!(!wrap.contains("32x32"));
+        assert!(!wrap.contains("128x128"));
+        let call_at = build
+            .find("wrap_notice_helper(")
+            .expect("notice helper call");
+        let call = &build[call_at..call_at + 180];
+        assert!(
+            call.contains("icons/icon.icns"),
+            "BronzeNotice must copy the Dock icon.icns, got {call}"
+        );
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"

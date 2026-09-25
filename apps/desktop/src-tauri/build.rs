@@ -76,7 +76,7 @@ fn profile_dir() -> PathBuf {
         .to_path_buf()
 }
 
-fn wrap_notice_helper(swift_bin: &Path, dest_dir: &Path, icon: &Path) {
+fn wrap_notice_helper(swift_bin: &Path, dest_dir: &Path, dock_icon: &Path) {
     let exe = swift_bin.join("BronzeNotice");
     assert!(
         exe.is_file(),
@@ -90,9 +90,17 @@ fn wrap_notice_helper(swift_bin: &Path, dest_dir: &Path, icon: &Path) {
     std::fs::copy(&exe, macos.join("BronzeNotice")).expect("copy BronzeNotice");
     std::fs::write(app.join("Contents/Info.plist"), NOTICE_HELPER_PLIST)
         .expect("BronzeNotice Info.plist");
-    if icon.is_file() {
-        std::fs::copy(icon, resources.join("AppIcon.icns")).expect("BronzeNotice icon");
-    }
+    // Notification Center draws CFBundleIconFile. The banner and the Dock
+    // are one asset: AppIcon.icns is icon.icns, not the menu-bar template.
+    assert!(
+        dock_icon.file_name().and_then(|name| name.to_str()) == Some("icon.icns"),
+        "notification banner must use the Dock icon.icns"
+    );
+    assert!(
+        dock_icon.is_file(),
+        "icons/icon.icns must exist so the banner is not a generic tile"
+    );
+    std::fs::copy(dock_icon, resources.join("AppIcon.icns")).expect("BronzeNotice icon");
     std::fs::write(app.join("Contents/PkgInfo"), "APPL????").expect("BronzeNotice PkgInfo");
     sign_notice_helper(&app, dest_dir);
 }
