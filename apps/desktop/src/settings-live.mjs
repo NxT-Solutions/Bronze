@@ -1,4 +1,8 @@
 import {
+  fuzzyFilter,
+  fuzzyMatchScore,
+} from "../../../packages/ui/src/lib/fuzzy-match.ts";
+import {
   applyHandTestLocale,
   catalogMessage,
   emitUiLocaleChanged,
@@ -784,13 +788,17 @@ export function settingsSearchNeedle(raw) {
     .toLocaleLowerCase();
 }
 
-export function settingsSearchMatches(text, needle) {
-  if (!needle) {
-    return true;
-  }
-  return String(text ?? "")
-    .toLocaleLowerCase()
-    .includes(needle);
+export function searchLocale(root) {
+  const lang =
+    root?.documentElement?.lang ??
+    root?.ownerDocument?.documentElement?.lang ??
+    "";
+  const tag = String(lang).trim();
+  return tag || "en";
+}
+
+export function settingsSearchMatches(text, needle, locale = "en") {
+  return fuzzyMatchScore(String(text ?? ""), needle, locale) != null;
 }
 
 export function settingsUnitHaystack(unit) {
@@ -886,22 +894,22 @@ export function isSafeBundleId(id) {
   );
 }
 
-export function filterInstalledApps(apps, query, selectedIds) {
-  const needle = settingsSearchNeedle(query);
+export function filterInstalledApps(apps, query, selectedIds, locale = "en") {
   const selected = new Set(
     (selectedIds ?? [])
       .filter(isSafeBundleId)
       .map((id) => id.trim().toLocaleLowerCase()),
   );
-  return (Array.isArray(apps) ? apps : []).filter((app) => {
+  const eligible = (Array.isArray(apps) ? apps : []).filter((app) => {
     if (!isSafeBundleId(app?.bundleId)) {
       return false;
     }
-    if (selected.has(app.bundleId.trim().toLocaleLowerCase())) {
-      return false;
-    }
-    return settingsSearchMatches(`${app.name ?? ""} ${app.bundleId}`, needle);
+    return !selected.has(app.bundleId.trim().toLocaleLowerCase());
   });
+  return fuzzyFilter(eligible, query, locale, (app) => [
+    String(app?.name ?? ""),
+    String(app?.bundleId ?? ""),
+  ]);
 }
 
 export function resolveExcludedApps(ids, catalog) {
@@ -1019,12 +1027,13 @@ export function renderExcludedChips(host, apps) {
 }
 
 export function applySettingsSearch(root, rawQuery) {
-  const needle = settingsSearchNeedle(rawQuery);
-  const searching = needle.length > 0;
+  const query = String(rawQuery ?? "");
+  const searching = settingsSearchNeedle(query).length > 0;
+  const locale = searchLocale(root);
+  const matches = (text) => settingsSearchMatches(text, query, locale);
 
   for (const unit of root.querySelectorAll("[data-settings-unit]")) {
-    unit.hidden =
-      searching && !settingsSearchMatches(settingsUnitHaystack(unit), needle);
+    unit.hidden = searching && !matches(settingsUnitHaystack(unit));
   }
 
   for (const section of root.querySelectorAll("[data-settings-section]")) {
@@ -1037,7 +1046,7 @@ export function applySettingsSearch(root, rawQuery) {
     ]
       .map((node) => node.textContent ?? "")
       .join(" ");
-    const titleHit = settingsSearchMatches(`${title} ${info}`, needle);
+    const titleHit = matches(`${title} ${info}`);
     const units = [...section.querySelectorAll("[data-settings-unit]")];
     if (searching && titleHit) {
       for (const unit of units) {
@@ -1050,8 +1059,7 @@ export function applySettingsSearch(root, rawQuery) {
       section.hidden = searching && units.every((unit) => unit.hidden);
       continue;
     }
-    section.hidden =
-      searching && !settingsSearchMatches(section.textContent ?? "", needle);
+    section.hidden = searching && !matches(section.textContent ?? "");
   }
 
   const form = root.querySelector("[data-settings-form]");
@@ -2115,6 +2123,7 @@ function bindExcludedPicker(root, invokeFn, persist) {
       host._installedApps ?? [],
       search.value,
       readExcludedBundleIds(host),
+      searchLocale(root),
     );
     list.replaceChildren();
     for (const app of matches.slice(0, 50)) {

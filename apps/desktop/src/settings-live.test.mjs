@@ -39,6 +39,7 @@ import {
   renderUpdateNotes,
   resolveExcludedApps,
   settingsExportFailureCode,
+  settingsSearchMatches,
   settingsSearchNeedle,
   settingsUnitHaystack,
   switcherLocale,
@@ -213,6 +214,46 @@ test("excluded app picker searches installed apps and keeps many ids", () => {
       (app) => app.bundleId,
     ),
     ["com.apple.Safari"],
+  );
+  assert.deepEqual(
+    filterInstalledApps(catalog, "SAF", []).map((app) => app.bundleId),
+    ["com.apple.Safari"],
+  );
+  const ranked = [
+    { bundleId: "com.example.mybronze", name: "My Bronze" },
+    { bundleId: "com.example.bronze", name: "Bronze" },
+    { bundleId: "com.example.notes", name: "Notes" },
+  ];
+  assert.deepEqual(
+    filterInstalledApps(ranked, "BRONZE", []).map((app) => app.name),
+    ["Bronze", "My Bronze"],
+  );
+  assert.deepEqual(
+    filterInstalledApps(ranked, "brn", []).map((app) => app.name),
+    ["Bronze", "My Bronze"],
+  );
+  assert.deepEqual(filterInstalledApps(ranked, "zzzz", []), []);
+  assert.deepEqual(
+    filterInstalledApps(ranked, "  ", []).map((app) => app.bundleId),
+    ranked.map((app) => app.bundleId),
+  );
+  assert.deepEqual(
+    filterInstalledApps(
+      [{ bundleId: "com.example.ist", name: "Istanbul" }],
+      "ıstanbul",
+      [],
+      "tr",
+    ).map((app) => app.name),
+    ["Istanbul"],
+  );
+  assert.deepEqual(
+    filterInstalledApps(
+      [{ bundleId: "com.example.ist", name: "Istanbul" }],
+      "istanbul",
+      [],
+      "tr",
+    ),
+    [],
   );
   assert.deepEqual(
     resolveExcludedApps(["com.apple.Safari", "com.missing.app"], catalog),
@@ -561,6 +602,31 @@ test("settings search matches visible labels and not reset chrome", () => {
   assert.equal(shortcuts.hidden, false);
   assert.equal(form.hidden, false);
   assert.equal(empty.hidden, true);
+
+  applySettingsSearch(root, "BCKP");
+  assert.equal(data.hidden, false);
+  assert.equal(dataUnit.hidden, false);
+  assert.equal(general.hidden, true);
+  assert.equal(shortcuts.hidden, true);
+  assert.equal(empty.hidden, true);
+
+  applySettingsSearch(root, "BACKUP");
+  assert.equal(data.hidden, false);
+  assert.equal(general.hidden, true);
+
+  applySettingsSearch(root, "   ");
+  assert.equal(general.hidden, false);
+  assert.equal(data.hidden, false);
+  assert.equal(shortcuts.hidden, false);
+  assert.equal(empty.hidden, true);
+
+  assert.equal(settingsSearchMatches("Café token", "cafe"), false);
+  assert.equal(settingsSearchMatches("Café token", "CAFÉ"), true);
+  assert.equal(settingsSearchMatches("Bronze", "brn"), true);
+  assert.equal(settingsSearchMatches("Bronze", ""), true);
+  assert.equal(settingsSearchMatches("Bronze", "zzzz"), false);
+  assert.equal(settingsSearchMatches("Istanbul", "ıstanbul", "tr"), true);
+  assert.equal(settingsSearchMatches("Istanbul", "istanbul", "tr"), false);
 });
 
 test("title model status shows present vs vendor command and never fetches", async () => {
