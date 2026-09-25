@@ -304,6 +304,13 @@ def check_oss_release() -> list[str]:
                 errors.append(f"release.yml missing {needle}")
         if "git push origin main" in release_text or "git push origin HEAD" in release_text:
             errors.append("release.yml must not push main")
+        if "files: dist/**/*" in release_text:
+            errors.append(
+                "release.yml must not upload dist/**/* "
+                "(duplicate NOTARIZATION.txt basenames 404 on asset delete)"
+            )
+        if "files: staged/*" not in release_text:
+            errors.append("release.yml must upload unique staged/* release files")
 
     brew = ROOT / ".github" / "workflows" / "publish-homebrew.yml"
     brew_text = brew.read_text() if brew.is_file() else ""
