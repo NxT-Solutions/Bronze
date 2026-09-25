@@ -97,7 +97,7 @@
                   data-setting-info
                   data-i18n="settings.group.general.info"
                 >
-                  Launch at login, language, motion, and the title engine for new captures.
+                  Launch at login, language, and motion on this Mac.
                 </p>
               </details>
             </div>
@@ -256,13 +256,43 @@
               </button>
             </div>
           </div>
-          <div class="field-block" data-settings-unit>
-            <div class="setting-heading">
-              <label for="title-model" data-i18n="settings.field.titleModel">Title engine</label>
+        </fieldset>
+        <fieldset
+          data-settings-group="titles"
+          data-settings-section
+          aria-labelledby="settings-group-titles"
+        >
+          <legend>
+            <div class="setting-heading setting-heading-group">
+              <span
+                id="settings-group-titles"
+                data-settings-title
+                data-i18n="settings.group.titles"
+              >Title engines</span>
               <details class="setting-info">
                 <summary
-                  data-i18n-aria-label="settings.field.titleModel.infoName"
-                  aria-label="About Title engine"
+                  data-i18n-aria-label="settings.group.titles.infoName"
+                  aria-label="About Title engines"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <p
+                  class="setting-info-panel"
+                  data-setting-info
+                  data-i18n="settings.group.titles.info"
+                >
+                  How Bronze writes a title for a new capture.
+                </p>
+              </details>
+            </div>
+          </legend>
+          <div class="field-block" data-settings-unit>
+            <div class="setting-heading">
+              <label for="title-model" data-i18n="settings.field.titleModel.local">On this Mac</label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.titleModel.local.infoName"
+                  aria-label="About On this Mac"
                 >
                   <span class="setting-info-mark" aria-hidden="true"></span>
                 </summary>
@@ -273,8 +303,8 @@
                   <p data-i18n="settings.field.titleModel.infoExtractive">
                     <strong>Extractive</strong> uses no model.
                   </p>
-                  <p data-i18n="settings.field.titleModel.infoHosted">
-                    <strong>Sends truncated capture text</strong> to {host}.
+                  <p data-i18n="settings.field.titleModel.local.info">
+                    <strong>Bundled and imported files</strong> stay on this Mac.
                   </p>
                 </div>
               </details>
@@ -302,24 +332,6 @@
               data-i18n="settings.field.titleModel.helpUse"
             >
               <strong>Holds that much memory</strong> and uses 2 CPU threads while it writes a title.
-            </p>
-            <p
-              id="title-model-help-ollama"
-              class="muted field-help"
-              data-title-model-help
-              hidden
-              data-i18n="settings.field.titleModel.ollama.help"
-            >
-              Uses a model already in Ollama on this Mac.
-            </p>
-            <p
-              id="title-model-help-hosted"
-              class="muted field-help"
-              data-title-model-help
-              hidden
-              data-i18n="settings.field.titleModel.helpHosted"
-            >
-              Before the first send, confirm the host and the payload class.
             </p>
             <div class="field-row">
               <select
@@ -358,6 +370,101 @@
                 >
                   Imported GGUF — 2 CPU threads
                 </option>
+              </select>
+              <span
+                class="title-engine-spinner"
+                data-title-model-spinner
+                hidden
+                aria-hidden="true"
+              ></span>
+              <button
+                type="button"
+                class="btn-ghost"
+                data-reset-field="general.titleModel"
+                data-i18n="settings.reset.field"
+              >
+                Reset field
+              </button>
+            </div>
+            <div class="field-row title-engine-import-row">
+              <button
+                type="button"
+                data-import-title-gguf
+                data-i18n="settings.field.titleModel.import"
+              >
+                Import GGUF…
+              </button>
+            </div>
+            <div data-title-engine-panel="custom" hidden>
+              <p
+                id="title-custom-file"
+                class="muted field-help"
+                data-title-custom-file
+              ></p>
+            </div>
+          </div>
+          <div class="field-block" data-settings-unit>
+            <div class="setting-heading">
+              <label for="title-integration" data-i18n="settings.field.titleModel.integrations">Integrations</label>
+              <details class="setting-info">
+                <summary
+                  data-i18n-aria-label="settings.field.titleModel.integrations.infoName"
+                  aria-label="About Integrations"
+                >
+                  <span class="setting-info-mark" aria-hidden="true"></span>
+                </summary>
+                <div class="setting-info-panel" data-setting-info>
+                  <p data-i18n="settings.field.titleModel.integrations.info">
+                    <strong>Ollama</strong> stays on this Mac.
+                  </p>
+                  <p data-i18n="settings.field.titleModel.integrations.infoHosted">
+                    <strong>Hosted options</strong> send truncated text.
+                  </p>
+                  <p data-i18n="settings.field.titleModel.infoHosted">
+                    <strong>Sends truncated capture text</strong> to {host}.
+                  </p>
+                </div>
+              </details>
+            </div>
+            <p
+              id="title-model-help-integrations"
+              class="muted field-help"
+              data-title-model-help
+              data-i18n="settings.field.titleModel.integrations.help"
+            >
+              <strong>Off</strong> keeps the on-this-Mac engine.
+            </p>
+            <p
+              id="title-model-help-ollama"
+              class="muted field-help"
+              data-title-model-help
+              hidden
+              data-i18n="settings.field.titleModel.ollama.help"
+            >
+              Uses a model already in Ollama on this Mac.
+            </p>
+            <p
+              id="title-model-help-hosted"
+              class="muted field-help"
+              data-title-model-help
+              hidden
+              data-i18n="settings.field.titleModel.helpHosted"
+            >
+              Before the first send, confirm the host and the payload class.
+            </p>
+            <div class="field-row">
+              <select
+                id="title-integration"
+                name="titleIntegration"
+                aria-describedby="title-model-help-integrations title-model-help-ollama title-model-help-hosted title-model-status"
+              >
+                <option
+                  value="none"
+                  selected
+                  data-i18n="settings.field.titleModel.integrations.none"
+                >
+                  Off
+                </option>
                 <option
                   value="ollama"
                   data-i18n="settings.field.titleModel.ollama"
@@ -383,37 +490,6 @@
                   OpenRouter — sends text off this Mac
                 </option>
               </select>
-              <span
-                class="title-engine-spinner"
-                data-title-model-spinner
-                hidden
-                aria-hidden="true"
-              ></span>
-              <button
-                type="button"
-                class="btn-ghost"
-                data-reset-field="general.titleModel"
-                data-i18n="settings.reset.field"
-              >
-                Reset field
-              </button>
-            </div>
-            <div data-title-engine-panel="custom" hidden>
-              <div class="field-row">
-                <button
-                  type="button"
-                  class="btn-ghost"
-                  data-import-title-gguf
-                  data-i18n="settings.field.titleModel.import"
-                >
-                  Import GGUF…
-                </button>
-              </div>
-              <p
-                id="title-custom-file"
-                class="muted field-help"
-                data-title-custom-file
-              ></p>
             </div>
             <div data-title-engine-panel="ollama" hidden>
               <label for="title-ollama-model" data-i18n="settings.field.titleModel.ollama.label">Ollama model</label>

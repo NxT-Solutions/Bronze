@@ -55,6 +55,7 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   const excluded = { dataset: { excludedIds: "" } };
   const locale = { value: "en" };
   const titleModel = { value: "extractive" };
+  const titleIntegration = { value: "none" };
   const reduceMotion = { value: "system" };
   const launchAtLogin = { checked: false };
   const root = {
@@ -63,6 +64,7 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
       if (sel === "#excluded-apps") return excluded;
       if (sel === "#ui-locale") return locale;
       if (sel === "#title-model") return titleModel;
+      if (sel === "#title-integration") return titleIntegration;
       if (sel === "#reduce-motion") return reduceMotion;
       if (sel === "#launch-at-login") return launchAtLogin;
       return null;
@@ -73,6 +75,14 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   assert.equal(excluded.dataset.excludedIds, "com.example");
   assert.equal(locale.value, "en");
   assert.equal(titleModel.value, "smol-360");
+  assert.equal(titleIntegration.value, "none");
+  settings.general.titleModel = "hosted-openai";
+  applySettingsForm(root, settings);
+  assert.equal(titleIntegration.value, "hosted-openai");
+  settings.general.titleModel = "smol-360";
+  applySettingsForm(root, settings);
+  assert.equal(titleModel.value, "smol-360");
+  assert.equal(titleIntegration.value, "none");
   assert.equal(reduceMotion.value, "system");
   assert.equal(launchAtLogin.checked, false);
   settings.general.locale = "nl";
@@ -625,6 +635,9 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.match(html, /value="ollama"/);
   assert.match(html, /value="hosted-openai"/);
   assert.match(html, /data-import-title-gguf/);
+  assert.doesNotMatch(html, /class="btn-ghost"\s+data-import-title-gguf/);
+  assert.match(html, /id="title-integration"/);
+  assert.match(html, /data-settings-group="titles"/);
   assert.match(html, /id="title-hosted-key"/);
   assert.match(html, /type="password"/);
   assert.match(html, /id="title-hosted-confirmed"/);
@@ -638,6 +651,8 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.match(live, /title_engine_status/);
   assert.match(live, /title-engine-status/);
   assert.match(live, /#title-model/);
+  assert.match(live, /#title-integration/);
+  assert.match(live, /selectedTitleModelId/);
   assert.equal(TITLE_ENGINE_STATUS_EVENT, "title-engine-status");
   assert.doesNotMatch(live, /huggingface/i);
   assert.doesNotMatch(live, /https:\/\//);

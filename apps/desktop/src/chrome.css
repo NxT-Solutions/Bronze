@@ -1553,6 +1553,10 @@ menu {
   flex: 0 0 auto;
 }
 
+.title-engine-import-row {
+  justify-content: flex-start;
+}
+
 .title-engine-spinner {
   flex: 0 0 auto;
   width: 0.75rem;

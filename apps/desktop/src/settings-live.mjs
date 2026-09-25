@@ -34,10 +34,21 @@ const BUNDLED_TITLE_MODEL_IDS = Object.freeze([
   "qwen-05",
 ]);
 
+const LOCAL_TITLE_MODEL_IDS = Object.freeze([
+  "extractive",
+  ...BUNDLED_TITLE_MODEL_IDS,
+  "custom",
+]);
+
 const HOSTED_TITLE_MODEL_IDS = Object.freeze([
   "hosted-openai",
   "hosted-anthropic",
   "hosted-openrouter",
+]);
+
+const INTEGRATION_TITLE_MODEL_IDS = Object.freeze([
+  "ollama",
+  ...HOSTED_TITLE_MODEL_IDS,
 ]);
 
 const TITLE_MODEL_VENDOR = {
@@ -118,8 +129,29 @@ export function isBundledTitleModel(id) {
   return BUNDLED_TITLE_MODEL_IDS.includes(id);
 }
 
+export function isLocalTitleModel(id) {
+  return LOCAL_TITLE_MODEL_IDS.includes(id);
+}
+
 export function isHostedTitleModel(id) {
   return HOSTED_TITLE_MODEL_IDS.includes(id);
+}
+
+export function isIntegrationTitleModel(id) {
+  return INTEGRATION_TITLE_MODEL_IDS.includes(id);
+}
+
+export function selectedTitleModelId(root, settings = {}) {
+  const integration = parseTitleModelId(
+    root.querySelector("#title-integration")?.value,
+  );
+  if (isIntegrationTitleModel(integration)) {
+    return integration;
+  }
+  return (
+    parseTitleModelId(root.querySelector("#title-model")?.value) ||
+    parseTitleModelId(settings?.general?.titleModel)
+  );
 }
 
 export function formatTitleFileSize(bytes) {
@@ -324,9 +356,7 @@ export function bindTitleEngineStatus(root, listenFn = tauriListen) {
 }
 
 export async function refreshTitleModelStatus(root, invokeFn, settings) {
-  const selected = parseTitleModelId(
-    root.querySelector("#title-model")?.value || settings?.general?.titleModel,
-  );
+  const selected = selectedTitleModelId(root, settings);
   const id = selected || "extractive";
   let rows = null;
   try {
@@ -377,9 +407,7 @@ export async function refreshTitleModelStatus(root, invokeFn, settings) {
 }
 
 export function syncTitleEnginePanels(root, settings = {}) {
-  const id = parseTitleModelId(
-    root.querySelector("#title-model")?.value || settings?.general?.titleModel,
-  );
+  const id = selectedTitleModelId(root, settings);
   const showCustom = id === "custom";
   const showOllama = id === "ollama";
   const showHosted = isHostedTitleModel(id);
@@ -397,6 +425,7 @@ export function syncTitleEnginePanels(root, settings = {}) {
   }
   const helpOllama = root.querySelector("#title-model-help-ollama");
   const helpHosted = root.querySelector("#title-model-help-hosted");
+  const helpIntegrations = root.querySelector("#title-model-help-integrations");
   const helpLocal = root.querySelector("#title-model-help");
   const helpExtractive = root.querySelector("#title-model-help-extractive");
   const helpSize = root.querySelector("#title-model-help-size");
@@ -405,6 +434,9 @@ export function syncTitleEnginePanels(root, settings = {}) {
   }
   if (helpHosted) {
     helpHosted.hidden = !showHosted;
+  }
+  if (helpIntegrations) {
+    helpIntegrations.hidden = showOllama || showHosted;
   }
   if (helpLocal) {
     helpLocal.hidden = showHosted;
@@ -466,9 +498,7 @@ export function fillOllamaTitleModels(select, models, saved) {
 }
 
 export async function refreshHostedDisclosure(root, invokeFn, settings) {
-  const id = parseTitleModelId(
-    root.querySelector("#title-model")?.value || settings?.general?.titleModel,
-  );
+  const id = selectedTitleModelId(root, settings);
   const node = root.querySelector("[data-title-hosted-disclosure]");
   if (!node || !isHostedTitleModel(id)) {
     return "";
@@ -1018,8 +1048,14 @@ export function applySettingsForm(root, settings) {
     locale.value = switcherLocale(settings?.general?.locale);
   }
   const titleId = parseTitleModelId(settings?.general?.titleModel);
-  if (titleModel && titleId) {
+  const titleIntegration = root.querySelector("#title-integration");
+  if (titleModel && isLocalTitleModel(titleId)) {
     titleModel.value = titleId;
+  }
+  if (titleIntegration) {
+    titleIntegration.value = isIntegrationTitleModel(titleId)
+      ? titleId
+      : "none";
   }
   const ollama = root.querySelector("#title-ollama-model");
   const savedOllama = String(settings?.general?.titleOllamaModel ?? "").trim();
@@ -1058,9 +1094,7 @@ export function patchSettingsFromForm(settings, root) {
   }
   const schedule = root.querySelector("#backup-schedule")?.value;
   const locale = root.querySelector("#ui-locale")?.value;
-  const titleModel = parseTitleModelId(
-    root.querySelector("#title-model")?.value,
-  );
+  const titleModel = selectedTitleModelId(root, settings);
   if (schedule === "daily" || schedule === "weekly") {
     next.data.backupSchedule = schedule;
   }
@@ -1280,10 +1314,7 @@ export async function bindSettingsLive(
 
   let ollamaListed = false;
   async function listOllamaIfNeeded() {
-    const id = parseTitleModelId(
-      root.querySelector("#title-model")?.value ||
-        settings?.general?.titleModel,
-    );
+    const id = selectedTitleModelId(root, settings);
     if (id !== "ollama" || ollamaListed) {
       return;
     }
@@ -1302,10 +1333,7 @@ export async function bindSettingsLive(
   }
 
   async function refreshEngineExtras() {
-    const id = parseTitleModelId(
-      root.querySelector("#title-model")?.value ||
-        settings?.general?.titleModel,
-    );
+    const id = selectedTitleModelId(root, settings);
     if (id === "ollama") {
       await listOllamaIfNeeded();
     }
@@ -1321,9 +1349,7 @@ export async function bindSettingsLive(
     });
     const keyInput = root.querySelector("#title-hosted-key");
     const key = String(keyInput?.value ?? "").trim();
-    const provider = parseTitleModelId(
-      root.querySelector("#title-model")?.value,
-    );
+    const provider = selectedTitleModelId(root, settings);
     if (key && isHostedTitleModel(provider)) {
       await invokeFn("set_hosted_title_key", { provider, key });
       keyInput.value = "";
@@ -1403,7 +1429,14 @@ export async function bindSettingsLive(
 
   root.querySelector("#backup-schedule")?.addEventListener("change", persist);
   root.querySelector("#ui-locale")?.addEventListener("change", persist);
-  root.querySelector("#title-model")?.addEventListener("change", persist);
+  root.querySelector("#title-model")?.addEventListener("change", () => {
+    const integration = root.querySelector("#title-integration");
+    if (integration) {
+      integration.value = "none";
+    }
+    persist();
+  });
+  root.querySelector("#title-integration")?.addEventListener("change", persist);
   root
     .querySelector("#title-ollama-model")
     ?.addEventListener("change", persist);
@@ -1455,9 +1488,7 @@ export async function bindSettingsLive(
     ?.addEventListener("click", (event) => {
       const button = event.currentTarget;
       runBusy(button, async () => {
-        const provider = parseTitleModelId(
-          root.querySelector("#title-model")?.value,
-        );
+        const provider = selectedTitleModelId(root, settings);
         if (!isHostedTitleModel(provider)) {
           return;
         }

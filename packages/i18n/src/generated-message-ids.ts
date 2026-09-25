@@ -78,6 +78,9 @@ export const MessageIds = {
   "settings.group.general": "settings.group.general",
   "settings.group.general.infoName": "settings.group.general.infoName",
   "settings.group.general.info": "settings.group.general.info",
+  "settings.group.titles": "settings.group.titles",
+  "settings.group.titles.infoName": "settings.group.titles.infoName",
+  "settings.group.titles.info": "settings.group.titles.info",
   "settings.group.capture": "settings.group.capture",
   "settings.group.panel": "settings.group.panel",
   "settings.group.copy": "settings.group.copy",
@@ -126,6 +129,23 @@ export const MessageIds = {
   "settings.field.reduceMotion.on": "settings.field.reduceMotion.on",
   "settings.field.reduceMotion.off": "settings.field.reduceMotion.off",
   "settings.field.titleModel": "settings.field.titleModel",
+  "settings.field.titleModel.local": "settings.field.titleModel.local",
+  "settings.field.titleModel.local.infoName":
+    "settings.field.titleModel.local.infoName",
+  "settings.field.titleModel.local.info":
+    "settings.field.titleModel.local.info",
+  "settings.field.titleModel.integrations":
+    "settings.field.titleModel.integrations",
+  "settings.field.titleModel.integrations.infoName":
+    "settings.field.titleModel.integrations.infoName",
+  "settings.field.titleModel.integrations.info":
+    "settings.field.titleModel.integrations.info",
+  "settings.field.titleModel.integrations.infoHosted":
+    "settings.field.titleModel.integrations.infoHosted",
+  "settings.field.titleModel.integrations.help":
+    "settings.field.titleModel.integrations.help",
+  "settings.field.titleModel.integrations.none":
+    "settings.field.titleModel.integrations.none",
   "settings.field.titleModel.infoName": "settings.field.titleModel.infoName",
   "settings.field.titleModel.info": "settings.field.titleModel.info",
   "settings.field.titleModel.infoExtractive":

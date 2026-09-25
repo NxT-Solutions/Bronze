@@ -181,9 +181,21 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.equal(en["settings.field.reduceMotion.on"], "Always reduce");
   assert.equal(en["settings.field.reduceMotion.off"], "Play animations");
   assert.match(html, /<option\s+value="off"/);
+  assert.match(html, /data-settings-group="titles"/);
   assert.match(html, /data-reset-field="general.titleModel"/);
-  assert.match(html, /data-i18n="settings.field.titleModel"/);
-  assert.match(html, />\s*Title engine\s*</);
+  assert.match(html, /data-i18n="settings.field.titleModel.local"/);
+  assert.match(html, /data-i18n="settings.field.titleModel.integrations"/);
+  assert.match(html, />\s*Title engines\s*</);
+  assert.match(html, />\s*On this Mac\s*</);
+  assert.match(html, />\s*Integrations\s*</);
+  assert.equal(en["settings.group.titles"], "Title engines");
+  assert.equal(en["settings.field.titleModel.local"], "On this Mac");
+  assert.equal(en["settings.field.titleModel.integrations"], "Integrations");
+  assert.equal(en["settings.field.titleModel.integrations.none"], "Off");
+  assert.equal(
+    en["settings.group.general.info"],
+    "Launch at login, language, and motion on this Mac.",
+  );
   assert.match(
     html,
     />\s*<strong>Stays on this Mac<\/strong> and works offline\.\s*</,
@@ -208,8 +220,8 @@ test("settings window is searchable grouped with daily weekly backup and export 
     "**Extractive** uses no model.",
   );
   assert.match(html, /class="setting-info"/);
-  assert.equal((html.match(/class="setting-info"/g) || []).length, 12);
-  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 12);
+  assert.equal((html.match(/class="setting-info"/g) || []).length, 14);
+  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 14);
   assert.match(html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(html, /data-i18n="settings.field.titleModel.info"/);
   assert.match(html, /data-i18n="settings.field.titleModel.infoExtractive"/);
@@ -271,6 +283,8 @@ test("settings window is searchable grouped with daily weekly backup and export 
     "Paste the key once — Bronze never shows it again.",
   );
   assert.match(html, /data-import-title-gguf/);
+  assert.doesNotMatch(html, /class="btn-ghost"\s+data-import-title-gguf/);
+  assert.match(html, /id="title-integration"/);
   assert.match(html, /id="title-hosted-key"/);
   assert.doesNotMatch(html, /Title:/);
   assert.doesNotMatch(html, /download/i);
