@@ -357,7 +357,7 @@ private func bronzeHopToMainActor(
     let box = MainStatusBox()
     let lock = DispatchSemaphore(value: 0)
     DispatchQueue.main.async {
-        box.value = work()
+        box.value = MainActor.assumeIsolated { work() }
         lock.signal()
     }
     if let timeout {
