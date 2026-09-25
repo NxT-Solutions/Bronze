@@ -3,6 +3,7 @@ packages:
   - 'apps/*'
 allowBuilds:
   esbuild: true
+  pnpm: true
 minimumReleaseAgeExclude:
   - '@turbo/darwin-64@2.11.4'
   - '@turbo/darwin-arm64@2.11.4'

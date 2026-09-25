@@ -76,15 +76,15 @@ swift --version
 rustup show
 ```
 
-3. Install Node 24.21.0, then pnpm. Do not use Corepack.
+3. Install Node 24.21.0, then pnpm. Do not use Corepack. npm 11 only links pnpm's native binary when pnpm's install script is allowed. `--allow-scripts=pnpm` names that one package. It does not turn script security off. `pnpm-workspace.yaml` `allowBuilds` allows `pnpm` and `esbuild` for installs that pnpm runs.
 
 ```bash
 node -v
-npm install -g pnpm@12.4.2
+npm install -g --allow-scripts=pnpm pnpm@12.4.2
 pnpm -v
 ```
 
-`node -v` prints `v24.21.0`. `pnpm -v` prints `12.4.2`.
+`node -v` prints `v24.21.0`. `pnpm -v` prints `12.4.2` and does not say pnpm is running through Node.js. If that line appears, `command -v pnpm` is not this binary.
 
 4. CMake builds `llama-cpp-sys-2` for the on-this-Mac title engine. The macOS CI job installs CMake when it is missing. The release workflow sets the macOS 14 deployment target for that CMake build. Export the same variables in the shell you use for `tauri dev` and `pnpm verify`. Swift already links with `arm64-apple-macosx14.0` or `x86_64-apple-macosx14.0` from `apps/desktop/src-tauri/build.rs`.
 
@@ -102,7 +102,7 @@ cd Bronze
 pnpm install
 ```
 
-6. Run the desktop app. Hand-test only in the native window. Opening the HTML files in a browser has no Tauri invoke.
+6. Run the desktop app. Hand-test only in the native window. Opening the HTML files in a browser has no Tauri invoke. A dev build compiles when `crates/bronze-title-model/vendor/` contains no `.gguf`. Release packaging still bundles those files when the release workflow has vendored them.
 
 ```bash
 pnpm --filter desktop tauri dev
