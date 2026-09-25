@@ -125,15 +125,17 @@ jobs:
       - name: Install cargo-mutants
         run: |
           set -euo pipefail
-          if ! ~/.cargo/bin/cargo-mutants --version | grep -q 'cargo-mutants 27.1.0'; then
+          if ! cargo mutants --version | grep -q 'cargo-mutants 27.1.0'; then
             cargo install cargo-mutants --version 27.1.0 --locked
           fi
       - name: Mutate bronze-capture
+        env:
+          CARGO_INCREMENTAL: "1"
         run: |
           set -euo pipefail
-          ~/.cargo/bin/cargo-mutants --version
+          cargo mutants --version
           set +e
-          ~/.cargo/bin/cargo-mutants \
+          cargo mutants \
             --package bronze-capture \
             --file '**/ax.rs' \
             --file '**/clipboard_manual.rs' \
