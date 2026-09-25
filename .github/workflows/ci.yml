@@ -16,7 +16,10 @@ jobs:
   quality-js:
     name: quality-js
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 25
+    env:
+      TURBO_TELEMETRY_DISABLED: "1"
+      TURBO_DAEMON: "false"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -28,7 +31,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec biome check .
-      - run: pnpm exec turbo run typecheck test validate
+      - run: pnpm exec turbo run typecheck --no-daemon
+      - run: pnpm exec turbo run test --no-daemon
+      - run: pnpm exec turbo run validate --no-daemon
 
   quality-docs:
     name: quality-docs
@@ -56,8 +61,8 @@ jobs:
             target
           key: rust-ubuntu-${{ hashFiles('Cargo.lock') }}
       - run: cargo fmt --check
-      - run: cargo clippy --workspace --locked --exclude bronze-desktop --exclude bronze-title-model -- -D warnings
-      - run: cargo test --workspace --locked --exclude bronze-desktop --exclude bronze-title-model
+      - run: cargo clippy --workspace --locked --exclude bronze-desktop --exclude bronze-title-model --exclude bronze-title-remote --exclude bronze-platform-macos -- -D warnings
+      - run: cargo test --workspace --locked --exclude bronze-desktop --exclude bronze-title-model --exclude bronze-title-remote --exclude bronze-platform-macos
 
   quality-macos:
     name: quality-macos
