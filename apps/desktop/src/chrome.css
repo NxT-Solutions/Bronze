@@ -2051,6 +2051,30 @@ article [data-slot="source-label"],
   justify-content: flex-end;
 }
 
+.update-notes {
+  max-height: 12rem;
+  overflow: auto;
+}
+
+.update-notes ul {
+  margin: 0;
+  padding-inline-start: 1.15em;
+}
+
+.update-command {
+  display: block;
+  padding: var(--space-2);
+  overflow-x: auto;
+  font-size: var(--text-caption);
+  background: var(--background);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-control);
+}
+
+.update-command[hidden] {
+  display: none;
+}
+
 #composer,
 [data-slot="composer"] {
   order: 0;

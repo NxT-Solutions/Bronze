@@ -77,6 +77,9 @@ commands.allow = [
   "set_hosted_title_key",
   "clear_hosted_title_key",
   "hosted_title_disclosure",
+  "app_version_info",
+  "check_for_update",
+  "open_release_page",
   "ui_locale",
   "ui_catalog",
 ]

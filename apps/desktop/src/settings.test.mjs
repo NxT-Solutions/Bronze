@@ -195,8 +195,19 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.equal(en["settings.field.titleModel.integrations.none"], "Off");
   assert.equal(
     en["settings.group.general.info"],
-    "Launch at login, language, and motion on this Mac.",
+    "Launch at login, language, motion, and version on this Mac.",
   );
+  assert.match(html, /data-app-version/);
+  assert.match(html, /data-check-update/);
+  assert.match(html, /id="update-sheet"/);
+  assert.match(html, /data-i18n="settings.field.version.check"/);
+  assert.equal(en["settings.field.version"], "Version");
+  assert.equal(en["settings.field.version.check"], "Check for updates");
+  assert.equal(
+    en["settings.field.version.available"],
+    "Version {version} is available.",
+  );
+  assert.equal(en["settings.field.version.brew"], "Copy Homebrew command");
   assert.match(
     html,
     />\s*<strong>Stays on this Mac<\/strong> and works offline\.\s*</,
@@ -221,8 +232,8 @@ test("settings window is searchable grouped with daily weekly backup and export 
     "**Extractive** uses no model.",
   );
   assert.match(html, /class="setting-info"/);
-  assert.equal((html.match(/class="setting-info"/g) || []).length, 14);
-  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 14);
+  assert.equal((html.match(/class="setting-info"/g) || []).length, 15);
+  assert.equal((html.match(/class="setting-info-mark"/g) || []).length, 15);
   assert.match(html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(html, /data-i18n="settings.field.titleModel.info"/);
   assert.match(html, /data-i18n="settings.field.titleModel.infoExtractive"/);

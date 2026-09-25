@@ -67,7 +67,19 @@ See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a gr
 
 **Verify (maintainer bar, not required to launch):** `pnpm verify`. Local debug package (SEC-005): `tooling/package-debug.sh`.
 
-**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. ADR-019 (compact_title first, selectable offline GGUF refine) is **Proposed**. ADR-020, ADR-021, and ADR-022 are **Accepted** (imported GGUF, loopback Ollama, opt-in hosted title keys). QUE-007 locale search is **blocked** on ADR-018. A live language switch updates open WebViews; it does not rebuild the native app menu. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
+## Install (macOS arm64)
+
+Homebrew, after the tap publishes `Casks/bronze.rb`:
+
+```bash
+brew tap NoahNxT/nxt-solutions-packages
+brew install --cask bronze
+brew upgrade --cask bronze
+```
+
+Or install `bronze-macos.pkg` from [GitHub Releases](https://github.com/NxT-Solutions/Bronze/releases). Settings shows the running version. **Check for updates** is a button (ADR-023 Proposed). A Homebrew install is told to `brew upgrade --cask bronze`. A package install opens the GitHub release. A debug build cannot install in place. Unsigned packages are not a notarization claim.
+
+**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. ADR-019 (compact_title first, selectable offline GGUF refine) is **Proposed**. ADR-023 (user-initiated GitHub latest-release check) is **Proposed**. ADR-020, ADR-021, and ADR-022 are **Accepted** (imported GGUF, loopback Ollama, opt-in hosted title keys). QUE-007 locale search is **blocked** on ADR-018. A live language switch updates open WebViews; it does not rebuild the native app menu. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
 
 ## Start here (planning pack)
 
@@ -128,3 +140,13 @@ Original visual direction: [Bronze UI concept](assets/bronze-ui-concept.png). It
 Planning pack IDs in [docs/03-prd.md](docs/03-prd.md) and [docs/18-adrs.md](docs/18-adrs.md) remain authority. Implementation lives on `main`. New work uses a feature branch from `main`.
 
 Local debug package (SEC-005): `tooling/package-debug.sh` — arm64 unless DG-01 says otherwise, checksums + SBOM stub, no `get-task-allow`, no notarization.
+
+## Project
+
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Security: [SECURITY.md](SECURITY.md)
+
+## License
+
+MIT. See [LICENSE](LICENSE). Copyright 2026 Noah Gillard.

@@ -1,0 +1,59 @@
+{
+  "id": "release-oss",
+  "goal": "Ship an open-source release path for public NxT-Solutions/Bronze: MIT license and community files, a Timeshit-style workflow_dispatch that versions, changelogs, tags, and publishes an arm64 macOS .pkg, a Homebrew Cask update into NoahNxT/homebrew-nxt-solutions-packages, and a user-initiated in-app update check (ADR-023 Proposed) that shows the current version in Settings, GitHub release notes when a newer tag exists, and an install action based on Homebrew vs direct .pkg vs debug.",
+  "outcome": "A maintainer can run the Release workflow with a version and get a GitHub release containing bronze-macos.pkg plus checksums. Publishing updates Casks/bronze.rb in the tap when PACKAGES_REPO_TOKEN is set. Settings shows the running version. Check for updates is user-initiated, talks to GitHub Releases from Rust (WebView stays ipc-only), and tells Homebrew installs to brew upgrade --cask bronze, direct installs to open the release page, and debug builds that this binary is not a release. LICENSE, CHANGELOG, CONTRIBUTING, SECURITY, and CODEOWNERS exist. No Sparkle, no Tauri updater plugin, no silent download, no notarization claim. ADR-023 stays Proposed. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-015 and ADR-017 stay Accepted except the ADR-023 user-initiated GitHub check carve-out.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "RELEASE-OSS-RULE-1",
+      "kind": "rule",
+      "statement": "Rust owns version, install-source detection, and the user-initiated GitHub Releases check. WebView CSP connect-src stays ipc-only. No background poll, no startup check, no silent download, no Sparkle, no @tauri-apps/plugin-updater."
+    },
+    {
+      "id": "RELEASE-OSS-RULE-2",
+      "kind": "rule",
+      "statement": "Install source is debug (target/ or debug_assertions), homebrew (Caskroom or Cellar after canonicalize), direct (/Applications/Bronze.app), or unknown. Homebrew action is brew upgrade --cask bronze. Direct and unknown open only https://github.com/NxT-Solutions/Bronze release URLs. Debug names itself and does not offer an in-place install."
+    },
+    {
+      "id": "RELEASE-OSS-RULE-3",
+      "kind": "rule",
+      "statement": "ADR-023 stays Proposed. The check is the user-initiated GitHub latest-release carve-out ADR-017 required. Destination is api.github.com/repos/NxT-Solutions/Bronze/releases/latest only. Ignore HTTP_PROXY/ALL_PROXY. Require a User-Agent. Never send capture text, settings, or diagnostics. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-015 stays Accepted."
+    },
+    {
+      "id": "RELEASE-OSS-RULE-4",
+      "kind": "rule",
+      "statement": "Settings shows the running app version from Rust. Check for updates is a button. A newer tag shows parsed release notes and the install action for that install source. All user-facing strings are locale catalog keys. No sentence concatenation. No Cooper/Copper copy."
+    },
+    {
+      "id": "RELEASE-OSS-RULE-5",
+      "kind": "rule",
+      "statement": "Join lands MIT LICENSE (Copyright 2026 Noah Gillard), Keep-a-Changelog CHANGELOG.md, CONTRIBUTING.md, SECURITY.md (GitHub Advisories), CODEOWNERS, and Timeshit-style workflow_dispatch Release plus publish-homebrew. Release bumps bronze-desktop and tauri.conf versions, writes changelog from commits, tags v*, builds arm64 macOS .app, pkgbuild identifier app.bronze.desktop, uploads bronze-macos.pkg and SHA-256. Homebrew writes Casks/bronze.rb (GUI cask, not a Formula). Unsigned .pkg is allowed when Apple secrets are missing. Never claim notarization."
+    },
+    {
+      "id": "RELEASE-OSS-RULE-6",
+      "kind": "rule",
+      "statement": "Do not start QUEUE-ATTACHMENTS. Do not claim WCAG, VoiceOver, or notarization without docs/evidence. Do not silently accept ADR-002, ADR-009, ADR-018, or ADR-023. Do not resume bmad-loop 6a79. Do not run full-stack-app, pwa-app, or landing-page cores."
+    },
+    {
+      "id": "RELEASE-OSS-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "app_version_info returns the CARGO_PKG_VERSION and a classified install source without network. tauri.conf.json version matches that package version."
+    },
+    {
+      "id": "RELEASE-OSS-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "A newer GitHub tag returns available=true with notes and the source-specific action. The same or older tag returns available=false. open_release_page rejects a URL that is not a Bronze GitHub release page."
+    },
+    {
+      "id": "RELEASE-OSS-ACCEPTANCE-3",
+      "kind": "acceptance",
+      "statement": "Settings shows the version and a Check for updates control. A newer check shows notes plus brew upgrade --cask bronze, Open release, or debug copy."
+    },
+    {
+      "id": "RELEASE-OSS-ACCEPTANCE-4",
+      "kind": "acceptance",
+      "statement": "Root LICENSE, CHANGELOG, CONTRIBUTING, SECURITY, and a Release workflow exist. Homebrew publish writes a Cask, not Formula/bronze.rb."
+    }
+  ],
+  "depends_on": []
+}

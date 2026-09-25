@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Bronze",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "identifier": "app.bronze.desktop",
   "build": {
     "frontendDist": "../src",

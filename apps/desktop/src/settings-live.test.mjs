@@ -4,11 +4,14 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  applyAppVersionInfo,
   applySettingsForm,
   applySettingsSearch,
   applyTitleEngineLifecycle,
   applyTitleModelStatus,
+  applyUpdateCheck,
   bindSettingInfo,
+  checkForAppUpdate,
   exportCategoryLabel,
   exportSensitiveLabel,
   filterInstalledApps,
@@ -18,15 +21,19 @@ import {
   formatTitleModelStatus,
   isSafeBundleId,
   isSafeDisplayName,
+  parseInstallSource,
   parseLoginItemStatus,
   parseTitleModelId,
+  parseUpdateAction,
   patchSettingsFromForm,
   pickExcludedApp,
   pickerFailureCode,
   readExcludedBundleIds,
+  refreshAppVersion,
   refreshLoginItemStatus,
   refreshTitleModelStatus,
   renderExportPreview,
+  renderUpdateNotes,
   resolveExcludedApps,
   settingsExportFailureCode,
   settingsSearchNeedle,
@@ -354,6 +361,12 @@ test("settings language switcher uses endonyms and option lang", () => {
   assert.match(html, /name="launchAtLogin"/);
   assert.match(html, /data-login-item-status/);
   assert.match(live, /login_item_status/);
+  assert.match(live, /app_version_info/);
+  assert.match(live, /check_for_update/);
+  assert.match(live, /open_release_page/);
+  assert.doesNotMatch(live, /api\.github\.com/);
+  assert.doesNotMatch(live, /plugin-updater/);
+  assert.doesNotMatch(live, /Sparkle/);
   assert.match(live, /#launch-at-login/);
   assert.match(html, /id="reduce-motion"/);
   assert.match(live, /emitMotionChanged/);
@@ -822,4 +835,107 @@ test("setting info opens on hover and focus, not click, and dismisses on Escape"
     target: { closest: () => null },
   });
   assert.equal(first.open, false);
+});
+
+test("app version loads locally and check is user-initiated", async () => {
+  assert.equal(parseInstallSource("homebrew"), "homebrew");
+  assert.equal(parseInstallSource("cellar"), "unknown");
+  assert.equal(parseUpdateAction("brew-upgrade"), "brew-upgrade");
+  assert.equal(parseUpdateAction("sparkle"), "none");
+  const number = { textContent: "" };
+  const source = { hidden: true, dataset: {}, textContent: "" };
+  const status = { hidden: true, textContent: "" };
+  const dialog = { showModal() {} };
+  const opened = [];
+  dialog.showModal = () => opened.push("dialog");
+  const actionBtn = {
+    hidden: true,
+    dataset: {},
+    textContent: "",
+  };
+  const available = { textContent: "" };
+  const notes = {
+    ownerDocument: {
+      createElement(tag) {
+        const node = {
+          tag,
+          className: "",
+          textContent: "",
+          children: [],
+          append(child) {
+            this.children.push(child);
+          },
+        };
+        return node;
+      },
+    },
+    children: [],
+    replaceChildren(...nodes) {
+      this.children = nodes;
+    },
+  };
+  const debugLine = { hidden: true };
+  const commandEl = { hidden: true, textContent: "" };
+  const root = {
+    querySelector(sel) {
+      if (sel === "[data-app-version-number]") return number;
+      if (sel === "[data-app-version-source]") return source;
+      if (sel === "[data-app-version-status]") return status;
+      if (sel === "#update-sheet") return dialog;
+      if (sel === "[data-update-action]") return actionBtn;
+      if (sel === "[data-update-available]") return available;
+      if (sel === "[data-update-notes]") return notes;
+      if (sel === "[data-update-debug]") return debugLine;
+      if (sel === "[data-update-command]") return commandEl;
+      return null;
+    },
+  };
+  const commands = [];
+  const info = await refreshAppVersion(root, async (cmd) => {
+    commands.push(cmd);
+    assert.equal(cmd, "app_version_info");
+    return { version: "0.1.0", installSource: "direct" };
+  });
+  assert.equal(info.version, "0.1.0");
+  assert.equal(number.textContent, "0.1.0");
+  assert.equal(source.dataset.appVersionSource, "direct");
+  assert.deepEqual(commands, ["app_version_info"]);
+  applyAppVersionInfo(root, { version: "", installSource: "debug" });
+  assert.match(number.textContent, /unavailable|0\.1\.0|Version/);
+  const current = await checkForAppUpdate(root, async (cmd) => {
+    commands.push(cmd);
+    assert.equal(cmd, "check_for_update");
+    return {
+      available: false,
+      latestVersion: "0.1.0",
+      notes: [],
+      action: "none",
+    };
+  });
+  assert.equal(current.available, false);
+  assert.equal(opened.length, 0);
+  const brew = applyUpdateCheck(root, {
+    available: true,
+    latestVersion: "0.2.0",
+    notes: ["• Fix updater popup", ""],
+    action: "brew-upgrade",
+    actionCommand: "brew upgrade --cask bronze",
+    releaseUrl: "https://github.com/NxT-Solutions/Bronze/releases/tag/v0.2.0",
+  });
+  assert.equal(brew.available, true);
+  assert.deepEqual(opened, ["dialog"]);
+  assert.equal(actionBtn.hidden, false);
+  assert.equal(actionBtn.dataset.updateAction, "brew-upgrade");
+  assert.equal(actionBtn.dataset.actionCommand, "brew upgrade --cask bronze");
+  const debug = applyUpdateCheck(root, {
+    available: true,
+    latestVersion: "9.0.0",
+    notes: ["Debug notes"],
+    action: "debug",
+  });
+  assert.equal(debug.action, "debug");
+  assert.equal(actionBtn.hidden, true);
+  assert.equal(debugLine.hidden, false);
+  renderUpdateNotes(notes, []);
+  assert.equal(notes.children[0].tag, "p");
 });
