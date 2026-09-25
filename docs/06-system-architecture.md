@@ -55,7 +55,7 @@ P0 does not include screen recording, screenshots, microphone, camera, OCR, pass
 | Conformance target | WCAG 2.2 AA WebView plus relevant EN 301 549 clauses 5, 11, and 12 whole-app evidence |
 | Locale model | BCP 47, ICU messages, Intl formatting, full RTL |
 
-macOS minimum remains Spike 0 decision. Planning hypothesis is macOS 15 or later; architecture must not silently encode this until ADR-002 becomes Accepted.
+macOS minimum and architecture are ADR-002 Accepted: macOS 14.0+ with named arm64 and x86_64 packages (not a silent universal2 blob).
 
 ## 4. System context
 
@@ -580,7 +580,7 @@ Reference Mac model, OS build, power mode, dataset, and measurement harness must
 | React component | keyboard/focus, IME, i18n, RTL, pseudo-locales, axe |
 | Tauri E2E | WebView journeys, IPC authorization/mocks, multiwindow capabilities |
 | Signed native matrix | TCC grant/revoke, AX source apps, Secure Input, Spaces/full-screen/displays, sleep/wake, layouts, assistive technology |
-| Release | ADR-002-selected architecture artifact (universal2 only if Intel supported), signature, notarization, Gatekeeper, SBOM, zero-network capture |
+| Release | ADR-002 split artifacts (`bronze-macos-arm64.pkg`, `bronze-macos-x86_64.pkg`), checksums, Gatekeeper. Notarization is not claimed without `docs/evidence/` |
 
 Current Tauri WebdriverIO service supports macOS through embedded driver; use it for WebView and IPC flows. It cannot establish honest TCC/AX/Secure Input evidence. [Tauri WebDriver](https://v2.tauri.app/develop/tests/webdriver/)
 
@@ -605,7 +605,7 @@ Release pipeline:
 
 References: [Apple notarization](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), [Hardened Runtime](https://developer.apple.com/documentation/security/hardened-runtime), [Tauri macOS signing](https://v2.tauri.app/distribute/sign/macos/).
 
-Stable bundle ID, Team ID, designated requirement, application path behavior, and signing order are release invariants because TCC continuity depends on identity. Identity is necessary, not a guarantee; signed upgrade tests and recovery UX remain mandatory. macOS range and universal2 policy remain ADR-002 gate.
+Stable bundle ID, Team ID, designated requirement, application path behavior, and signing order are release invariants because TCC continuity depends on identity. Identity is necessary, not a guarantee; signed upgrade tests and recovery UX remain mandatory. macOS 14.0+ with named arm64 and x86_64 packages is ADR-002 Accepted.
 
 ## 18. Implementation invariants
 

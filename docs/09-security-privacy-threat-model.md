@@ -139,7 +139,7 @@ Apple guidance: [Input Monitoring](https://support.apple.com/guide/mac-help/cont
 - Stable reverse-DNS bundle ID, Team ID, Developer ID Application cert, hardened runtime, minimal entitlements.
 - No `get-task-allow`, JIT, unsigned executable memory, or disabled library validation without reviewed necessity.
 - Sign nested content inside-out, then final app/container. Submit shipped outermost artifact with `notarytool`, staple supported shipped container, and never mutate it afterward; validate Gatekeeper/stapling on clean VM.
-- Build universal2 before claiming Intel support; otherwise state Apple Silicon-only support clearly.
+- Ship named `bronze-macos-arm64.pkg` and `bronze-macos-x86_64.pkg` (ADR-002 Accepted). Do not hide Intel inside a silent universal2 blob.
 - Pin CI actions to commit SHA, minimal read permissions by default, protected release environment, short-lived notarization credentials.
 - Produce SHA-256 checksums, CycloneDX/SPDX SBOM, dependency licenses, and provenance/attestation. Verify artifact matches release source as practical.
 

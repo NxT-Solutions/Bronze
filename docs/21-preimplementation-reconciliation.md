@@ -15,7 +15,7 @@ Proposed ADRs remain gates, not silent product defaults:
 
 | ADR | Status | Implementation rule |
 | --- | --- | --- |
-| ADR-002 | Proposed | No production macOS minimum or universal2 claim. Development may be arm64. Availability checks required. |
+| ADR-002 | Accepted (2026-09-25) | Operator asked for a separate Intel build. macOS 14.0+; named arm64 and x86_64 packages, not universal2. |
 | ADR-009 | Proposed | Storage locator is an interface. Development may use Application Support. |
 | ADR-018 | Proposed | QUE-007/G-06 incomplete until SEARCH-01 golden corpus exists. |
 
@@ -42,7 +42,7 @@ Each ID remains in [PRD](03-prd.md) and [traceability](15-backlog-traceability.m
 | R-09 | Library vs panel capabilities | Overlapping queue UI. | ADR-010; [06](06-system-architecture.md) §10; [05](05-ux-ui-interaction-spec.md) §2 | Quick: active-section lifecycle. Library: paginated history, archive/trash, import/export, backup/restore. Settings: settings/shortcuts/permissions/diagnostics preview. Onboarding: manual note + permission preflight; no library/import/diagnostics authority. | WIN-005, QUE-001, DAT-002, DAT-003, SEC-002 |
 | R-10 | Mandatory backup vs manual-only | DAT-002 vs a possible off schedule. | DAT-002; [12](12-settings-and-shortcuts.md) §11 | `backupSchedule` is `daily\|weekly` only. Back Up Now remains. Pre-migration/pre-restore backups are mandatory. No manual-only mode. | DAT-002, SET-001 |
 | R-11 | Permission-state enum | Arrow list looked like a required linear machine. | SET-003; [07](07-macos-capture-reliability.md) §3 | Closed enum: `unknown\|not_requested\|denied\|granted_unverified\|healthy\|degraded\|unavailable\|requires_relaunch`. Granted ≠ healthy. | SET-003, SET-004, CAP-010 |
-| R-12 | OS/architecture matrix | Hypothesis macOS 15+ vs ADR-002 Proposed. | ADR-002; DG-01 | Remain Proposed. No marketing range. CI uses one central minimum placeholder. Universal2 only if DG-01 commits Intel capacity. | G-01, SEC-005, WIN-002 |
+| R-12 | OS/architecture matrix | Hypothesis macOS 15+ vs ADR-002. | ADR-002; DG-01 | Accepted 2026-09-25: macOS 14.0+; split `bronze-macos-arm64.pkg` and `bronze-macos-x86_64.pkg`. Not a silent universal2 blob. | G-01, SEC-005, WIN-002 |
 | R-13 | Locale fallback | Jumping `zh-Hant-HK` → `zh` would drop script. | ADR-014; I18N-002; [11](11-i18n-localization.md) §2 | RFC 4647 progressive lookup preserving script/variant before language, then `en`. | I18N-002, G-06 |
 | R-14 | Per-item content language | UI locale leaking onto captured text. | I18N-003; DAT-003; ADR-014 | `content_language` canonical BCP 47 or `und`, default `und`, no silent detection, preserved across revision/export/import. | I18N-003, DAT-003, QUE-002 |
 | R-15 | 200% plus 400%/320 reflow | Zoom vs text resize conflation. | A11Y-003; [05](05-ux-ui-interaction-spec.md) §10; [10](10-accessibility-conformance-plan.md) §6 | Both required: 200% text resize and 400% zoom/reflow at 320 CSS px without lost content or functionality. | A11Y-003 |
