@@ -102,8 +102,8 @@ That is not an unambiguous hexagonal or layered package graph.
 - Requirement IDs stay in stories, specs, and tests.
 - Event-tap callbacks must not touch AX, DB, windows, or clipboard.
 - User-facing strings belong in locale catalogs.
-- ADR-002, ADR-009, and ADR-018 stay Proposed unless the operator
-  accepts them.
+- ADR-002 is Accepted (operator asked for a separate Intel build).
+  ADR-009 and ADR-018 stay Proposed unless the operator accepts them.
 - Recent commit subjects are bmad-loop merge lines, not Conventional
   Commits. New Hedgehog commits use Conventional Commits as the fallback
   the adopt skill names when the repo has no house style.
