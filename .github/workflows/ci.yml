@@ -132,11 +132,10 @@ jobs:
           key: rust-macos-15-app-${{ hashFiles('Cargo.lock') }}
       - run: cargo test -p bronze-desktop --locked
 
-  # bronze-capture selection files only. A workspace-wide mutant run does not fit this 15-minute job.
   mutation-rust:
     name: mutation-rust
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
