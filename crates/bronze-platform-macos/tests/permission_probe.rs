@@ -70,8 +70,8 @@ fn native_start_requests_when_preflight_is_not_a_grant() {
 }
 
 #[test]
-fn health_retest_probe_errors_stay_unhealthy() {
-    let host = ProbeHost {
+fn health_retest_keeps_a_live_grant_and_fails_closed_when_both_probes_fail() {
+    let granted = ProbeHost {
         listen: Ok(true),
         accessibility: Ok(true),
         listen_grant: Err(PreflightError::Fail),
@@ -79,16 +79,40 @@ fn health_retest_probe_errors_stay_unhealthy() {
         listen_requests: Cell::new(0),
         accessibility_requests: Cell::new(0),
     };
-    let attempt = prompt_used_permissions(
-        &host,
+    let kept = prompt_used_permissions(
+        &granted,
         PromptReason::HealthRetest,
         &MemoryPromptLedger::default(),
     );
-    assert_eq!(host.listen_requests.get(), 1);
-    assert_eq!(host.accessibility_requests.get(), 1);
-    assert_eq!(attempt.snapshot.input_monitoring, PermissionState::Degraded);
-    assert_eq!(attempt.snapshot.accessibility, PermissionState::Unknown);
-    assert!(!attempt.snapshot.input_monitoring.is_healthy());
-    assert!(!attempt.snapshot.accessibility.is_healthy());
-    assert!(!attempt.screen_recording_requested);
+    assert_eq!(granted.listen_requests.get(), 1);
+    assert_eq!(granted.accessibility_requests.get(), 1);
+    assert_eq!(
+        kept.snapshot.input_monitoring,
+        PermissionState::GrantedUnverified
+    );
+    assert_eq!(
+        kept.snapshot.accessibility,
+        PermissionState::GrantedUnverified
+    );
+    assert!(!kept.snapshot.input_monitoring.is_healthy());
+    assert!(!kept.screen_recording_requested);
+
+    let failed = ProbeHost {
+        listen: Err(PreflightError::Fail),
+        accessibility: Err(PreflightError::Unknown),
+        listen_grant: Err(PreflightError::Fail),
+        accessibility_grant: Err(PreflightError::Unknown),
+        listen_requests: Cell::new(0),
+        accessibility_requests: Cell::new(0),
+    };
+    let closed = prompt_used_permissions(
+        &failed,
+        PromptReason::HealthRetest,
+        &MemoryPromptLedger::default(),
+    );
+    assert_eq!(closed.snapshot.input_monitoring, PermissionState::Degraded);
+    assert_eq!(closed.snapshot.accessibility, PermissionState::Unknown);
+    assert!(!closed.snapshot.input_monitoring.is_healthy());
+    assert!(!closed.snapshot.accessibility.is_healthy());
+    assert!(!closed.screen_recording_requested);
 }
