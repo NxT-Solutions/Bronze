@@ -124,7 +124,7 @@ Do not run Hedgehog `full-stack-app` / `pwa-app` / `landing-page` cores. Bronze 
 
 ## Code intelligence
 
-GitNexus indexes this repository for agents. It is developer tooling, not part of the desktop app. ADR-017 still means the product has no network by default. Grok reads this file. GitNexus does not install a separate Grok editor.
+GitNexus indexes this repository for agents. It is developer tooling, not part of the desktop app. ADR-017 still means the product has no network by default. The same skills are committed for Claude Code (`.claude/skills/gitnexus-*`), Codex (`.agents/skills/gitnexus-*`), Cursor (`.cursor/skills/gitnexus-*`), OpenCode (`.opencode/skills/gitnexus-*`), and Grok (`.grok/skills/gitnexus-*`). Grok also reads this file. Setup is in `README.md`.
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
@@ -168,5 +168,11 @@ This project is indexed by GitNexus as **Bronze**.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus-cli/SKILL.md` |
+| Implementation plan from the graph | `.claude/skills/gitnexus-plan/SKILL.md` |
+| Execute that plan | `.claude/skills/gitnexus-work/SKILL.md` |
+| Review a diff with the graph | `.claude/skills/gitnexus-review/SKILL.md` |
+| Plan, implement, and review | `.claude/skills/gitnexus-lfg/SKILL.md` |
+| Statement-level dependence (`--pdg`) | `.claude/skills/gitnexus-pdg-query/SKILL.md` |
+| Source-to-sink findings (`--pdg`) | `.claude/skills/gitnexus-taint-analysis/SKILL.md` |
 
 <!-- gitnexus:end -->

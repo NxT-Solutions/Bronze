@@ -122,13 +122,17 @@ A local debug package (unsigned) is `tooling/package-debug.sh`. Pull requests ru
 pnpm --allow-build=@ladybugdb/core --allow-build=gitnexus --allow-build=tree-sitter dlx gitnexus@latest analyze
 ```
 
-Run that again after every fresh clone. It writes `.gitnexus/` (LadybugDB graph, parse cache, and the local runner). `.gitnexusrc` sets `defaultBranch` to `main` and `skipContextFiles`, so analyze leaves `AGENTS.md` and `CLAUDE.md` in place. Embeddings stay off, so analyze does not download a model. GitNexus is not a dependency of the Bronze app, and the app does not read the index.
+Run that once after every fresh clone. It writes `.gitnexus/` (LadybugDB graph, parse cache, and the local runner). `.gitnexusrc` sets `defaultBranch` to `main`, `noStats`, and `skipContextFiles`, so analyze leaves `AGENTS.md` and `CLAUDE.md` in place. Those files already contain the GitNexus section after the Bronze contract. Embeddings stay off, so analyze does not download a model. GitNexus is not a dependency of the Bronze app, and the app does not read the index (ADR-017).
 
-Committed, so every clone matches:
+Committed, so every clone matches. The skill files are the GitNexus 1.6.12 suite (`gitnexus-exploring`, `gitnexus-debugging`, `gitnexus-impact-analysis`, `gitnexus-refactoring`, `gitnexus-guide`, `gitnexus-cli`, `gitnexus-plan`, `gitnexus-work`, `gitnexus-review`, `gitnexus-lfg`, `gitnexus-pdg-query`, `gitnexus-taint-analysis`):
 
 | Path | What it is |
 | --- | --- |
 | `.gitnexusrc` | Index defaults for this repo |
+| `.claude/skills/gitnexus-*`, `.agents/skills/gitnexus-*`, `.cursor/skills/gitnexus-*`, `.opencode/skills/gitnexus-*`, `.grok/skills/gitnexus-*` | Shared agent skills |
+| `.cursor/hooks.json`, `hooks/*.cjs` | Cursor post-tool hook |
+| `.claude/hooks/gitnexus/`, `.claude/settings.json` | Claude Code PreToolUse and PostToolUse hooks |
+| `.codex/hooks.json`, `.codex/hooks/gitnexus/` | Codex hooks |
 | `.cursor/mcp.json`, `.mcp.json`, `.codex/config.toml`, `opencode.json`, `.grok/config.toml`, `.factory/mcp.json` | Shared editor MCP config |
 | `.gitignore` | Rules for the generated index and local secrets |
 
@@ -152,9 +156,20 @@ Committed MCP entries start the same server, `npx -y gitnexus@latest mcp` (OpenC
 | Grok | `.grok/config.toml` |
 | Factory Droid | `.factory/mcp.json` |
 
-Claude Code asks once to trust `.mcp.json`. Codex and Grok read the project file after the repo is trusted.
+Each editor reads the committed tree for this clone:
 
-Antigravity, CodeBuddy, Qoder, and Windsurf keep MCP in the home directory. `npx gitnexus setup` writes the GitNexus entries it knows. The server object is the same `mcpServers.gitnexus` block.
+| Editor | Skills and hooks | MCP |
+| --- | --- | --- |
+| Cursor | `.cursor/skills/gitnexus-*`, `.cursor/hooks.json`, `hooks/` | `.cursor/mcp.json` |
+| Claude Code | `.claude/skills/gitnexus-*`, `.claude/hooks/gitnexus/` | `.mcp.json` |
+| Codex | `.agents/skills/gitnexus-*`, `.codex/hooks.json` | `.codex/config.toml` |
+| OpenCode | `.opencode/skills/gitnexus-*` | `opencode.json` |
+| Grok | `.grok/skills/gitnexus-*`, plus `AGENTS.md` and the Claude and Cursor trees | `.grok/config.toml` |
+| Factory Droid | `AGENTS.md` | `.factory/mcp.json` |
+
+Claude Code asks once to trust `.mcp.json`. Codex and Grok read the project file after the repo is trusted. Codex may ask once, in `/hooks`, before the committed hook runs.
+
+Antigravity, CodeBuddy, Qoder, and Windsurf keep MCP in the home directory. `npx gitnexus setup` writes the GitNexus entries it knows. The server object is the same `mcpServers.gitnexus` block. Those home files are per machine and are not committed.
 
 | Editor | Home file |
 | --- | --- |
@@ -163,7 +178,7 @@ Antigravity, CodeBuddy, Qoder, and Windsurf keep MCP in the home directory. `npx
 | Qoder | `~/.qoder.json` |
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` |
 
-Claude Code and Codex hook scripts stay under the home directory (`npx gitnexus setup` installs them). The registry of indexed repos stays in `~/.gitnexus/`.
+The registry of indexed repos stays in `~/.gitnexus/` on this machine. That directory is outside the clone.
 
 Permissions: Accessibility and Input Monitoring. Bronze never asks for Screen Recording.
 
