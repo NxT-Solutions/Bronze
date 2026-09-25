@@ -20,6 +20,91 @@ import { tauriInvoke } from "./tauri-bridge.mjs";
 
 export { formatCaptureSource, serializeComposerDom };
 
+export const QUEUE_PAGE_SIZE = 20;
+
+export function mergeQueueHead(loaded, head) {
+  const seen = new Set();
+  const next = [];
+  for (const item of head ?? []) {
+    if (!item?.id || seen.has(item.id)) {
+      continue;
+    }
+    seen.add(item.id);
+    next.push(item);
+  }
+  for (const item of loaded ?? []) {
+    if (!item?.id || seen.has(item.id)) {
+      continue;
+    }
+    seen.add(item.id);
+    next.push(item);
+  }
+  return next;
+}
+
+export function appendQueuePage(loaded, pageItems) {
+  const incoming = new Map();
+  for (const item of pageItems ?? []) {
+    if (item?.id) {
+      incoming.set(item.id, item);
+    }
+  }
+  const next = (loaded ?? []).map((item) => incoming.get(item.id) ?? item);
+  const seen = new Set(next.map((item) => item.id));
+  for (const item of pageItems ?? []) {
+    if (!item?.id || seen.has(item.id)) {
+      continue;
+    }
+    seen.add(item.id);
+    next.push(item);
+  }
+  return next;
+}
+
+export function applyQueuePage(state, page, mode) {
+  const items = state?.items ?? [];
+  const incoming = Array.isArray(page?.items) ? page.items : [];
+  const pageCursor = page?.nextCursor ?? null;
+  if (mode === "more") {
+    return {
+      items: appendQueuePage(items, incoming),
+      nextCursor: pageCursor,
+      anchorCursor: state?.nextCursor ?? null,
+    };
+  }
+  if (mode === "tail") {
+    return {
+      items: appendQueuePage(items, incoming),
+      nextCursor: pageCursor ?? state?.nextCursor ?? null,
+      anchorCursor: state?.anchorCursor ?? null,
+    };
+  }
+  return {
+    items: mergeQueueHead(items, incoming),
+    nextCursor: items.length === 0 ? pageCursor : (state?.nextCursor ?? null),
+    anchorCursor: items.length === 0 ? null : (state?.anchorCursor ?? null),
+  };
+}
+
+export function removeQueueItem(state, id) {
+  return {
+    items: (state?.items ?? []).filter((item) => item.id !== id),
+    nextCursor: state?.nextCursor ?? null,
+    anchorCursor: state?.anchorCursor ?? null,
+  };
+}
+
+export function queueFocusAtEnd(rows, target) {
+  if (!target || !rows?.length) {
+    return false;
+  }
+  const last = rows[rows.length - 1];
+  if (last === target) {
+    return true;
+  }
+  return typeof last?.contains === "function" && last.contains(target);
+}
+
 const FORMAT_TAGS = {
   strong: new Set(["strong", "b"]),
   em: new Set(["em", "i"]),
@@ -556,22 +641,138 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   }
   syncSubmitLabel();
 
+  const moreStatus = root.querySelector("#queue-more-status");
+  let state = { items: [], nextCursor: null, anchorCursor: null };
+  let loadingMore = false;
   let refreshGen = 0;
+
+  function focusedQueueControl() {
+    const active = list.ownerDocument?.activeElement;
+    if (
+      !active ||
+      typeof list.contains !== "function" ||
+      !list.contains(active)
+    ) {
+      return null;
+    }
+    const row = active.closest?.("[data-item-id], li");
+    return {
+      itemId: active.dataset?.itemId || row?.dataset?.itemId,
+      action: active.dataset?.queueAction,
+    };
+  }
+
+  function restoreQueueFocus(saved) {
+    if (!saved?.itemId || typeof list.querySelectorAll !== "function") {
+      return;
+    }
+    for (const button of list.querySelectorAll("[data-queue-action]")) {
+      if (
+        button.dataset?.itemId === saved.itemId &&
+        button.dataset?.queueAction === saved.action
+      ) {
+        button.focus?.();
+        return;
+      }
+    }
+  }
+
+  async function queryPage(cursor) {
+    const args = { filter: "overview", limit: QUEUE_PAGE_SIZE };
+    if (cursor) {
+      args.cursor = cursor;
+    }
+    return invokeFn("queue_query", args);
+  }
+
+  async function paint(opts) {
+    const saved = focusedQueueControl();
+    try {
+      await renderQueueItems(list, state.items, template, opts);
+    } catch {
+      queueRenderer.paintQueueItems(list, state.items, template);
+    }
+    restoreQueueFocus(saved);
+    if (empty) {
+      empty.hidden = state.items.length > 0;
+    }
+  }
+
+  async function syncHead() {
+    const head = await queryPage(null);
+    let next = applyQueuePage(state, head, "head");
+    if (next.nextCursor == null && next.anchorCursor) {
+      const tail = await queryPage(next.anchorCursor);
+      next = applyQueuePage(next, tail, "tail");
+    }
+    state = next;
+  }
+
+  async function reloadWindow(count) {
+    let cursor = null;
+    let items = [];
+    let nextCursor = null;
+    let anchorCursor = null;
+    const target = Math.max(count, 1);
+    while (items.length < target) {
+      const page = await queryPage(cursor);
+      const before = items.length;
+      items = appendQueuePage(items, page?.items ?? []);
+      anchorCursor = cursor;
+      nextCursor = page?.nextCursor ?? null;
+      if (!nextCursor || items.length === before) {
+        break;
+      }
+      cursor = nextCursor;
+    }
+    state = { items, nextCursor, anchorCursor };
+  }
+
   async function refresh(opts = {}) {
     const gen = ++refreshGen;
-    const items = await invokeFn("list_overview_items");
+    const action = opts.action;
+    if (action === "complete" || action === "skip" || action === "trash") {
+      state = removeQueueItem(state, opts.id);
+    } else if (action === "moveUp" || action === "moveDown") {
+      await reloadWindow(state.items.length);
+    } else if (!(action === "replace" && !opts.item)) {
+      if (opts.item?.id) {
+        state = {
+          ...state,
+          items: state.items.map((row) =>
+            row.id === opts.item.id ? { ...row, ...opts.item } : row,
+          ),
+        };
+      }
+      await syncHead();
+    }
     if (gen !== refreshGen) {
       return;
     }
-    try {
-      await renderQueueItems(list, items, template, opts);
-    } catch {
-      if (gen === refreshGen) {
-        queueRenderer.paintQueueItems(list, items, template);
-      }
+    await paint(opts);
+  }
+
+  async function loadMore() {
+    if (!state.nextCursor || loadingMore) {
+      return;
     }
-    if (gen === refreshGen && empty) {
-      empty.hidden = items.length > 0;
+    loadingMore = true;
+    if (moreStatus) {
+      moreStatus.hidden = false;
+    }
+    const gen = refreshGen;
+    try {
+      const page = await queryPage(state.nextCursor);
+      if (gen !== refreshGen) {
+        return;
+      }
+      state = applyQueuePage(state, page, "more");
+      await paint({ action: "insert" });
+    } finally {
+      loadingMore = false;
+      if (moreStatus) {
+        moreStatus.hidden = true;
+      }
     }
   }
 
@@ -720,8 +921,8 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
         const row = button.closest("li");
         const next = await openEditSheet(root, row?.dataset?.body ?? "");
         if (next !== null) {
-          await invokeFn("edit_queue_item", { id, body: next });
-          await refresh({ action: "replace" });
+          const updated = await invokeFn("edit_queue_item", { id, body: next });
+          await refresh({ action: "replace", item: updated });
         }
         return;
       }
@@ -729,6 +930,24 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     });
   });
 
+  list.addEventListener("focusin", (event) => {
+    if (queueFocusAtEnd(queueItemRows(list), event.target)) {
+      loadMore();
+    }
+  });
+  const sentinel = root.querySelector("[data-queue-sentinel]");
+  if (sentinel && typeof IntersectionObserver === "function") {
+    const scroller = list.closest?.("#quick-panel") ?? null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMore();
+        }
+      },
+      { root: scroller, rootMargin: "240px" },
+    );
+    observer.observe(sentinel);
+  }
   listenQueueChanged(() => {
     refresh();
   });

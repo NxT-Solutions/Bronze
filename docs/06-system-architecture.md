@@ -442,6 +442,8 @@ restore_commit(preview_token) -> RestoreResult
 diagnostics_preview() -> RedactedSupportBundle
 ~~~
 
+The quick panel loads its overview (`queued`, `copied`, `active`) with `queue_query(cursor, filter, limit)`. The first call omits `cursor`. The page is `{ items, nextCursor }`. `nextCursor` is null when no further row sorts after the page. The cursor is the opaque keyset `v1.` + hexadecimal UTF-8 `rank` + `.` + hexadecimal UTF-8 `id`, in `ORDER BY rank, id`. It is not an SQL offset. Page size is 20, and a larger `limit` is clamped to 20 (QUE-002, SEC-002). An invalid cursor fails as `queue_cursor_invalid`. A row whose rank sorts before that keyset does not appear on the next page and does not drop rows after it. The panel requests the next page when the end sentinel nears the scrollport and when keyboard focus enters the last row (QUE-008, A11Y-001). The loading sentence is the catalog key `queue.list.loading` (I18N-001).
+
 Rust validates window label, capability, payload, enum, length, ID, revision, and state transition. Renderer-provided paths are never trusted. File dialog and subsequent operation remain native/Rust-owned.
 
 Events are scoped and content-minimal:

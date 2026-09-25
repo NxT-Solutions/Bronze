@@ -772,6 +772,12 @@ pre {
   overflow: visible;
 }
 
+[data-queue-sentinel] {
+  block-size: 1px;
+  inline-size: 100%;
+  pointer-events: none;
+}
+
 .queue-item {
   position: relative;
   z-index: 0;

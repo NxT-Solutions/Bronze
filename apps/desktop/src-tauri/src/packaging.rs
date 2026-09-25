@@ -39,6 +39,7 @@ pub fn forbids_get_task_allow(text: &str) -> bool {
     !text.contains("get-task-allow")
 }
 
+#[cfg(test)]
 fn icns_png_sizes(bytes: &[u8]) -> Vec<(u32, u32)> {
     if bytes.len() < 8 || &bytes[..4] != b"icns" {
         return Vec::new();

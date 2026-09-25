@@ -25,7 +25,90 @@ pub enum QueueAction {
 pub enum QueueError {
     NotFound,
     InvalidTransition,
+    InvalidCursor,
     Store,
+}
+
+/// Quick-panel page size (QUE-002, SEC-002). Callers cannot raise it.
+pub const QUEUE_PAGE_SIZE: usize = 20;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum QueueListFilter {
+    Overview,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct QueuePage {
+    pub items: Vec<QueueItemRow>,
+    pub next_cursor: Option<String>,
+}
+
+/// Keyset of `(rank, id)` in list order. An insert that sorts before this
+/// pair does not change which rows the next page returns.
+pub fn encode_queue_cursor(rank: &str, id: &str) -> String {
+    format!(
+        "v1.{}.{}",
+        hex_encode(rank.as_bytes()),
+        hex_encode(id.as_bytes())
+    )
+}
+
+pub fn decode_queue_cursor(cursor: &str) -> Result<(String, String), QueueError> {
+    let mut parts = cursor.split('.');
+    let version = parts.next();
+    let rank_hex = parts.next();
+    let id_hex = parts.next();
+    if parts.next().is_some() || version != Some("v1") {
+        return Err(QueueError::InvalidCursor);
+    }
+    let rank = hex_to_string(rank_hex.ok_or(QueueError::InvalidCursor)?)?;
+    let id = hex_to_string(id_hex.ok_or(QueueError::InvalidCursor)?)?;
+    if rank.is_empty() || id.is_empty() {
+        return Err(QueueError::InvalidCursor);
+    }
+    Ok((rank, id))
+}
+
+fn page_limit(limit: usize) -> usize {
+    match limit {
+        0 => QUEUE_PAGE_SIZE,
+        n if n > QUEUE_PAGE_SIZE => QUEUE_PAGE_SIZE,
+        n => n,
+    }
+}
+
+fn hex_encode(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        out.push(HEX[(byte >> 4) as usize] as char);
+        out.push(HEX[(byte & 0xf) as usize] as char);
+    }
+    out
+}
+
+fn hex_val(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        _ => None,
+    }
+}
+
+fn hex_to_string(text: &str) -> Result<String, QueueError> {
+    if text.is_empty() || !text.len().is_multiple_of(2) {
+        return Err(QueueError::InvalidCursor);
+    }
+    let bytes = text.as_bytes();
+    let mut out = Vec::with_capacity(text.len() / 2);
+    let mut index = 0;
+    while index < bytes.len() {
+        let hi = hex_val(bytes[index]).ok_or(QueueError::InvalidCursor)?;
+        let lo = hex_val(bytes[index + 1]).ok_or(QueueError::InvalidCursor)?;
+        out.push((hi << 4) | lo);
+        index += 2;
+    }
+    String::from_utf8(out).map_err(|_| QueueError::InvalidCursor)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -95,6 +178,70 @@ impl Store {
             .map_err(|_| QueueError::Store)?;
         rows.collect::<Result<_, _>>()
             .map_err(|_| QueueError::Store)
+    }
+
+    pub fn query_queue_page(
+        &self,
+        cursor: Option<&str>,
+        filter: QueueListFilter,
+        limit: usize,
+    ) -> Result<QueuePage, QueueError> {
+        match filter {
+            QueueListFilter::Overview => self.query_overview_page(cursor, page_limit(limit)),
+        }
+    }
+
+    fn query_overview_page(
+        &self,
+        cursor: Option<&str>,
+        limit: usize,
+    ) -> Result<QueuePage, QueueError> {
+        let fetch = limit + 1;
+        let mut rows = match cursor {
+            None => {
+                let mut stmt = self
+                    .conn
+                    .prepare(
+                        "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status IN ('queued','copied','active') ORDER BY items.rank, items.id LIMIT ?1",
+                    )
+                    .map_err(|_| QueueError::Store)?;
+                let mapped = stmt
+                    .query_map([fetch as i64], queue_item_from_row)
+                    .map_err(|_| QueueError::Store)?;
+                mapped
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| QueueError::Store)?
+            }
+            Some(token) => {
+                let (rank, id) = decode_queue_cursor(token)?;
+                let mut stmt = self
+                    .conn
+                    .prepare(
+                        "SELECT items.id, items.section_id, items.body, items.title, items.content_language, items.status, items.rank, sources.app_name, sources.bundle_id FROM items LEFT JOIN sources ON sources.id = items.source_id WHERE items.status IN ('queued','copied','active') AND (items.rank, items.id) > (?1, ?2) ORDER BY items.rank, items.id LIMIT ?3",
+                    )
+                    .map_err(|_| QueueError::Store)?;
+                let mapped = stmt
+                    .query_map(
+                        rusqlite::params![rank, id, fetch as i64],
+                        queue_item_from_row,
+                    )
+                    .map_err(|_| QueueError::Store)?;
+                mapped
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| QueueError::Store)?
+            }
+        };
+        let next_cursor = if rows.len() > limit {
+            let boundary = &rows[limit - 1];
+            Some(encode_queue_cursor(&boundary.rank, &boundary.id))
+        } else {
+            None
+        };
+        rows.truncate(limit);
+        Ok(QueuePage {
+            items: rows,
+            next_cursor,
+        })
     }
 
     pub fn get_item(&self, id: &str) -> Result<QueueItemRow, QueueError> {
@@ -381,5 +528,130 @@ mod queue_tests {
             .expect("trash");
         assert_eq!(store.list_items(false).expect("active").len(), 1);
         assert_eq!(store.list_items(true).expect("all").len(), 2);
+    }
+
+    fn open_ranked_store() -> Store {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("bronze-queue-page-{nanos}-{n}"));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let locator = PathLocator {
+            path: dir.join("bronze.sqlite"),
+        };
+        let mut backup = NoopBackup;
+        let store = Store::open(&locator, &mut backup).expect("open");
+        store
+            .conn
+            .execute_batch(
+                "INSERT INTO workspaces VALUES ('w1','ws',1,1);
+                 INSERT INTO sections VALUES ('s1','w1','inbox','a','active',NULL,1,1,1,NULL);",
+            )
+            .expect("seed");
+        store
+    }
+
+    fn insert_ranked(store: &Store, id: &str, rank: &str, status: &str) {
+        store
+            .conn
+            .execute(
+                "INSERT INTO items (id, section_id, kind, body, content_language, status, rank, source_id, revision, created_at_ms, updated_at_ms, completed_at_ms, deleted_at_ms)
+                 VALUES (?1, 's1', 'note', ?1, 'und', ?2, ?3, NULL, 1, 1, 1, NULL, NULL)",
+                rusqlite::params![id, status, rank],
+            )
+            .expect("insert");
+    }
+
+    #[test]
+    fn queue_page_is_keyset_not_offset_and_keeps_order_across_a_prepend() {
+        // QUE-002, SEC-002
+        assert_eq!(QUEUE_PAGE_SIZE, 20);
+        let src = include_str!("queue.rs");
+        let body = src.split("fn query_overview_page").nth(1).expect("query");
+        let end = body.find("\n    pub fn ").unwrap_or(body.len());
+        assert!(!body[..end].to_ascii_lowercase().contains("offset"));
+        let store = open_ranked_store();
+        for n in 0..21 {
+            insert_ranked(&store, &format!("id{n:02}"), &format!("b{n:02}"), "queued");
+        }
+        insert_ranked(&store, "done-row", "c00", "done");
+        insert_ranked(&store, "skip-row", "c01", "skipped");
+        insert_ranked(&store, "trash-row", "c02", "trashed");
+        insert_ranked(&store, "copied-row", "b21", "copied");
+        insert_ranked(&store, "active-row", "b22", "active");
+        let full = store
+            .query_queue_page(None, QueueListFilter::Overview, 0)
+            .expect("clamp");
+        assert_eq!(full.items.len(), QUEUE_PAGE_SIZE);
+        assert!(full.next_cursor.is_some());
+        let ids: Vec<_> = full.items.iter().map(|row| row.id.as_str()).collect();
+        assert_eq!(ids[0], "id00");
+        assert_eq!(ids[19], "id19");
+        assert!(!ids.contains(&"done-row"));
+        assert!(!ids.contains(&"skip-row"));
+        assert!(!ids.contains(&"trash-row"));
+        let cursor = full.next_cursor.clone().expect("cursor");
+        assert!(!cursor.contains("OFFSET"));
+        assert!(!cursor.contains("id19"));
+        assert!(!cursor.contains("b19"));
+        assert_eq!(
+            decode_queue_cursor(&cursor).expect("decode"),
+            ("b19".into(), "id19".into())
+        );
+        assert!(store
+            .query_queue_page(Some("1"), QueueListFilter::Overview, QUEUE_PAGE_SIZE)
+            .is_err());
+        assert!(store
+            .query_queue_page(Some(""), QueueListFilter::Overview, QUEUE_PAGE_SIZE)
+            .is_err());
+        let second = store
+            .query_queue_page(Some(&cursor), QueueListFilter::Overview, 100)
+            .expect("page 2");
+        let second_ids: Vec<_> = second.items.iter().map(|row| row.id.as_str()).collect();
+        assert_eq!(second_ids, ["id20", "copied-row", "active-row"]);
+        assert!(second.next_cursor.is_none());
+        insert_ranked(&store, "id-pre", "a-pre", "queued");
+        let after_prepend = store
+            .query_queue_page(Some(&cursor), QueueListFilter::Overview, QUEUE_PAGE_SIZE)
+            .expect("stable");
+        let stable: Vec<_> = after_prepend
+            .items
+            .iter()
+            .map(|row| row.id.as_str())
+            .collect();
+        assert_eq!(stable, second_ids);
+        assert!(!stable.contains(&"id-pre"));
+        assert!(!stable.iter().any(|id| ids.contains(id)));
+        let head = store
+            .query_queue_page(None, QueueListFilter::Overview, QUEUE_PAGE_SIZE)
+            .expect("head");
+        assert_eq!(head.items[0].id, "id-pre");
+        assert!(!head.items.iter().any(|row| row.id == "id20"));
+        let mut seen = vec!["id-pre".to_string()];
+        seen.extend(full.items.iter().map(|row| row.id.clone()));
+        seen.extend(after_prepend.items.iter().map(|row| row.id.clone()));
+        assert_eq!(seen.len(), 24);
+        let mut unique = seen.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), 24);
+        let expected = store.list_items(true).expect("all");
+        let expected: Vec<_> = expected
+            .into_iter()
+            .filter(|row| matches!(row.status.as_str(), "queued" | "copied" | "active"))
+            .map(|row| row.id)
+            .collect();
+        assert_eq!(seen, expected);
+        let exact = open_ranked_store();
+        for n in 0..20 {
+            insert_ranked(&exact, &format!("e{n:02}"), &format!("r{n:02}"), "queued");
+        }
+        let only = exact
+            .query_queue_page(None, QueueListFilter::Overview, QUEUE_PAGE_SIZE)
+            .expect("exact");
+        assert_eq!(only.items.len(), 20);
+        assert!(only.next_cursor.is_none());
     }
 }

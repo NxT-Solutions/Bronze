@@ -33,6 +33,7 @@
   "composer.format.bullet.tip": "Aufzählung ⌘⇧8",
   "composer.format.number.tip": "Nummerierung ⌘⇧7",
   "panel.empty": "Text auswählen und Erfassen, oder hier tippen.",
+  "queue.list.loading": "Weitere Einträge werden geladen.",
   "queue.item.moveUp": "Nach oben",
   "queue.item.moveDown": "Nach unten",
   "queue.item.complete": "Abschließen",

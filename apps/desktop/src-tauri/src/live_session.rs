@@ -42,7 +42,8 @@ use bronze_settings::{
 };
 use bronze_storage::{
     ComposerDraft, DiagnosticEventRow, ImportStrategy, NoopBackup, Overwrite, PathLocator,
-    QueueAction, QueueItemRow, Store, ADR_018_STATUS, APP_SCHEMA_VERSION, QUE_007_COMPLETE,
+    QueueAction, QueueError, QueueItemRow, QueueListFilter, Store, ADR_018_STATUS,
+    APP_SCHEMA_VERSION, QUEUE_PAGE_SIZE, QUE_007_COMPLETE,
 };
 use bronze_title_model::{
     auto_pick_title_tier, present_gguf_tiers, request_tier, TitleTier, GGUF_TIERS,
@@ -404,6 +405,13 @@ impl fmt::Debug for QueueItemDto {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueuePageDto {
+    pub items: Vec<QueueItemDto>,
+    pub next_cursor: Option<String>,
+}
+
 impl From<QueueItemRow> for QueueItemDto {
     fn from(row: QueueItemRow) -> Self {
         let source_app_icon = source_app_icon_data_url(
@@ -724,6 +732,27 @@ impl LiveSession {
             .into_iter()
             .filter(|item| is_overview_status(&item.status))
             .collect())
+    }
+
+    pub fn queue_query(
+        &self,
+        cursor: Option<&str>,
+        filter: Option<&str>,
+        limit: Option<u32>,
+    ) -> Result<QueuePageDto, String> {
+        let filter = match filter.unwrap_or("overview") {
+            "overview" => QueueListFilter::Overview,
+            _ => return Err("queue_filter_invalid".into()),
+        };
+        let limit = limit.map(|value| value as usize).unwrap_or(QUEUE_PAGE_SIZE);
+        let page = self
+            .store
+            .query_queue_page(cursor, filter, limit)
+            .map_err(queue_page_error)?;
+        Ok(QueuePageDto {
+            items: page.items.into_iter().map(QueueItemDto::from).collect(),
+            next_cursor: page.next_cursor,
+        })
     }
 
     pub fn item_body(&self, id: &str) -> Option<String> {
@@ -1840,6 +1869,15 @@ fn settings_import_error_code(err: SettingsImportError) -> String {
     }
 }
 
+fn queue_page_error(err: QueueError) -> String {
+    match err {
+        QueueError::InvalidCursor => "queue_cursor_invalid".into(),
+        QueueError::NotFound => "not_found".into(),
+        QueueError::InvalidTransition => "invalid_transition".into(),
+        QueueError::Store => "queue_list_failed".into(),
+    }
+}
+
 fn copy_err(err: CopyError) -> String {
     match err {
         CopyError::Pasteboard => "pasteboard".into(),
@@ -1875,6 +1913,17 @@ pub fn list_overview_items(
     session: tauri::State<std::sync::Mutex<LiveSession>>,
 ) -> Result<Vec<QueueItemDto>, String> {
     lock_session(&session)?.list_overview()
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn queue_query(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+    cursor: Option<String>,
+    filter: Option<String>,
+    limit: Option<u32>,
+) -> Result<QueuePageDto, String> {
+    lock_session(&session)?.queue_query(cursor.as_deref(), filter.as_deref(), limit)
 }
 
 #[cfg(target_os = "macos")]
@@ -2290,6 +2339,48 @@ mod live_session_tests {
         );
         assert!(edited_title.to_ascii_lowercase().contains("persist"));
         assert!(!edited_title.to_ascii_lowercase().starts_with("thanks"));
+    }
+
+    #[test]
+    fn queue_query_dto_pages_overview_and_rejects_a_bad_cursor() {
+        // QUE-002, SEC-002
+        let mut session = open_session();
+        let empty = session.queue_query(None, None, None).expect("empty");
+        assert!(empty.items.is_empty());
+        assert!(empty.next_cursor.is_none());
+        for n in 0..21 {
+            session.add_composer(format!("body {n}")).expect("add");
+        }
+        let overview = session.list_overview().expect("overview");
+        assert_eq!(overview.len(), 21);
+        let first = session
+            .queue_query(None, Some("overview"), Some(10_000))
+            .expect("page");
+        assert_eq!(first.items.len(), QUEUE_PAGE_SIZE);
+        assert_eq!(first.items[0].id, overview[0].id);
+        assert_eq!(first.items[19].id, overview[19].id);
+        let cursor = first.next_cursor.clone().expect("cursor");
+        let json = serde_json::to_value(&first).expect("json");
+        assert!(json.get("nextCursor").unwrap().is_string());
+        assert!(json.get("next_cursor").is_none());
+        let second = session
+            .queue_query(Some(&cursor), Some("overview"), Some(0))
+            .expect("next");
+        assert_eq!(second.items.len(), 1);
+        assert_eq!(second.items[0].id, overview[20].id);
+        assert!(second.next_cursor.is_none());
+        assert_eq!(
+            session
+                .queue_query(Some("v1.zz.00"), None, None)
+                .expect_err("cursor"),
+            "queue_cursor_invalid"
+        );
+        assert_eq!(
+            session
+                .queue_query(None, Some("attachments"), None)
+                .expect_err("filter"),
+            "queue_filter_invalid"
+        );
     }
 
     #[test]

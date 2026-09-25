@@ -30,8 +30,9 @@ pub use migrate::{
 };
 pub use profiles::ProfileStoreError;
 pub use queue::{
-    queue_action_key, QueueAction, QueueError, QueueItemRow, DRAG_REQUIRED, QUEUE_COMPLETE_KEY,
-    QUEUE_EDIT_KEY, QUEUE_MOVE_DOWN_KEY, QUEUE_MOVE_UP_KEY, QUEUE_SKIP_KEY, QUEUE_TRASH_KEY,
+    decode_queue_cursor, encode_queue_cursor, queue_action_key, QueueAction, QueueError,
+    QueueItemRow, QueueListFilter, QueuePage, DRAG_REQUIRED, QUEUE_COMPLETE_KEY, QUEUE_EDIT_KEY,
+    QUEUE_MOVE_DOWN_KEY, QUEUE_MOVE_UP_KEY, QUEUE_PAGE_SIZE, QUEUE_SKIP_KEY, QUEUE_TRASH_KEY,
 };
 pub use receipts::{Command, CommandError, Receipt, RETRY_WINDOW_MS};
 pub use search::{
