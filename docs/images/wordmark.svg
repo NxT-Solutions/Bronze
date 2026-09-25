@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="96" viewBox="0 0 560 96" role="img" aria-label="Bronze">
+  <rect width="560" height="96" fill="#fafafa"/>
+  <rect x="8" y="20" width="56" height="56" rx="14" fill="#18181b"/>
+  <circle cx="36" cy="48" r="11" fill="#b4532a"/>
+  <text x="84" y="62" fill="#18181b" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-size="40" font-weight="600" letter-spacing="-0.04em">Bronze</text>
+</svg>

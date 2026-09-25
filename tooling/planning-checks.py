@@ -323,6 +323,42 @@ def check_oss_release() -> list[str]:
         errors.append("README must tap NxT-Solutions/nxt-solutions-packages")
     if "brew tap NoahNxT/nxt-solutions-packages" in readme:
         errors.append("README must not tap NoahNxT/nxt-solutions-packages")
+    for image in (
+        "docs/images/bronze-hero.png",
+        "docs/images/bronze-queue.png",
+        "docs/images/bronze-settings.png",
+        "docs/images/bronze-mark.png",
+    ):
+        if image not in readme:
+            errors.append(f"README missing {image}")
+        if not (ROOT / image).is_file():
+            errors.append(f"{image} missing")
+
+    ci = ROOT / ".github" / "workflows" / "ci.yml"
+    ci_text = ci.read_text() if ci.is_file() else ""
+    if not ci_text:
+        errors.append(".github/workflows/ci.yml missing")
+    else:
+        for needle in (
+            "pull_request",
+            "contents: read",
+            "pnpm exec biome check .",
+            "tooling/planning-checks.py",
+            "--exclude bronze-desktop",
+        ):
+            if needle not in ci_text:
+                errors.append(f"ci.yml missing {needle}")
+        if "notarize" in ci_text.lower() and "does not notarize" not in ci_text.lower():
+            errors.append("ci.yml must not run notarization")
+
+    dependabot = ROOT / ".github" / "dependabot.yml"
+    if not dependabot.is_file():
+        errors.append(".github/dependabot.yml missing")
+    else:
+        dep = dependabot.read_text()
+        for eco in ("github-actions", "npm", "cargo"):
+            if eco not in dep:
+                errors.append(f"dependabot.yml missing {eco}")
     return errors
 
 
