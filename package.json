@@ -7,6 +7,8 @@
     "typecheck": "TURBO_TELEMETRY_DISABLED=1 turbo run typecheck",
     "test": "TURBO_TELEMETRY_DISABLED=1 turbo run test",
     "validate": "TURBO_TELEMETRY_DISABLED=1 turbo run validate",
+    "visual": "node tooling/visual-run.mjs",
+    "visual:update": "node tooling/visual-run.mjs --update-snapshots",
     "verify": "TURBO_TELEMETRY_DISABLED=1 biome check . && TURBO_TELEMETRY_DISABLED=1 turbo run lint typecheck test validate && cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace && python3 tooling/planning-checks.py"
   },
   "devDependencies": {

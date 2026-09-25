@@ -4,12 +4,15 @@
   "private": true,
   "scripts": {
     "tauri": "tauri",
-    "test": "node --test src/*.test.mjs"
+    "test": "node --test src/*.test.mjs visual/config.test.mjs",
+    "visual": "playwright test -c visual/playwright.config.mjs",
+    "visual:update": "playwright test -c visual/playwright.config.mjs --update-snapshots"
   },
   "dependencies": {
     "@tauri-apps/api": "2.11.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tauri-apps/cli": "2.11.5"
   }
 }

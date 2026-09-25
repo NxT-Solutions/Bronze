@@ -13,6 +13,10 @@ node_modules/
 # turbo
 .turbo/
 
+# Playwright output. Baselines under apps/desktop/visual stay committed.
+apps/desktop/visual/test-results/
+apps/desktop/playwright-report/
+
 # build outputs
 dist/
 build/
