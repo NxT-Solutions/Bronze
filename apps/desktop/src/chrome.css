@@ -830,11 +830,6 @@ pre {
   }
 }
 
-.queue-item.is-last-copied > article {
-  box-shadow: 0 0 0 2px var(--ring);
-  animation: bronze-copy-ring var(--duration) var(--ease-out);
-}
-
 .queue-item:has(.row-action-icons .btn-icon:hover:not(:disabled)),
 .queue-item:has(.row-action-icons .btn-icon:focus-visible:not(:disabled)),
 .queue-item:has(.action-tip:not([hidden])) {
@@ -854,6 +849,11 @@ article {
   box-shadow: none;
   padding: var(--space-4);
   overflow: visible;
+}
+
+.queue-item.is-last-copied > article {
+  box-shadow: 0 0 0 2px var(--ring);
+  animation: bronze-copy-ring var(--duration) var(--ease-out);
 }
 
 article p {
