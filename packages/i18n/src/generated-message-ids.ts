@@ -36,6 +36,7 @@ export const MessageIds = {
   "composer.format.bullet.tip": "composer.format.bullet.tip",
   "composer.format.number.tip": "composer.format.number.tip",
   "panel.empty": "panel.empty",
+  "queue.list.loading": "queue.list.loading",
   "queue.item.moveUp": "queue.item.moveUp",
   "queue.item.moveDown": "queue.item.moveDown",
   "queue.item.complete": "queue.item.complete",

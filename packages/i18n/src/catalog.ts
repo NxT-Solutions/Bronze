@@ -30,6 +30,7 @@ export const PANEL_CHROME_KEYS = [
   "panel.quick.title",
   "panel.section.active",
   "panel.empty",
+  "queue.list.loading",
   "chrome.skip.toContent",
   "composer.add.label",
   "composer.placeholder",

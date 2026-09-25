@@ -34,6 +34,7 @@ test("queue list uses semantic list article and real buttons", () => {
   assert.match(html, /<button\b[^>]*type="button"[^>]*data-slot="expand"/);
   assert.equal(en["capture.source"], "From {appName}");
   assert.equal(en["queue.item.showMore"], "Show more");
+  assert.equal(en["queue.list.loading"], "Loading more items.");
   assert.equal(en["queue.item.showLess"], "Show less");
   assert.equal(en["queue.item.title"], "Item");
 });

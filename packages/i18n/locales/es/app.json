@@ -33,6 +33,7 @@
   "composer.format.bullet.tip": "Viñetas ⌘⇧8",
   "composer.format.number.tip": "Números ⌘⇧7",
   "panel.empty": "Selecciona texto y Capturar, o escribe aquí.",
+  "queue.list.loading": "Cargando más elementos.",
   "queue.item.moveUp": "Subir",
   "queue.item.moveDown": "Bajar",
   "queue.item.complete": "Completar",

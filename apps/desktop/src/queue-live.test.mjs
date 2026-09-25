@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
   applyCaptureResult,
+  applyQueuePage,
   captureFeedbackKey,
   composerFormatAction,
   composerHotkey,
@@ -13,6 +14,8 @@ import {
   composerSubmitLabelKey,
   formatCaptureSource,
   QUE_007_COMPLETE,
+  QUEUE_PAGE_SIZE,
+  queueFocusAtEnd,
   queueMoveDisabled,
   syncQueueMoveAvailability,
 } from "./queue-live.mjs";
@@ -74,7 +77,10 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.equal(composerSubmitLabelKey("one\ntwo"), "composer.add.submit.chord");
   assert.equal(QUE_007_COMPLETE, false);
   assert.match(html, /queue-live\.mjs/);
-  assert.match(live, /list_overview_items/);
+  assert.match(live, /queue_query/);
+  assert.doesNotMatch(live, /list_overview_items/);
+  assert.equal(QUEUE_PAGE_SIZE, 20);
+  assert.doesNotMatch(live, /OFFSET/);
   assert.match(live, /queue-changed/);
   assert.match(live, /capture-result/);
   assert.match(live, /LOCALE_APPLIED_EVENT/);
@@ -359,4 +365,74 @@ test("capture feedback maps terminal reason to catalog keys and status text", ()
   applyCaptureResult(empty, { terminal: "saved", reason: "ok" });
   assert.equal(empty.status.textContent, "");
   assert.equal(empty.status.hidden, true);
+});
+
+test("queue pages keep order when a capture is prepended (QUE-002, QUE-008, A11Y-001, I18N-001)", () => {
+  const page = {
+    items: [
+      { id: "b", body: "b" },
+      { id: "c", body: "c" },
+    ],
+    nextCursor: "cursor-after-c",
+  };
+  let state = applyQueuePage(
+    { items: [], nextCursor: null, anchorCursor: null },
+    page,
+    "head",
+  );
+  state = applyQueuePage(
+    state,
+    {
+      items: [
+        { id: "a", body: "a" },
+        { id: "b", body: "b2" },
+      ],
+      nextCursor: "shifted",
+    },
+    "head",
+  );
+  assert.deepEqual(
+    state.items.map((item) => item.id),
+    ["a", "b", "c"],
+  );
+  assert.equal(state.items[1].body, "b2");
+  assert.equal(state.nextCursor, "cursor-after-c");
+  state = applyQueuePage(
+    state,
+    {
+      items: [
+        { id: "c", body: "c" },
+        { id: "d", body: "d" },
+      ],
+      nextCursor: null,
+    },
+    "more",
+  );
+  assert.deepEqual(
+    state.items.map((item) => item.id),
+    ["a", "b", "c", "d"],
+  );
+  assert.equal(new Set(state.items.map((item) => item.id)).size, 4);
+  const last = {
+    contains(node) {
+      return node === "inside";
+    },
+  };
+  assert.equal(queueFocusAtEnd([{}, last], "inside"), true);
+  assert.equal(queueFocusAtEnd([{}, last], "elsewhere"), false);
+  assert.match(html, /data-i18n="queue.list.loading"/);
+  assert.match(html, /Loading more items\./);
+  assert.match(html, /id="queue-more-status"[^>]*role="status"/);
+  assert.match(html, /data-queue-sentinel/);
+  assert.match(html, /data-queue-action="copy"/);
+  assert.match(html, /data-i18n="queue.item.showMore"/);
+  assert.match(html, /data-slot="source"/);
+  assert.doesNotMatch(html, /data-queue-sentinel[^>]*onclick/);
+  assert.doesNotMatch(
+    chrome,
+    /\[data-queue-sentinel\][^{]*\{[^}]*outline:\s*none/,
+  );
+  assert.match(live, /focusin/);
+  assert.match(live, /IntersectionObserver/);
+  assert.match(live, /rootMargin: "240px"/);
 });

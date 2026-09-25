@@ -33,6 +33,7 @@
   "composer.format.bullet.tip": "Elenco ⌘⇧8",
   "composer.format.number.tip": "Numeri ⌘⇧7",
   "panel.empty": "Seleziona testo e Cattura, oppure digita qui.",
+  "queue.list.loading": "Caricamento di altri elementi.",
   "queue.item.moveUp": "Sposta su",
   "queue.item.moveDown": "Sposta giù",
   "queue.item.complete": "Completa",
