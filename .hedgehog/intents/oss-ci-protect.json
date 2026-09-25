@@ -1,0 +1,29 @@
+{
+  "id": "oss-ci-protect",
+  "goal": "Give public NxT-Solutions/Bronze a professional GitHub face: pull-request CI for the quality checks that can run without notarization, repository rules that protect main, and a product README with original visuals.",
+  "outcome": "PRs run a read-only CI workflow for JS quality, portable Rust tests, planning-checks, and a macOS cargo job that excludes the Swift-linked desktop crate. A required CI gate protects main after those checks exist, with a GitHub Actions bypass so Release can still tag. Secret scanning, push protection, Dependabot, and private vulnerability reporting are on. README leads with product copy, badges, and original docs/images visuals. No Copper frames. No WCAG, VoiceOver, or notarization claim. Do not start QUEUE-ATTACHMENTS. ADR-002, ADR-009, ADR-018, and ADR-023 stay Proposed.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "OSS-CI-PROTECT-RULE-1",
+      "kind": "rule",
+      "statement": "CI is pull_request plus push to main, contents: read, actions pinned by commit SHA. Jobs cover biome/turbo, planning-checks, portable cargo tests, and macos cargo excluding bronze-desktop. A final ci job aggregates them. Never claim notarization or full pnpm verify on Ubuntu."
+    },
+    {
+      "id": "OSS-CI-PROTECT-RULE-2",
+      "kind": "rule",
+      "statement": "Main is protected: no force-push, no deletion, PRs required, required CI status once the workflow exists. GitHub Actions may bypass so Release can push the version tag. Do not require CODEOWNER reviews. Dependabot covers npm, cargo, and github-actions."
+    },
+    {
+      "id": "OSS-CI-PROTECT-RULE-3",
+      "kind": "rule",
+      "statement": "README is a product page: short sentence, badges, original visuals in docs/images, install, develop, CI, license. Planning pack stays below. No Copper screenshots. No WCAG, VoiceOver, or notarization claim."
+    },
+    {
+      "id": "OSS-CI-PROTECT-RULE-4",
+      "kind": "rule",
+      "statement": "Do not start QUEUE-ATTACHMENTS. Do not silently accept ADR-002, ADR-009, ADR-018, or ADR-023."
+    }
+  ],
+  "depends_on": []
+}
