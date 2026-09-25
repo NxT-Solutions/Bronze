@@ -11,13 +11,15 @@ pub const SETTINGS_EXPORT_FORMAT: &str = "bronze-settings";
 pub const SETTINGS_EXPORT_VERSION: u32 = 1;
 pub const SETTINGS_EXPORT_MAX_BYTES: u64 = 1_048_576;
 
-const FORBIDDEN_KEY_FRAGMENTS: [&str; 6] = [
+const FORBIDDEN_KEY_FRAGMENTS: [&str; 8] = [
     "credential",
     "token",
     "path",
     "secret",
     "installidentity",
     "diagnosticevent",
+    "apikey",
+    "hostedkey",
 ];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -551,5 +553,30 @@ mod tests {
         );
         assert!(settings_json_looks_like_json(raw.as_bytes()));
         assert!(!settings_json_looks_like_json(b"not-json"));
+    }
+
+    #[test]
+    fn export_keeps_custom_id_and_drops_keys() {
+        let mut settings = SettingsV1::defaults();
+        settings.general.title_model = crate::schema::TitleModelId::Custom;
+        settings.general.title_custom_id =
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into();
+        settings.general.title_custom_name = "tiny.gguf".into();
+        settings.general.title_custom_bytes = 8;
+        settings.general.title_ollama_model = "qwen2.5:0.5b".into();
+        let mut extra = BTreeMap::new();
+        extra.insert("apiKey".into(), "\"sk-live-secret\"".into());
+        extra.insert("titleHostedKey".into(), "\"sk-live-secret\"".into());
+        extra.insert("customPath".into(), "\"/Users/me/Models/tiny.gguf\"".into());
+        let preview = export_settings(&settings, &extra).expect("export");
+        let blob = preview.payload.to_string();
+        assert!(blob.contains("titleCustomId"));
+        assert!(blob.contains("tiny.gguf"));
+        assert!(blob.contains("qwen2.5:0.5b"));
+        assert!(!blob.contains("sk-live-secret"));
+        assert!(!blob.contains("/Users/me/Models"));
+        assert!(preview.excluded_keys.iter().any(|k| k == "apiKey"));
+        assert!(preview.excluded_keys.iter().any(|k| k == "titleHostedKey"));
+        assert!(preview.excluded_keys.iter().any(|k| k == "customPath"));
     }
 }

@@ -1,0 +1,10 @@
+[package]
+name = "bronze-title-remote"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+bronze-title-model = { path = "../bronze-title-model" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+ureq = { version = "2.12", default-features = false, features = ["json", "tls"] }

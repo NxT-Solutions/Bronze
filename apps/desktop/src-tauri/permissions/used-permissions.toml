@@ -72,6 +72,11 @@ commands.allow = [
   "import_settings_file",
   "list_title_models",
   "title_engine_status",
+  "import_title_gguf",
+  "list_ollama_title_models",
+  "set_hosted_title_key",
+  "clear_hosted_title_key",
+  "hosted_title_disclosure",
   "ui_locale",
   "ui_catalog",
 ]

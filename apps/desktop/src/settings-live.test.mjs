@@ -12,7 +12,9 @@ import {
   exportCategoryLabel,
   exportSensitiveLabel,
   filterInstalledApps,
+  formatCustomTitleOption,
   formatTitleEngineLifecycle,
+  formatTitleFileSize,
   formatTitleModelStatus,
   isSafeBundleId,
   isSafeDisplayName,
@@ -30,6 +32,7 @@ import {
   settingsSearchNeedle,
   settingsUnitHaystack,
   switcherLocale,
+  syncTitleEnginePanels,
   TITLE_ENGINE_STATUS_EVENT,
   TITLE_MODEL_IDS,
   titleEngineBusy,
@@ -55,6 +58,7 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   const excluded = { dataset: { excludedIds: "" } };
   const locale = { value: "en" };
   const titleModel = { value: "extractive" };
+  const titleIntegration = { value: "none" };
   const reduceMotion = { value: "system" };
   const launchAtLogin = { checked: false };
   const root = {
@@ -63,6 +67,7 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
       if (sel === "#excluded-apps") return excluded;
       if (sel === "#ui-locale") return locale;
       if (sel === "#title-model") return titleModel;
+      if (sel === "#title-integration") return titleIntegration;
       if (sel === "#reduce-motion") return reduceMotion;
       if (sel === "#launch-at-login") return launchAtLogin;
       return null;
@@ -73,6 +78,14 @@ test("settings form patches backup schedule, excluded apps, and locale", () => {
   assert.equal(excluded.dataset.excludedIds, "com.example");
   assert.equal(locale.value, "en");
   assert.equal(titleModel.value, "smol-360");
+  assert.equal(titleIntegration.value, "none");
+  settings.general.titleModel = "hosted-openai";
+  applySettingsForm(root, settings);
+  assert.equal(titleIntegration.value, "hosted-openai");
+  settings.general.titleModel = "smol-360";
+  applySettingsForm(root, settings);
+  assert.equal(titleModel.value, "smol-360");
+  assert.equal(titleIntegration.value, "none");
   assert.equal(reduceMotion.value, "system");
   assert.equal(launchAtLogin.checked, false);
   settings.general.locale = "nl";
@@ -496,9 +509,22 @@ test("settings search matches visible labels and not reset chrome", () => {
 test("title model status shows present vs vendor command and never fetches", async () => {
   assert.deepEqual(
     [...TITLE_MODEL_IDS],
-    ["extractive", "smol-135", "smol-360", "qwen-05"],
+    [
+      "extractive",
+      "smol-135",
+      "smol-360",
+      "qwen-05",
+      "custom",
+      "ollama",
+      "hosted-openai",
+      "hosted-anthropic",
+      "hosted-openrouter",
+    ],
   );
   assert.equal(parseTitleModelId("qwen-05"), "qwen-05");
+  assert.equal(parseTitleModelId("custom"), "custom");
+  assert.equal(parseTitleModelId("ollama"), "ollama");
+  assert.equal(parseTitleModelId("hosted-openai"), "hosted-openai");
   assert.equal(parseTitleModelId("needle"), "");
   assert.equal(
     formatTitleModelStatus({ id: "extractive", present: true }),
@@ -608,15 +634,116 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.match(html, /value="smol-135"/);
   assert.match(html, /value="smol-360"/);
   assert.match(html, /value="qwen-05"/);
+  assert.match(html, /value="custom"/);
+  assert.match(html, /value="ollama"/);
+  assert.match(html, /value="hosted-openai"/);
+  assert.match(html, /data-import-title-gguf/);
+  assert.doesNotMatch(html, /class="btn-ghost"\s+data-import-title-gguf/);
+  assert.match(html, /id="title-integration"/);
+  assert.match(html, /data-settings-group="titles"/);
+  assert.match(html, /id="title-hosted-key"/);
+  assert.match(html, /type="password"/);
+  assert.match(html, /id="title-hosted-confirmed"/);
   assert.doesNotMatch(html, /download/i);
   assert.doesNotMatch(html, /huggingface/i);
   assert.match(live, /list_title_models/);
+  assert.match(live, /list_ollama_title_models/);
+  assert.match(live, /import_title_gguf/);
+  assert.match(live, /set_hosted_title_key/);
+  assert.match(live, /hosted_title_disclosure/);
   assert.match(live, /title_engine_status/);
   assert.match(live, /title-engine-status/);
   assert.match(live, /#title-model/);
+  assert.match(live, /#title-integration/);
+  assert.match(live, /selectedTitleModelId/);
   assert.equal(TITLE_ENGINE_STATUS_EVENT, "title-engine-status");
   assert.doesNotMatch(live, /huggingface/i);
   assert.doesNotMatch(live, /https:\/\//);
+  assert.doesNotMatch(live, /apikey/i);
+  assert.equal(
+    formatTitleModelStatus({
+      id: "custom",
+      present: true,
+      displayName: "tiny.gguf",
+    }),
+    "This imported file can title the next capture.",
+  );
+  assert.equal(
+    formatTitleModelStatus({ id: "ollama" }),
+    "Ollama will title the next capture when it is running.",
+  );
+  assert.equal(
+    formatTitleModelStatus({ id: "hosted-openai" }, { host: "api.openai.com" }),
+    "The next capture sends truncated text to api.openai.com.",
+  );
+  assert.match(html, /never sends text off this device/);
+  assert.match(html, /Sends truncated capture text/);
+});
+
+test("imported GGUF option shows RAM from file size and keeps two CPU threads", () => {
+  assert.equal(formatTitleFileSize(270 * 1024 * 1024), "270 MB");
+  assert.equal(
+    formatCustomTitleOption(0),
+    "Imported GGUF — RAM follows the file, 2 CPU threads",
+  );
+  assert.equal(
+    formatCustomTitleOption(270 * 1024 * 1024),
+    "Imported GGUF — about 270 MB of RAM, 2 CPU threads",
+  );
+  const customOption = { textContent: "" };
+  const file = { textContent: "" };
+  const root = {
+    querySelector(sel) {
+      if (sel === '#title-model option[value="custom"]') return customOption;
+      if (sel === "[data-title-custom-file]") return file;
+      return null;
+    },
+  };
+  syncTitleEnginePanels(root, {
+    general: {
+      titleCustomName: "tiny.gguf",
+      titleCustomBytes: 105 * 1024 * 1024,
+    },
+  });
+  assert.equal(
+    customOption.textContent,
+    "Imported GGUF — about 105 MB of RAM, 2 CPU threads",
+  );
+  assert.match(file.textContent, /tiny\.gguf/);
+  assert.match(file.textContent, /105 MB/);
+});
+
+test("title engine shows one source: local picker or integration form", () => {
+  const titles = { dataset: {} };
+  const hosted = { hidden: true };
+  const ollama = { hidden: true };
+  const custom = { hidden: true };
+  const titleIntegration = { value: "hosted-openai" };
+  const titleModel = { value: "smol-360" };
+  const root = {
+    querySelector(sel) {
+      if (sel === '[data-settings-group="titles"]') return titles;
+      if (sel === "#title-integration") return titleIntegration;
+      if (sel === "#title-model") return titleModel;
+      if (sel === '[data-title-engine-panel="hosted"]') return hosted;
+      if (sel === '[data-title-engine-panel="ollama"]') return ollama;
+      if (sel === '[data-title-engine-panel="custom"]') return custom;
+      return null;
+    },
+  };
+  syncTitleEnginePanels(root, { general: { titleModel: "hosted-openai" } });
+  assert.equal(titles.dataset.titleEngineSource, "integration");
+  assert.equal(hosted.hidden, false);
+  assert.equal(ollama.hidden, true);
+  titleIntegration.value = "none";
+  syncTitleEnginePanels(root, { general: { titleModel: "smol-360" } });
+  assert.equal(titles.dataset.titleEngineSource, "local");
+  assert.equal(hosted.hidden, true);
+  titleIntegration.value = "ollama";
+  syncTitleEnginePanels(root, { general: { titleModel: "ollama" } });
+  assert.equal(titles.dataset.titleEngineSource, "integration");
+  assert.equal(ollama.hidden, false);
+  assert.equal(hosted.hidden, true);
 });
 
 test("setting info opens on hover and focus, not click, and dismisses on Escape", () => {

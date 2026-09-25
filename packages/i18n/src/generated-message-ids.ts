@@ -78,6 +78,9 @@ export const MessageIds = {
   "settings.group.general": "settings.group.general",
   "settings.group.general.infoName": "settings.group.general.infoName",
   "settings.group.general.info": "settings.group.general.info",
+  "settings.group.titles": "settings.group.titles",
+  "settings.group.titles.infoName": "settings.group.titles.infoName",
+  "settings.group.titles.info": "settings.group.titles.info",
   "settings.group.capture": "settings.group.capture",
   "settings.group.panel": "settings.group.panel",
   "settings.group.copy": "settings.group.copy",
@@ -126,6 +129,23 @@ export const MessageIds = {
   "settings.field.reduceMotion.on": "settings.field.reduceMotion.on",
   "settings.field.reduceMotion.off": "settings.field.reduceMotion.off",
   "settings.field.titleModel": "settings.field.titleModel",
+  "settings.field.titleModel.local": "settings.field.titleModel.local",
+  "settings.field.titleModel.local.infoName":
+    "settings.field.titleModel.local.infoName",
+  "settings.field.titleModel.local.info":
+    "settings.field.titleModel.local.info",
+  "settings.field.titleModel.integrations":
+    "settings.field.titleModel.integrations",
+  "settings.field.titleModel.integrations.infoName":
+    "settings.field.titleModel.integrations.infoName",
+  "settings.field.titleModel.integrations.info":
+    "settings.field.titleModel.integrations.info",
+  "settings.field.titleModel.integrations.infoHosted":
+    "settings.field.titleModel.integrations.infoHosted",
+  "settings.field.titleModel.integrations.help":
+    "settings.field.titleModel.integrations.help",
+  "settings.field.titleModel.integrations.none":
+    "settings.field.titleModel.integrations.none",
   "settings.field.titleModel.infoName": "settings.field.titleModel.infoName",
   "settings.field.titleModel.info": "settings.field.titleModel.info",
   "settings.field.titleModel.infoExtractive":
@@ -161,6 +181,62 @@ export const MessageIds = {
     "settings.field.titleModel.failed.timeout",
   "settings.field.titleModel.failed.unreadable":
     "settings.field.titleModel.failed.unreadable",
+  "settings.field.titleModel.custom": "settings.field.titleModel.custom",
+  "settings.field.titleModel.custom.sized":
+    "settings.field.titleModel.custom.sized",
+  "settings.field.titleModel.ollama": "settings.field.titleModel.ollama",
+  "settings.field.titleModel.hostedOpenai":
+    "settings.field.titleModel.hostedOpenai",
+  "settings.field.titleModel.hostedAnthropic":
+    "settings.field.titleModel.hostedAnthropic",
+  "settings.field.titleModel.hostedOpenrouter":
+    "settings.field.titleModel.hostedOpenrouter",
+  "settings.field.titleModel.infoHosted":
+    "settings.field.titleModel.infoHosted",
+  "settings.field.titleModel.helpHosted":
+    "settings.field.titleModel.helpHosted",
+  "settings.field.titleModel.disclosure":
+    "settings.field.titleModel.disclosure",
+  "settings.field.titleModel.import": "settings.field.titleModel.import",
+  "settings.field.titleModel.imported": "settings.field.titleModel.imported",
+  "settings.field.titleModel.importFailed":
+    "settings.field.titleModel.importFailed",
+  "settings.field.titleModel.custom.empty":
+    "settings.field.titleModel.custom.empty",
+  "settings.field.titleModel.custom.status":
+    "settings.field.titleModel.custom.status",
+  "settings.field.titleModel.ollama.help":
+    "settings.field.titleModel.ollama.help",
+  "settings.field.titleModel.ollama.empty":
+    "settings.field.titleModel.ollama.empty",
+  "settings.field.titleModel.ollama.unavailable":
+    "settings.field.titleModel.ollama.unavailable",
+  "settings.field.titleModel.ollama.label":
+    "settings.field.titleModel.ollama.label",
+  "settings.field.titleModel.ollama.status":
+    "settings.field.titleModel.ollama.status",
+  "settings.field.titleModel.hosted.key":
+    "settings.field.titleModel.hosted.key",
+  "settings.field.titleModel.hosted.keyHelp":
+    "settings.field.titleModel.hosted.keyHelp",
+  "settings.field.titleModel.hosted.base":
+    "settings.field.titleModel.hosted.base",
+  "settings.field.titleModel.hosted.confirm":
+    "settings.field.titleModel.hosted.confirm",
+  "settings.field.titleModel.hosted.clear":
+    "settings.field.titleModel.hosted.clear",
+  "settings.field.titleModel.hosted.status":
+    "settings.field.titleModel.hosted.status",
+  "settings.field.titleModel.hosted.unconfirmed":
+    "settings.field.titleModel.hosted.unconfirmed",
+  "settings.field.titleModel.hosted.blocked":
+    "settings.field.titleModel.hosted.blocked",
+  "settings.field.titleModel.engine.custom":
+    "settings.field.titleModel.engine.custom",
+  "settings.field.titleModel.engine.ollama":
+    "settings.field.titleModel.engine.ollama",
+  "settings.field.titleModel.engine.hosted":
+    "settings.field.titleModel.engine.hosted",
   "settings.field.excludedBundleIds": "settings.field.excludedBundleIds",
   "settings.field.excludedBundleIds.infoName":
     "settings.field.excludedBundleIds.infoName",

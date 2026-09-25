@@ -4,6 +4,7 @@ pub enum TitleTier {
     Smol135,
     Smol360,
     Qwen05,
+    Custom,
 }
 
 pub struct TierSpec {
@@ -55,6 +56,7 @@ impl TitleTier {
             Self::Smol135 => "smol-135",
             Self::Smol360 => "smol-360",
             Self::Qwen05 => "qwen-05",
+            Self::Custom => "custom",
         }
     }
 
@@ -64,13 +66,14 @@ impl TitleTier {
             "smol-135" => Some(Self::Smol135),
             "smol-360" => Some(Self::Smol360),
             "qwen-05" => Some(Self::Qwen05),
+            "custom" => Some(Self::Custom),
             _ => None,
         }
     }
 
     pub const fn rank(self) -> u8 {
         match self {
-            Self::Extractive => 0,
+            Self::Extractive | Self::Custom => 0,
             Self::Smol135 => 1,
             Self::Smol360 => 2,
             Self::Qwen05 => 3,
@@ -83,7 +86,7 @@ impl TitleTier {
 
     pub fn vendor_command(self) -> &'static str {
         match self {
-            Self::Extractive => "",
+            Self::Extractive | Self::Custom => "",
             Self::Smol135 => "sh bronze-title-model/scripts/vendor-gguf.sh smol-135",
             Self::Smol360 => "sh bronze-title-model/scripts/vendor-gguf.sh smol-360",
             Self::Qwen05 => "sh bronze-title-model/scripts/vendor-gguf.sh qwen-05",

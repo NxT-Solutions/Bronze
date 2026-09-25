@@ -40,6 +40,9 @@ An ADR change must name affected PRD IDs, migration impact, tests, distribution/
 | ADR-017 | Packaged local UI with zero runtime network by default | Accepted | SEC-001, SEC-004, G-05 |
 | ADR-018 | Locale-aware search/tokenizer semantics | Proposed | QUE-007, G-06, I18N-003 |
 | ADR-019 | Portable local item titles (compact_title first, selectable offline GGUF refine) | Proposed | QUE-002, SEC-004, G-05 |
+| ADR-020 | User-imported local GGUF title engines | Accepted | QUE-002, SEC-003, SEC-004 |
+| ADR-021 | Opt-in loopback Ollama title client | Accepted | SEC-004, G-05, QUE-002 |
+| ADR-022 | Opt-in hosted title providers | Accepted | SEC-004, G-05, QUE-002, ADR-017 |
 
 ## ADR-001: Local selection-to-action queue
 
@@ -711,6 +714,7 @@ SEC-001 and SEC-004 require no remote code/content and no runtime network by def
 - External help/source links open in default browser only after allowlist/confirmation; never render inside privileged WebView.
 - Runtime network capture is release gate.
 - Future updater/cloud/action requires separate opt-in design, signed protocol, threat model, capability, CSP, privacy UI, and superseding ADR.
+- ADR-022 is the superseding record for an explicit, off-by-default title API only. Default install still makes no hosted call.
 
 ### Consequences
 
@@ -776,14 +780,14 @@ Candidate path:
 - After persist (and after composer add / body edit), a Rust `llama-cpp-2` 0.1.156 worker on thread `bronze-title-model` / `bronze-item-title` may refine the stored title. Inference is not on AppKit main and not in the event-tap. `TitleABI.swift` stays a compile-only stub (`BRONZE_STATUS_DEGRADED`). Linux and Windows call the same Rust function.
 - Settings `general.titleModel` is a schema-valid, exportable, non-secret id: `extractive` | `smol-135` | `smol-360` | `qwen-05`. `extractive` uses `compact_title` only (no GGUF). A Settings change unloads the previous llama context and loads the chosen file on that worker for the next refine; capture never waits on the load. Reload failure stays on `compact_title` and surfaces the fallback reason. No app relaunch is required when load succeeds. Existing `bronze-title:` stages (`switch scheduled`, `weights resolved`, `hash ok`, `model loaded`, `missing_weights`, plus load fallbacks `bad_hash` / `timeout` / `unreadable`) map to a Settings-only snapshot. Command `title_engine_status` returns `{ tier, phase, reason }`. Event `title-engine-status` publishes the same DTO from the title worker, never from the event-tap. Phases: idle (extractive), loading, hashing, ready, missing, failed. Refine logs do not flip a ready engine to failed.
 - Auto-pick runs only when `general.titleModel` is missing or empty (first install / setup). It does not overwrite a stored user value. Rust reads physical RAM locally with no telemetry. Bands: missing RAM, `< 8 GiB`, or no GGUF on disk → `extractive`; `8–16 GiB` → `smol-135` if present else extractive; `16–32 GiB` → `smol-360` if present else the next smaller present file; `≥ 32 GiB` → `qwen-05` if present else the next smaller present file. Most fit is the largest tier the RAM band can hold whose file is already on disk. Bronze never downloads to honor the recommendation. The resolved id is persisted so the Settings picker shows it.
-- Allow-listed weights, each vendorable with `bronze-title-model/scripts/vendor-gguf.sh <id>` (or `all`). Load only a verified path (`set_weights_dir` / `set_weights_path`, else `BRONZE_TITLE_WEIGHTS`, else crate `vendor/`, else exe-relative `models/`). Never `-hf`. Never Hub at capture, first launch, or Settings switch. Never a WebView path (SEC-003). Weights are not user-writable via the app.
+- Allow-listed weights, each vendorable with `bronze-title-model/scripts/vendor-gguf.sh <id>` (or `all`). The packaged app copies those same hashed files into `Contents/Resources/models` at build time when they are already vendored. Load only a verified path (`set_weights_dir` / `set_weights_path`, else `BRONZE_TITLE_WEIGHTS`, else crate `vendor/`, else exe-relative `models/`). Never `-hf`. Never Hub at capture, first launch, or Settings switch. Never a WebView path (SEC-003). Weights are not user-writable via the app.
   - `smol-135`: HuggingFaceTB/SmolLM2-135M-Instruct, bartowski `SmolLM2-135M-Instruct-Q4_K_M.gguf`, revision `09816acd5d99df7be770d85ea30822623dab342c`, SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d` (~105 MB, Apache-2.0).
   - `smol-360`: HuggingFaceTB/SmolLM2-360M-Instruct, bartowski `SmolLM2-360M-Instruct-Q4_K_M.gguf`, revision `ab928a97ee49f3a015f35194879f68211291d6ca`, SHA-256 `2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2` (~271 MB, Apache-2.0).
   - `qwen-05`: official `Qwen/Qwen2.5-0.5B-Instruct-GGUF` `qwen2.5-0.5b-instruct-q4_k_m.gguf`, revision `9217f5db79a29953eb74d5343926648285ec7e67`, SHA-256 `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db` (~491 MB, Apache-2.0). Not Qwen3 thinking mode.
 - Inference: greedy / low temperature; truncate input to 2048 characters; `max_new_tokens` 16; no tools; stop on newline; clamp with the same 40-character word-boundary function; English prompt v3 (short topic, no sentence copy, no `Title:` prefix). `clean_title` strips a leading `Title:` / `title:` (optional space) and surrounding quotes before clamp and groundedness. Skip refine when the body is already at most 40 characters, or when the candidate shares no 3+ character term with the body. A refine can still copy a source sentence; groundedness only rejects titles with no shared 3+ character term.
 - Missing file, hash mismatch, first-load or generate timeout, empty output, load failure, or an ungrounded candidate keeps `compact_title`. Missing weights log `bronze-title: missing_weights`. Settings marks that tier unavailable and shows the vendor command; there is no download button. Capture ID and terminal result are never dropped.
 - CPU path only (`n_gpu_layers=0`). No `allow-jit` or `allow-unsigned-executable-memory` entitlement. `llama-cpp-2` may still compile Metal on Apple Silicon; the worker does not offload.
-- No Needle, Gemma, Llama 1B, Qwen3-thinking, hosted AI, Private Cloud Compute, `SystemLanguageModel`, NLEmbedding, URLSession, or OpenAI on the title path.
+- No Needle, Gemma, Llama 1B, Qwen3-thinking, hosted AI, Private Cloud Compute, `SystemLanguageModel`, NLEmbedding, URLSession, or OpenAI on this Proposed candidate path. Custom import, loopback Ollama, and opt-in hosted keys are ADR-020, ADR-021, and ADR-022.
 
 ### Consequences while Proposed
 
@@ -806,6 +810,79 @@ Candidate path:
 - `apply_diag` maps `switch scheduled` → loading; `weights resolved` / `hash ok` → hashing; `model loaded` → ready; extractive → idle; `missing_weights` → missing; `bad_hash`, `timeout`, or `unreadable` during load → failed.
 - Settings shows spinner plus catalog Loading `{engine}` while loading; no spinner and loaded copy when ready; no spinner and vendor-command copy when missing.
 - Event `title-engine-status` and command `title_engine_status` stay Settings-capability only. Capture never waits on load.
+
+## ADR-020: User-imported local GGUF title engines
+
+Status: Accepted
+
+### Context
+
+ADR-019's candidate path loads only three SHA-256-pinned files and says weights are not user-writable. Operators want another local GGUF they already have, using the same CPU worker.
+
+### Decision
+
+- The user picks one `.gguf` through a Rust file dialog. Rust checks the `GGUF` magic bytes, copies the file into Application Support, and stores size plus SHA-256.
+- The WebView receives a display name and a byte size. It never receives a path (SEC-003).
+- `general.titleModel` may be `custom`. The copy id lives in `general.titleCustomId` (non-secret, exportable).
+- The same `llama-cpp-2` worker runs it: CPU only, 2 threads, `n_ctx` 1024, 16 tokens, the existing title prompt.
+- A failed load or ungrounded title keeps `compact_title`. A custom failure does not hop to Ollama or a hosted API.
+- ADR-019 stays Proposed. The three pins remain the bundled allow-list. Custom files are extra, not a Hub download.
+
+### Verification
+
+- A file whose first four bytes are not `GGUF` is rejected and not copied.
+- Import does not pass a filesystem path to the WebView.
+- Settings export contains `titleCustomId` and never a path.
+
+## ADR-021: Opt-in loopback Ollama title client
+
+Status: Accepted
+
+### Context
+
+Accepted ADR-017 forbids an HTTP client in the production-default feature set. Users already run Ollama on this Mac and want those downloaded models for titles. That is loopback, not a hosted provider.
+
+### Decision
+
+- Default install makes no Ollama connection.
+- When `general.titleModel` is `ollama`, Rust may call `http://127.0.0.1:11434` only. Allowed hosts: `127.0.0.1` and `::1`. `localhost` maps to `127.0.0.1`. Any other `OLLAMA_HOST` is ignored.
+- This client ignores `HTTP_PROXY` and `ALL_PROXY`.
+- Connect only when Settings lists Ollama models, and again at refine time if the saved engine is Ollama. No background poll. No call from the event tap.
+- Store `general.titleOllamaModel` (exportable name). Do not store weights. Do not call `/api/pull`.
+- `POST /api/chat` with streaming off, the same title instruction, body truncated to 2048 characters, `num_predict` 16, temperature 0.
+- If Ollama is not running, the bundled engine for this Mac writes the title. The saved name stays.
+- ADR-017 remains Accepted for every other client. This record is the opt-in loopback carve-out.
+
+### Verification
+
+- Title-model crate sources still contain no `reqwest`, `ureq`, or `openai`.
+- The Ollama client rejects a non-loopback host.
+- A refused connection leaves `compact_title` or the bundled refine, never a hosted call.
+
+## ADR-022: Opt-in hosted title providers
+
+Status: Accepted  
+Supersedes: ADR-017 for an explicit, off-by-default title API only
+
+### Context
+
+ADR-017 and T-10 forbid a hosted AI API in the default app. Operators want an optional key for OpenAI, Anthropic, OpenRouter, or a confirmed HTTPS OpenAI-compatible base.
+
+### Decision
+
+- Hosted title refine stays off until the user selects `hosted-openai`, `hosted-anthropic`, or `hosted-openrouter`.
+- The key is written to the macOS Keychain from Rust. The WebView posts it once and never reads it back. Settings export, support files, and logs do not contain it. Reset deletes the keychain item.
+- Before the first send, Settings shows the host and the payload class: truncated capture text (2048 characters) plus the fixed title instruction.
+- Adapters: `POST {base}/v1/chat/completions` for OpenAI and OpenRouter, `POST https://api.anthropic.com/v1/messages` for Anthropic. Default bases are those official hosts. A custom `general.titleHostedBase` must be HTTPS, shown as a host, and confirmed. The hosted adapter refuses loopback, link-local, and private addresses.
+- Failure, a missing key, or no network uses the bundled engine for this Mac, then `compact_title`. A local failure never calls a hosted API.
+- T-10 still forbids hosted AI by default. This record is the opt-in carve-out. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-015 stays Accepted.
+- Local and Ollama rows keep copy that text stays on this Mac. The hosted row names the host.
+
+### Verification
+
+- Export and support preview contain no key material.
+- A private or loopback hosted base is rejected.
+- A failed hosted refine does not throw away the capture ID.
 
 ## 3. Decision-change checklist
 

@@ -90,6 +90,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": {
+      "../../../bronze-title-model/vendor/*.gguf": "models/"
+    },
     "macOS": {
       "entitlements": "entitlements/macos.release.plist"
     }

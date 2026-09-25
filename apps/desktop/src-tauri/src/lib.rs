@@ -1,6 +1,7 @@
 mod capture_permissions;
 mod live_session;
 mod own_selection;
+mod title_engines;
 mod title_refine;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -51,6 +52,11 @@ pub fn run() {
                 live_session::export_support_file,
                 live_session::list_title_models,
                 title_refine::title_engine_status,
+                title_engines::import_title_gguf,
+                title_engines::list_ollama_title_models,
+                title_engines::set_hosted_title_key,
+                title_engines::clear_hosted_title_key,
+                title_engines::hosted_title_disclosure,
             ])
             .setup(|app| {
                 use tauri::Manager;

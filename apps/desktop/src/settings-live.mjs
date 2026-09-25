@@ -21,6 +21,34 @@ export const TITLE_MODEL_IDS = Object.freeze([
   "smol-135",
   "smol-360",
   "qwen-05",
+  "custom",
+  "ollama",
+  "hosted-openai",
+  "hosted-anthropic",
+  "hosted-openrouter",
+]);
+
+const BUNDLED_TITLE_MODEL_IDS = Object.freeze([
+  "smol-135",
+  "smol-360",
+  "qwen-05",
+]);
+
+const LOCAL_TITLE_MODEL_IDS = Object.freeze([
+  "extractive",
+  ...BUNDLED_TITLE_MODEL_IDS,
+  "custom",
+]);
+
+const HOSTED_TITLE_MODEL_IDS = Object.freeze([
+  "hosted-openai",
+  "hosted-anthropic",
+  "hosted-openrouter",
+]);
+
+const INTEGRATION_TITLE_MODEL_IDS = Object.freeze([
+  "ollama",
+  ...HOSTED_TITLE_MODEL_IDS,
 ]);
 
 const TITLE_MODEL_VENDOR = {
@@ -55,23 +83,105 @@ const TITLE_MODEL_STATUS_FALLBACK = {
   "failed.timeout": "Loading timed out, so titles stay extractive.",
   "failed.unreadable":
     "This file could not be read, so titles stay extractive.",
+  customEmpty: "Import a GGUF to use it for titles.",
+  customPresent: "This imported file can title the next capture.",
+  customOption: "Imported GGUF — RAM follows the file, 2 CPU threads",
+  customOptionSized: "Imported GGUF — about {size} of RAM, 2 CPU threads",
+  imported: "Imported {name} ({size}).",
+  importFailed: "That file was not a GGUF, so nothing was imported.",
+  ollamaStatus: "Ollama will title the next capture when it is running.",
+  ollamaEmpty:
+    "Ollama is not running — the bundled engine will title this capture.",
+  ollamaUnavailable: "Ollama models could not be listed.",
+  hostedStatus: "The next capture sends truncated text to {host}.",
+  hostedUnconfirmed: "Confirm the host before a capture can send text.",
+  hostedBlocked: "That host is not allowed.",
+  disclosure:
+    "This send goes to {host} with truncated capture text of 2048 characters plus the fixed title instruction.",
 };
 
 const TITLE_ENGINE_NAME_KEYS = {
   "smol-135": "settings.field.titleModel.engine.smol135",
   "smol-360": "settings.field.titleModel.engine.smol360",
   "qwen-05": "settings.field.titleModel.engine.qwen05",
+  custom: "settings.field.titleModel.engine.custom",
+  ollama: "settings.field.titleModel.engine.ollama",
+  "hosted-openai": "settings.field.titleModel.engine.hosted",
+  "hosted-anthropic": "settings.field.titleModel.engine.hosted",
+  "hosted-openrouter": "settings.field.titleModel.engine.hosted",
 };
 
 const TITLE_ENGINE_NAME_FALLBACK = {
   "smol-135": "SmolLM2 135M",
   "smol-360": "SmolLM2 360M",
   "qwen-05": "Qwen2.5 0.5B",
+  custom: "Imported GGUF",
+  ollama: "Ollama",
+  "hosted-openai": "Hosted",
+  "hosted-anthropic": "Hosted",
+  "hosted-openrouter": "Hosted",
 };
 
 export function parseTitleModelId(raw) {
   const value = String(raw ?? "").trim();
   return TITLE_MODEL_IDS.includes(value) ? value : "";
+}
+
+export function isBundledTitleModel(id) {
+  return BUNDLED_TITLE_MODEL_IDS.includes(id);
+}
+
+export function isLocalTitleModel(id) {
+  return LOCAL_TITLE_MODEL_IDS.includes(id);
+}
+
+export function isHostedTitleModel(id) {
+  return HOSTED_TITLE_MODEL_IDS.includes(id);
+}
+
+export function isIntegrationTitleModel(id) {
+  return INTEGRATION_TITLE_MODEL_IDS.includes(id);
+}
+
+export function selectedTitleModelId(root, settings = {}) {
+  const integration = parseTitleModelId(
+    root.querySelector("#title-integration")?.value,
+  );
+  if (isIntegrationTitleModel(integration)) {
+    return integration;
+  }
+  return (
+    parseTitleModelId(root.querySelector("#title-model")?.value) ||
+    parseTitleModelId(settings?.general?.titleModel)
+  );
+}
+
+export function formatTitleFileSize(bytes) {
+  const n = Number(bytes);
+  if (!Number.isFinite(n) || n < 0) {
+    return "0 B";
+  }
+  if (n >= 1024 * 1024) {
+    return `${Math.round(n / (1024 * 1024))} MB`;
+  }
+  if (n >= 1024) {
+    return `${Math.round(n / 1024)} KB`;
+  }
+  return `${Math.round(n)} B`;
+}
+
+export function formatCustomTitleOption(bytes) {
+  const n = Number(bytes);
+  if (Number.isFinite(n) && n > 0) {
+    const template =
+      catalogMessage("settings.field.titleModel.custom.sized") ||
+      TITLE_MODEL_STATUS_FALLBACK.customOptionSized;
+    return template.replaceAll("{size}", formatTitleFileSize(n));
+  }
+  return (
+    catalogMessage("settings.field.titleModel.custom") ||
+    TITLE_MODEL_STATUS_FALLBACK.customOption
+  );
 }
 
 export function formatTitleModelStatus(row, options = {}) {
@@ -81,6 +191,48 @@ export function formatTitleModelStatus(row, options = {}) {
       catalogMessage("settings.field.titleModel.extractive.status") ||
       TITLE_MODEL_STATUS_FALLBACK.extractive
     );
+  }
+  if (id === "custom") {
+    if (row?.present || row?.displayName) {
+      return (
+        catalogMessage("settings.field.titleModel.custom.status") ||
+        TITLE_MODEL_STATUS_FALLBACK.customPresent
+      );
+    }
+    return (
+      catalogMessage("settings.field.titleModel.custom.empty") ||
+      TITLE_MODEL_STATUS_FALLBACK.customEmpty
+    );
+  }
+  if (id === "ollama") {
+    if (options.unavailable) {
+      return (
+        catalogMessage("settings.field.titleModel.ollama.unavailable") ||
+        TITLE_MODEL_STATUS_FALLBACK.ollamaUnavailable
+      );
+    }
+    return (
+      catalogMessage("settings.field.titleModel.ollama.status") ||
+      TITLE_MODEL_STATUS_FALLBACK.ollamaStatus
+    );
+  }
+  if (isHostedTitleModel(id)) {
+    if (options.blocked) {
+      return (
+        catalogMessage("settings.field.titleModel.hosted.blocked") ||
+        TITLE_MODEL_STATUS_FALLBACK.hostedBlocked
+      );
+    }
+    if (options.unconfirmed) {
+      return (
+        catalogMessage("settings.field.titleModel.hosted.unconfirmed") ||
+        TITLE_MODEL_STATUS_FALLBACK.hostedUnconfirmed
+      );
+    }
+    const template =
+      catalogMessage("settings.field.titleModel.hosted.status") ||
+      TITLE_MODEL_STATUS_FALLBACK.hostedStatus;
+    return template.replaceAll("{host}", options.host || "host");
   }
   if (options.unavailable) {
     return (
@@ -135,11 +287,20 @@ function formatLifecycleTemplate(key, fallbackKey, engine) {
 }
 
 export function formatTitleEngineLifecycle(status, row, options = {}) {
+  const selected = parseTitleModelId(options.selected);
   const phase = parseTitleEnginePhase(status?.phase);
   const id =
+    selected ||
     parseTitleModelId(status?.tier) ||
     parseTitleModelId(row?.id) ||
     "extractive";
+  if (
+    selected === "custom" ||
+    selected === "ollama" ||
+    isHostedTitleModel(selected)
+  ) {
+    return formatTitleModelStatus({ id: selected, ...row }, options);
+  }
   const engine = titleEngineName(id);
   if (phase === "loading") {
     return formatLifecycleTemplate(
@@ -211,9 +372,7 @@ export function bindTitleEngineStatus(root, listenFn = tauriListen) {
 }
 
 export async function refreshTitleModelStatus(root, invokeFn, settings) {
-  const selected = parseTitleModelId(
-    root.querySelector("#title-model")?.value || settings?.general?.titleModel,
-  );
+  const selected = selectedTitleModelId(root, settings);
   const id = selected || "extractive";
   let rows = null;
   try {
@@ -228,16 +387,180 @@ export async function refreshTitleModelStatus(root, invokeFn, settings) {
   } catch {
     engine = null;
   }
-  const row = rows?.find((item) => item?.id === id) ?? { id, present: false };
-  const options = {
-    unavailable: rows === null && id !== "extractive",
+  const customName = String(settings?.general?.titleCustomName ?? "").trim();
+  const row = rows?.find((item) => item?.id === id) ?? {
+    id,
+    present: id === "custom" ? customName.length > 0 : false,
+    displayName: customName,
   };
-  if (engine && parseTitleEnginePhase(engine.phase)) {
+  const options = {
+    selected: id,
+    unavailable: rows === null && isBundledTitleModel(id),
+    unconfirmed: isHostedTitleModel(id)
+      ? !settings?.general?.titleHostedConfirmed
+      : false,
+    host: String(
+      root.querySelector("[data-title-hosted-disclosure]")?.dataset
+        ?.titleHostedHost ?? "",
+    ).trim(),
+  };
+  if (
+    engine &&
+    parseTitleEnginePhase(engine.phase) &&
+    isBundledTitleModel(id)
+  ) {
+    applyTitleEngineLifecycle(root, engine, row, options);
+  } else if (
+    engine &&
+    parseTitleEnginePhase(engine.phase) &&
+    id === "extractive"
+  ) {
     applyTitleEngineLifecycle(root, engine, row, options);
   } else {
     applyTitleModelStatus(root, row, options);
   }
   return rows;
+}
+
+export function syncTitleEnginePanels(root, settings = {}) {
+  const id = selectedTitleModelId(root, settings);
+  const showCustom = id === "custom";
+  const showOllama = id === "ollama";
+  const showHosted = isHostedTitleModel(id);
+  const usingIntegration = isIntegrationTitleModel(id);
+  const titles = root.querySelector('[data-settings-group="titles"]');
+  if (titles?.dataset) {
+    titles.dataset.titleEngineSource = usingIntegration
+      ? "integration"
+      : "local";
+  }
+  const custom = root.querySelector('[data-title-engine-panel="custom"]');
+  const ollama = root.querySelector('[data-title-engine-panel="ollama"]');
+  const hosted = root.querySelector('[data-title-engine-panel="hosted"]');
+  if (custom) {
+    custom.hidden = !showCustom;
+  }
+  if (ollama) {
+    ollama.hidden = !showOllama;
+  }
+  if (hosted) {
+    hosted.hidden = !showHosted;
+  }
+  const helpOllama = root.querySelector("#title-model-help-ollama");
+  const helpHosted = root.querySelector("#title-model-help-hosted");
+  const helpIntegrations = root.querySelector("#title-model-help-integrations");
+  const helpLocal = root.querySelector("#title-model-help");
+  const helpExtractive = root.querySelector("#title-model-help-extractive");
+  const helpSize = root.querySelector("#title-model-help-size");
+  if (helpOllama) {
+    helpOllama.hidden = !showOllama;
+  }
+  if (helpHosted) {
+    helpHosted.hidden = !showHosted;
+  }
+  if (helpIntegrations) {
+    helpIntegrations.hidden = showOllama || showHosted;
+  }
+  if (helpLocal) {
+    helpLocal.hidden = showHosted;
+  }
+  if (helpExtractive) {
+    helpExtractive.hidden = id !== "extractive";
+  }
+  if (helpSize) {
+    helpSize.hidden = !(isBundledTitleModel(id) || id === "custom");
+  }
+  const file = root.querySelector("[data-title-custom-file]");
+  if (file) {
+    const name = String(settings?.general?.titleCustomName ?? "").trim();
+    const bytes = Number(settings?.general?.titleCustomBytes ?? 0);
+    if (name && !name.includes("/")) {
+      const template =
+        catalogMessage("settings.field.titleModel.imported") ||
+        TITLE_MODEL_STATUS_FALLBACK.imported;
+      file.textContent = template
+        .replaceAll("{name}", name)
+        .replaceAll("{size}", formatTitleFileSize(bytes));
+    } else {
+      file.textContent =
+        catalogMessage("settings.field.titleModel.custom.empty") ||
+        TITLE_MODEL_STATUS_FALLBACK.customEmpty;
+    }
+  }
+  const customOption = root.querySelector(
+    '#title-model option[value="custom"]',
+  );
+  if (customOption) {
+    customOption.textContent = formatCustomTitleOption(
+      settings?.general?.titleCustomBytes,
+    );
+  }
+}
+
+export function fillOllamaTitleModels(select, models, saved) {
+  if (!select) {
+    return;
+  }
+  const names = [];
+  const seen = new Set();
+  for (const raw of [saved, ...(Array.isArray(models) ? models : [])]) {
+    const name = String(raw ?? "").trim();
+    if (!name || name.includes("/") || seen.has(name)) {
+      continue;
+    }
+    seen.add(name);
+    names.push(name);
+  }
+  const doc = select.ownerDocument;
+  if (!doc?.createElement) {
+    select.value = saved || "";
+    return;
+  }
+  select.replaceChildren();
+  for (const name of names) {
+    const option = doc.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    select.append(option);
+  }
+  if (saved && seen.has(saved)) {
+    select.value = saved;
+  }
+}
+
+export async function refreshHostedDisclosure(root, invokeFn, settings) {
+  const id = selectedTitleModelId(root, settings);
+  const node = root.querySelector("[data-title-hosted-disclosure]");
+  if (!node || !isHostedTitleModel(id)) {
+    return "";
+  }
+  const customBase = String(
+    root.querySelector("#title-hosted-base")?.value ??
+      settings?.general?.titleHostedBase ??
+      "",
+  ).trim();
+  try {
+    const dto = await invokeFn("hosted_title_disclosure", {
+      provider: id,
+      customBase,
+    });
+    const host = String(dto?.host ?? "").trim();
+    if (!host || host.includes("/")) {
+      throw new Error("blocked_host");
+    }
+    node.dataset.titleHostedHost = host;
+    const template =
+      catalogMessage("settings.field.titleModel.disclosure") ||
+      TITLE_MODEL_STATUS_FALLBACK.disclosure;
+    node.textContent = template.replaceAll("{host}", host);
+    return host;
+  } catch {
+    node.dataset.titleHostedHost = "";
+    node.textContent =
+      catalogMessage("settings.field.titleModel.hosted.blocked") ||
+      TITLE_MODEL_STATUS_FALLBACK.hostedBlocked;
+    return "";
+  }
 }
 
 export function switcherLocale(tag) {
@@ -756,9 +1079,37 @@ export function applySettingsForm(root, settings) {
     locale.value = switcherLocale(settings?.general?.locale);
   }
   const titleId = parseTitleModelId(settings?.general?.titleModel);
-  if (titleModel && titleId) {
+  const titleIntegration = root.querySelector("#title-integration");
+  if (titleModel && isLocalTitleModel(titleId)) {
     titleModel.value = titleId;
   }
+  if (titleIntegration) {
+    titleIntegration.value = isIntegrationTitleModel(titleId)
+      ? titleId
+      : "none";
+  }
+  const ollama = root.querySelector("#title-ollama-model");
+  const savedOllama = String(settings?.general?.titleOllamaModel ?? "").trim();
+  if (ollama && savedOllama && !savedOllama.includes("/")) {
+    if (!ollama.options?.length) {
+      fillOllamaTitleModels(ollama, [], savedOllama);
+    } else {
+      ollama.value = savedOllama;
+    }
+  }
+  const hostedBase = root.querySelector("#title-hosted-base");
+  if (hostedBase) {
+    hostedBase.value = String(settings?.general?.titleHostedBase ?? "");
+  }
+  const hostedConfirmed = root.querySelector("#title-hosted-confirmed");
+  if (hostedConfirmed) {
+    hostedConfirmed.checked = Boolean(settings?.general?.titleHostedConfirmed);
+  }
+  const hostedKey = root.querySelector("#title-hosted-key");
+  if (hostedKey) {
+    hostedKey.value = "";
+  }
+  syncTitleEnginePanels(root, settings);
   const reduceMotion = root.querySelector("#reduce-motion");
   if (reduceMotion) {
     reduceMotion.value = parseReduceMotion(
@@ -774,9 +1125,7 @@ export function patchSettingsFromForm(settings, root) {
   }
   const schedule = root.querySelector("#backup-schedule")?.value;
   const locale = root.querySelector("#ui-locale")?.value;
-  const titleModel = parseTitleModelId(
-    root.querySelector("#title-model")?.value,
-  );
+  const titleModel = selectedTitleModelId(root, settings);
   if (schedule === "daily" || schedule === "weekly") {
     next.data.backupSchedule = schedule;
   }
@@ -788,6 +1137,25 @@ export function patchSettingsFromForm(settings, root) {
   }
   if (titleModel) {
     next.general.titleModel = titleModel;
+  }
+  const ollamaModel = String(
+    root.querySelector("#title-ollama-model")?.value ??
+      settings?.general?.titleOllamaModel ??
+      "",
+  ).trim();
+  if (!ollamaModel.includes("/")) {
+    next.general.titleOllamaModel = ollamaModel;
+  }
+  next.general.titleHostedBase = String(
+    root.querySelector("#title-hosted-base")?.value ?? "",
+  ).trim();
+  next.general.titleHostedConfirmed = Boolean(
+    root.querySelector("#title-hosted-confirmed")?.checked,
+  );
+  if (settings?.general?.titleCustomId) {
+    next.general.titleCustomId = settings.general.titleCustomId;
+    next.general.titleCustomName = settings.general.titleCustomName;
+    next.general.titleCustomBytes = settings.general.titleCustomBytes;
   }
   const reduceEl = root.querySelector("#reduce-motion")?.value;
   if (reduceEl === "system" || reduceEl === "on" || reduceEl === "off") {
@@ -813,6 +1181,7 @@ async function applySavedLocale(root, settings, invokeFn) {
   } catch {
     applyHandTestLocale(root, switcherLocale(settings?.general?.locale));
   }
+  syncTitleEnginePanels(root, settings);
   await refreshTitleModelStatus(root, invokeFn, settings);
   await refreshLoginItemStatus(root, invokeFn);
 }
@@ -975,12 +1344,50 @@ export async function bindSettingsLive(
   bindExcludedPicker(root, invokeFn, () => persist());
   const refreshShortcuts = await bindShortcutRegistry(root, invokeFn);
 
+  let ollamaListed = false;
+  async function listOllamaIfNeeded() {
+    const id = selectedTitleModelId(root, settings);
+    if (id !== "ollama" || ollamaListed) {
+      return;
+    }
+    ollamaListed = true;
+    const select = root.querySelector("#title-ollama-model");
+    try {
+      const models = await invokeFn("list_ollama_title_models");
+      fillOllamaTitleModels(
+        select,
+        models,
+        settings?.general?.titleOllamaModel,
+      );
+    } catch {
+      fillOllamaTitleModels(select, [], settings?.general?.titleOllamaModel);
+    }
+  }
+
+  async function refreshEngineExtras() {
+    const id = selectedTitleModelId(root, settings);
+    if (id === "ollama") {
+      await listOllamaIfNeeded();
+    }
+    if (isHostedTitleModel(id)) {
+      await refreshHostedDisclosure(root, invokeFn, settings);
+    }
+  }
+
   async function persist() {
     const before = settings?.general?.locale;
     settings = await invokeFn("save_settings_v1", {
       settings: patchSettingsFromForm(settings, root),
     });
+    const keyInput = root.querySelector("#title-hosted-key");
+    const key = String(keyInput?.value ?? "").trim();
+    const provider = selectedTitleModelId(root, settings);
+    if (key && isHostedTitleModel(provider)) {
+      await invokeFn("set_hosted_title_key", { provider, key });
+      keyInput.value = "";
+    }
     await applySavedLocale(root, settings, invokeFn);
+    await refreshEngineExtras();
     await refreshExcludedIcons(root, invokeFn);
     await refreshShortcuts?.();
     await refreshExportPreview();
@@ -1046,6 +1453,7 @@ export async function bindSettingsLive(
   });
 
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
+    syncTitleEnginePanels(root, settings);
     refreshExportPreview().catch(() => {});
     refreshTitleModelStatus(root, invokeFn, settings).catch(() => {});
     refreshLoginItemStatus(root, invokeFn).catch(() => {});
@@ -1054,9 +1462,77 @@ export async function bindSettingsLive(
 
   root.querySelector("#backup-schedule")?.addEventListener("change", persist);
   root.querySelector("#ui-locale")?.addEventListener("change", persist);
-  root.querySelector("#title-model")?.addEventListener("change", persist);
+  root.querySelector("#title-model")?.addEventListener("change", () => {
+    const integration = root.querySelector("#title-integration");
+    if (integration) {
+      integration.value = "none";
+    }
+    persist();
+  });
+  root.querySelector("#title-integration")?.addEventListener("change", persist);
+  root
+    .querySelector("#title-ollama-model")
+    ?.addEventListener("change", persist);
+  root.querySelector("#title-hosted-base")?.addEventListener("change", persist);
+  root
+    .querySelector("#title-hosted-confirmed")
+    ?.addEventListener("change", persist);
   root.querySelector("#reduce-motion")?.addEventListener("change", persist);
   root.querySelector("#launch-at-login")?.addEventListener("change", persist);
+  root
+    .querySelector("[data-import-title-gguf]")
+    ?.addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      runBusy(button, async () => {
+        try {
+          const dto = await invokeFn("import_title_gguf");
+          const name = String(dto?.displayName ?? "");
+          const id = String(dto?.id ?? "");
+          if (!name || name.includes("/") || id.includes("/")) {
+            throw new Error("invalid_custom_gguf");
+          }
+          settings = {
+            ...settings,
+            general: {
+              ...settings.general,
+              titleModel: "custom",
+              titleCustomId: id,
+              titleCustomName: name,
+              titleCustomBytes: Number(dto?.bytes ?? 0),
+            },
+          };
+          applySettingsForm(root, settings);
+          await persist();
+        } catch (error) {
+          if (String(error).includes("cancelled")) {
+            return;
+          }
+          const status = root.querySelector("[data-title-model-status]");
+          if (status) {
+            status.textContent =
+              catalogMessage("settings.field.titleModel.importFailed") ||
+              TITLE_MODEL_STATUS_FALLBACK.importFailed;
+          }
+        }
+      });
+    });
+  root
+    .querySelector("[data-clear-hosted-key]")
+    ?.addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      runBusy(button, async () => {
+        const provider = selectedTitleModelId(root, settings);
+        if (!isHostedTitleModel(provider)) {
+          return;
+        }
+        await invokeFn("clear_hosted_title_key", { provider });
+        const keyInput = root.querySelector("#title-hosted-key");
+        if (keyInput) {
+          keyInput.value = "";
+        }
+      });
+    });
+  await refreshEngineExtras();
 
   root.querySelectorAll("[data-reset-field]").forEach((button) => {
     button.addEventListener("click", () => {

@@ -1517,6 +1517,15 @@ menu {
   gap: var(--space-2);
 }
 
+[data-title-engine-panel]:not([hidden]) {
+  display: grid;
+  gap: var(--space-3);
+}
+
+[data-title-engine-panel] > label {
+  margin: 0;
+}
+
 .field-row {
   display: flex;
   flex-wrap: nowrap;
@@ -1551,6 +1560,10 @@ menu {
 
 .field-row button {
   flex: 0 0 auto;
+}
+
+.title-engine-import-row {
+  justify-content: flex-start;
 }
 
 .title-engine-spinner {
@@ -1909,6 +1922,14 @@ article [data-slot="source-label"],
 
 .page-shell .field-block {
   gap: var(--space-3);
+}
+
+.page-shell [data-title-engine-panel] .field-block {
+  gap: var(--space-1);
+}
+
+.page-shell [data-title-engine-source="integration"] [data-title-engine-local] {
+  display: none;
 }
 
 .page-shell article {

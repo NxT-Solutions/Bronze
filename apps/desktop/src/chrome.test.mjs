@@ -69,7 +69,7 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /\.field-help strong[\s\S]*font-weight:\s*600/);
   assert.match(chrome, /\.setting-info > summary[\s\S]*cursor:\s*help/);
   assert.match(pages[2].html, /class="setting-info"/);
-  assert.equal((pages[2].html.match(/class="setting-info"/g) || []).length, 12);
+  assert.equal((pages[2].html.match(/class="setting-info"/g) || []).length, 14);
   assert.match(pages[2].html, /settings\.shortcuts\.title\.infoRestore/);
   assert.match(pages[2].html, /settings\.field\.titleModel\.helpExtractive/);
   assert.match(pages[2].html, /settings\.field\.titleModel\.infoExtractive/);
@@ -109,6 +109,19 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /cursor:\s*pointer/);
   assert.match(chrome, /\[aria-busy="true"\]/);
   assert.match(chrome, /\.title-engine-spinner/);
+  assert.match(chrome, /\.title-engine-import-row/);
+  assert.match(
+    chrome,
+    /\[data-title-engine-panel\]:not\(\[hidden\]\)[\s\S]*gap:\s*var\(--space-3\)/,
+  );
+  assert.match(
+    chrome,
+    /\[data-title-engine-panel\] \.field-block[\s\S]*gap:\s*var\(--space-1\)/,
+  );
+  assert.match(
+    chrome,
+    /\[data-title-engine-source="integration"\] \[data-title-engine-local\][\s\S]*display:\s*none/,
+  );
   assert.match(chrome, /prefers-reduced-motion:\s*reduce/);
   assert.match(chrome, /html:not\(\[data-motion="full"\]\)/);
   assert.match(chrome, /html\[data-motion="reduce"\]/);

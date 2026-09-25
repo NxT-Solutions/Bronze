@@ -25,7 +25,9 @@ pub fn format_prompt_for(tier: TitleTier, body: &str) -> String {
     let body = truncate_input(body);
     let closer = match tier {
         TitleTier::Qwen05 => QWEN_CLOSER,
-        _ => SMOL_CLOSER,
+        TitleTier::Extractive | TitleTier::Smol135 | TitleTier::Smol360 | TitleTier::Custom => {
+            SMOL_CLOSER
+        }
     };
     format!(
         "<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n<|im_start|>user\nSelected text:\n{body}\n\n{closer}<|im_end|>\n<|im_start|>assistant\n"
