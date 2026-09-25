@@ -13,11 +13,12 @@ permissions:
 jobs:
   prepare:
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     outputs:
       release_tag: ${{ steps.set_tag.outputs.release_tag }}
       version: ${{ steps.set_tag.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           ref: main
@@ -118,6 +119,14 @@ jobs:
               )
 
           text = changelog.read_text(encoding="utf-8")
+          if re.search(
+              rf"^## v{re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}$",
+              text,
+              re.M,
+          ):
+              print(f"CHANGELOG already has v{version}")
+              raise SystemExit(0)
+
           lines = text.splitlines()
           all_tags = (
               subprocess.check_output(
@@ -192,13 +201,11 @@ jobs:
             exit 1
           fi
 
-      - name: Commit and tag
+      - name: Tag only
         shell: bash
         run: |
           set -euo pipefail
           git fetch --tags
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
           git add \
             apps/desktop/src-tauri/Cargo.toml \
             apps/desktop/src-tauri/tauri.conf.json \
@@ -206,33 +213,37 @@ jobs:
             Cargo.lock \
             CHANGELOG.md
           if ! git diff --cached --quiet; then
-            git commit -m "🔖 bump version to v${{ steps.set_tag.outputs.version }} and update changelog"
-          fi
-          if git rev-parse "v${{ steps.set_tag.outputs.version }}" >/dev/null 2>&1; then
-            echo "Tag v${{ steps.set_tag.outputs.version }} already exists."
+            echo "Release does not push main. Land version and changelog on main first."
+            git diff --cached
             exit 1
           fi
-          git tag "v${{ steps.set_tag.outputs.version }}"
-          git push origin main --tags
+          tag="v${{ steps.set_tag.outputs.version }}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists."
+            exit 1
+          fi
+          git tag "$tag"
+          git push origin "$tag"
 
   build:
     needs: prepare
     runs-on: macos-14
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.prepare.outputs.release_tag }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 12.4.2
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24.21.0
           cache: pnpm
 
-      - uses: dtolnay/rust-toolchain@1.98.1
+      - uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
 
       - name: Install CMake
         run: |
@@ -241,7 +252,7 @@ jobs:
           fi
 
       - name: Cache title models
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: bronze-title-model/vendor/*.gguf
           key: gguf-${{ hashFiles('bronze-title-model/vendor/manifests/**') }}
@@ -297,7 +308,7 @@ jobs:
           echo "This package is not a notarization claim." > dist/NOTARIZATION.txt
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: bronze-macos
           path: |
@@ -307,14 +318,15 @@ jobs:
 
   release:
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     needs: [prepare, build]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ needs.prepare.outputs.release_tag }}
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: dist
 
@@ -328,7 +340,7 @@ jobs:
           fi
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ needs.prepare.outputs.release_tag }}
           name: ${{ needs.prepare.outputs.release_tag }}

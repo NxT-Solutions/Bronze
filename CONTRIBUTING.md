@@ -41,9 +41,7 @@ Contributions are MIT, same as [LICENSE](LICENSE).
 
 ## Release
 
-Maintainers cut a build from `main` with Actions → **Release** and a version such
-as `0.1.0`. That workflow tags `v*`, writes `CHANGELOG.md` from commits, builds
-an arm64 `.app`, and uploads `bronze-macos.pkg` (not a notarization claim).
+Land the version in `apps/desktop` plus a `CHANGELOG.md` section (`## v0.1.0 - YYYY-MM-DD`) on `main` first. Then cut a build from Actions → **Release** with that version. The workflow tags `v*`, builds an arm64 `.app`, and uploads `bronze-macos.pkg` (not a notarization claim). It does not push `main`.
 
 When `PACKAGES_REPO_TOKEN` is set, **Publish Homebrew** updates
 `Casks/bronze.rb` in `NxT-Solutions/homebrew-nxt-solutions-packages`. The tap is a
