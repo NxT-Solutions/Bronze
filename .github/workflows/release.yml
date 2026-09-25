@@ -324,6 +324,19 @@ jobs:
             find . -name 'Bronze.app' -type d | head
             exit 1
           fi
+          icon_name=$(plutil -extract CFBundleIconFile raw -o - "$app/Contents/Info.plist")
+          if [[ "$icon_name" != "icon.icns" ]]; then
+            echo "CFBundleIconFile is ${icon_name}, expected icon.icns."
+            exit 1
+          fi
+          iconset=$(mktemp -d)
+          iconutil -c iconset "$app/Contents/Resources/icon.icns" -o "$iconset/App.iconset"
+          width=$(sips -g pixelWidth "$iconset/App.iconset/icon_512x512@2x.png" | awk '/pixelWidth/{print $2}')
+          rm -rf "$iconset"
+          if [[ "$width" != "1024" ]]; then
+            echo "Bundled icon.icns largest image is ${width}px, expected 1024."
+            exit 1
+          fi
           rm -rf pkgroot
           mkdir -p pkgroot/Applications
           cp -R "$app" pkgroot/Applications/
