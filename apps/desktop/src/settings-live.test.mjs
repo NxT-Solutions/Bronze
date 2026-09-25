@@ -12,7 +12,9 @@ import {
   exportCategoryLabel,
   exportSensitiveLabel,
   filterInstalledApps,
+  formatCustomTitleOption,
   formatTitleEngineLifecycle,
+  formatTitleFileSize,
   formatTitleModelStatus,
   isSafeBundleId,
   isSafeDisplayName,
@@ -30,6 +32,7 @@ import {
   settingsSearchNeedle,
   settingsUnitHaystack,
   switcherLocale,
+  syncTitleEnginePanels,
   TITLE_ENGINE_STATUS_EVENT,
   TITLE_MODEL_IDS,
   titleEngineBusy,
@@ -675,6 +678,39 @@ test("title model status shows present vs vendor command and never fetches", asy
   );
   assert.match(html, /never sends text off this device/);
   assert.match(html, /Sends truncated capture text/);
+});
+
+test("imported GGUF option shows RAM from file size and keeps two CPU threads", () => {
+  assert.equal(formatTitleFileSize(270 * 1024 * 1024), "270 MB");
+  assert.equal(
+    formatCustomTitleOption(0),
+    "Imported GGUF — RAM follows the file, 2 CPU threads",
+  );
+  assert.equal(
+    formatCustomTitleOption(270 * 1024 * 1024),
+    "Imported GGUF — about 270 MB of RAM, 2 CPU threads",
+  );
+  const customOption = { textContent: "" };
+  const file = { textContent: "" };
+  const root = {
+    querySelector(sel) {
+      if (sel === '#title-model option[value="custom"]') return customOption;
+      if (sel === "[data-title-custom-file]") return file;
+      return null;
+    },
+  };
+  syncTitleEnginePanels(root, {
+    general: {
+      titleCustomName: "tiny.gguf",
+      titleCustomBytes: 105 * 1024 * 1024,
+    },
+  });
+  assert.equal(
+    customOption.textContent,
+    "Imported GGUF — about 105 MB of RAM, 2 CPU threads",
+  );
+  assert.match(file.textContent, /tiny\.gguf/);
+  assert.match(file.textContent, /105 MB/);
 });
 
 test("setting info opens on hover and focus, not click, and dismisses on Escape", () => {

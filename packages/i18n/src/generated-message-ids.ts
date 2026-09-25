@@ -182,6 +182,8 @@ export const MessageIds = {
   "settings.field.titleModel.failed.unreadable":
     "settings.field.titleModel.failed.unreadable",
   "settings.field.titleModel.custom": "settings.field.titleModel.custom",
+  "settings.field.titleModel.custom.sized":
+    "settings.field.titleModel.custom.sized",
   "settings.field.titleModel.ollama": "settings.field.titleModel.ollama",
   "settings.field.titleModel.hostedOpenai":
     "settings.field.titleModel.hostedOpenai",

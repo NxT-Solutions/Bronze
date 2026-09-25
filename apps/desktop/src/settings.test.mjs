@@ -271,8 +271,13 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.match(html, /aria-live="polite"/);
   assert.equal(
     en["settings.field.titleModel.custom"],
-    "Imported GGUF — 2 CPU threads",
+    "Imported GGUF — RAM follows the file, 2 CPU threads",
   );
+  assert.equal(
+    en["settings.field.titleModel.custom.sized"],
+    "Imported GGUF — about {size} of RAM, 2 CPU threads",
+  );
+  assert.match(html, /Imported GGUF — RAM follows the file, 2 CPU threads/);
   assert.equal(en["settings.field.titleModel.ollama"], "Ollama on this Mac");
   assert.equal(
     en["settings.field.titleModel.infoHosted"],

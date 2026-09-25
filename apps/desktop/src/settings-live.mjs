@@ -85,6 +85,8 @@ const TITLE_MODEL_STATUS_FALLBACK = {
     "This file could not be read, so titles stay extractive.",
   customEmpty: "Import a GGUF to use it for titles.",
   customPresent: "This imported file can title the next capture.",
+  customOption: "Imported GGUF — RAM follows the file, 2 CPU threads",
+  customOptionSized: "Imported GGUF — about {size} of RAM, 2 CPU threads",
   imported: "Imported {name} ({size}).",
   importFailed: "That file was not a GGUF, so nothing was imported.",
   ollamaStatus: "Ollama will title the next capture when it is running.",
@@ -166,6 +168,20 @@ export function formatTitleFileSize(bytes) {
     return `${Math.round(n / 1024)} KB`;
   }
   return `${Math.round(n)} B`;
+}
+
+export function formatCustomTitleOption(bytes) {
+  const n = Number(bytes);
+  if (Number.isFinite(n) && n > 0) {
+    const template =
+      catalogMessage("settings.field.titleModel.custom.sized") ||
+      TITLE_MODEL_STATUS_FALLBACK.customOptionSized;
+    return template.replaceAll("{size}", formatTitleFileSize(n));
+  }
+  return (
+    catalogMessage("settings.field.titleModel.custom") ||
+    TITLE_MODEL_STATUS_FALLBACK.customOption
+  );
 }
 
 export function formatTitleModelStatus(row, options = {}) {
@@ -463,6 +479,14 @@ export function syncTitleEnginePanels(root, settings = {}) {
         catalogMessage("settings.field.titleModel.custom.empty") ||
         TITLE_MODEL_STATUS_FALLBACK.customEmpty;
     }
+  }
+  const customOption = root.querySelector(
+    '#title-model option[value="custom"]',
+  );
+  if (customOption) {
+    customOption.textContent = formatCustomTitleOption(
+      settings?.general?.titleCustomBytes,
+    );
   }
 }
 
@@ -1150,6 +1174,7 @@ async function applySavedLocale(root, settings, invokeFn) {
   } catch {
     applyHandTestLocale(root, switcherLocale(settings?.general?.locale));
   }
+  syncTitleEnginePanels(root, settings);
   await refreshTitleModelStatus(root, invokeFn, settings);
   await refreshLoginItemStatus(root, invokeFn);
 }
@@ -1421,6 +1446,7 @@ export async function bindSettingsLive(
   });
 
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
+    syncTitleEnginePanels(root, settings);
     refreshExportPreview().catch(() => {});
     refreshTitleModelStatus(root, invokeFn, settings).catch(() => {});
     refreshLoginItemStatus(root, invokeFn).catch(() => {});
