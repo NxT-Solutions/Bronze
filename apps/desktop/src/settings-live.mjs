@@ -1,4 +1,8 @@
 import {
+  fuzzyFilter,
+  fuzzyMatchScore,
+} from "../../../packages/ui/src/lib/fuzzy-match.ts";
+import {
   applyHandTestLocale,
   catalogMessage,
   emitUiLocaleChanged,
@@ -18,10 +22,6 @@ import {
 } from "./queue-sort.mjs";
 import { bindShortcutRegistry } from "./shortcuts.mjs";
 import { showChromeWindow, tauriInvoke, tauriListen } from "./tauri-bridge.mjs";
-import {
-  fuzzyFilter,
-  fuzzyMatchScore,
-} from "../../../packages/ui/src/lib/fuzzy-match.ts";
 
 const SWITCHER_LOCALES = [
   "en",
