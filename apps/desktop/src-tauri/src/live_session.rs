@@ -35,10 +35,10 @@ use bronze_settings::{
     apply_recorded_double_tap_timing, default_shortcut_binding, effective_tap_count,
     export_settings_document, is_default_binding, logical_key_allowed, parse_settings_import,
     recorded_double_tap_allowed, search_settings, shortcut_scope, skip_test_marks_untested,
-    CaptureAlternatives, Modifier, NativeRegistrar, RegisterError, SettingsExportPreview,
-    SettingsGroup, SettingsImportError, SettingsV1, ShortcutActionId, ShortcutBinding,
-    ShortcutRegistry, ShortcutScope, TestedState, TitleModelId, TriggerKind, MAX_MODIFIER_TAPS,
-    SCHEMA_VERSION, SETTINGS_EXPORT_FORMAT, SETTINGS_EXPORT_VERSION,
+    CaptureAlternatives, Modifier, NativeRegistrar, QueueSort, RegisterError,
+    SettingsExportPreview, SettingsGroup, SettingsImportError, SettingsV1, ShortcutActionId,
+    ShortcutBinding, ShortcutRegistry, ShortcutScope, TestedState, TitleModelId, TriggerKind,
+    MAX_MODIFIER_TAPS, SCHEMA_VERSION, SETTINGS_EXPORT_FORMAT, SETTINGS_EXPORT_VERSION,
 };
 use bronze_storage::{
     ComposerDraft, DiagnosticEventRow, ImportStrategy, NoopBackup, Overwrite, PathLocator,
@@ -367,6 +367,7 @@ pub struct QueueItemDto {
     pub source_app_name: Option<String>,
     #[serde(default)]
     pub source_app_icon: Option<String>,
+    pub created_at_ms: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Eq, PartialEq)]
@@ -394,6 +395,7 @@ impl fmt::Debug for QueueItemDto {
             .field("status", &self.status)
             .field("rank", &self.rank)
             .field("source_app_name", &self.source_app_name)
+            .field("created_at_ms", &self.created_at_ms)
             .field(
                 "source_app_icon",
                 &self
@@ -428,6 +430,7 @@ impl From<QueueItemRow> for QueueItemDto {
             rank: row.rank,
             source_app_name: row.source_app_name,
             source_app_icon,
+            created_at_ms: row.created_at_ms,
         }
     }
 }
@@ -739,16 +742,25 @@ impl LiveSession {
         cursor: Option<&str>,
         filter: Option<&str>,
         limit: Option<u32>,
+        sort: Option<&str>,
     ) -> Result<QueuePageDto, String> {
         let filter = match filter.unwrap_or("overview") {
             "overview" => QueueListFilter::Overview,
             _ => return Err("queue_filter_invalid".into()),
         };
         let limit = limit.map(|value| value as usize).unwrap_or(QUEUE_PAGE_SIZE);
-        let page = self
-            .store
-            .query_queue_page(cursor, filter, limit)
-            .map_err(queue_page_error)?;
+        let page = match sort {
+            Some(raw) => {
+                let sort = QueueSort::parse(raw).map_err(|_| "queue_sort_invalid".to_string())?;
+                self.store
+                    .query_queue_page_sorted(cursor, filter, limit, sort)
+                    .map_err(queue_page_error)?
+            }
+            None => self
+                .store
+                .query_queue_page(cursor, filter, limit)
+                .map_err(queue_page_error)?,
+        };
         Ok(QueuePageDto {
             items: page.items.into_iter().map(QueueItemDto::from).collect(),
             next_cursor: page.next_cursor,
@@ -1916,14 +1928,28 @@ pub fn list_overview_items(
 }
 
 #[cfg(target_os = "macos")]
+fn emit_queue_sort_if_changed(app: &tauri::AppHandle, previous: QueueSort, next: QueueSort) {
+    use tauri::Emitter;
+    if previous != next {
+        let _ = app.emit("queue-sort-changed", next.as_str());
+    }
+}
+
+#[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn queue_query(
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     cursor: Option<String>,
     filter: Option<String>,
     limit: Option<u32>,
+    sort: Option<String>,
 ) -> Result<QueuePageDto, String> {
-    lock_session(&session)?.queue_query(cursor.as_deref(), filter.as_deref(), limit)
+    lock_session(&session)?.queue_query(
+        cursor.as_deref(),
+        filter.as_deref(),
+        limit,
+        sort.as_deref(),
+    )
 }
 
 #[cfg(target_os = "macos")]
@@ -2001,36 +2027,56 @@ pub fn login_item_status() -> String {
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn save_settings_v1(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     settings: SettingsV1,
 ) -> Result<SettingsV1, String> {
-    lock_session(&session)?.replace_settings(settings)
+    let mut session = lock_session(&session)?;
+    let previous = session.settings().copy.queue_sort;
+    let saved = session.replace_settings(settings)?;
+    emit_queue_sort_if_changed(&app, previous, saved.copy.queue_sort);
+    Ok(saved)
 }
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn reset_settings_field(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     field_id: String,
 ) -> Result<SettingsV1, String> {
-    lock_session(&session)?.reset_field(&field_id)
+    let mut session = lock_session(&session)?;
+    let previous = session.settings().copy.queue_sort;
+    let saved = session.reset_field(&field_id)?;
+    emit_queue_sort_if_changed(&app, previous, saved.copy.queue_sort);
+    Ok(saved)
 }
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn reset_settings_group(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     group: String,
 ) -> Result<SettingsV1, String> {
-    lock_session(&session)?.reset_group(&group)
+    let mut session = lock_session(&session)?;
+    let previous = session.settings().copy.queue_sort;
+    let saved = session.reset_group(&group)?;
+    emit_queue_sort_if_changed(&app, previous, saved.copy.queue_sort);
+    Ok(saved)
 }
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn reset_settings_all(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
 ) -> Result<SettingsV1, String> {
-    lock_session(&session)?.reset_all()
+    let mut session = lock_session(&session)?;
+    let previous = session.settings().copy.queue_sort;
+    let saved = session.reset_all()?;
+    emit_queue_sort_if_changed(&app, previous, saved.copy.queue_sort);
+    Ok(saved)
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -2219,6 +2265,7 @@ pub fn export_settings_file(
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn import_settings_file(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     requested_path: Option<String>,
 ) -> Result<SettingsV1, String> {
@@ -2228,7 +2275,11 @@ pub fn import_settings_file(
         PickSettingsFile::Cancelled => return Err("picker_cancelled".into()),
         PickSettingsFile::Unavailable => return Err("picker_unavailable".into()),
     };
-    lock_session(&session)?.import_settings_from_path(&src)
+    let mut session = lock_session(&session)?;
+    let previous = session.settings().copy.queue_sort;
+    let saved = session.import_settings_from_path(&src)?;
+    emit_queue_sort_if_changed(&app, previous, saved.copy.queue_sort);
+    Ok(saved)
 }
 
 #[cfg(target_os = "macos")]
@@ -2301,6 +2352,7 @@ mod live_session_tests {
             rank: "1".into(),
             source_app_name: None,
             source_bundle_id: None,
+            created_at_ms: 1,
         });
         assert_eq!(dto.body, "één tegelijk\n1. DataForSEO paused.\n\nNiet alle");
         assert_eq!(dto.title.as_deref(), Some("kept"));
@@ -2345,7 +2397,7 @@ mod live_session_tests {
     fn queue_query_dto_pages_overview_and_rejects_a_bad_cursor() {
         // QUE-002, SEC-002
         let mut session = open_session();
-        let empty = session.queue_query(None, None, None).expect("empty");
+        let empty = session.queue_query(None, None, None, None).expect("empty");
         assert!(empty.items.is_empty());
         assert!(empty.next_cursor.is_none());
         for n in 0..21 {
@@ -2354,7 +2406,7 @@ mod live_session_tests {
         let overview = session.list_overview().expect("overview");
         assert_eq!(overview.len(), 21);
         let first = session
-            .queue_query(None, Some("overview"), Some(10_000))
+            .queue_query(None, Some("overview"), Some(10_000), None)
             .expect("page");
         assert_eq!(first.items.len(), QUEUE_PAGE_SIZE);
         assert_eq!(first.items[0].id, overview[0].id);
@@ -2364,20 +2416,20 @@ mod live_session_tests {
         assert!(json.get("nextCursor").unwrap().is_string());
         assert!(json.get("next_cursor").is_none());
         let second = session
-            .queue_query(Some(&cursor), Some("overview"), Some(0))
+            .queue_query(Some(&cursor), Some("overview"), Some(0), None)
             .expect("next");
         assert_eq!(second.items.len(), 1);
         assert_eq!(second.items[0].id, overview[20].id);
         assert!(second.next_cursor.is_none());
         assert_eq!(
             session
-                .queue_query(Some("v1.zz.00"), None, None)
+                .queue_query(Some("v1.zz.00"), None, None, None)
                 .expect_err("cursor"),
             "queue_cursor_invalid"
         );
         assert_eq!(
             session
-                .queue_query(None, Some("attachments"), None)
+                .queue_query(None, Some("attachments"), None, None)
                 .expect_err("filter"),
             "queue_filter_invalid"
         );
@@ -2473,6 +2525,23 @@ mod live_session_tests {
         assert!(!tap.contains("LaunchAgents"));
         assert!(!tap.contains("launchctl"));
         assert_eq!(ADR_018_STATUS, "Proposed");
+    }
+
+    #[test]
+    fn queue_sort_persists_across_relaunch() {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("bronze-queue-sort-{n}-{}", now_ms()));
+        let mut session = LiveSession::open(dir.clone()).expect("open");
+        assert_eq!(session.settings().copy.queue_sort, QueueSort::Newest);
+        let mut settings = session.settings();
+        settings.copy.queue_sort = QueueSort::Oldest;
+        session.replace_settings(settings).expect("save");
+        drop(session);
+        let reopened = LiveSession::open(dir).expect("reopen");
+        assert_eq!(reopened.settings().copy.queue_sort, QueueSort::Oldest);
+        let mut reset = reopened;
+        reset.reset_field("copy.queueSort").expect("reset");
+        assert_eq!(reset.settings().copy.queue_sort, QueueSort::Newest);
     }
 
     #[test]

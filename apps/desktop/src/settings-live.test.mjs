@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { parseQueueSort, queueSortChange } from "./queue-sort.mjs";
 import {
   applyAppVersionInfo,
   applySettingsForm,
@@ -49,6 +50,37 @@ import {
 const rootDir = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(rootDir, "settings.html"), "utf8");
 const live = readFileSync(join(rootDir, "settings-live.mjs"), "utf8");
+
+test("settings form keeps queue order on the copy group", () => {
+  const queueSort = { value: "newest" };
+  const root = {
+    querySelector(sel) {
+      if (sel === "#queue-sort") return queueSort;
+      return null;
+    },
+  };
+  const settings = {
+    general: {},
+    copy: {
+      defaultProfileId: "plain",
+      returnToPriorApp: true,
+      queueSort: "oldest",
+    },
+    data: {},
+    privacy: {},
+  };
+  applySettingsForm(root, settings);
+  assert.equal(queueSort.value, "oldest");
+  queueSort.value = "newest";
+  const next = patchSettingsFromForm(settings, root);
+  assert.equal(next.copy.queueSort, "newest");
+  assert.equal(next.copy.defaultProfileId, "plain");
+  assert.equal(next.copy.returnToPriorApp, true);
+  assert.equal(parseQueueSort("oldest"), "oldest");
+  assert.equal(parseQueueSort("rank"), "newest");
+  assert.deepEqual(queueSortChange("newest", "oldest"), { sort: "oldest" });
+  assert.equal(queueSortChange("oldest", "oldest"), null);
+});
 
 test("settings form patches backup schedule, excluded apps, and locale", () => {
   const settings = {

@@ -379,6 +379,25 @@ mod tests {
     use crate::shortcuts::default_shortcut_binding;
 
     #[test]
+    fn queue_sort_round_trips_through_settings_export() {
+        use crate::schema::QueueSort;
+        let mut settings = SettingsV1::defaults();
+        settings.copy.queue_sort = QueueSort::Oldest;
+        let preview = export_settings(&settings, &BTreeMap::new()).expect("export");
+        let raw = preview.payload.to_string();
+        assert!(raw.contains("\"queueSort\":\"oldest\""));
+        let imported = parse_settings_import(&raw).expect("import");
+        assert_eq!(imported.settings.copy.queue_sort, QueueSort::Oldest);
+        let mut legacy: serde_json::Value = serde_json::from_str(&raw).expect("json");
+        legacy["settings"]["copy"]
+            .as_object_mut()
+            .expect("copy")
+            .remove("queueSort");
+        let without = parse_settings_import(&legacy.to_string()).expect("legacy import");
+        assert_eq!(without.settings.copy.queue_sort, QueueSort::Newest);
+    }
+
+    #[test]
     fn settings_export_excludes_credentials_tokens_paths() {
         let settings = SettingsV1::defaults();
         let mut extra = BTreeMap::new();

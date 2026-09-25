@@ -19,6 +19,7 @@ import {
   queueMoveDisabled,
   syncQueueMoveAvailability,
 } from "./queue-live.mjs";
+import { queueListArgs } from "./queue-sort.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
@@ -81,7 +82,23 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.doesNotMatch(live, /list_overview_items/);
   assert.equal(QUEUE_PAGE_SIZE, 20);
   assert.doesNotMatch(live, /OFFSET/);
+  assert.match(live, /queueListArgs/);
+  assert.match(live, /resetPage/);
+  assert.match(live, /listenQueueSortChanged/);
   assert.match(live, /queue-changed/);
+  const cursor = "v2.newest.20.65";
+  assert.deepEqual(queueListArgs("newest", cursor), {
+    sort: "newest",
+    cursor,
+  });
+  assert.deepEqual(queueListArgs("oldest", cursor), {
+    sort: "oldest",
+    cursor: null,
+  });
+  assert.deepEqual(queueListArgs("newest", null), {
+    sort: "newest",
+    cursor: null,
+  });
   assert.match(live, /capture-result/);
   assert.match(live, /LOCALE_APPLIED_EVENT/);
   assert.match(html, /id="capture-status"[^>]*visually-hidden/);

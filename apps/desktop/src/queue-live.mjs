@@ -16,6 +16,11 @@ import {
   applyQueueItemMutation,
   createQueueRenderer,
 } from "./queue-motion.mjs";
+import {
+  listenQueueSortChanged,
+  parseQueueSort,
+  queueListArgs,
+} from "./queue-sort.mjs";
 import { tauriInvoke } from "./tauri-bridge.mjs";
 
 export { formatCaptureSource, serializeComposerDom };
@@ -645,6 +650,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   let state = { items: [], nextCursor: null, anchorCursor: null };
   let loadingMore = false;
   let refreshGen = 0;
+  let activeSort = "newest";
 
   function focusedQueueControl() {
     const active = list.ownerDocument?.activeElement;
@@ -678,9 +684,14 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   }
 
   async function queryPage(cursor) {
-    const args = { filter: "overview", limit: QUEUE_PAGE_SIZE };
-    if (cursor) {
-      args.cursor = cursor;
+    const paging = queueListArgs(activeSort, cursor);
+    const args = {
+      filter: "overview",
+      limit: QUEUE_PAGE_SIZE,
+      sort: paging.sort,
+    };
+    if (paging.cursor) {
+      args.cursor = paging.cursor;
     }
     return invokeFn("queue_query", args);
   }
@@ -730,6 +741,17 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   async function refresh(opts = {}) {
     const gen = ++refreshGen;
+    let sort = "newest";
+    try {
+      const settings = await invokeFn("load_settings_v1");
+      sort = parseQueueSort(settings?.copy?.queueSort);
+    } catch {
+      sort = "newest";
+    }
+    if (opts.resetPage || sort !== activeSort) {
+      activeSort = sort;
+      state = { items: [], nextCursor: null, anchorCursor: null };
+    }
     const action = opts.action;
     if (action === "complete" || action === "skip" || action === "trash") {
       state = removeQueueItem(state, opts.id);
@@ -950,6 +972,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   }
   listenQueueChanged(() => {
     refresh();
+  });
+  listenQueueSortChanged(() => {
+    refresh({ resetPage: true });
   });
   listenCaptureResult((event) => {
     applyCaptureResult(root, event?.payload ?? event);
