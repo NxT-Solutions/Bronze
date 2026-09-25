@@ -5,7 +5,7 @@ This file is auto-updated by the release workflow.
 
 ## Unreleased
 
-- Work in progress.
+- The update dialog summarizes what’s new in plain language.
 
 ## v0.1.2 - 2026-09-25
 

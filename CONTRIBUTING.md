@@ -41,7 +41,7 @@ Contributions are MIT, same as [LICENSE](LICENSE).
 
 ## Release
 
-Land the version in `apps/desktop` plus a `CHANGELOG.md` section (`## v0.1.0 - YYYY-MM-DD`) on `main` first. Then cut a build from Actions → **Release** with that version. The workflow reuses tag `v*`, builds `aarch64-apple-darwin` on `macos-15` and `x86_64-apple-darwin` on `macos-15-intel`, and uploads `bronze-macos-arm64.pkg` and `bronze-macos-x86_64.pkg` (not a notarization claim). It does not push `main`.
+Land the version in `apps/desktop` plus a `CHANGELOG.md` section (`## v0.1.0 - YYYY-MM-DD`) on `main` first. Put plain sentences under `### What's new` in that section. The update dialog shows those sentences. Commit subjects stay under `### Changes`, and the GitHub release page keeps the generated commit list after the plain block. Then cut a build from Actions → **Release** with that version. The workflow reuses tag `v*`, builds `aarch64-apple-darwin` on `macos-15` and `x86_64-apple-darwin` on `macos-15-intel`, and uploads `bronze-macos-arm64.pkg` and `bronze-macos-x86_64.pkg` (not a notarization claim). It does not push `main`.
 
 When `PACKAGES_REPO_TOKEN` is set, **Publish Homebrew** updates
 `Casks/bronze.rb` in `NxT-Solutions/homebrew-nxt-solutions-packages` with
