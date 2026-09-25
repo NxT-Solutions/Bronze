@@ -57,6 +57,7 @@ public func bronze_native_app_icon_png(
     }
 }
 
+@MainActor
 private func pngIcon(for key: String) -> Data? {
     guard let url = officialAppURL(for: key) else {
         return nil
@@ -64,6 +65,7 @@ private func pngIcon(for key: String) -> Data? {
     return rasterPng(NSWorkspace.shared.icon(forFile: url.path))
 }
 
+@MainActor
 private func officialAppURL(for key: String) -> URL? {
     let workspace = NSWorkspace.shared
     if let url = workspace.urlForApplication(withBundleIdentifier: key) {

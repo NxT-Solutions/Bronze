@@ -79,6 +79,7 @@ private func isSafeNoticeText(_ text: String, max: Int) -> Bool {
 
 /// UNUserNotificationCenter.current() aborts when the process is not a .app
 /// (tauri dev / cargo-run use target/debug/bronze-desktop).
+@MainActor
 private func bundledNotificationCenter() -> UNUserNotificationCenter? {
     let url = Bundle.main.bundleURL
     guard url.pathExtension == "app",
@@ -164,6 +165,7 @@ private func noticeHelperApp() -> URL? {
     return app
 }
 
+@MainActor
 private func announceNotice(_ body: String) {
     let app = NSApplication.shared
     NSAccessibility.post(

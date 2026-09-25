@@ -337,35 +337,38 @@ final class BronzeOutViewBox: @unchecked Sendable {
 }
 
 // AppKit pasteboard and workspace icon APIs require the main thread.
-func bronzeOnAppKit(_ work: @escaping @Sendable () -> UInt32) -> UInt32 {
-    if Thread.isMainThread {
-        return work()
-    }
-    let box = MainStatusBox()
-    let lock = DispatchSemaphore(value: 0)
-    DispatchQueue.main.async {
-        box.value = work()
-        lock.signal()
-    }
-    if lock.wait(timeout: .now() + 2) == .timedOut {
-        return BRONZE_STATUS_DEGRADED
-    }
-    return box.value
+// Thread hops are not enough for Swift 6: NSOpenPanel / NSApplication are
+// @MainActor, so the work closure must run under MainActor isolation.
+func bronzeOnAppKit(_ work: @escaping @MainActor @Sendable () -> UInt32) -> UInt32 {
+    bronzeHopToMainActor(timeout: 2, work)
 }
 
 /// Modal panels stay open until the operator dismisses them. The 2s hop
 /// used by pasteboard and icons must not wrap NSOpenPanel.
-func bronzeOnAppKitModal(_ work: @escaping @Sendable () -> UInt32) -> UInt32 {
+func bronzeOnAppKitModal(_ work: @escaping @MainActor @Sendable () -> UInt32) -> UInt32 {
+    bronzeHopToMainActor(timeout: nil, work)
+}
+
+private func bronzeHopToMainActor(
+    timeout: TimeInterval?,
+    _ work: @escaping @MainActor @Sendable () -> UInt32
+) -> UInt32 {
     if Thread.isMainThread {
-        return work()
+        return MainActor.assumeIsolated { work() }
     }
     let box = MainStatusBox()
     let lock = DispatchSemaphore(value: 0)
     DispatchQueue.main.async {
-        box.value = work()
+        box.value = MainActor.assumeIsolated { work() }
         lock.signal()
     }
-    lock.wait()
+    if let timeout {
+        if lock.wait(timeout: .now() + timeout) == .timedOut {
+            return BRONZE_STATUS_DEGRADED
+        }
+    } else {
+        lock.wait()
+    }
     return box.value
 }
 
