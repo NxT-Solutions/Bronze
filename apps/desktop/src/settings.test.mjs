@@ -291,6 +291,14 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.doesNotMatch(html, /class="btn-ghost"\s+data-import-title-gguf/);
   assert.match(html, /id="title-integration"/);
   assert.match(html, /id="title-hosted-key"/);
+  assert.match(
+    html,
+    /data-title-engine-panel="hosted"[\s\S]*<div class="field-block">[\s\S]*id="title-hosted-base"/,
+  );
+  assert.match(
+    html,
+    /data-title-engine-panel="hosted"[\s\S]*<div class="field-block">[\s\S]*id="title-hosted-key"/,
+  );
   assert.doesNotMatch(html, /Title:/);
   assert.doesNotMatch(html, /download/i);
 });

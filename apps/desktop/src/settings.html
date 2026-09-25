@@ -492,12 +492,14 @@
               </select>
             </div>
             <div data-title-engine-panel="ollama" hidden>
-              <label for="title-ollama-model" data-i18n="settings.field.titleModel.ollama.label">Ollama model</label>
-              <div class="field-row">
-                <select
-                  id="title-ollama-model"
-                  name="titleOllamaModel"
-                ></select>
+              <div class="field-block">
+                <label for="title-ollama-model" data-i18n="settings.field.titleModel.ollama.label">Ollama model</label>
+                <div class="field-row">
+                  <select
+                    id="title-ollama-model"
+                    name="titleOllamaModel"
+                  ></select>
+                </div>
               </div>
             </div>
             <div data-title-engine-panel="hosted" hidden>
@@ -506,41 +508,45 @@
                 class="muted field-help"
                 data-title-hosted-disclosure
               ></p>
-              <label for="title-hosted-base" data-i18n="settings.field.titleModel.hosted.base">Custom HTTPS host</label>
-              <div class="field-row">
-                <input
-                  id="title-hosted-base"
-                  name="titleHostedBase"
-                  type="text"
-                  autocomplete="off"
-                  spellcheck="false"
-                />
+              <div class="field-block">
+                <label for="title-hosted-base" data-i18n="settings.field.titleModel.hosted.base">Custom HTTPS host</label>
+                <div class="field-row">
+                  <input
+                    id="title-hosted-base"
+                    name="titleHostedBase"
+                    type="text"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                </div>
               </div>
-              <label for="title-hosted-key" data-i18n="settings.field.titleModel.hosted.key">Hosted key</label>
-              <p
-                id="title-hosted-key-help"
-                class="muted field-help"
-                data-i18n="settings.field.titleModel.hosted.keyHelp"
-              >
-                Paste the key once — Bronze never shows it again.
-              </p>
-              <div class="field-row">
-                <input
-                  id="title-hosted-key"
-                  name="titleHostedKey"
-                  type="password"
-                  autocomplete="off"
-                  spellcheck="false"
-                  aria-describedby="title-hosted-key-help"
-                />
-                <button
-                  type="button"
-                  class="btn-ghost"
-                  data-clear-hosted-key
-                  data-i18n="settings.field.titleModel.hosted.clear"
+              <div class="field-block">
+                <label for="title-hosted-key" data-i18n="settings.field.titleModel.hosted.key">Hosted key</label>
+                <p
+                  id="title-hosted-key-help"
+                  class="muted field-help"
+                  data-i18n="settings.field.titleModel.hosted.keyHelp"
                 >
-                  Remove stored key
-                </button>
+                  Paste the key once — Bronze never shows it again.
+                </p>
+                <div class="field-row">
+                  <input
+                    id="title-hosted-key"
+                    name="titleHostedKey"
+                    type="password"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-describedby="title-hosted-key-help"
+                  />
+                  <button
+                    type="button"
+                    class="btn-ghost"
+                    data-clear-hosted-key
+                    data-i18n="settings.field.titleModel.hosted.clear"
+                  >
+                    Remove stored key
+                  </button>
+                </div>
               </div>
               <div class="field-row">
                 <input
