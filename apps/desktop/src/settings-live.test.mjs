@@ -13,16 +13,15 @@ import {
   applyUpdateCheck,
   bindSettingInfo,
   bindTitleEngineStatus,
+  bundledWeightsAbsent,
   checkForAppUpdate,
   exportCategoryLabel,
   exportSensitiveLabel,
   filterInstalledApps,
   formatCustomTitleOption,
-  bundledWeightsAbsent,
   formatTitleEngineLifecycle,
   formatTitleFileSize,
   formatTitleModelStatus,
-  titleEngineProgress,
   isSafeBundleId,
   isSafeDisplayName,
   parseInstallSource,
@@ -47,6 +46,7 @@ import {
   TITLE_ENGINE_STATUS_EVENT,
   TITLE_MODEL_IDS,
   titleEngineBusy,
+  titleEngineProgress,
 } from "./settings-live.mjs";
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
@@ -955,7 +955,10 @@ test("title engine progress follows bytes and terminal phases", () => {
   );
   assert.equal(wrap.hidden, true);
   assert.equal(spinner.hidden, true);
-  assert.equal(titleEngineProgress({ phase: "failed", reason: "unreadable" }).visible, false);
+  assert.equal(
+    titleEngineProgress({ phase: "failed", reason: "unreadable" }).visible,
+    false,
+  );
 });
 
 test("imported GGUF option shows RAM from file size and keeps two CPU threads", () => {

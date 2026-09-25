@@ -1646,8 +1646,12 @@ menu {
 }
 
 html[data-motion="reduce"] .title-engine-progress progress,
-html[data-motion="reduce"] .title-engine-progress progress::-webkit-progress-bar,
-html[data-motion="reduce"] .title-engine-progress progress::-webkit-progress-value,
+html[data-motion="reduce"]
+  .title-engine-progress
+  progress::-webkit-progress-bar,
+html[data-motion="reduce"]
+  .title-engine-progress
+  progress::-webkit-progress-value,
 [data-reduce-motion] .title-engine-progress progress,
 [data-reduce-motion] .title-engine-progress progress::-webkit-progress-bar,
 [data-reduce-motion] .title-engine-progress progress::-webkit-progress-value {
@@ -1656,8 +1660,12 @@ html[data-motion="reduce"] .title-engine-progress progress::-webkit-progress-val
 
 @media (prefers-reduced-motion: reduce) {
   html:not([data-motion="full"]) .title-engine-progress progress,
-  html:not([data-motion="full"]) .title-engine-progress progress::-webkit-progress-bar,
-  html:not([data-motion="full"]) .title-engine-progress progress::-webkit-progress-value {
+  html:not([data-motion="full"])
+    .title-engine-progress
+    progress::-webkit-progress-bar,
+  html:not([data-motion="full"])
+    .title-engine-progress
+    progress::-webkit-progress-value {
     animation: none !important;
   }
 }

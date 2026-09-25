@@ -116,8 +116,7 @@ const TITLE_MODEL_STATUS_FALLBACK = {
   present: "This file is on this Mac and can title the next capture.",
   missing:
     "Vendored file missing — titles stay extractive until you run {command}.",
-  notInBuild:
-    "This model is not in this build, so titles stay extractive.",
+  notInBuild: "This model is not in this build, so titles stay extractive.",
   progressPercent: "{percent}%",
   unavailable: "Title engines could not be listed.",
   loading: "Loading {engine}…",
@@ -544,8 +543,7 @@ export function applyTitleEngineLifecycle(root, status, row, options = {}) {
   const absent = bundledWeightsAbsent(status, row);
   node.textContent = formatTitleEngineLifecycle(status, row, options);
   node.setAttribute("aria-live", "polite");
-  const busy =
-    !absent && titleEngineBusy(parseTitleEnginePhase(status?.phase));
+  const busy = !absent && titleEngineBusy(parseTitleEnginePhase(status?.phase));
   if (busy) {
     node.setAttribute("aria-busy", "true");
   } else {
@@ -595,7 +593,11 @@ export async function refreshTitleModelStatus(root, invokeFn, settings) {
   const row = rows?.find((item) => item?.id === id) ?? {
     id,
     present:
-      rows === null ? undefined : id === "custom" ? customName.length > 0 : false,
+      rows === null
+        ? undefined
+        : id === "custom"
+          ? customName.length > 0
+          : false,
     displayName: customName,
   };
   const options = {
