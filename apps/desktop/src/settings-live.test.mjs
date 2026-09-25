@@ -11,6 +11,7 @@ import {
   applyTitleModelStatus,
   applyUpdateCheck,
   bindSettingInfo,
+  bindTitleEngineStatus,
   checkForAppUpdate,
   exportCategoryLabel,
   exportSensitiveLabel,
@@ -695,6 +696,86 @@ test("title model status shows present vs vendor command and never fetches", asy
   );
   assert.match(html, /never sends text off this device/);
   assert.match(html, /Sends truncated capture text/);
+});
+
+test("title-engine-status replaces loading and a stale snapshot does not", async () => {
+  const status = { textContent: "", setAttribute() {}, removeAttribute() {} };
+  const spinner = { hidden: true };
+  const select = { value: "smol-360" };
+  const root = {
+    querySelector(sel) {
+      if (sel === "[data-title-model-status]") return status;
+      if (sel === "[data-title-model-spinner]") return spinner;
+      if (sel === "#title-model") return select;
+      if (sel === "#title-integration") return { value: "none" };
+      return null;
+    },
+  };
+  let handler;
+  bindTitleEngineStatus(root, (_event, next) => {
+    handler = next;
+    return Promise.resolve(() => {});
+  });
+  handler({ payload: { tier: "smol-360", phase: "loading", reason: null } });
+  assert.match(status.textContent, /Loading SmolLM2 360M/);
+  assert.equal(spinner.hidden, false);
+
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const refresh = refreshTitleModelStatus(root, async (cmd) => {
+    if (cmd === "list_title_models") {
+      return [{ id: "smol-360", present: true, vendorCommand: "" }];
+    }
+    assert.equal(cmd, "title_engine_status");
+    await gate;
+    return { tier: "smol-360", phase: "loading", reason: null };
+  });
+  handler({ payload: { tier: "smol-360", phase: "ready", reason: null } });
+  assert.equal(status.textContent, "Loaded — will title the next capture");
+  assert.equal(spinner.hidden, true);
+  release();
+  await refresh;
+  assert.equal(status.textContent, "Loaded — will title the next capture");
+  assert.equal(spinner.hidden, true);
+
+  handler({
+    payload: { tier: "smol-360", phase: "failed", reason: "unreadable" },
+  });
+  assert.equal(
+    status.textContent,
+    "This file could not be read, so titles stay extractive.",
+  );
+  assert.equal(spinner.hidden, true);
+
+  handler({
+    payload: {
+      tier: "smol-360",
+      phase: "missing",
+      reason: "missing_weights",
+    },
+  });
+  assert.match(status.textContent, /Vendored file missing/);
+  assert.equal(spinner.hidden, true);
+
+  let releaseReady;
+  const readyGate = new Promise((resolve) => {
+    releaseReady = resolve;
+  });
+  const readyRefresh = refreshTitleModelStatus(root, async (cmd) => {
+    if (cmd === "list_title_models") {
+      return [{ id: "smol-360", present: true, vendorCommand: "" }];
+    }
+    await readyGate;
+    return { tier: "smol-360", phase: "ready", reason: null };
+  });
+  handler({ payload: { tier: "smol-360", phase: "loading", reason: null } });
+  assert.match(status.textContent, /Loading SmolLM2 360M/);
+  releaseReady();
+  await readyRefresh;
+  assert.equal(status.textContent, "Loaded — will title the next capture");
+  assert.equal(spinner.hidden, true);
 });
 
 test("imported GGUF option shows RAM from file size and keeps two CPU threads", () => {
