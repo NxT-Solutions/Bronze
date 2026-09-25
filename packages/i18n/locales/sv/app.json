@@ -174,6 +174,8 @@
   "settings.field.titleModel.engine.qwen05": "Qwen2.5 0.5B",
   "settings.field.titleModel.loading": "Läser in {engine}…",
   "settings.field.titleModel.hashing": "Kontrollerar {engine}…",
+  "settings.field.titleModel.notInBuild": "Den här modellen finns inte i det här bygget, så titlar förblir extraktiva.",
+  "settings.field.titleModel.progressPercent": "{percent}%",
   "settings.field.titleModel.ready": "Klar",
   "settings.field.titleModel.loaded": "Inläst — ger titel åt nästa text",
   "settings.field.titleModel.failed.bad_hash": "Filen matchade inte den förväntade hashen, så titlar förblir extraktiva.",

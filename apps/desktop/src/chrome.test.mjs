@@ -109,6 +109,12 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /cursor:\s*pointer/);
   assert.match(chrome, /\[aria-busy="true"\]/);
   assert.match(chrome, /\.title-engine-spinner/);
+  assert.match(chrome, /\.title-engine-progress/);
+  assert.match(chrome, /\.title-engine-progress\[hidden\]/);
+  assert.match(
+    chrome,
+    /html\[data-motion="reduce"\] \.title-engine-progress progress/,
+  );
   assert.match(chrome, /\.title-engine-import-row/);
   assert.match(
     chrome,

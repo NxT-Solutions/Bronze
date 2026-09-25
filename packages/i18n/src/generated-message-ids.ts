@@ -210,6 +210,10 @@ export const MessageIds = {
     "settings.field.titleModel.engine.qwen05",
   "settings.field.titleModel.loading": "settings.field.titleModel.loading",
   "settings.field.titleModel.hashing": "settings.field.titleModel.hashing",
+  "settings.field.titleModel.notInBuild":
+    "settings.field.titleModel.notInBuild",
+  "settings.field.titleModel.progressPercent":
+    "settings.field.titleModel.progressPercent",
   "settings.field.titleModel.ready": "settings.field.titleModel.ready",
   "settings.field.titleModel.loaded": "settings.field.titleModel.loaded",
   "settings.field.titleModel.failed.bad_hash":
