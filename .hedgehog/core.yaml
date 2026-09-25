@@ -7,7 +7,9 @@ pluralizes: false
 pattern: none
 layers:
   - id: rust
-    scope: ["bronze-*/**", "apps/desktop/src-tauri/**", "native/**", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml"]
+    # Library crates live under crates/. bronze-*/** stays so this layer
+    # still owns a root-level crate path if one exists.
+    scope: ["crates/**", "bronze-*/**", "apps/desktop/src-tauri/**", "native/**", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml"]
     verify: "cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace"
     verify_radius: ["**"]
     requires: ["cargo"]
