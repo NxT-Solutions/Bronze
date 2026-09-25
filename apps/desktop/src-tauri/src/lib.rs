@@ -749,8 +749,8 @@ pub use catalog::{
     SHIPPED_UI_LOCALES, WEBVIEW_GLOSSARY_KEYS,
 };
 pub use packaging::{
-    forbids_get_task_allow, recorded_arch, sbom_stub, supported_release_arches, DG01_INTEL_SUPPORT,
-    GET_TASK_ALLOW_FORBIDDEN, PACKAGE_ARCH, PACKAGE_SCRIPT, RELEASE_ARCHES,
+    forbids_get_task_allow, recorded_arch, sbom_stub, DG01_INTEL_SUPPORT, GET_TASK_ALLOW_FORBIDDEN,
+    PACKAGE_ARCH, PACKAGE_SCRIPT,
 };
 
 #[cfg(test)]

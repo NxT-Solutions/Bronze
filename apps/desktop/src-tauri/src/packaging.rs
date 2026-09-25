@@ -1,24 +1,17 @@
 //! Local debug packaging contract (story 9.1, SEC-005).
-//! ADR-002 Accepted: split arm64 and x86_64 packages (not a universal2 blob).
+//! ADR-002 / DG-01 stay Proposed: record arm64 unless DG-01 selects Intel.
 
-#[cfg(target_arch = "aarch64")]
 pub const PACKAGE_ARCH: &str = "arm64";
-#[cfg(target_arch = "x86_64")]
-pub const PACKAGE_ARCH: &str = "x86_64";
-#[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
-pub const PACKAGE_ARCH: &str = "unknown";
-
-pub const DG01_INTEL_SUPPORT: bool = true;
+pub const DG01_INTEL_SUPPORT: bool = false;
 pub const GET_TASK_ALLOW_FORBIDDEN: bool = true;
 pub const PACKAGE_SCRIPT: &str = "tooling/package-debug.sh";
-pub const RELEASE_ARCHES: &[&str] = &["arm64", "x86_64"];
 
 pub fn recorded_arch() -> &'static str {
-    PACKAGE_ARCH
-}
-
-pub fn supported_release_arches() -> &'static [&'static str] {
-    RELEASE_ARCHES
+    if DG01_INTEL_SUPPORT {
+        "universal2"
+    } else {
+        PACKAGE_ARCH
+    }
 }
 
 pub fn sbom_stub(lines: &[&str]) -> Vec<String> {
@@ -46,14 +39,9 @@ mod packaging_tests {
     use std::path::Path;
 
     #[test]
-    fn records_split_arches_and_forbids_get_task_allow() {
-        assert!(
-            recorded_arch() == "arm64"
-                || recorded_arch() == "x86_64"
-                || recorded_arch() == "unknown"
-        );
-        assert!(DG01_INTEL_SUPPORT);
-        assert_eq!(supported_release_arches(), ["arm64", "x86_64"]);
+    fn records_arm64_until_dg01_and_forbids_get_task_allow() {
+        assert_eq!(recorded_arch(), "arm64");
+        assert!(!DG01_INTEL_SUPPORT);
         assert!(GET_TASK_ALLOW_FORBIDDEN);
         assert_eq!(PACKAGE_SCRIPT, "tooling/package-debug.sh");
         let lock = include_str!("../../../../Cargo.lock");
@@ -92,8 +80,6 @@ mod packaging_tests {
         assert!(build.contains("app.bronze.desktop.notice"));
         assert!(build.contains("Bronze Notice"));
         assert!(build.contains("bronze-notice-signing.keychain"));
-        assert!(build.contains("--arch"));
-        assert!(build.contains("swift_target_triple") || build.contains("apple-macosx14.0"));
         assert!(!build.contains("externalBin"));
         assert!(conf.contains("\"resources\""));
         assert!(conf.contains("bronze-title-model/vendor/*.gguf"));

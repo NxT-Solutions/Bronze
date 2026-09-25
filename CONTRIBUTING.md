@@ -29,7 +29,7 @@ tooling/package-debug.sh
 - Preserve requirement IDs in notes and tests.
 - Add a changelog line under `## Unreleased` when behavior changes.
 - Do not claim WCAG, VoiceOver, or notarization without `docs/evidence/`.
-- ADR-002 is Accepted (split arm64 and Intel packages; the operator asked for the Intel build). ADR-009, ADR-018, and ADR-023 stay Proposed unless a human accepts them.
+- ADR-002, ADR-009, ADR-018, and ADR-023 stay Proposed unless a human accepts them.
 - Do not start QUEUE-ATTACHMENTS work unless a human names that story.
 
 New work on this repo goes through Hedgehog (`hedgehog status`, `hedgehog next`,
@@ -41,9 +41,8 @@ Contributions are MIT, same as [LICENSE](LICENSE).
 
 ## Release
 
-Land the version in `apps/desktop` plus a `CHANGELOG.md` section (`## v0.1.0 - YYYY-MM-DD`) on `main` first. Then cut a build from Actions → **Release** with that version. The workflow reuses tag `v*`, builds `aarch64-apple-darwin` on `macos-15` and `x86_64-apple-darwin` on `macos-15-intel`, and uploads `bronze-macos-arm64.pkg` and `bronze-macos-x86_64.pkg` (not a notarization claim). It does not push `main`.
+Land the version in `apps/desktop` plus a `CHANGELOG.md` section (`## v0.1.0 - YYYY-MM-DD`) on `main` first. Then cut a build from Actions → **Release** with that version. The workflow tags `v*`, builds an arm64 `.app`, and uploads `bronze-macos.pkg` (not a notarization claim). It does not push `main`.
 
 When `PACKAGES_REPO_TOKEN` is set, **Publish Homebrew** updates
-`Casks/bronze.rb` in `NxT-Solutions/homebrew-nxt-solutions-packages` with
-`on_arm` / `on_intel`. The tap is a cask, not `Formula/bronze.rb`. Do not
-protect the tap with required pull requests.
+`Casks/bronze.rb` in `NxT-Solutions/homebrew-nxt-solutions-packages`. The tap is a
+cask, not `Formula/bronze.rb`.

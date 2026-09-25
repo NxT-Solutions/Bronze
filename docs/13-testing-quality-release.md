@@ -101,7 +101,7 @@ Fixtures make failure deterministic. Real-app matrix then checks ecological vali
 Minimum matrix is decided after OS-support spike; candidate macOS 15+ and current stable/beta policy. Cover:
 
 - each supported macOS major/latest patch;
-- Apple Silicon and Intel as separate named packages (`bronze-macos-arm64.pkg`, `bronze-macos-x86_64.pkg`); not a silent universal2 blob (ADR-002 Accepted);
+- Apple Silicon; Intel and universal2 artifact only if ADR-002/DG-01 select Intel support;
 - clean TCC, granted, denied, revoked mid-session, stale identity/update;
 - TextEdit, Notes, Safari, Chrome, Firefox, VS Code/Cursor, Slack/Discord-like Electron, Terminal/iTerm, PDF Preview/browser, Office-like app where licensed;
 - normal, read-only, canvas/custom, secure fields;
@@ -203,7 +203,7 @@ Flaky test is defect. Quarantine requires issue, owner, reason, scope, expiry, a
 7. i18n catalogs complete for advertised locales (`en`, `en-XA`, `ar-XB`); shipped nl/fr/de/es/it catalogs are not a public QA claim; RTL/IME passes.
 8. Threat model, dependency audit, CSP/capabilities, network test pass.
 9. Performance and 24-hour soak pass.
-10. Split arm64 and x86_64 packages selected by ADR-002. Notarization is not claimed without `docs/evidence/`.
+10. Architecture selected by ADR-002 is signed/hardened/notarized/stapled; universal2 required only if DG-01 selects Intel support.
 11. Clean VM install, first-run permissions, update, rollback/recovery pass.
 12. Checksums, SBOM, provenance, license notices, privacy/help/support published.
 13. Release notes state supported OS/apps and known capture limitations honestly.
@@ -220,7 +220,7 @@ Flaky test is defect. Quarantine requires issue, owner, reason, scope, expiry, a
 
 Documented command: `tooling/package-debug.sh`.
 
-- Records the cargo target architecture (`arm64` or `x86_64`). Release artifacts are the two named packages in ADR-002.
+- Records architecture as `arm64` unless DG-01 / ADR-002 (still Proposed) select Intel/universal2.
 - Writes SHA-256 checksums and an SBOM stub (`cargo metadata` / `pnpm list`, not notarized CycloneDX).
 - Release entitlements must not include `get-task-allow`.
 - Does not notarize, use Apple Developer credentials, or open a network updater.
