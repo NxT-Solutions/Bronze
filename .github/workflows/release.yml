@@ -88,109 +88,7 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ steps.set_tag.outputs.version }}
-        run: |
-          set -euo pipefail
-          VERSION="${VERSION}" python3 - <<'PY'
-          import datetime
-          import os
-          import re
-          import subprocess
-          from pathlib import Path
-
-          version = os.environ["VERSION"]
-          today = datetime.date.today().isoformat()
-          changelog = Path("CHANGELOG.md")
-          if not changelog.exists():
-              changelog.write_text(
-                  "\n".join(
-                      [
-                          "# Changelog",
-                          "",
-                          "All notable changes to this project will be documented in this file.",
-                          "This file is auto-updated by the release workflow.",
-                          "",
-                          "## Unreleased",
-                          "",
-                          "- Work in progress.",
-                          "",
-                      ]
-                  ),
-                  encoding="utf-8",
-              )
-
-          text = changelog.read_text(encoding="utf-8")
-          if re.search(
-              rf"^## v{re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}$",
-              text,
-              re.M,
-          ):
-              print(f"CHANGELOG already has v{version}")
-              raise SystemExit(0)
-
-          lines = text.splitlines()
-          all_tags = (
-              subprocess.check_output(
-                  ["git", "tag", "--list", "v*", "--sort=-v:refname"], text=True
-              )
-              .strip()
-              .splitlines()
-          )
-          current_tag = f"v{version}"
-          previous_tag = next((tag for tag in all_tags if tag != current_tag), None)
-          range_spec = "HEAD" if previous_tag is None else f"{previous_tag}..HEAD"
-          commits = (
-              subprocess.check_output(
-                  ["git", "log", "--no-merges", "--pretty=format:%s", range_spec],
-                  text=True,
-              )
-              .strip()
-              .splitlines()
-          )
-          messages = []
-          for subject in commits:
-              subject = subject.strip()
-              if not subject:
-                  continue
-              if "bump version to v" in subject.lower():
-                  continue
-              messages.append(subject)
-          if not messages:
-              messages = ["Internal maintenance updates."]
-          notes = [f"- {subject}" for subject in messages]
-
-          version_header_pattern = re.compile(
-              rf"^## v{re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}$"
-          )
-          cleaned = []
-          index = 0
-          while index < len(lines):
-              if version_header_pattern.match(lines[index].strip()):
-                  index += 1
-                  while index < len(lines) and not lines[index].startswith("## "):
-                      index += 1
-                  continue
-              cleaned.append(lines[index])
-              index += 1
-          lines = cleaned
-
-          if not any(line.strip() == "## Unreleased" for line in lines):
-              if lines and lines[-1].strip():
-                  lines.append("")
-              lines.extend(["## Unreleased", "", "- Work in progress.", ""])
-
-          insert_at = len(lines)
-          for i, line in enumerate(lines):
-              if line.strip() == "## Unreleased":
-                  j = i + 1
-                  while j < len(lines) and not lines[j].startswith("## "):
-                      j += 1
-                  insert_at = j
-                  break
-
-          section = [f"## v{version} - {today}", "", *notes, ""]
-          lines = lines[:insert_at] + section + lines[insert_at:]
-          changelog.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-          PY
+        run: python3 tooling/release_notes.py changelog
 
       - name: Verify changelog entry
         shell: bash
@@ -436,11 +334,17 @@ jobs:
             done
           fi
 
+      - name: Write plain What's new
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: python3 tooling/release_notes.py body --out release-whats-new.md
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ needs.prepare.outputs.release_tag }}
           name: ${{ needs.prepare.outputs.release_tag }}
+          body_path: release-whats-new.md
           generate_release_notes: true
           files: staged/*
         env:

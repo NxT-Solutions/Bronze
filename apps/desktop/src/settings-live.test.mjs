@@ -14,6 +14,7 @@ import {
   bindSettingInfo,
   bindTitleEngineStatus,
   checkForAppUpdate,
+  displayUpdateNote,
   exportCategoryLabel,
   exportSensitiveLabel,
   filterInstalledApps,
@@ -1109,7 +1110,10 @@ test("app version loads locally and check is user-initiated", async () => {
   const brew = applyUpdateCheck(root, {
     available: true,
     latestVersion: "0.2.0",
-    notes: ["• Fix updater popup", ""],
+    notes: [
+      "Check for updates is easier to see. https://github.com/NxT-Solutions/Bronze/pull/44",
+      "",
+    ],
     action: "brew-upgrade",
     actionCommand: "brew upgrade --cask bronze",
     releaseUrl: "https://github.com/NxT-Solutions/Bronze/releases/tag/v0.2.0",
@@ -1119,6 +1123,18 @@ test("app version loads locally and check is user-initiated", async () => {
   assert.equal(actionBtn.hidden, false);
   assert.equal(actionBtn.dataset.updateAction, "brew-upgrade");
   assert.equal(actionBtn.dataset.actionCommand, "brew upgrade --cask bronze");
+  assert.equal(available.textContent, "Version 0.2.0 is available.");
+  assert.equal(notes.children[0].tag, "ul");
+  assert.equal(
+    notes.children[0].children[0].textContent,
+    "Check for updates is easier to see.",
+  );
+  assert.ok(
+    notes.children[0].children.every(
+      (item) =>
+        !item.textContent.includes("http") && item.textContent.includes(" "),
+    ),
+  );
   const debug = applyUpdateCheck(root, {
     available: true,
     latestVersion: "9.0.0",
@@ -1130,4 +1146,22 @@ test("app version loads locally and check is user-initiated", async () => {
   assert.equal(debugLine.hidden, false);
   renderUpdateNotes(notes, []);
   assert.equal(notes.children[0].tag, "p");
+  assert.equal(
+    displayUpdateNote("Check for updates is easier to see.", (key) =>
+      key === "settings.field.version.note.checkForUpdates"
+        ? "Nach Updates suchen ist leichter zu sehen."
+        : "",
+    ),
+    "Nach Updates suchen ist leichter zu sehen.",
+  );
+  assert.equal(
+    displayUpdateNote(
+      "fix(storage): retune sqlite wal checkpoint pragma by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/99",
+    ),
+    "",
+  );
+  assert.equal(
+    displayUpdateNote("Version 0.1.2 is available."),
+    "Version 0.1.2 is available.",
+  );
 });

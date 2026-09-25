@@ -229,6 +229,23 @@ test("settings window is searchable grouped with daily weekly backup and export 
     en["settings.field.version.available"],
     "Version {version} is available.",
   );
+  assert.equal(
+    en["settings.field.version.note.checkForUpdates"],
+    "Check for updates is easier to see.",
+  );
+  assert.equal(en["settings.field.version.note.dockIcon"], undefined);
+  assert.equal(
+    en["settings.field.version.note.engineSwitch"],
+    "Switching the on-this-Mac title engine finishes instead of staying on Loading.",
+  );
+  assert.equal(
+    en["settings.field.version.note.permissions"],
+    "Bronze asks once for the macOS permissions it uses.",
+  );
+  assert.match(html, /aria-labelledby="update-sheet-title"/);
+  assert.match(html, /<button[\s\S]*settings\.field\.version\.close/);
+  assert.match(html, /data-update-action/);
+  assert.match(html, /<div class="update-notes" data-update-notes>/);
   assert.equal(en["settings.field.version.brew"], "Copy Homebrew command");
   assert.match(
     html,
