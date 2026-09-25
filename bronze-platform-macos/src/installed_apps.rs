@@ -325,6 +325,8 @@ mod installed_apps_tests {
             "/../native/macos/BronzeNative/Sources/BronzeNative/BronzeNative.swift"
         ));
         assert!(hop.contains("bronzeOnAppKitModal"));
+        assert!(hop.contains("@MainActor @Sendable"));
+        assert!(hop.contains("MainActor.assumeIsolated"));
         assert!(hop.contains("lock.wait()"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),

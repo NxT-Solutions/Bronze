@@ -702,6 +702,7 @@ mod tests {
         ));
         assert!(frontmost.contains("NSWorkspace"));
         assert!(frontmost.contains("bronze_native_frontmost_pid"));
+        assert!(frontmost.contains("MainActor.assumeIsolated"));
         assert!(tap_abi.contains("bronze_native_event_tap_set_tap_count"));
         assert!(engine.contains("setGestureTapCount"));
         for needle in [

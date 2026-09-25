@@ -10,7 +10,9 @@ public func bronze_native_frontmost_pid() -> Int32 {
     let box = MainPidBox()
     let lock = DispatchSemaphore(value: 0)
     DispatchQueue.main.async {
-        box.value = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? 0
+        box.value = MainActor.assumeIsolated {
+            NSWorkspace.shared.frontmostApplication?.processIdentifier ?? 0
+        }
         lock.signal()
     }
     _ = lock.wait(timeout: .now() + 2)
