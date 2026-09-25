@@ -26,6 +26,7 @@ pub fn run() {
                 live_session::list_queue_items,
                 live_session::list_overview_items,
                 live_session::queue_query,
+                live_session::queue_page_for_item,
                 live_session::add_composer_item,
                 live_session::apply_queue_item_action,
                 live_session::edit_queue_item,

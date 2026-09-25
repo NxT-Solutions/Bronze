@@ -111,9 +111,10 @@ export function hideChromeNotice(root) {
   }
   host.hidden = true;
   delete host.dataset.tone;
+  delete host.dataset.noticeItem;
 }
 
-export function showChromeNotice(root, text, tone = "ok") {
+export function showChromeNotice(root, text, tone = "ok", itemId = "") {
   const host = root?.querySelector?.("#chrome-notice");
   const label = host?.querySelector?.("#chrome-notice-text");
   if (!host || !label) {
@@ -125,6 +126,11 @@ export function showChromeNotice(root, text, tone = "ok") {
     delete host.dataset.noticeTimer;
   }
   label.textContent = text;
+  if (itemId) {
+    host.dataset.noticeItem = itemId;
+  } else {
+    delete host.dataset.noticeItem;
+  }
   host.hidden = text.length === 0;
   if (tone === "failed") {
     host.dataset.tone = "failed";
@@ -153,6 +159,15 @@ export function bindChromeNotice(root) {
   root.addEventListener("click", (event) => {
     if (event.target?.closest?.("[data-notice-dismiss]")) {
       hideChromeNotice(root);
+      return;
+    }
+    const opener = event.target?.closest?.("#chrome-notice-text");
+    const host = root.querySelector?.("#chrome-notice");
+    const id = host?.dataset?.noticeItem;
+    if (opener && id) {
+      root.dispatchEvent(
+        new CustomEvent("bronze-notice-open", { detail: { id } }),
+      );
     }
   });
   root.addEventListener("keydown", (event) => {

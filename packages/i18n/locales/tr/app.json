@@ -47,6 +47,7 @@
   "queue.item.showMore": "Daha fazla göster",
   "queue.item.showLess": "Daha az göster",
   "queue.item.title": "Öğe",
+  "queue.item.lastCopied": "Son kopyalanan",
   "panel.section.active": "Gelen kutusu",
   "library.heading.items": "Öğeler",
   "library.title": "Kitaplık",

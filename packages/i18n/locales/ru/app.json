@@ -47,6 +47,7 @@
   "queue.item.showMore": "Показать ещё",
   "queue.item.showLess": "Свернуть",
   "queue.item.title": "Элемент",
+  "queue.item.lastCopied": "Последняя копия",
   "panel.section.active": "Входящие",
   "library.heading.items": "Элементы",
   "library.title": "Библиотека",

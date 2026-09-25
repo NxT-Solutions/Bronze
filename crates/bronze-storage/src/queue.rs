@@ -243,6 +243,34 @@ impl Store {
         }
     }
 
+    pub fn page_through_item(
+        &self,
+        id: &str,
+        filter: QueueListFilter,
+        limit: usize,
+        sort: QueueSort,
+    ) -> Result<QueuePage, QueueError> {
+        let mut cursor = None;
+        let mut items = Vec::new();
+        for _ in 0..10_000 {
+            let page = self.query_queue_page_sorted(cursor.as_deref(), filter, limit, sort)?;
+            let found = page.items.iter().any(|row| row.id == id);
+            let next = page.next_cursor.clone();
+            items.extend(page.items);
+            if found {
+                return Ok(QueuePage {
+                    items,
+                    next_cursor: next,
+                });
+            }
+            match next {
+                Some(token) => cursor = Some(token),
+                None => return Err(QueueError::NotFound),
+            }
+        }
+        Err(QueueError::Store)
+    }
+
     fn query_overview_page(
         &self,
         cursor: Option<&str>,
@@ -869,5 +897,14 @@ mod queue_tests {
                 .collect::<Vec<_>>(),
             vec!["d", "a"]
         );
+        let located = store
+            .page_through_item("a", QueueListFilter::Overview, 2, QueueSort::Newest)
+            .expect("locate");
+        assert!(located.items.iter().any(|row| row.id == "a"));
+        assert!(located.items.len() > 2);
+        assert_eq!(located.items[0].id, "c");
+        assert!(store
+            .page_through_item("missing", QueueListFilter::Overview, 2, QueueSort::Newest)
+            .is_err());
     }
 }

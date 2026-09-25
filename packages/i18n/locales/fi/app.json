@@ -47,6 +47,7 @@
   "queue.item.showMore": "Näytä lisää",
   "queue.item.showLess": "Näytä vähemmän",
   "queue.item.title": "Kohde",
+  "queue.item.lastCopied": "Viimeksi kopioitu",
   "panel.section.active": "Saapuneet",
   "library.heading.items": "Kohteet",
   "library.title": "Kirjasto",

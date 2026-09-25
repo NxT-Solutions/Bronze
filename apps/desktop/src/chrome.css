@@ -1095,6 +1095,24 @@ article [data-slot="show-less"][hidden],
   flex: 1 1 auto;
 }
 
+button.chrome-notice-text {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  padding: 0;
+}
+
+button.chrome-notice-text:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.queue-item.is-last-copied > article {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
 .chrome-notice[data-tone="failed"] {
   color: var(--destructive);
   border-color: color-mix(in srgb, var(--destructive) 35%, var(--stroke));

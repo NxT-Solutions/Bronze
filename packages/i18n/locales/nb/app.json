@@ -47,6 +47,7 @@
   "queue.item.showMore": "Vis mer",
   "queue.item.showLess": "Vis mindre",
   "queue.item.title": "Element",
+  "queue.item.lastCopied": "Sist kopiert",
   "panel.section.active": "Innboks",
   "library.heading.items": "Elementer",
   "library.title": "Bibliotek",

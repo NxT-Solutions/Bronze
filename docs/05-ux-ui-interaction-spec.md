@@ -162,6 +162,7 @@ Panel must remain usable under 200% text resize and 400% WebView zoom/reflow at 
 - Queue card Move up / down: FLIP `translateY` on the moved card and neighbors for one `--duration` shot, then settle. Copy, Edit, and hover stay unanimated.
 - New captures and composer inserts may use the existing `bronze-enter` opacity fade. Locale and edit refreshes replace without motion.
 - `html[data-motion="reduce"]` and `data-reduce-motion` skip slide/collapse. The list updates immediately (opacity-only at most). Reorder movement disables under Reduce Motion. Persist still runs if animation fails. `html[data-motion="full"]` plays motion even if `@media (prefers-reduced-motion: reduce)` matches. That media query is first-paint fallback only and must not win over `data-motion=full`.
+- A new copy scrolls into view only when `copy.queueSort` is newest and the queue scrollport is already at the top (A11Y-003). The Copied notice is a button that loads the keyset pages through that item and moves to the card. Reduced motion skips that travel. The last copied card keeps a static ring (`box-shadow` with `--ring`) plus the catalog name `queue.item.lastCopied`, so the mark is not color alone.
 - Title engine spinner uses `bronze-spin`; Reduce Motion sets `animation: none`. Status text still updates.
 - No parallax, flashing, or auto-moving content.
 - Reduce Transparency uses opaque surface and border.

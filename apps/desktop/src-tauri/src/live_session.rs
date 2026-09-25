@@ -767,6 +767,21 @@ impl LiveSession {
         })
     }
 
+    pub fn page_for_item(&self, id: &str, sort: Option<&str>) -> Result<QueuePageDto, String> {
+        let sort = match sort {
+            Some(raw) => QueueSort::parse(raw).map_err(|_| "queue_sort_invalid".to_string())?,
+            None => self.settings.copy.queue_sort,
+        };
+        let page = self
+            .store
+            .page_through_item(id, QueueListFilter::Overview, QUEUE_PAGE_SIZE, sort)
+            .map_err(queue_page_error)?;
+        Ok(QueuePageDto {
+            items: page.items.into_iter().map(QueueItemDto::from).collect(),
+            next_cursor: page.next_cursor,
+        })
+    }
+
     pub fn item_body(&self, id: &str) -> Option<String> {
         self.store.get_item(id).ok().map(|row| row.body)
     }
@@ -1950,6 +1965,16 @@ pub fn queue_query(
         limit,
         sort.as_deref(),
     )
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn queue_page_for_item(
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+    id: String,
+    sort: Option<String>,
+) -> Result<QueuePageDto, String> {
+    lock_session(&session)?.page_for_item(&id, sort.as_deref())
 }
 
 #[cfg(target_os = "macos")]

@@ -47,6 +47,7 @@
   "queue.item.showMore": "Mehr anzeigen",
   "queue.item.showLess": "Weniger anzeigen",
   "queue.item.title": "Element",
+  "queue.item.lastCopied": "Zuletzt kopiert",
   "panel.section.active": "Eingang",
   "library.heading.items": "Elemente",
   "library.title": "Mediathek",

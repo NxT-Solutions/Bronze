@@ -47,6 +47,7 @@
   "queue.item.showMore": "Show more",
   "queue.item.showLess": "Show less",
   "queue.item.title": "Item",
+  "queue.item.lastCopied": "Last copied",
   "panel.section.active": "Inbox",
   "library.heading.items": "Items",
   "library.title": "Library",

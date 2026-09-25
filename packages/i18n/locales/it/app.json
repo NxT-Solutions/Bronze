@@ -47,6 +47,7 @@
   "queue.item.showMore": "Mostra di più",
   "queue.item.showLess": "Mostra di meno",
   "queue.item.title": "Elemento",
+  "queue.item.lastCopied": "Ultimo copiato",
   "panel.section.active": "In arrivo",
   "library.heading.items": "Elementi",
   "library.title": "Libreria",

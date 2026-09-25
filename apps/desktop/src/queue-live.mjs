@@ -17,6 +17,16 @@ import {
   createQueueRenderer,
 } from "./queue-motion.mjs";
 import {
+  findQueueCard,
+  focusQueueCard,
+  isNearLoadedStart,
+  markLastCopied,
+  motionForReveal,
+  planNewItemFollow,
+  scrollQueueCard,
+  shouldLoadNextOnKey,
+} from "./queue-reveal.mjs";
+import {
   listenQueueSortChanged,
   parseQueueSort,
   queueListArgs,
@@ -647,10 +657,12 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   syncSubmitLabel();
 
   const moreStatus = root.querySelector("#queue-more-status");
+  const scroller = list.closest?.("#quick-panel") ?? null;
   let state = { items: [], nextCursor: null, anchorCursor: null };
   let loadingMore = false;
   let refreshGen = 0;
   let activeSort = "newest";
+  let lastCopiedId = "";
 
   function focusedQueueControl() {
     const active = list.ownerDocument?.activeElement;
@@ -704,6 +716,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       queueRenderer.paintQueueItems(list, state.items, template);
     }
     restoreQueueFocus(saved);
+    markLastCopied(list, lastCopiedId);
     if (empty) {
       empty.hidden = state.items.length > 0;
     }
@@ -741,6 +754,8 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   async function refresh(opts = {}) {
     const gen = ++refreshGen;
+    const nearStart = isNearLoadedStart(scroller);
+    const prevIds = state.items.map((item) => item.id);
     let sort = "newest";
     try {
       const settings = await invokeFn("load_settings_v1");
@@ -772,6 +787,45 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       return;
     }
     await paint(opts);
+    if (!opts.followNew) {
+      return;
+    }
+    const plan = planNewItemFollow({
+      sort: activeSort,
+      nearStart,
+      prevIds,
+      nextIds: state.items.map((item) => item.id),
+    });
+    if (plan.scrollId) {
+      scrollQueueCard(findQueueCard(list, plan.scrollId), {
+        motion: motionForReveal(root),
+      });
+    }
+  }
+
+  async function revealCopied(id) {
+    if (!id) {
+      return;
+    }
+    lastCopiedId = id;
+    let card = findQueueCard(list, id);
+    if (!card) {
+      const page = await invokeFn("queue_page_for_item", {
+        id,
+        sort: activeSort,
+      });
+      state = {
+        items: page?.items ?? [],
+        nextCursor: page?.nextCursor ?? null,
+        anchorCursor: null,
+      };
+      await paint({ action: "replace" });
+      card = findQueueCard(list, id);
+    } else {
+      markLastCopied(list, id);
+    }
+    scrollQueueCard(card, { motion: motionForReveal(root) });
+    focusQueueCard(card);
   }
 
   async function loadMore() {
@@ -810,7 +864,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
         error.hidden = true;
       }
       hideChromeNotice(root);
-      await refresh({ action: "insert" });
+      await refresh({ action: "insert", followNew: true });
     } catch {
       if (error) {
         error.hidden = true;
@@ -933,6 +987,18 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
             profile: profile?.value ?? "plain",
           });
           applyActionStatus(root, "copy.announce.copied", button);
+          lastCopiedId = id;
+          markLastCopied(list, id);
+          showChromeNotice(
+            root,
+            root
+              .querySelector?.(
+                '[data-action-message][data-i18n="copy.announce.copied"]',
+              )
+              ?.textContent?.trim() ?? "",
+            "ok",
+            id,
+          );
         } catch {
           applyActionStatus(root, "copy.announce.failed", button);
         }
@@ -957,6 +1023,24 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       loadMore();
     }
   });
+  list.addEventListener("keydown", (event) => {
+    if (
+      shouldLoadNextOnKey({
+        key: event.key,
+        onLastCard: queueFocusAtEnd(queueItemRows(list), event.target),
+        hasCursor: Boolean(state.nextCursor),
+      })
+    ) {
+      event.preventDefault();
+      loadMore();
+    }
+  });
+  root.addEventListener?.("bronze-notice-open", (event) => {
+    const id = event.detail?.id;
+    if (id) {
+      revealCopied(id);
+    }
+  });
   const sentinel = root.querySelector("[data-queue-sentinel]");
   if (sentinel && typeof IntersectionObserver === "function") {
     const scroller = list.closest?.("#quick-panel") ?? null;
@@ -979,7 +1063,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   listenCaptureResult((event) => {
     applyCaptureResult(root, event?.payload ?? event);
     if (event?.payload?.terminal === "saved" || event?.terminal === "saved") {
-      refresh({ action: "insert" });
+      refresh({ action: "insert", followNew: true });
     }
   });
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
