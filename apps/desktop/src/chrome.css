@@ -458,21 +458,25 @@ button.btn-primary:active:not(:disabled) {
 }
 
 .btn-ghost,
-button.btn-ghost[type="submit"],
-button.btn-ghost[type="submit"]:hover:not(:disabled),
-button.btn-ghost[type="submit"]:focus-visible,
-button.btn-ghost[type="submit"]:active:not(:disabled) {
-  background: transparent;
-  border-color: transparent;
+button.btn-ghost[type="submit"] {
+  background: var(--card);
+  border-color: var(--stroke);
   color: var(--foreground);
   box-shadow: none;
 }
 
-.btn-toolbar {
-  min-height: 1.75rem;
-  padding-inline: 0.55rem;
-  font-size: var(--text-micro);
-  font-weight: 600;
+button.btn-ghost[type="submit"]:hover:not(:disabled),
+button.btn-ghost[type="submit"]:focus-visible {
+  background: color-mix(in srgb, var(--muted) 70%, var(--card));
+  border-color: var(--stroke);
+  color: var(--foreground);
+  box-shadow: none;
+}
+
+button.btn-ghost[type="submit"]:active:not(:disabled) {
+  background: var(--muted);
+  border-color: var(--stroke);
+  color: var(--foreground);
 }
 
 input,
@@ -530,11 +534,11 @@ textarea:hover {
 
 .chrome-search input {
   width: 100%;
-  min-height: 1.75rem;
+  min-height: var(--control-h);
   padding-block: 0.2rem;
-  padding-inline: 1.65rem 1.7rem;
+  padding-inline: 1.65rem 2.1rem;
   border-color: transparent;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--foreground) 5.5%, var(--muted));
   font-size: var(--text-caption);
   text-overflow: ellipsis;
@@ -569,10 +573,10 @@ textarea:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  min-width: 1.25rem;
-  min-height: 1.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
   padding: 0;
   border: none;
   border-radius: var(--radius-sm);
@@ -1236,10 +1240,10 @@ menu {
 }
 
 .toolbar-secondary button {
-  background: transparent;
-  border-color: transparent;
+  background: var(--card);
+  border-color: var(--stroke);
   color: var(--foreground);
-  font-weight: 400;
+  font-weight: 510;
 }
 
 .library-dock,
@@ -1263,12 +1267,6 @@ menu {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-1);
-}
-
-.library-dock-tools .btn-ghost {
-  min-height: 1.75rem;
-  padding-inline: 0.55rem;
-  font-weight: 400;
 }
 
 .help-dock-tools .btn-primary {
@@ -1622,7 +1620,7 @@ menu {
   min-height: 1.75rem;
   max-width: 100%;
   padding: 0.15rem 0.3rem 0.15rem 0.45rem;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--foreground) 5.5%, var(--muted));
   font-size: var(--text-caption);
 }
@@ -1875,14 +1873,11 @@ article [data-slot="source-label"],
 }
 
 .shortcut-row-meta .btn-ghost {
-  min-height: 1.75rem;
-  padding-inline: 0.55rem;
   white-space: nowrap;
 }
 
 .shortcut-assign {
-  min-width: 1.75rem;
-  padding-inline: 0.45rem;
+  min-width: var(--control-h);
 }
 
 .shortcut-list li[data-recording="true"] {

@@ -82,7 +82,7 @@ Results:
 | 2.4.7 Focus Visible | Supports | 2px `:focus-visible` ring. |
 | 2.4.11 Focus Not Obscured (Minimum) | Supports | Hover or focus on a card icon raises that card. |
 | 2.5.7 Dragging Movements | Supports | Move up / Move down. No drag requirement. |
-| 2.5.8 Target Size (Minimum) | Supports | Push buttons `min 2rem` (32px). Queue icon-row and chip `.btn-icon` use `1.5rem` (24px). Pills are not targets. |
+| 2.5.8 Target Size (Minimum) | Supports | Push buttons `min 2rem` (32px). Queue icon-row, chip `.btn-icon`, and search clear use `1.5rem` (24px). Pills are not targets. |
 | 3.1.2 Language of Parts | Supports | Chrome follows UI locale. Language switcher options use endonyms and option `lang`. Bodies are `lang="und" dir="auto"`. |
 | 3.2.3 Consistent Navigation | Supports | Shared brand header; Library segments stay put. |
 | 3.2.4 Consistent Identification | Supports | Same actions keep the same names. |

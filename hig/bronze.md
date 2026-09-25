@@ -62,8 +62,9 @@ rectangles.
 ## Controls
 
 - Filled: Add, Copy, Export support bundle — one per view.
-- Ghost: Reset, Skip test, Show more, Library archive/import, Help
-  opener.
+- Outlined: every other push button, including Reset, Show more,
+  Library archive/import, Help, and Import. `.btn-ghost` uses the
+  same stroke, padding, and radius as an unclassed `button`.
 - Queue card extras: compact `.btn-icon` row under Copy, not a second
   filled toolbar. Hover uses the muted mix; Trash uses `--destructive`.
 - Copy feedback: tip on the control. `#action-status` is a visually

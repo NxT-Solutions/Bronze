@@ -375,6 +375,19 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(pages[0].html, /id="edit-sheet"/);
   assert.match(chrome, /\.sheet-card[\s\S]*background:\s*var\(--card\)/);
   assert.match(chrome, /button\.btn-ghost\[type="submit"\]/);
+  const ghostRule = chrome.match(/\.btn-ghost,[\s\S]*?\n\}/);
+  assert.ok(ghostRule);
+  assert.match(ghostRule[0], /border-color:\s*var\(--stroke\)/);
+  assert.doesNotMatch(ghostRule[0], /border-color:\s*transparent/);
+  assert.match(
+    chrome,
+    /\.chrome-search input \{[\s\S]*?border-radius:\s*var\(--radius-control\)/,
+  );
+  assert.match(chrome, /\.chrome-search-clear \{[\s\S]*?min-height:\s*1\.5rem/);
+  assert.match(
+    chrome,
+    /\.app-chip \{[\s\S]*?border-radius:\s*var\(--radius-control\)/,
+  );
   assert.doesNotMatch(chrome, /backdrop-filter|filter:\s*blur/);
   assert.match(chrome, /fieldset \{[\s\S]*?border:\s*none/);
   assert.match(

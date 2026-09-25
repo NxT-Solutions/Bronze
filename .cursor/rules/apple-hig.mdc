@@ -9,7 +9,7 @@ alwaysApply: false
 Before changing chrome or UX, read `hig/SKILL.md` and the surface in
 `hig/screens.md`.
 
-- One filled primary per view; secondary is ghost
+- One filled primary per view; other actions use the outlined button
 - System SF, no extra body tracking, no remote fonts
 - Live zinc tokens only; no DESIGN.md brown in chrome
 - Hairline grouping; shadows only on floating menus/tips
