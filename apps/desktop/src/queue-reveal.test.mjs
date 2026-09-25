@@ -11,6 +11,7 @@ import {
   planNewItemFollow,
   revealQueueItem,
   scrollDelta,
+  shouldLoadNextOnKey,
   travelScroll,
 } from "./queue-reveal.mjs";
 
@@ -19,6 +20,54 @@ const chrome = readFileSync(join(root, "chrome.css"), "utf8");
 const live = readFileSync(join(root, "queue-live.mjs"), "utf8");
 const reveal = readFileSync(join(root, "queue-reveal.mjs"), "utf8");
 const html = readFileSync(join(root, "index.html"), "utf8");
+
+test("keyboard at the loaded end requests the next cursor page", () => {
+  assert.equal(
+    shouldLoadNextOnKey({
+      key: "ArrowDown",
+      onLastCard: true,
+      hasCursor: true,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldLoadNextOnKey({ key: "End", onLastCard: true, hasCursor: true }),
+    true,
+  );
+  assert.equal(
+    shouldLoadNextOnKey({
+      key: "PageDown",
+      onLastCard: true,
+      hasCursor: true,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldLoadNextOnKey({
+      key: "ArrowDown",
+      onLastCard: true,
+      hasCursor: false,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldLoadNextOnKey({
+      key: "ArrowDown",
+      onLastCard: false,
+      hasCursor: true,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldLoadNextOnKey({
+      key: "ArrowUp",
+      onLastCard: true,
+      hasCursor: true,
+    }),
+    false,
+  );
+  assert.match(live, /shouldLoadNextOnKey/);
+});
 
 test("auto-scroll only when newest-first and already at the top", () => {
   const prev = ["a", "b"];
