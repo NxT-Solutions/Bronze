@@ -7,6 +7,11 @@ This file is auto-updated by the release workflow.
 
 - Work in progress.
 
+## v0.1.1 - 2026-09-25
+
+- The package installs Bronze.app to /Applications and is not relocatable.
+- The UI catalog is inside the app.
+
 ## v0.1.0 - 2026-09-25
 
 - First public macOS packages (`bronze-macos-arm64.pkg` and `bronze-macos-x86_64.pkg`; ADR-002 Accepted). These packages are not a notarization claim.
