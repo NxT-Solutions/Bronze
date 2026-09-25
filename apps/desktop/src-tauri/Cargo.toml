@@ -25,7 +25,7 @@ bronze-platform-macos = { path = "../../../bronze-platform-macos", default-featu
 bronze-domain = { path = "../../../bronze-domain" }
 bronze-title-model = { path = "../../../bronze-title-model" }
 bronze-title-remote = { path = "../../../bronze-title-remote" }
-rfd = "0.15"
+rfd = "0.17"
 ureq = { version = "2.12", default-features = false, features = ["json", "tls"] }
 bronze-storage = { path = "../../../bronze-storage" }
 bronze-settings = { path = "../../../bronze-settings" }
