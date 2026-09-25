@@ -116,6 +116,16 @@ pnpm verify
 
 A local debug package (unsigned) is `tooling/package-debug.sh`. Pull requests run the [CI](.github/workflows/ci.yml) quality jobs. CI does not notarize.
 
+### Visual regression
+
+`pnpm visual` compares the Queue, Settings, Library, and Help WebView screens to baselines in `apps/desktop/visual/`. `pnpm visual:update` rewrites the baselines CI checks. Refresh one scenario with `pnpm visual:update -- -g "queue populated"`.
+
+Both commands run the pinned Playwright Linux image (`apps/desktop/visual/pin.mjs`) through Docker, for this machine's CPU. Snapshot files end in `-arm64` or `-x64`. Ubuntu CI compares the `-x64` baselines. Docker is required. On Apple Silicon, `VISUAL_PLATFORM=linux/amd64 pnpm visual:update` writes the `-x64` baselines when that emulator can start Chromium. When it cannot, copy the actual images from the `visual-diffs` artifact onto those `-x64` files in the same pull request.
+
+When a pull request adds or changes a screen, control, or layout, update the visual scenario and its baselines in that pull request. A new feature that does not update its scenario is incomplete.
+
+A failing run uploads the diff images as the `visual-diffs` artifact.
+
 8. Build the GitNexus index from the repo root. GitNexus is contributor tooling outside the Bronze app. The index stays on this machine. This repo pins pnpm, and Node 24's npm can crash `npx` while installing GitNexus, so the rebuild command is:
 
 ```bash
@@ -187,6 +197,7 @@ Permissions: Accessibility and Input Monitoring. Bronze never asks for Screen Re
 | Check | Where |
 | --- | --- |
 | Biome, typecheck, JS tests, i18n validate | `quality-js` |
+| WebView screenshot baselines | `quality-visual` |
 | Planning-pack gates | `quality-docs` |
 | `cargo fmt`, Clippy, portable crate tests | `quality-rust` |
 | macOS Clippy and tests except `bronze-desktop` | `quality-macos` |

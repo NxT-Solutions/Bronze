@@ -39,9 +39,9 @@ format-check
                notarize/verify/release gate
 ```
 
-Turbo cache: pure JS generation/test tasks only. Native signing, notarization, permission, E2E, timing, network, and release tasks `cache: false`. CI actions pinned to commit SHA; default permissions read-only.
+Turbo cache: pure JS generation/test tasks only. Native signing, notarization, permission, E2E, timing, network, and release tasks `cache: false`. CI actions are pinned to commit SHA. Workflow permissions are contents read, plus actions write so a visual failure can upload diff images.
 
-Pull-request CI is `.github/workflows/ci.yml`. It runs `quality-js` (Biome, typecheck, JS tests, i18n validate), `quality-docs` (`planning-checks.py`), `quality-rust` (fmt, Clippy, portable crate tests on Ubuntu), `quality-macos` (Clippy and tests except the Swift-linked `bronze-desktop` crate), and `quality-app` (`cargo test -p bronze-desktop` on macos-15). The `CI` job fails if any of those fail. That workflow does not notarize, does not claim WCAG, and does not replace `pnpm verify` on a Mac.
+Pull-request CI is `.github/workflows/ci.yml`. It runs `quality-js` (Biome, typecheck, JS tests, i18n validate), `quality-docs` (`planning-checks.py`), `quality-rust` (fmt, Clippy, portable crate tests on Ubuntu), `quality-macos` (Clippy and tests except the Swift-linked `bronze-desktop` crate), and `quality-app` (`cargo test -p bronze-desktop` on macos-15). `.github/workflows/visual.yml` compares committed WebView screenshots for Queue, Settings, Library, and Help. `quality-js` waits on that job, so a mismatch fails the required `CI` check. Diff images upload as the `visual-diffs` artifact. The `CI` job fails if any of those fail. That workflow does not notarize, does not claim WCAG, and does not replace `pnpm verify` on a Mac.
 
 ## 4. Unit tests
 

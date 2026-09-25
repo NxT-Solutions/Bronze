@@ -344,6 +344,7 @@ fn load_model(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackRe
         if !gguf_magic_ok(&path) {
             return Err(FallbackReason::Unreadable);
         }
+        crate::weights::read_file_with_progress(&path).map_err(classify_weights_error)?;
         crate::emit_diag("weights resolved source=custom");
         path
     } else {

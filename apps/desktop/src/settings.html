@@ -696,6 +696,23 @@
               aria-live="polite"
               data-title-model-status
             ></p>
+            <div
+              class="title-engine-progress"
+              data-title-model-progress
+              hidden
+            >
+              <progress
+                id="title-model-progress"
+                max="100"
+                aria-labelledby="title-model-status"
+              ></progress>
+              <span
+                id="title-model-progress-value"
+                class="title-engine-progress-value"
+                data-title-model-progress-value
+                hidden
+              ></span>
+            </div>
           </div>
         </fieldset>
         <fieldset

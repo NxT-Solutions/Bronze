@@ -312,6 +312,11 @@ test("settings window is searchable grouped with daily weekly backup and export 
     en["settings.field.titleModel.missing"],
     "Vendored file missing — titles stay extractive until you run {command}.",
   );
+  assert.equal(
+    en["settings.field.titleModel.notInBuild"],
+    "This model is not in this build, so titles stay extractive.",
+  );
+  assert.equal(en["settings.field.titleModel.progressPercent"], "{percent}%");
   assert.equal(en["settings.field.titleModel.loading"], "Loading {engine}…");
   assert.equal(en["settings.field.titleModel.hashing"], "Checking {engine}…");
   assert.equal(
@@ -319,6 +324,8 @@ test("settings window is searchable grouped with daily weekly backup and export 
     "Loaded — will title the next capture",
   );
   assert.match(html, /data-title-model-spinner/);
+  assert.match(html, /id="title-model-progress"/);
+  assert.match(html, /aria-labelledby="title-model-status"/);
   assert.match(html, /aria-live="polite"/);
   assert.equal(
     en["settings.field.titleModel.custom"],

@@ -30,6 +30,8 @@ pub struct TitleEngineStatus {
     pub tier: TitleTier,
     pub phase: EnginePhase,
     pub reason: Option<FallbackReason>,
+    pub bytes_read: Option<u64>,
+    pub bytes_total: Option<u64>,
 }
 
 impl TitleEngineStatus {
@@ -38,8 +40,29 @@ impl TitleEngineStatus {
             tier: TitleTier::Extractive,
             phase: EnginePhase::Idle,
             reason: None,
+            bytes_read: None,
+            bytes_total: None,
         }
     }
+
+    const fn at(tier: TitleTier, phase: EnginePhase, reason: Option<FallbackReason>) -> Self {
+        Self {
+            tier,
+            phase,
+            reason,
+            bytes_read: None,
+            bytes_total: None,
+        }
+    }
+}
+
+pub fn note_read_progress(bytes_read: u64, bytes_total: u64) {
+    if bytes_total == 0 {
+        return;
+    }
+    observe_diag(&format!(
+        "read progress bytes={bytes_read} total={bytes_total}"
+    ));
 }
 
 type Listener = Box<dyn Fn(TitleEngineStatus) + Send + Sync>;
@@ -73,64 +96,71 @@ fn notify(next: TitleEngineStatus) {
     }
 }
 
+fn parse_read_progress(message: &str) -> Option<(u64, u64)> {
+    let rest = message.strip_prefix("read progress bytes=")?;
+    let (read, total) = rest.split_once(" total=")?;
+    let read = read.parse().ok()?;
+    let total = total.parse().ok()?;
+    if total == 0 {
+        return None;
+    }
+    Some((read, total))
+}
+
 pub fn apply_diag(current: TitleEngineStatus, message: &str) -> TitleEngineStatus {
     let message = message.trim();
+    if let Some((bytes_read, bytes_total)) = parse_read_progress(message) {
+        if !matches!(current.phase, EnginePhase::Loading | EnginePhase::Hashing) {
+            return current;
+        }
+        return TitleEngineStatus {
+            tier: current.tier,
+            phase: current.phase,
+            reason: None,
+            bytes_read: Some(bytes_read),
+            bytes_total: Some(bytes_total),
+        };
+    }
     if let Some(raw) = message.strip_prefix("switch scheduled tier=") {
         let Some(tier) = TitleTier::parse(raw) else {
             return current;
         };
         return if tier == TitleTier::Extractive {
-            TitleEngineStatus {
-                tier,
-                phase: EnginePhase::Idle,
-                reason: Some(FallbackReason::Extractive),
-            }
+            TitleEngineStatus::at(tier, EnginePhase::Idle, Some(FallbackReason::Extractive))
         } else {
-            TitleEngineStatus {
-                tier,
-                phase: EnginePhase::Loading,
-                reason: None,
-            }
+            TitleEngineStatus::at(tier, EnginePhase::Loading, None)
         };
     }
     if message.starts_with("weights resolved") || message == "hash ok" {
         if matches!(current.phase, EnginePhase::Loading | EnginePhase::Hashing) {
-            return TitleEngineStatus {
-                tier: current.tier,
-                phase: EnginePhase::Hashing,
-                reason: None,
-            };
+            return TitleEngineStatus::at(current.tier, EnginePhase::Hashing, None);
         }
         return current;
     }
     if message == "model loaded" {
         if current.tier == TitleTier::Extractive {
-            return TitleEngineStatus {
-                tier: TitleTier::Extractive,
-                phase: EnginePhase::Idle,
-                reason: Some(FallbackReason::Extractive),
-            };
+            return TitleEngineStatus::at(
+                TitleTier::Extractive,
+                EnginePhase::Idle,
+                Some(FallbackReason::Extractive),
+            );
         }
-        return TitleEngineStatus {
-            tier: current.tier,
-            phase: EnginePhase::Ready,
-            reason: None,
-        };
+        return TitleEngineStatus::at(current.tier, EnginePhase::Ready, None);
     }
     let Some(raw) = message.strip_prefix("fallback reason=") else {
         return current;
     };
     match raw {
-        "extractive" => TitleEngineStatus {
-            tier: TitleTier::Extractive,
-            phase: EnginePhase::Idle,
-            reason: Some(FallbackReason::Extractive),
-        },
-        "missing_weights" => TitleEngineStatus {
-            tier: current.tier,
-            phase: EnginePhase::Missing,
-            reason: Some(FallbackReason::MissingWeights),
-        },
+        "extractive" => TitleEngineStatus::at(
+            TitleTier::Extractive,
+            EnginePhase::Idle,
+            Some(FallbackReason::Extractive),
+        ),
+        "missing_weights" => TitleEngineStatus::at(
+            current.tier,
+            EnginePhase::Missing,
+            Some(FallbackReason::MissingWeights),
+        ),
         "bad_hash" | "timeout" | "unreadable" => {
             if current.phase == EnginePhase::Ready {
                 return current;
@@ -140,11 +170,7 @@ pub fn apply_diag(current: TitleEngineStatus, message: &str) -> TitleEngineStatu
                 "timeout" => FallbackReason::Timeout,
                 _ => FallbackReason::Unreadable,
             };
-            TitleEngineStatus {
-                tier: current.tier,
-                phase: EnginePhase::Failed,
-                reason: Some(reason),
-            }
+            TitleEngineStatus::at(current.tier, EnginePhase::Failed, Some(reason))
         }
         _ => current,
     }
@@ -233,6 +259,42 @@ mod status_tests {
             apply_diag(loading, "fallback reason=unreadable").reason,
             Some(FallbackReason::Unreadable)
         );
+    }
+
+    #[test]
+    fn read_progress_is_determinate_until_a_terminal_phase() {
+        let loading = apply_diag(TitleEngineStatus::idle(), "switch scheduled tier=smol-360");
+        assert_eq!(loading.bytes_read, None);
+        assert_eq!(loading.bytes_total, None);
+
+        let reading = apply_diag(loading, "read progress bytes=135295440 total=270590880");
+        assert_eq!(reading.phase, EnginePhase::Loading);
+        assert_eq!(reading.bytes_read, Some(135_295_440));
+        assert_eq!(reading.bytes_total, Some(270_590_880));
+
+        let hashing = apply_diag(reading, "hash ok");
+        assert_eq!(hashing.phase, EnginePhase::Hashing);
+        assert_eq!(hashing.bytes_read, None);
+        assert_eq!(hashing.bytes_total, None);
+
+        let ready = apply_diag(hashing, "model loaded");
+        assert_eq!(ready.phase, EnginePhase::Ready);
+        assert_eq!(ready.bytes_read, None);
+        assert_eq!(
+            apply_diag(ready, "read progress bytes=1 total=2").phase,
+            EnginePhase::Ready
+        );
+
+        let missing = apply_diag(reading, "fallback reason=missing_weights");
+        assert_eq!(missing.phase, EnginePhase::Missing);
+        assert_ne!(missing.phase, EnginePhase::Loading);
+        assert_eq!(missing.bytes_read, None);
+
+        let unreadable = apply_diag(reading, "fallback reason=unreadable");
+        assert_eq!(unreadable.phase, EnginePhase::Failed);
+        assert_eq!(unreadable.reason, Some(FallbackReason::Unreadable));
+        assert_eq!(unreadable.bytes_read, None);
+        assert_eq!(unreadable.bytes_total, None);
     }
 
     #[test]

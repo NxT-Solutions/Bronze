@@ -1626,6 +1626,78 @@ menu {
   display: none;
 }
 
+.title-engine-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.title-engine-progress[hidden] {
+  display: none;
+}
+
+.title-engine-progress progress {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 0.375rem;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--stroke);
+  color: var(--foreground);
+  overflow: hidden;
+}
+
+.title-engine-progress progress::-webkit-progress-bar {
+  background: var(--stroke);
+  border-radius: var(--radius-control);
+}
+
+.title-engine-progress progress::-webkit-progress-value {
+  background: var(--foreground);
+  border-radius: var(--radius-control);
+}
+
+.title-engine-progress progress::-moz-progress-bar {
+  background: var(--foreground);
+}
+
+.title-engine-progress-value {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-motion="reduce"] .title-engine-progress progress,
+html[data-motion="reduce"]
+  .title-engine-progress
+  progress::-webkit-progress-bar,
+html[data-motion="reduce"]
+  .title-engine-progress
+  progress::-webkit-progress-value,
+[data-reduce-motion] .title-engine-progress progress,
+[data-reduce-motion] .title-engine-progress progress::-webkit-progress-bar,
+[data-reduce-motion] .title-engine-progress progress::-webkit-progress-value {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"]) .title-engine-progress progress,
+  html:not([data-motion="full"])
+    .title-engine-progress
+    progress::-webkit-progress-bar,
+  html:not([data-motion="full"])
+    .title-engine-progress
+    progress::-webkit-progress-value {
+    animation: none !important;
+  }
+}
+
 .app-picker-field {
   display: grid;
   gap: var(--space-2);
