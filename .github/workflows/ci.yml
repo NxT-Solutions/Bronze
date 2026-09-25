@@ -66,7 +66,7 @@ jobs:
 
   quality-macos:
     name: quality-macos
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,6 +86,7 @@ jobs:
             ~/.cargo/git
             target
           key: rust-macos-${{ hashFiles('Cargo.lock') }}
+      - run: swift build --package-path native/macos/BronzeNative
       - run: cargo clippy --workspace --locked --exclude bronze-desktop -- -D warnings
       - run: cargo test --workspace --locked --exclude bronze-desktop
 
