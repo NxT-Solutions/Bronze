@@ -5,7 +5,7 @@ Recorded: 2026-08-27
 Branch: `bmad/bronze-autonomous`  
 Baseline HEAD: `20691ed1a385392d1b92f05fa6d639a72cbe8636` (`20691ed :chart_with_upwards_trend: Analysis of application`)  
 Project root: `/Users/noah/fdev/projects/bronze-app`  
-Authority: Phase 0 of autonomous delivery. This document records detected and selected toolchain versions. It does not accept ADR-002.
+Authority: Phase 0 of autonomous delivery. This document records detected and selected toolchain versions. ADR-002 was later Accepted on 2026-09-25 (split arm64 and Intel packages; the operator asked for the Intel build).
 
 ## Current operator pins (2026-09-16)
 
@@ -42,7 +42,7 @@ uv 0.12.6 and tmux 3.7c were already installed through Homebrew. No additional H
 | Swift | Apple Swift 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101); swift-driver 1.148.6 |
 | Git | 2.50.1 (Apple Git-155) |
 
-macOS minimum and universal2 policy remain ADR-002 / DG-01. Development proceeds on Apple Silicon only. No production architecture claim is made here.
+Host development remains Apple Silicon. Production range is ADR-002 Accepted: macOS 14.0+ with named arm64 and x86_64 packages.
 
 ## 3. Detected and selected toolchain
 
@@ -108,7 +108,7 @@ Stock init gitignores `.bmad-loop/policy.toml`. Phase 5 records the committed pr
 
 This bootstrap does **not**:
 
-- accept ADR-002 (macOS minimum / architecture);
+- accept ADR-002 at bootstrap time (later Accepted 2026-09-25: split arm64 and Intel packages);
 - accept ADR-009 (protected App Group container);
 - accept ADR-018 (FTS tokenizer);
 - claim WCAG, VoiceOver, or platform conformance;
