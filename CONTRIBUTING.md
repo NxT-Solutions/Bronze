@@ -15,6 +15,8 @@ Maintainer bar:
 pnpm verify
 ```
 
+Pull requests must stay green on `.github/workflows/ci.yml` (JS, docs, portable Rust, macOS Rust except `bronze-desktop`). That is not a notarization or WCAG claim.
+
 Local debug package (not notarized):
 
 ```bash

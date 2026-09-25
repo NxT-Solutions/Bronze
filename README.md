@@ -1,75 +1,38 @@
-# Bronze planning pack
+<p align="center">
+  <img src="docs/images/bronze-mark.png" width="96" height="96" alt="Bronze mark">
+</p>
 
-Bronze is a local-first macOS selection-to-action queue: capture selected text, add prompts or notes, order work, copy it back into any app, then complete or archive it. Planning authority is `docs/`. Application code lives on `main` (Tauri 2, React/HTML WebView, Rust, in-process Swift). New work lands on a feature branch from `main`.
+<h1 align="center">Bronze</h1>
 
-Research cutoff: **2026-08-27**. Working name: **Bronze**.
+<p align="center">
+  <strong>Capture what matters, queue it locally, send it back.</strong>
+</p>
 
-## Run locally (this Mac)
+<p align="center">
+  <a href="https://github.com/NxT-Solutions/Bronze/actions/workflows/ci.yml"><img src="https://github.com/NxT-Solutions/Bronze/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-18181b" alt="MIT"></a>
+  <a href="https://github.com/NxT-Solutions/Bronze/releases"><img src="https://img.shields.io/github/v/release/NxT-Solutions/Bronze?include_prereleases&amp;label=release" alt="Release"></a>
+</p>
 
-cwd: repository root (`/Users/noah/fdev/projects/bronze-app`).
+<p align="center">
+  Local-first macOS selection-to-action queue. No account. No telemetry. No hosted AI by default.
+</p>
 
-Live pins (2026-09-16): Node 24.21.0 (latest 24 LTS; Tauri 2 asks for LTS), pnpm 12.4.2, rustc 1.98.1 (`rust-toolchain.toml`), Xcode 26.6 + Swift for `libBronzeNative.a`. The [implementation bootstrap](docs/20-implementation-bootstrap.md) table is the 2026-08-27 detection record, not the live pin. Install only what is missing. Do not use Corepack.
+<p align="center">
+  <img src="docs/images/bronze-hero.png" width="920" alt="Bronze on a quiet desk">
+</p>
 
-```bash
-# Node 24.21.0 (latest 24 LTS). Node Current is 26.8.2 and is not the pin.
-# https://nodejs.org or: brew install node@24 && brew upgrade node@24
-npm install -g pnpm@12.4.2
+Bronze sits beside the app you are already in. Capture the selection, order the work, copy it back. It is not a clipboard recorder, a task manager, a note vault, or an AI client.
 
-# Rust 1.98.1 (rust-toolchain.toml). Homebrew rustc on PATH may still print 1.98.0.
-rustup toolchain install 1.98.1
-rustup run 1.98.1 rustc --version
+<p align="center">
+  <img src="docs/images/bronze-queue.png" width="440" alt="Bronze queue">
+  &nbsp;
+  <img src="docs/images/bronze-settings.png" width="440" alt="Bronze settings">
+</p>
 
-# Xcode 26.6 / CLT so `swift build` works
-xcode-select -p
-swift --version
-```
+## Install
 
-Install JS deps once, then start the Tauri 2 debug app:
-
-```bash
-pnpm install
-pnpm --filter desktop tauri dev
-```
-
-Equivalent from `apps/desktop`: `pnpm tauri dev`. That script is the only desktop start command (`apps/desktop/package.json` → `"tauri": "tauri"`). There is no root `dev` script. `beforeDevCommand` is empty; Tauri serves `apps/desktop/src` as `frontendDist`.
-
-**What you will see in `tauri dev`.** The Quick Panel is a zinc inbox: composer, active items, and a **Copy** button on each row. Complete, Skip, Edit, Move up, Move down, and Trash sit in a compact icon row under Copy. Library, Settings, and Help are separate Tauri windows — open them from the **Bronze** app menu or the menu-bar status item. Opening `*.html` in a browser has **no** Tauri invoke.
-
-Hand-test in the **native** window only:
-
-- Composer **Add** (or Cmd-Enter) persists to local SQLite
-- **Copy** on a row writes the 6-4 pasteboard path (`pbcopy`); default profile is Plain
-- Complete / skip hide the row from this inbox; trash removes it
-- **Capture** (status menu or Bronze app menu) and the saved **Capture selection** Shift N-tap (default double-tap, either side, gap 250 ms, hold ≤400 ms) snapshot `NSWorkspace` frontmost PID first. When Bronze is frontmost, persist reads the highlight in Quick, Settings, Library, or Help (`getSelection` plus non-password field selection) and labels it From Bronze. If that is empty, persist uses the last non-Bronze app (focused element, then its windows/children; attributed range when available, else `AXSelectedText` or `AXStringForRange`). Last-external memory still skips Bronze. Capture does **not** steal focus or force-show the panel (5-3). Use **Show** to see the queue. Select text in any app including Bronze, then Capture or the saved Shift multi-tap. A non-Shift remap of Capture selection disables the Shift engine; menu Capture remains.
-- Every persist outcome posts a Notification Center banner (`UNUserNotificationCenter` in a packaged `.app`, or signed `BronzeNotice.app` during unbundled `tauri dev`; catalog `capture.announce.saved|rejected|denied|protected|failed|excluded` only — never the selection). Inbox `#capture-status` stays a visually hidden live region; `#chrome-notice` is the viewport-fixed in-app line when the queue is open or scrolled. A saved row also shows catalog `capture.source` (`From {appName}`) and a 16px official source-app icon when Rust can resolve the local `.app`. Composer **Add** rows stay unlabeled; add failures use `#chrome-notice`. Each row may show a stored `title` heading (`compact_title` first, 40-character word-boundary clamp, no ellipsis glyph; a Settings `general.titleModel` refine may replace it after persist; `Title:` is stripped; card CSS does not ellipsize the heading). The body is sanitized constrained markdown (including line-start and `•` lists) with **Show more** / **Show less** when it overflows. Copy writes plain plus sanitized HTML and reports catalog `copy.announce.copied` / `copy.announce.failed` on the control. Titles persist as `compact_title` first (ADR-019 Proposed; optional local llama-cpp-2 refine, imported GGUF, loopback Ollama, or opt-in hosted keys; no PCC, no runtime Hub fetch, no Apple on-device model; a local failure never calls a hosted API)
-- Status item: left-click **Show**; menu is the latest five overview items (click copies), then Capture, Help, Quit
-- Status or app-menu **Show** recreates the Quick Panel if you closed it
-- Settings / Library / Help recreate if you closed them
-- Settings load/save `SettingsV1`; permission **Retest** and **Open System Settings** run from the Settings window. Settings → General **Language** persists `SettingsV1.general.locale` as **en**, **nl**, **fr**, **de**, **es**, or **it** (endonyms, each option has `lang`). File default is `system`, which maps to **en**; unknown persist tags are rejected. Settings → General **Reduce motion** persists `SettingsV1.general.reduceMotion` as **system**, **on**, or **off** (default **system**; follows this Mac). **on** always sets `html[data-motion=reduce]`. **off** always sets `html[data-motion=full]` so animations play even when macOS Reduce Motion is on. The change applies live in Settings and the queue; no relaunch. Settings → General **Title engine** persists `SettingsV1.general.titleModel` as **extractive**, **smol-135**, **smol-360**, **qwen-05**, **custom**, **ollama**, **hosted-openai**, **hosted-anthropic**, or **hosted-openrouter**. An empty value auto-picks among bundled pins already on disk from machine RAM. A local change reloads the title worker for the next refine (no app relaunch). Custom import copies a GGUF into Application Support and shows name plus size, never a path. Ollama lists loopback models only when that row is selected. Hosted keys go to Keychain (write-only in the WebView) after the host and payload class are shown. Settings shows a spinner next to the select and catalog status on `#title-model-status` (`aria-live` polite) while the worker loads or hashes; extractive stays idle; missing weights keep the vendor command (no download); ready and failed use catalog strings (no huge paths). Event `title-engine-status` and command `title_engine_status` carry `{ tier, phase, reason }`. Capture never waits on the load. WebView chrome applies that catalog and sets `html lang`/`dir` (item bodies stay `lang="und" dir="auto"`). Native app and status menus follow the persisted locale at launch only. Privacy excluded apps is a search plus **Choose app…** (Finder `.app` panel); WebView never receives paths. Settings → **Export preview** lists included categories and leftover user-entered literals (SET-001). **Export** (filled) opens a rust-owned save panel for a `bronze-settings` JSON file; **Import** (ghost) opens a rust-owned open panel. Neither command takes a WebView path (SEC-003). The file is not the Library archive.
-- Library search is substring-only (`QUE_007_COMPLETE=false`; ADR-018 stays Proposed)
-- Library backup / archive export / import write under the Rust-owned app data dir; WebView paths are rejected. Settings export/import use a separate rust-owned save/open panel and a `bronze-settings` document.
-
-Palette is zinc (`#fafafa` / `#18181b` / `#e4e4e7`). Default UI locale is **en**. Shipped UI catalogs also exist for nl, fr, de, es, it, plus pseudo `en-XA` / `ar-XB`. Advertised locales stay **en**, **en-XA**, and **ar-XB**. No public human linguistic QA claim.
-
-**Still stub / backlog.** Event-tap live fire is `capture.selection` Shift N-tap from the shortcuts table; Option/Command/Control/Fn remaps of that action disable the Shift engine. Other seeded defaults persist without a live OS grab, and Quick Panel keydown still uses hardcoded composer chords. File and image attachments are out until a new ADR and threat-model update (ADR-001). After a permission grant, quit Bronze fully and re-run `pnpm --filter desktop tauri dev`.
-
-**Permissions (macOS).** On native start, Bronze requests **Accessibility** and **Input Monitoring** when they are not already granted (real OS dialogs). The first capture path requests once more if still ungranted. Settings → permission health **Retest** re-attempts those prompts; if macOS will not show another dialog, use **Open System Settings** after that attempt (not instead of it).
-
-- **Privacy & Security → Accessibility** — AX selection (prompted; composer remains if denied)
-- **Privacy & Security → Input Monitoring** — listen-only event tap / chord (prompted; menu + composer remain if denied)
-- **Screen Recording** — not used; Bronze never prompts for it and you should not grant it
-
-See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a grant, quit and relaunch (`requires_relaunch` is a real permission state). Input Monitoring often prompts only once per TCC identity; a later Retest may be silent. A `tauri dev` rebuild can receive a new TCC identity.
-
-**Triggers in this build.** Status extra: left-click Show; menu is latest five overview items, Capture, Help, Quit. Bronze app menu still offers Show, Capture, Settings, Library, Help, Quit. Every seeded `ShortcutActionId` has an enabled default (`docs/12` §4). `SettingsV1.capture.standardChord` is the settings view of `capture.selection` and ships as Shift double-tap (either side, gap 250 ms, max hold 400 ms, `tapCount` 2). Event-tap live fire follows that binding’s effective `tapCount` (2 through 8) on the Nth Shift release; a non-Shift remap disables the Shift engine. The Settings recorder also accepts a single-modifier multi-tap (2 through 8 taps of Shift, Option, Command, Control, or Fn) and persists `tapCount` on trigger `modifier_double_tap`. Commit waits 500 ms after the last tap so a second tap does not lock before a third. Other globals persist without an OS grab. App-local chords persist in Settings; Quick Panel keydown still uses hardcoded composer chords. Library search is substring-only (`QUE_007_COMPLETE=false`).
-
-**Stop.** In the `tauri dev` terminal: `Ctrl+C`. Then quit Bronze from the Dock / Force Quit if the process stays resident.
-
-**Verify (maintainer bar, not required to launch):** `pnpm verify`. Local debug package (SEC-005): `tooling/package-debug.sh`.
-
-## Install (macOS arm64)
-
-Homebrew, after the tap publishes `Casks/bronze.rb`:
+macOS arm64, Sonoma or later.
 
 ```bash
 brew tap NxT-Solutions/nxt-solutions-packages
@@ -77,11 +40,63 @@ brew install --cask bronze
 brew upgrade --cask bronze
 ```
 
-Or install `bronze-macos.pkg` from [GitHub Releases](https://github.com/NxT-Solutions/Bronze/releases). Settings shows the running version. **Check for updates** is a button (ADR-023 Proposed). A Homebrew install is told to `brew upgrade --cask bronze`. A package install opens the GitHub release. A debug build cannot install in place. Unsigned packages are not a notarization claim.
+Or download `bronze-macos.pkg` from [Releases](https://github.com/NxT-Solutions/Bronze/releases). Settings shows the running version. **Check for updates** is a button (ADR-023 Proposed). Homebrew installs copy `brew upgrade --cask bronze`. A package install opens the GitHub release.
 
-**Known limitations (not silent accepts).** ADR-002, ADR-009, and ADR-018 stay **Proposed**. ADR-019 (compact_title first, selectable offline GGUF refine) is **Proposed**. ADR-023 (user-initiated GitHub latest-release check) is **Proposed**. ADR-020, ADR-021, and ADR-022 are **Accepted** (imported GGUF, loopback Ollama, opt-in hosted title keys). QUE-007 locale search is **blocked** on ADR-018. A live language switch updates open WebViews; it does not rebuild the native app menu. `bronze-desktop` must keep `bronze-platform-macos` at `default-features = false` (links `libBronzeNative.a`; do not re-enable `abi-stub`). No WCAG / VoiceOver / notarization claim without `docs/evidence/`.
+The cask appears after the first published `.pkg`. Until then, use the GitHub asset. Unsigned packages are not a notarization claim.
 
-## Start here (planning pack)
+## Highlights
+
+- **Capture** selected text from the frontmost app (Accessibility first, bounded clipboard fallback)
+- **Queue** items locally in SQLite, with copy, complete, skip, and trash
+- **Copy** writes a pasteboard payload you can drop into any app
+- **On this Mac** title engines, plus optional loopback Ollama or opt-in hosted keys
+- **Offline by default** — no account, analytics, or remote fonts
+
+## Develop
+
+Pins: Node 24.21.0, pnpm 12.4.2, rustc 1.98.1, Xcode for `libBronzeNative.a`. Do not use Corepack.
+
+```bash
+pnpm install
+pnpm --filter desktop tauri dev
+```
+
+Hand-test only in the native window. Opening the HTML files in a browser has no Tauri invoke.
+
+```bash
+pnpm verify
+tooling/package-debug.sh
+```
+
+`pnpm verify` is the maintainer bar. Pull requests run the [CI](.github/workflows/ci.yml) quality jobs. CI does not notarize and does not run the Swift-linked desktop crate on Ubuntu.
+
+Permissions: Accessibility and Input Monitoring. Bronze never asks for Screen Recording.
+
+## Quality
+
+| Check | Where |
+| --- | --- |
+| Biome, typecheck, JS tests, i18n validate | `quality-js` |
+| Planning-pack gates | `quality-docs` |
+| `cargo fmt`, Clippy, portable crate tests | `quality-rust` |
+| macOS Clippy and tests except `bronze-desktop` | `quality-macos` |
+| Full workspace including Swift | `pnpm verify` on a Mac |
+
+Do not claim WCAG, VoiceOver, or notarization without files in `docs/evidence/`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Work lands through a pull request to `main`. Changelog: [CHANGELOG.md](CHANGELOG.md). Security: [SECURITY.md](SECURITY.md).
+
+ADR-002, ADR-009, ADR-018, and ADR-023 stay Proposed unless a human accepts them.
+
+## License
+
+MIT. See [LICENSE](LICENSE). Copyright 2026 Noah Gillard.
+
+## Planning pack
+
+Requirement IDs in [docs/03-prd.md](docs/03-prd.md) and [docs/18-adrs.md](docs/18-adrs.md) remain authority.
 
 1. [Executive summary](docs/00-executive-summary.md)
 2. [Reference product and video analysis](docs/01-product-reference-analysis.md)
@@ -107,46 +122,4 @@ Or install `bronze-macos.pkg` from [GitHub Releases](https://github.com/NxT-Solu
 22. [Pre-implementation reconciliation](docs/21-preimplementation-reconciliation.md)
 23. [bmad-loop policy](docs/22-bmad-loop-policy.md)
 
-Implementation agents: [Bronze agent instructions](AGENTS.md).
-
-Research appendices:
-
-- [Methodology and evidence grading](research/methodology.md)
-- [Competitor source register](research/competitor-source-register.md)
-- [Copper video shotlist](research/reference-video-shotlist.md)
-- [Standards notes](research/standards-notes.md)
-- [Dated technology baseline](research/technology-baseline.md)
-- [Product glossary](research/glossary.md)
-- [Asset provenance](assets/README.md)
-
-Original visual direction: [Bronze UI concept](assets/bronze-ui-concept.png). It is inspiration, not a pixel specification.
-
-## Product sentence
-
-> Capture what matters from the app already in front of you, turn it into an ordered local work queue, and send it back without losing your train of thought.
-
-## Non-negotiables
-
-- macOS first; Windows and Linux explicitly deferred.
-- Tauri 2, React, TypeScript, shadcn/ui, Biome, pnpm, and Turborepo.
-- Native macOS capture path; no cross-platform abstraction around unreliable input hooks.
-- Accessibility evidence: WCAG 2.2 AA baseline for WebView UI, relevant EN 301 549 clauses 5, 11, and 12, Apple VoiceOver evaluation, and manual assistive-technology tests. Never market as “WCAG proof.”
-- Local-only by default. No account, telemetry, hosted AI, or passive clipboard history.
-- Configurable shortcuts with conflicts, timing, permission health, and accessible alternatives.
-- Independent implementation, documented provenance, and original Bronze identity. Cooper is a failure corpus, not production base; v1 copies no Cooper source code.
-
-## Scope status
-
-Planning pack IDs in [docs/03-prd.md](docs/03-prd.md) and [docs/18-adrs.md](docs/18-adrs.md) remain authority. Implementation lives on `main`. New work uses a feature branch from `main`.
-
-Local debug package (SEC-005): `tooling/package-debug.sh` — arm64 unless DG-01 says otherwise, checksums + SBOM stub, no `get-task-allow`, no notarization.
-
-## Project
-
-- Changelog: [CHANGELOG.md](CHANGELOG.md)
-- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Security: [SECURITY.md](SECURITY.md)
-
-## License
-
-MIT. See [LICENSE](LICENSE). Copyright 2026 Noah Gillard.
+Implementation agents: [AGENTS.md](AGENTS.md). Local run notes and the long hand-test list live in [docs/20-implementation-bootstrap.md](docs/20-implementation-bootstrap.md) and the git history of this file. Visual direction: [assets/bronze-ui-concept.png](assets/bronze-ui-concept.png) (inspiration only). Asset provenance: [assets/README.md](assets/README.md).
