@@ -12,8 +12,12 @@ on:
 permissions:
   contents: read
 
+# Do not add `on: push`. Do not put `secrets.*` in any job or step `if:`.
+# GitHub reports those skips as failed required checks.
+
 jobs:
   homebrew:
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
@@ -75,7 +79,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download "$RELEASE_TAG" -R "${{ github.repository }}" -p "bronze-macos.pkg" -D /tmp/releases
+          set -euo pipefail
+          gh release download "$RELEASE_TAG" -R "${{ github.repository }}" \
+            -p "bronze-macos-arm64.pkg" \
+            -p "bronze-macos-x86_64.pkg" \
+            -D /tmp/releases
 
       - name: Generate Homebrew cask
         if: steps.token.outputs.skip != 'true'
@@ -92,10 +100,14 @@ jobs:
           tag = os.environ["RELEASE_TAG"]
           version = tag[1:] if tag.startswith("v") else tag
           repo = os.environ["REPO"]
-          pkg = Path("/tmp/releases/bronze-macos.pkg")
-          if not pkg.is_file():
-              raise SystemExit("Missing bronze-macos.pkg")
-          sha = hashlib.sha256(pkg.read_bytes()).hexdigest()
+          arm_pkg = Path("/tmp/releases/bronze-macos-arm64.pkg")
+          intel_pkg = Path("/tmp/releases/bronze-macos-x86_64.pkg")
+          if not arm_pkg.is_file():
+              raise SystemExit("Missing bronze-macos-arm64.pkg")
+          if not intel_pkg.is_file():
+              raise SystemExit("Missing bronze-macos-x86_64.pkg")
+          arm_sha = hashlib.sha256(arm_pkg.read_bytes()).hexdigest()
+          intel_sha = hashlib.sha256(intel_pkg.read_bytes()).hexdigest()
           Path("Casks").mkdir(exist_ok=True)
           formula = Path("Formula/bronze.rb")
           if formula.exists():
@@ -105,22 +117,37 @@ jobs:
                   [
                       'cask "bronze" do',
                       f'  version "{version}"',
-                      f'  sha256 "{sha}"',
                       "",
-                      f'  url "https://github.com/{repo}/releases/download/{tag}/bronze-macos.pkg"',
+                      "  on_arm do",
+                      f'    sha256 "{arm_sha}"',
+                      "",
+                      f'    url "https://github.com/{repo}/releases/download/{tag}/bronze-macos-arm64.pkg"',
+                      "  end",
+                      "",
+                      "  on_intel do",
+                      f'    sha256 "{intel_sha}"',
+                      "",
+                      f'    url "https://github.com/{repo}/releases/download/{tag}/bronze-macos-x86_64.pkg"',
+                      "  end",
+                      "",
                       '  name "Bronze"',
                       '  desc "Local-first macOS selection-to-action queue"',
                       f'  homepage "https://github.com/{repo}"',
                       "",
                       '  depends_on macos: ">= :sonoma"',
-                      "  depends_on arch: :arm64",
                       "",
-                      '  pkg "bronze-macos.pkg"',
+                      "  on_arm do",
+                      '    pkg "bronze-macos-arm64.pkg"',
+                      "  end",
+                      "",
+                      "  on_intel do",
+                      '    pkg "bronze-macos-x86_64.pkg"',
+                      "  end",
                       "",
                       '  uninstall pkgutil: "app.bronze.desktop"',
                       "",
                       "  caveats <<~EOS",
-                      "    Bronze ships an arm64 package. Intel/universal2 stays Proposed (ADR-002).",
+                      "    Bronze ships named arm64 and Intel packages (ADR-002 Accepted).",
                       "    This cask does not claim Apple notarization.",
                       "  EOS",
                       "end",

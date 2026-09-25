@@ -32,7 +32,7 @@ Bronze sits beside the app you are already in. Capture the selection, order the 
 
 ## Install
 
-macOS arm64, Sonoma or later.
+macOS 14 (Sonoma) or later, Apple Silicon and Intel.
 
 ```bash
 brew tap NxT-Solutions/nxt-solutions-packages
@@ -40,7 +40,7 @@ brew install --cask bronze
 brew upgrade --cask bronze
 ```
 
-Or download `bronze-macos.pkg` from [Releases](https://github.com/NxT-Solutions/Bronze/releases). Settings shows the running version. **Check for updates** is a button (ADR-023 Proposed). Homebrew installs copy `brew upgrade --cask bronze`. A package install opens the GitHub release.
+Or download `bronze-macos-arm64.pkg` or `bronze-macos-x86_64.pkg` from [Releases](https://github.com/NxT-Solutions/Bronze/releases). Settings shows the running version. **Check for updates** is a button (ADR-023 Proposed). Homebrew installs copy `brew upgrade --cask bronze`. A package install opens the GitHub release.
 
 The cask appears after the first published `.pkg`. Until then, use the GitHub asset. Unsigned packages are not a notarization claim.
 
@@ -88,7 +88,7 @@ Do not claim WCAG, VoiceOver, or notarization without files in `docs/evidence/`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Work lands through a pull request to `main`. Changelog: [CHANGELOG.md](CHANGELOG.md). Security: [SECURITY.md](SECURITY.md).
 
-ADR-002, ADR-009, ADR-018, and ADR-023 stay Proposed unless a human accepts them.
+ADR-002 is Accepted (split arm64 and Intel packages; the operator asked for the Intel build). ADR-009, ADR-018, and ADR-023 stay Proposed unless a human accepts them.
 
 ## License
 
