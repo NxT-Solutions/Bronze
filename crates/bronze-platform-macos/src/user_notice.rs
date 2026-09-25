@@ -109,7 +109,7 @@ mod user_notice_tests {
         assert_eq!(NoticeAuthorization::NotRequested.as_str(), "not_requested");
         let swift = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/UserNoticeABI.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/UserNoticeABI.swift"
         ));
         assert!(swift.contains("bronze_native_deliver_user_notice"));
         assert!(swift.contains("bronze_native_notification_authorization_status"));
@@ -139,7 +139,7 @@ mod user_notice_tests {
         assert!(!swift.contains("https://"));
         let helper = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNotice/main.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNotice/main.swift"
         ));
         assert!(helper.contains("UNUserNotificationCenter"));
         assert!(helper.contains("requestAuthorization"));
@@ -161,7 +161,7 @@ mod user_notice_tests {
         assert!(!helper.contains("https://"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         assert!(!tap.contains("bronze_native_deliver_user_notice"));
         assert!(!tap.contains("bronze_native_request_notification_authorization"));

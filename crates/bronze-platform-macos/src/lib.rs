@@ -99,7 +99,7 @@ mod apply_live_shift_gesture_tests {
         assert!(src.contains("event_tap_set_tap_count_shared"));
         assert!(src.contains("live_shift_tap_count"));
         let engine = include_str!(
-            "../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         );
         assert!(engine.contains("setGestureTapCount"));
         assert!(engine.contains("tapCount: gestureTapCount"));

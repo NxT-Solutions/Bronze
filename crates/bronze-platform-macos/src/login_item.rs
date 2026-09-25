@@ -79,7 +79,7 @@ mod login_item_tests {
         assert_eq!(LoginItemStatus::Unavailable.as_str(), "unavailable");
         let swift = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/LoginItemABI.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/LoginItemABI.swift"
         ));
         assert!(swift.contains("bronze_native_login_item_status"));
         assert!(swift.contains("bronze_native_apply_login_item"));
@@ -126,23 +126,23 @@ mod login_item_tests {
         assert!(!swift.contains("SMLoginItemSetEnabled"));
         let package = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Package.swift"
+            "/../../native/macos/BronzeNative/Package.swift"
         ));
         assert!(package.contains("ServiceManagement"));
         let build = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../apps/desktop/src-tauri/build.rs"
+            "/../../apps/desktop/src-tauri/build.rs"
         ));
         assert!(build.contains("framework=ServiceManagement"));
         let header = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/include/BronzeNative.h"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/include/BronzeNative.h"
         ));
         assert!(header.contains("bronze_native_login_item_status"));
         assert!(header.contains("bronze_native_apply_login_item"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         assert!(!tap.contains("SMAppService"));
         assert!(!tap.contains("ServiceManagement"));

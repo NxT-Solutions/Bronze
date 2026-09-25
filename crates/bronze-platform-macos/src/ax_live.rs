@@ -988,7 +988,7 @@ mod ax_live_tests {
         assert!(src.contains("set_messaging_timeout(system)"));
         assert!(src.contains("set_messaging_timeout(app)"));
         let tap = include_str!(
-            "../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         );
         assert!(!tap.contains("bronze_native_item_title"));
         assert!(!tap.contains("SystemLanguageModel"));

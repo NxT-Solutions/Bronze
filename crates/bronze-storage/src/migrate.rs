@@ -417,7 +417,7 @@ mod migrate_tests {
 
     #[test]
     fn migrate_webview_has_no_sql() {
-        let desktop = Path::new(env!("CARGO_MANIFEST_DIR")).join("../apps/desktop");
+        let desktop = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/desktop");
         let cargo = fs::read_to_string(desktop.join("src-tauri/Cargo.toml")).expect("cargo");
         assert!(!cargo.contains("tauri-plugin-sql"));
         let src_root = desktop.join("src");

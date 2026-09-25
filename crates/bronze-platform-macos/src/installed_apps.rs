@@ -309,7 +309,7 @@ mod installed_apps_tests {
             .is_some_and(|app| !app.bundle_id.contains('/') && !app.name.contains('/')));
         let swift = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/SourceIconABI.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/SourceIconABI.swift"
         ));
         assert!(swift.contains("bronze_native_list_installed_apps"));
         assert!(swift.contains("bronze_native_pick_installed_app"));
@@ -322,7 +322,7 @@ mod installed_apps_tests {
         assert!(!swift.contains("https://"));
         let hop = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/BronzeNative.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/BronzeNative.swift"
         ));
         assert!(hop.contains("bronzeOnAppKitModal"));
         assert!(hop.contains("@MainActor @Sendable"));
@@ -330,7 +330,7 @@ mod installed_apps_tests {
         assert!(hop.contains("lock.wait()"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         assert!(!tap.contains("bronze_native_list_installed_apps"));
         assert!(!tap.contains("bronze_native_pick_installed_app"));

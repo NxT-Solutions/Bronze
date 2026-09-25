@@ -690,15 +690,15 @@ mod tests {
     fn event_tap_callback_sources_have_no_forbidden_work() {
         let engine = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
         ));
         let frontmost = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/FrontmostABI.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/FrontmostABI.swift"
         ));
         let tap_abi = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../native/macos/BronzeNative/Sources/BronzeNative/EventTapABI.swift"
+            "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapABI.swift"
         ));
         assert!(frontmost.contains("NSWorkspace"));
         assert!(frontmost.contains("bronze_native_frontmost_pid"));
