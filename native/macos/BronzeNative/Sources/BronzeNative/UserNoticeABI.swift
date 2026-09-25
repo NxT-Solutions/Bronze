@@ -19,17 +19,100 @@ public func bronze_native_deliver_user_notice(
     }
     return bronzeOnAppKit {
         announceNotice(bodyText)
+        let itemId = NoticeBridge.claimItemId()
         if let center = bundledNotificationCenter() {
             switch readAuthorizationStatus(center) {
             case .authorized, .provisional:
-                postUserNotice(center, title: titleText, body: bodyText)
+                postUserNotice(center, title: titleText, body: bodyText, itemId: itemId)
                 return BRONZE_STATUS_OK
             default:
                 return BRONZE_STATUS_DEGRADED
             }
         }
-        postLegacyNotice(title: titleText, body: bodyText)
+        postLegacyNotice(title: titleText, body: bodyText, itemId: itemId)
         return BRONZE_STATUS_OK
+    }
+}
+
+@_silgen_name("bronze_native_set_notice_item")
+public func bronze_native_set_notice_item(_ item: bronze_native_utf8_view) -> UInt32 {
+    if item.len == 0 {
+        return bronzeOnAppKit {
+            NoticeBridge.nextItemId = nil
+            return BRONZE_STATUS_OK
+        }
+    }
+    guard let text = bronzeUtf8String(item), isSafeItemId(text) else {
+        return BRONZE_STATUS_DEGRADED
+    }
+    return bronzeOnAppKit {
+        NoticeBridge.nextItemId = text
+        return BRONZE_STATUS_OK
+    }
+}
+
+@_silgen_name("bronze_native_set_notice_click_hook")
+public func bronze_native_set_notice_click_hook(
+    _ hook: @convention(c) (UnsafePointer<UInt8>?, UInt64) -> Void
+) -> UInt32 {
+    NoticeBridge.clickHook = hook
+    installNoticeObserver()
+    return BRONZE_STATUS_OK
+}
+
+private enum NoticeBridge {
+    nonisolated(unsafe) static var nextItemId: String?
+    nonisolated(unsafe) static var clickHook: (@convention(c) (UnsafePointer<UInt8>?, UInt64) -> Void)?
+    nonisolated(unsafe) static var observing = false
+
+    static func claimItemId() -> String? {
+        let id = nextItemId
+        nextItemId = nil
+        guard let id, isSafeItemId(id) else {
+            return nil
+        }
+        return id
+    }
+}
+
+private func isSafeItemId(_ text: String) -> Bool {
+    guard !text.isEmpty, text.count <= 80 else {
+        return false
+    }
+    return text.unicodeScalars.allSatisfy { scalar in
+        let value = scalar.value
+        return (value >= 48 && value <= 57)
+            || (value >= 65 && value <= 90)
+            || (value >= 97 && value <= 122)
+            || value == 45
+            || value == 95
+    }
+}
+
+private func invokeNoticeHook(_ raw: String) {
+    guard let hook = NoticeBridge.clickHook else {
+        return
+    }
+    let bytes = Array(raw.utf8)
+    bytes.withUnsafeBufferPointer { buffer in
+        hook(buffer.baseAddress, UInt64(buffer.count))
+    }
+}
+
+private func installNoticeObserver() {
+    if NoticeBridge.observing {
+        return
+    }
+    NoticeBridge.observing = true
+    DistributedNotificationCenter.default().addObserver(
+        forName: Notification.Name("app.bronze.desktop.notice-activate"),
+        object: nil,
+        queue: .main
+    ) { note in
+        guard let raw = note.object as? String, isSafeItemId(raw) else {
+            return
+        }
+        invokeNoticeHook(raw)
     }
 }
 
@@ -119,13 +202,17 @@ private func statusCode(_ status: UNAuthorizationStatus) -> UInt32 {
 private func postUserNotice(
     _ center: UNUserNotificationCenter,
     title: String,
-    body: String
+    body: String,
+    itemId: String?
 ) {
     let content = UNMutableNotificationContent()
     content.title = title
     content.body = body
     content.sound = nil
     content.interruptionLevel = .active
+    if let itemId, isSafeItemId(itemId) {
+        content.userInfo = ["bronzeItemId": itemId]
+    }
     let request = UNNotificationRequest(
         identifier: "bronze.capture.\(UUID().uuidString)",
         content: content,
@@ -137,16 +224,20 @@ private func postUserNotice(
 /// Unbundled cargo-run cannot call UNUserNotificationCenter in-process.
 /// A sibling BronzeNotice.app (same logo, UN banners) posts instead so
 /// Accessibility / Input Monitoring on this binary stay put.
-private func postLegacyNotice(title: String, body: String) {
+private func postLegacyNotice(title: String, body: String, itemId: String?) {
     guard let app = noticeHelperApp() else {
         return
     }
     // Launch Services (`open -g`) makes the helper responsible for its own
     // UN identity. NSWorkspace.openApplication keeps this binary as parent
     // and usernoted then drops the banner.
+    var arguments = ["-n", "-g", app.path, "--args", title, body]
+    if let itemId, isSafeItemId(itemId) {
+        arguments.append(itemId)
+    }
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-    process.arguments = ["-n", "-g", app.path, "--args", title, body]
+    process.arguments = arguments
     try? process.run()
 }
 
@@ -191,5 +282,17 @@ private final class BronzeNoticeCenter: NSObject, UNUserNotificationCenterDelega
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .list])
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if let raw = response.notification.request.content.userInfo["bronzeItemId"] as? String,
+           isSafeItemId(raw) {
+            invokeNoticeHook(raw)
+        }
+        completionHandler()
     }
 }

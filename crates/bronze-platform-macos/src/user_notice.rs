@@ -41,6 +41,32 @@ pub fn is_safe_notice_text(text: &str) -> bool {
         && !trimmed.contains("..")
 }
 
+pub fn is_safe_item_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 80
+        && id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+}
+
+pub fn set_notice_item(id: &str) -> Result<(), NativeError> {
+    if !is_safe_item_id(id) {
+        return Err(NativeError::Degraded);
+    }
+    let view = BronzeNativeUtf8View {
+        ptr: id.as_ptr(),
+        len: id.len() as u64,
+    };
+    let status = unsafe { crate::abi::bronze_native_set_notice_item(view) };
+    crate::bridge::map_status(status)
+}
+
+pub fn install_notice_click_hook(hook: unsafe extern "C" fn(*const u8, u64)) {
+    unsafe {
+        crate::abi::bronze_native_set_notice_click_hook(hook);
+    }
+}
+
 pub fn try_deliver_user_notice(title: &str, body: &str) -> Result<(), NativeError> {
     if !is_safe_notice_text(title) || !is_safe_notice_text(body) {
         return Err(NativeError::Degraded);
@@ -118,6 +144,10 @@ mod user_notice_tests {
         assert!(swift.contains("requestAuthorization"));
         assert!(swift.contains(".denied"));
         assert!(swift.contains("willPresent"));
+        assert!(swift.contains("didReceive"));
+        assert!(swift.contains("bronze_native_set_notice_item"));
+        assert!(swift.contains("bronze_native_set_notice_click_hook"));
+        assert!(swift.contains("bronzeItemId"));
         assert!(swift.contains("announcementRequested"));
         assert!(swift.contains("bundledNotificationCenter"));
         assert!(swift.contains("pathExtension == \"app\""));
@@ -144,6 +174,9 @@ mod user_notice_tests {
         assert!(helper.contains("UNUserNotificationCenter"));
         assert!(helper.contains("requestAuthorization"));
         assert!(helper.contains("willPresent"));
+        assert!(helper.contains("didReceive"));
+        assert!(helper.contains("bronzeItemId"));
+        assert!(helper.contains("app.bronze.desktop.notice-activate"));
         assert!(helper.contains("isSafeNoticeText"));
         assert!(helper.contains("noticePayload"));
         assert!(helper.contains("-psn_"));

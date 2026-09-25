@@ -108,12 +108,18 @@ export function hideChromeNotice(root) {
   const label = host.querySelector?.("#chrome-notice-text");
   if (label) {
     label.textContent = "";
+    if (label.dataset) {
+      delete label.dataset.itemId;
+    }
+    if ("disabled" in label) {
+      label.disabled = true;
+    }
   }
   host.hidden = true;
   delete host.dataset.tone;
 }
 
-export function showChromeNotice(root, text, tone = "ok") {
+export function showChromeNotice(root, text, tone = "ok", itemId = "") {
   const host = root?.querySelector?.("#chrome-notice");
   const label = host?.querySelector?.("#chrome-notice-text");
   if (!host || !label) {
@@ -125,6 +131,20 @@ export function showChromeNotice(root, text, tone = "ok") {
     delete host.dataset.noticeTimer;
   }
   label.textContent = text;
+  const revealId =
+    typeof itemId === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(itemId)
+      ? itemId
+      : "";
+  if (label.dataset) {
+    if (revealId) {
+      label.dataset.itemId = revealId;
+    } else {
+      delete label.dataset.itemId;
+    }
+  }
+  if ("disabled" in label) {
+    label.disabled = revealId.length === 0;
+  }
   host.hidden = text.length === 0;
   if (tone === "failed") {
     host.dataset.tone = "failed";

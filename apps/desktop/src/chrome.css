@@ -820,6 +820,16 @@ pre {
   transform-origin: center center;
 }
 
+@keyframes bronze-copy-ring {
+  from {
+    box-shadow: 0 0 0 0 var(--ring);
+  }
+
+  to {
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+}
+
 .queue-item:has(.row-action-icons .btn-icon:hover:not(:disabled)),
 .queue-item:has(.row-action-icons .btn-icon:focus-visible:not(:disabled)),
 .queue-item:has(.action-tip:not([hidden])) {
@@ -839,6 +849,11 @@ article {
   box-shadow: none;
   padding: var(--space-4);
   overflow: visible;
+}
+
+.queue-item.is-last-copied > article {
+  box-shadow: 0 0 0 2px var(--ring);
+  animation: bronze-copy-ring var(--duration) var(--ease-out);
 }
 
 article p {
@@ -1093,6 +1108,19 @@ article [data-slot="show-less"][hidden],
   margin: 0;
   min-width: 0;
   flex: 1 1 auto;
+  justify-content: flex-start;
+  min-height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: 400;
+  text-align: start;
+  white-space: normal;
+}
+
+#chrome-notice-text:disabled {
+  cursor: default;
 }
 
 .chrome-notice[data-tone="failed"] {
@@ -2111,10 +2139,17 @@ html[data-motion="reduce"] *::after,
 html[data-motion="reduce"] .queue-item.is-leaving-complete,
 html[data-motion="reduce"] .queue-item.is-leaving-skip,
 html[data-motion="reduce"] .queue-item.is-leaving-trash,
-html[data-motion="reduce"] li.is-entering {
+html[data-motion="reduce"] li.is-entering,
+html[data-motion="reduce"] .queue-item.is-last-copied > article {
   transition: none !important;
   animation: none !important;
   scroll-behavior: auto !important;
+}
+
+html[data-motion="reduce"] .queue-item.is-last-copied > article,
+[data-reduce-motion] .queue-item.is-last-copied > article {
+  animation: none;
+  box-shadow: 0 0 0 2px var(--ring);
 }
 
 @media (prefers-contrast: more) {

@@ -4,12 +4,14 @@ import UserNotifications
 @main
 enum BronzeNoticeMain {
     static func main() {
-        guard let texts = noticePayload(CommandLine.arguments) else {
-            return
-        }
+        let texts = noticePayload(CommandLine.arguments)
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
-        let delegate = BronzeNoticeDelegate(title: texts.0, body: texts.1)
+        let delegate = BronzeNoticeDelegate(
+            title: texts?.0 ?? "",
+            body: texts?.1 ?? "",
+            itemId: texts.flatMap { payload in payload.2 }
+        )
         BronzeNoticeDelegate.running = delegate
         app.delegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
@@ -18,19 +20,34 @@ enum BronzeNoticeMain {
 }
 
 /// Launch Services may inject `-psn_*` before the title/body pair.
-private func noticePayload(_ args: [String]) -> (String, String)? {
-    let texts = args.dropFirst().filter { arg in
+private func noticePayload(_ args: [String]) -> (String, String, String?)? {
+    let texts = Array(args.dropFirst().filter { arg in
         !arg.hasPrefix("-psn_") && !arg.hasPrefix("-NS")
-    }
+    })
     guard texts.count >= 2 else {
         return nil
     }
-    let title = texts[texts.startIndex]
-    let body = texts[texts.index(after: texts.startIndex)]
+    let title = texts[0]
+    let body = texts[1]
     guard isSafeNoticeText(title, max: 80), isSafeNoticeText(body, max: 200) else {
         return nil
     }
-    return (title, body)
+    let itemId = texts.count >= 3 && isSafeItemId(texts[2]) ? texts[2] : nil
+    return (title, body, itemId)
+}
+
+private func isSafeItemId(_ text: String) -> Bool {
+    guard !text.isEmpty, text.count <= 80 else {
+        return false
+    }
+    return text.unicodeScalars.allSatisfy { scalar in
+        let value = scalar.value
+        return (value >= 48 && value <= 57)
+            || (value >= 65 && value <= 90)
+            || (value >= 97 && value <= 122)
+            || value == 45
+            || value == 95
+    }
 }
 
 private func isSafeNoticeText(_ text: String, max: Int) -> Bool {
@@ -47,10 +64,12 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
     nonisolated(unsafe) static var running: BronzeNoticeDelegate?
     private let title: String
     private let body: String
+    private let itemId: String?
 
-    init(title: String, body: String) {
+    init(title: String, body: String, itemId: String?) {
         self.title = title
         self.body = body
+        self.itemId = itemId
     }
 
     func applicationWillFinishLaunching(_: Notification) {
@@ -58,11 +77,17 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
     }
 
     func applicationDidFinishLaunching(_: Notification) {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        guard !title.isEmpty, !body.isEmpty else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.quit()
+            }
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
             self.quit()
         }
-        let center = UNUserNotificationCenter.current()
-        center.delegate = self
         center.getNotificationSettings { settings in
             let status = settings.authorizationStatus
             DispatchQueue.main.async {
@@ -113,6 +138,26 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         }
     }
 
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if let raw = response.notification.request.content.userInfo["bronzeItemId"] as? String,
+           isSafeItemId(raw) {
+            DistributedNotificationCenter.default().postNotificationName(
+                Notification.Name("app.bronze.desktop.notice-activate"),
+                object: raw,
+                userInfo: nil,
+                deliverImmediately: true
+            )
+        }
+        completionHandler()
+        DispatchQueue.main.async {
+            self.quit()
+        }
+    }
+
     @MainActor
     private func post(_ center: UNUserNotificationCenter) {
         let content = UNMutableNotificationContent()
@@ -120,6 +165,9 @@ private final class BronzeNoticeDelegate: NSObject, NSApplicationDelegate, UNUse
         content.body = body
         content.sound = nil
         content.interruptionLevel = .active
+        if let itemId, isSafeItemId(itemId) {
+            content.userInfo = ["bronzeItemId": itemId]
+        }
         let request = UNNotificationRequest(
             identifier: "bronze.capture.\(UUID().uuidString)",
             content: content,

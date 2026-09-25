@@ -171,6 +171,8 @@ pub struct CapturePersistOutcome {
 pub struct CaptureResultDto {
     pub terminal: String,
     pub reason: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_id: Option<String>,
 }
 
 impl CaptureResultDto {
@@ -186,8 +188,17 @@ impl CaptureResultDto {
             }
             .into(),
             reason: outcome.reason.into(),
+            item_id: outcome.item_id,
         }
     }
+}
+
+fn is_safe_item_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 80
+        && id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
 }
 
 pub struct LiveAxHost;
@@ -619,6 +630,9 @@ pub fn deliver_capture_user_notice(
         .map(String::as_str)
         .unwrap_or("Bronze");
     let body = catalog.messages.get(key).map(String::as_str).unwrap_or("");
+    if let Some(id) = dto.item_id.as_deref().filter(|id| is_safe_item_id(id)) {
+        let _ = bronze_platform_macos::set_notice_item(id);
+    }
     bronze_platform_macos::try_deliver_user_notice(title, body)
         .map_err(|_| "notice_unavailable".into())
 }
@@ -743,23 +757,33 @@ impl LiveSession {
         filter: Option<&str>,
         limit: Option<u32>,
         sort: Option<&str>,
+        item_id: Option<&str>,
     ) -> Result<QueuePageDto, String> {
         let filter = match filter.unwrap_or("overview") {
             "overview" => QueueListFilter::Overview,
             _ => return Err("queue_filter_invalid".into()),
         };
         let limit = limit.map(|value| value as usize).unwrap_or(QUEUE_PAGE_SIZE);
-        let page = match sort {
-            Some(raw) => {
-                let sort = QueueSort::parse(raw).map_err(|_| "queue_sort_invalid".to_string())?;
-                self.store
-                    .query_queue_page_sorted(cursor, filter, limit, sort)
-                    .map_err(queue_page_error)?
+        let page = if let Some(id) = item_id.map(str::trim).filter(|id| !id.is_empty()) {
+            let sort = QueueSort::parse(sort.unwrap_or("newest"))
+                .map_err(|_| "queue_sort_invalid".to_string())?;
+            self.store
+                .query_sorted_page_containing(id, filter, limit, sort)
+                .map_err(queue_page_error)?
+        } else {
+            match sort {
+                Some(raw) => {
+                    let sort =
+                        QueueSort::parse(raw).map_err(|_| "queue_sort_invalid".to_string())?;
+                    self.store
+                        .query_queue_page_sorted(cursor, filter, limit, sort)
+                        .map_err(queue_page_error)?
+                }
+                None => self
+                    .store
+                    .query_queue_page(cursor, filter, limit)
+                    .map_err(queue_page_error)?,
             }
-            None => self
-                .store
-                .query_queue_page(cursor, filter, limit)
-                .map_err(queue_page_error)?,
         };
         Ok(QueuePageDto {
             items: page.items.into_iter().map(QueueItemDto::from).collect(),
@@ -1943,12 +1967,14 @@ pub fn queue_query(
     filter: Option<String>,
     limit: Option<u32>,
     sort: Option<String>,
+    item_id: Option<String>,
 ) -> Result<QueuePageDto, String> {
     lock_session(&session)?.queue_query(
         cursor.as_deref(),
         filter.as_deref(),
         limit,
         sort.as_deref(),
+        item_id.as_deref(),
     )
 }
 
@@ -2397,7 +2423,9 @@ mod live_session_tests {
     fn queue_query_dto_pages_overview_and_rejects_a_bad_cursor() {
         // QUE-002, SEC-002
         let mut session = open_session();
-        let empty = session.queue_query(None, None, None, None).expect("empty");
+        let empty = session
+            .queue_query(None, None, None, None, None)
+            .expect("empty");
         assert!(empty.items.is_empty());
         assert!(empty.next_cursor.is_none());
         for n in 0..21 {
@@ -2406,7 +2434,7 @@ mod live_session_tests {
         let overview = session.list_overview().expect("overview");
         assert_eq!(overview.len(), 21);
         let first = session
-            .queue_query(None, Some("overview"), Some(10_000), None)
+            .queue_query(None, Some("overview"), Some(10_000), None, None)
             .expect("page");
         assert_eq!(first.items.len(), QUEUE_PAGE_SIZE);
         assert_eq!(first.items[0].id, overview[0].id);
@@ -2416,20 +2444,20 @@ mod live_session_tests {
         assert!(json.get("nextCursor").unwrap().is_string());
         assert!(json.get("next_cursor").is_none());
         let second = session
-            .queue_query(Some(&cursor), Some("overview"), Some(0), None)
+            .queue_query(Some(&cursor), Some("overview"), Some(0), None, None)
             .expect("next");
         assert_eq!(second.items.len(), 1);
         assert_eq!(second.items[0].id, overview[20].id);
         assert!(second.next_cursor.is_none());
         assert_eq!(
             session
-                .queue_query(Some("v1.zz.00"), None, None, None)
+                .queue_query(Some("v1.zz.00"), None, None, None, None)
                 .expect_err("cursor"),
             "queue_cursor_invalid"
         );
         assert_eq!(
             session
-                .queue_query(None, Some("attachments"), None, None)
+                .queue_query(None, Some("attachments"), None, None, None)
                 .expect_err("filter"),
             "queue_filter_invalid"
         );
@@ -3398,6 +3426,13 @@ mod live_session_tests {
         });
         assert_eq!(dto.terminal, "rejected");
         assert_eq!(dto.reason, "no_selection");
+        assert_eq!(dto.item_id, None);
+        let saved = CaptureResultDto::from_persist(CapturePersistOutcome {
+            terminal: Terminal::Saved,
+            reason: "ok",
+            item_id: Some("i1".into()),
+        });
+        assert_eq!(saved.item_id.as_deref(), Some("i1"));
         assert_eq!(
             capture_notice_catalog_key("saved", "ok"),
             "capture.announce.saved"

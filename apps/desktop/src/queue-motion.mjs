@@ -6,6 +6,7 @@ import {
   readExpandLabels,
   syncExpandVisibility,
 } from "./item-view.mjs";
+import { insertionBeforeId } from "./queue-reveal.mjs";
 
 const EXIT_ACTIONS = new Set(["complete", "skip", "trash"]);
 const MOVE_ACTIONS = new Set(["moveUp", "moveDown"]);
@@ -284,5 +285,45 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
     paintQueueItems(list, items, template, { enteringIds });
   }
 
-  return { paintQueueItems, renderQueueItems };
+  function findItemNode(list, id) {
+    if (!list || typeof list.querySelector !== "function") {
+      return null;
+    }
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) {
+      return null;
+    }
+    return list.querySelector(`[data-item-id="${id}"]`);
+  }
+
+  function insertMissingQueueItems(list, items, template) {
+    if (
+      !list ||
+      !template?.content?.firstElementChild ||
+      !Array.isArray(items)
+    ) {
+      return;
+    }
+    const labels = readExpandLabels(template.content);
+    const pageIds = items.map((item) => item?.id).filter(Boolean);
+    const loaded = new Set(listItemIds(list));
+    for (const item of items) {
+      if (!item?.id || loaded.has(item.id)) {
+        continue;
+      }
+      const node = template.content.firstElementChild.cloneNode(true);
+      fillQueueNode(node, item, labels);
+      const beforeId = insertionBeforeId([...loaded], pageIds, item.id);
+      const before = beforeId ? findItemNode(list, beforeId) : null;
+      if (before) {
+        list.insertBefore(node, before);
+      } else {
+        list.append(node);
+      }
+      syncExpandVisibility(node.querySelector("article"));
+      loaded.add(item.id);
+    }
+    syncMoveAvailability(list);
+  }
+
+  return { paintQueueItems, renderQueueItems, insertMissingQueueItems };
 }

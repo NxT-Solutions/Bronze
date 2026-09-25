@@ -6,7 +6,9 @@ import {
   bindOverflowDismiss,
   closeOverflowMenus,
   hideChromeNotice,
+  motionAllowed,
   openEditSheet,
+  readStatusText,
   runBusy,
   showChromeNotice,
 } from "./control.mjs";
@@ -16,6 +18,15 @@ import {
   applyQueueItemMutation,
   createQueueRenderer,
 } from "./queue-motion.mjs";
+import {
+  findQueueCard,
+  isNearLoadedStart,
+  markLastCopied,
+  planNewItemFollow,
+  queueScrollParent,
+  revealQueueItem,
+  scrollQueueCard,
+} from "./queue-reveal.mjs";
 import {
   listenQueueSortChanged,
   parseQueueSort,
@@ -520,6 +531,14 @@ export function listenCaptureResult(handler) {
   return Promise.resolve(null);
 }
 
+export function listenNoticeActivate(handler) {
+  const listen = globalThis.__TAURI__?.event?.listen;
+  if (typeof listen === "function") {
+    return listen("notice-activate", handler);
+  }
+  return Promise.resolve(null);
+}
+
 export function captureFeedbackKey(result) {
   if (!result || typeof result !== "object") {
     return "capture.announce.failed";
@@ -554,7 +573,16 @@ export function applyCaptureResult(root, result) {
   const text = source?.textContent?.trim() ?? "";
   status.textContent = text;
   status.hidden = text.length === 0;
-  showChromeNotice(root, text, result?.terminal === "saved" ? "ok" : "failed");
+  const itemId =
+    result?.terminal === "saved"
+      ? String(result.itemId ?? result.item_id ?? "")
+      : "";
+  showChromeNotice(
+    root,
+    text,
+    result?.terminal === "saved" ? "ok" : "failed",
+    itemId,
+  );
 }
 
 export function queueMoveDisabled(index, count) {
@@ -651,6 +679,11 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   let loadingMore = false;
   let refreshGen = 0;
   let activeSort = "newest";
+  let lastCopiedId = "";
+
+  function noteQueueSort(raw) {
+    list.dataset.queueSort = parseQueueSort(raw);
+  }
 
   function focusedQueueControl() {
     const active = list.ownerDocument?.activeElement;
@@ -739,8 +772,54 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     state = { items, nextCursor, anchorCursor };
   }
 
+  async function ensureItemLoaded(id) {
+    if (findQueueCard(list, id)) {
+      return;
+    }
+    const page = await invokeFn("queue_query", {
+      filter: "overview",
+      limit: QUEUE_PAGE_SIZE,
+      sort: activeSort,
+      itemId: id,
+    });
+    const items = page?.items ?? [];
+    if (!items.some((row) => row.id === id)) {
+      return;
+    }
+    state = {
+      items,
+      nextCursor: page?.nextCursor ?? null,
+      anchorCursor: null,
+    };
+    await paint({ action: "replace" });
+    if (lastCopiedId) {
+      markLastCopied(list, lastCopiedId);
+    }
+  }
+
+  async function revealNoticeItem(id) {
+    if (!id) {
+      return;
+    }
+    await ensureItemLoaded(id);
+    await revealQueueItem({
+      id,
+      list,
+      doc: list.ownerDocument,
+    });
+    if (lastCopiedId) {
+      markLastCopied(list, lastCopiedId);
+    }
+    hideChromeNotice(root);
+  }
+
   async function refresh(opts = {}) {
     const gen = ++refreshGen;
+    const scroller = queueScrollParent(list);
+    const nearStart = isNearLoadedStart(scroller);
+    const prevIds = queueItemRows(list)
+      .map((el) => el.dataset?.itemId)
+      .filter(Boolean);
     let sort = "newest";
     try {
       const settings = await invokeFn("load_settings_v1");
@@ -752,6 +831,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       activeSort = sort;
       state = { items: [], nextCursor: null, anchorCursor: null };
     }
+    list.dataset.queueSort = activeSort;
     const action = opts.action;
     if (action === "complete" || action === "skip" || action === "trash") {
       state = removeQueueItem(state, opts.id);
@@ -772,6 +852,26 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       return;
     }
     await paint(opts);
+    if (gen !== refreshGen) {
+      return;
+    }
+    const nextIds = queueItemRows(list)
+      .map((el) => el.dataset?.itemId)
+      .filter(Boolean);
+    const plan = planNewItemFollow({
+      sort: activeSort,
+      nearStart,
+      prevIds,
+      nextIds,
+    });
+    if (plan.scrollId && plan.cursor === "stay" && !plan.prepend) {
+      scrollQueueCard(findQueueCard(list, plan.scrollId), {
+        motion: motionAllowed(list.ownerDocument),
+      });
+    }
+    if (lastCopiedId) {
+      markLastCopied(list, lastCopiedId);
+    }
   }
 
   async function loadMore() {
@@ -932,7 +1032,15 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
             itemIds: [id],
             profile: profile?.value ?? "plain",
           });
+          lastCopiedId = id;
+          markLastCopied(list, id);
           applyActionStatus(root, "copy.announce.copied", button);
+          showChromeNotice(
+            root,
+            readStatusText(root, "copy.announce.copied"),
+            "ok",
+            id,
+          );
         } catch {
           applyActionStatus(root, "copy.announce.failed", button);
         }
@@ -973,14 +1081,33 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   listenQueueChanged(() => {
     refresh();
   });
-  listenQueueSortChanged(() => {
+  listenQueueSortChanged((payload) => {
+    noteQueueSort(payload?.sort);
     refresh({ resetPage: true });
   });
   listenCaptureResult((event) => {
-    applyCaptureResult(root, event?.payload ?? event);
-    if (event?.payload?.terminal === "saved" || event?.terminal === "saved") {
+    const result = event?.payload ?? event;
+    applyCaptureResult(root, result);
+    if (result?.terminal === "saved") {
       refresh({ action: "insert" });
     }
+  });
+  listenNoticeActivate((event) => {
+    const id = event?.payload?.itemId ?? event?.payload?.item_id;
+    if (id) {
+      revealNoticeItem(id);
+    }
+  });
+  root.addEventListener?.("click", (event) => {
+    const button = event.target?.closest?.("[data-notice-reveal]");
+    if (!button || button.disabled) {
+      return;
+    }
+    const id = button.dataset?.itemId;
+    if (!id) {
+      return;
+    }
+    revealNoticeItem(id);
   });
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
     refresh({ action: "replace" });
@@ -991,6 +1118,14 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     await refresh();
   } catch {
     list.replaceChildren();
+  }
+  try {
+    const pendingId = await invokeFn("take_notice_activation");
+    if (pendingId) {
+      await revealNoticeItem(pendingId);
+    }
+  } catch {
+    return;
   }
 }
 

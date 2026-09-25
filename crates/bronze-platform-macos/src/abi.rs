@@ -154,6 +154,8 @@ extern "C" {
         title: BronzeNativeUtf8View,
         body: BronzeNativeUtf8View,
     ) -> u32;
+    pub fn bronze_native_set_notice_item(item_id: BronzeNativeUtf8View) -> u32;
+    pub fn bronze_native_set_notice_click_hook(hook: unsafe extern "C" fn(*const u8, u64)) -> u32;
     pub fn bronze_native_notification_authorization_status() -> u32;
     pub fn bronze_native_request_notification_authorization() -> u32;
     pub fn bronze_native_login_item_status() -> u32;

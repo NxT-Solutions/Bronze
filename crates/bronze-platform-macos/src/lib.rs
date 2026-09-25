@@ -69,9 +69,10 @@ pub use status_item::{
 pub use support_file::{accept_support_file_path, try_pick_support_export_path};
 pub use title::native_item_title;
 pub use user_notice::{
-    is_safe_notice_text, notification_authorization_status,
-    prompt_notification_authorization_if_needed, request_notification_authorization,
-    try_deliver_user_notice, NoticeAuthorization,
+    install_notice_click_hook, is_safe_item_id, is_safe_notice_text,
+    notification_authorization_status, prompt_notification_authorization_if_needed,
+    request_notification_authorization, set_notice_item, try_deliver_user_notice,
+    NoticeAuthorization,
 };
 
 pub fn apply_live_shift_gesture(binding: &bronze_settings::ShortcutBinding) {
