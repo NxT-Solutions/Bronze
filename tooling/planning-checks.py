@@ -267,6 +267,12 @@ def check_oss_release() -> list[str]:
         if not (ROOT / name).is_file():
             errors.append(f"{name} missing")
 
+    contributing = (ROOT / "CONTRIBUTING.md").read_text() if (ROOT / "CONTRIBUTING.md").is_file() else ""
+    if contributing and "NxT-Solutions/homebrew-nxt-solutions-packages" not in contributing:
+        errors.append("CONTRIBUTING.md must name the org Homebrew tap")
+    if contributing and "NoahNxT/homebrew-nxt-solutions-packages" in contributing:
+        errors.append("CONTRIBUTING.md must not name the personal Homebrew tap")
+
     security = (ROOT / "SECURITY.md").read_text() if (ROOT / "SECURITY.md").is_file() else ""
     if security and "NxT-Solutions/Bronze/security/advisories" not in security:
         errors.append("SECURITY.md missing GitHub Advisories URL")
@@ -297,6 +303,12 @@ def check_oss_release() -> list[str]:
     if not brew_text:
         errors.append(".github/workflows/publish-homebrew.yml missing")
     else:
+        if "NxT-Solutions/homebrew-nxt-solutions-packages" not in brew_text:
+            errors.append(
+                "publish-homebrew.yml must clone NxT-Solutions/homebrew-nxt-solutions-packages"
+            )
+        if "NoahNxT/homebrew-nxt-solutions-packages" in brew_text:
+            errors.append("publish-homebrew.yml must not clone the personal tap")
         if "Casks/bronze.rb" not in brew_text:
             errors.append("publish-homebrew.yml must write Casks/bronze.rb")
         if 'cask "bronze"' not in brew_text:
@@ -305,6 +317,12 @@ def check_oss_release() -> list[str]:
             errors.append("publish-homebrew.yml must not write Formula/bronze.rb")
         if "brew upgrade --cask bronze" not in brew_text and "pkgutil" not in brew_text:
             errors.append("publish-homebrew.yml missing cask uninstall identity")
+
+    readme = (ROOT / "README.md").read_text() if (ROOT / "README.md").is_file() else ""
+    if "brew tap NxT-Solutions/nxt-solutions-packages" not in readme:
+        errors.append("README must tap NxT-Solutions/nxt-solutions-packages")
+    if "brew tap NoahNxT/nxt-solutions-packages" in readme:
+        errors.append("README must not tap NoahNxT/nxt-solutions-packages")
     return errors
 
 

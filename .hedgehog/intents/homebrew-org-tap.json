@@ -1,0 +1,34 @@
+{
+  "id": "homebrew-org-tap",
+  "goal": "After transferring the Homebrew tap from NoahNxT to NxT-Solutions, point Bronze install and publish docs at the org tap so the package is not advertised on the personal account.",
+  "outcome": "README tells people to brew tap NxT-Solutions/nxt-solutions-packages. CONTRIBUTING and publish-homebrew.yml clone NxT-Solutions/homebrew-nxt-solutions-packages and still write Casks/bronze.rb. Planning-checks assert the org tap. PACKAGES_REPO_TOKEN still publishes the cask. No Formula/bronze.rb. Do not start QUEUE-ATTACHMENTS. ADR-002, ADR-009, ADR-018, and ADR-023 stay Proposed.",
+  "priority": 100,
+  "requirements": [
+    {
+      "id": "HOMEBREW-ORG-TAP-RULE-1",
+      "kind": "rule",
+      "statement": "Bronze no longer tells people to brew tap NoahNxT/nxt-solutions-packages. The published tap is NxT-Solutions/nxt-solutions-packages, which clones github.com/NxT-Solutions/homebrew-nxt-solutions-packages."
+    },
+    {
+      "id": "HOMEBREW-ORG-TAP-RULE-2",
+      "kind": "rule",
+      "statement": "publish-homebrew.yml clones and pushes NxT-Solutions/homebrew-nxt-solutions-packages and writes Casks/bronze.rb, not Formula/bronze.rb."
+    },
+    {
+      "id": "HOMEBREW-ORG-TAP-RULE-3",
+      "kind": "rule",
+      "statement": "Do not start QUEUE-ATTACHMENTS. Do not claim WCAG, VoiceOver, or notarization. Do not silently accept ADR-002, ADR-009, ADR-018, or ADR-023."
+    },
+    {
+      "id": "HOMEBREW-ORG-TAP-ACCEPTANCE-1",
+      "kind": "acceptance",
+      "statement": "README contains brew tap NxT-Solutions/nxt-solutions-packages and does not tell people to tap NoahNxT/nxt-solutions-packages."
+    },
+    {
+      "id": "HOMEBREW-ORG-TAP-ACCEPTANCE-2",
+      "kind": "acceptance",
+      "statement": "publish-homebrew.yml and CONTRIBUTING.md name NxT-Solutions/homebrew-nxt-solutions-packages."
+    }
+  ],
+  "depends_on": []
+}

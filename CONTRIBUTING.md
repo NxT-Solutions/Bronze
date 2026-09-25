@@ -44,5 +44,5 @@ as `0.1.0`. That workflow tags `v*`, writes `CHANGELOG.md` from commits, builds
 an arm64 `.app`, and uploads `bronze-macos.pkg` (not a notarization claim).
 
 When `PACKAGES_REPO_TOKEN` is set, **Publish Homebrew** updates
-`Casks/bronze.rb` in `NoahNxT/homebrew-nxt-solutions-packages`. The tap is a
+`Casks/bronze.rb` in `NxT-Solutions/homebrew-nxt-solutions-packages`. The tap is a
 cask, not `Formula/bronze.rb`.
