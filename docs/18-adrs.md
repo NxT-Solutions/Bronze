@@ -43,6 +43,7 @@ An ADR change must name affected PRD IDs, migration impact, tests, distribution/
 | ADR-020 | User-imported local GGUF title engines | Accepted | QUE-002, SEC-003, SEC-004 |
 | ADR-021 | Opt-in loopback Ollama title client | Accepted | SEC-004, G-05, QUE-002 |
 | ADR-022 | Opt-in hosted title providers | Accepted | SEC-004, G-05, QUE-002, ADR-017 |
+| ADR-023 | User-initiated GitHub Releases version check | Proposed | SEC-001, SEC-004, ADR-017 |
 
 ## ADR-001: Local selection-to-action queue
 
@@ -715,6 +716,7 @@ SEC-001 and SEC-004 require no remote code/content and no runtime network by def
 - Runtime network capture is release gate.
 - Future updater/cloud/action requires separate opt-in design, signed protocol, threat model, capability, CSP, privacy UI, and superseding ADR.
 - ADR-022 is the superseding record for an explicit, off-by-default title API only. Default install still makes no hosted call.
+- ADR-023 is the Proposed record for a user-initiated GitHub latest-release check only. It does not accept Sparkle, the Tauri updater plugin, a silent download, or a background poll.
 
 ### Consequences
 
@@ -883,6 +885,38 @@ ADR-017 and T-10 forbid a hosted AI API in the default app. Operators want an op
 - Export and support preview contain no key material.
 - A private or loopback hosted base is rejected.
 - A failed hosted refine does not throw away the capture ID.
+
+## ADR-023: User-initiated GitHub Releases version check
+
+Status: Proposed
+
+Supersedes: ADR-017 for an explicit, user-initiated GitHub latest-release check only
+
+### Context
+
+ADR-017 forbids a production-default HTTP client and says security advisories and releases stay user-initiated until an updater ADR. A public repo needs a way to tell an installed app that a newer GitHub release exists, without Sparkle, without `@tauri-apps/plugin-updater`, and without a silent download. Homebrew cask installs should not be told to self-replace a `.pkg`.
+
+### Decision
+
+- Settings shows the running `CARGO_PKG_VERSION`. Check for updates is a button. There is no startup check and no background poll.
+- The check runs in Rust. Destination is `https://api.github.com/repos/NxT-Solutions/Bronze/releases/latest` only. Require a User-Agent. Ignore `HTTP_PROXY` and `ALL_PROXY`. Never send capture text, settings, or diagnostics.
+- WebView CSP `connect-src` stays ipc-only. `open_release_page` opens only `https://github.com/NxT-Solutions/Bronze/releases` URLs in the default browser.
+- A newer tag shows parsed release notes and an install action for the detected source: `brew upgrade --cask bronze` for Caskroom/Cellar, Open release for a direct `/Applications/Bronze.app` package, and debug copy for `target/` or `debug_assertions`. Debug does not offer an in-place install.
+- No Sparkle. No Tauri updater plugin. No silent download. Unsigned `.pkg` is allowed when Apple secrets are missing. Do not claim notarization.
+- ADR-017 stays Accepted for every other client. This record stays Proposed. ADR-002, ADR-009, and ADR-018 stay Proposed. ADR-015 stays Accepted.
+
+### Consequences
+
+- A GitHub Releases check is the only new default-path HTTP call, and only after the user clicks Check for updates.
+- Homebrew users keep `brew upgrade --cask bronze` as the install action.
+- Accepting silent download, Sparkle, or a hosted update CDN needs a new ADR that supersedes this record.
+
+### Verification
+
+- `app_version_info` does not touch the network.
+- A same or older tag returns `available=false`.
+- `open_release_page` rejects a URL that is not a Bronze GitHub release page.
+- Settings chrome does not contain `api.github.com`.
 
 ## 3. Decision-change checklist
 

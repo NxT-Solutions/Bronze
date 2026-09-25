@@ -212,7 +212,7 @@ Flaky test is defect. Quarantine requires issue, owner, reason, scope, expiry, a
 - Database migrations forward; rollback uses backup, not reverse SQL assumption.
 - Security patch updates prioritized; minimum macOS/WebKit reviewed each release.
 - Release rings: internal signed → small local beta → release candidate → stable.
-- P0 has no auto-updater/network; publish manual update process. Later updater needs privacy/security ADR.
+- P0 has no auto-updater and no background network. A user-initiated GitHub latest-release check is ADR-023 Proposed (Settings button, no silent download, no Sparkle, no Tauri updater plugin). Homebrew installs are told to `brew upgrade --cask bronze`.
 
 ## 14. Local debug packaging (SEC-005)
 

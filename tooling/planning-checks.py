@@ -179,6 +179,16 @@ def check_title_adr() -> list[str]:
             "ADR-022",
             ("Status: Accepted", "Keychain", "hosted-openai", "payload class"),
         ),
+        (
+            "ADR-023",
+            (
+                "Status: Proposed",
+                "releases/latest",
+                "brew upgrade --cask bronze",
+                "No Sparkle",
+                "user-initiated",
+            ),
+        ),
     ):
         start_n = adrs.find(f"## {adr_id}:")
         if start_n < 0:
@@ -196,6 +206,15 @@ def check_title_adr() -> list[str]:
             )
             if "Accepted" not in row:
                 errors.append(f"{adr_id} index row must stay Accepted")
+        if adr_id == "ADR-023":
+            if re.search(r"^Status: Accepted", body, re.M):
+                errors.append("ADR-023 must stay Proposed")
+            row = next(
+                (line for line in adrs.splitlines() if line.startswith("| ADR-023 |")),
+                "",
+            )
+            if "Proposed" not in row:
+                errors.append("ADR-023 index row must stay Proposed")
     t10 = next((line for line in threat.splitlines() if line.startswith("| T-10 ")), "")
     if not t10:
         errors.append("T-10 row missing")
