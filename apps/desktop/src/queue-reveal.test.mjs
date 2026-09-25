@@ -144,7 +144,7 @@ test("notification click reveals a loaded card and loads a missing page by id", 
   assert.deepEqual(pageCalls, [
     {
       name: "queue_query",
-      args: { filter: "overview", limit: 20, sort: "oldest" },
+      args: { filter: "overview", limit: 20, sort: "oldest", itemId: "i9" },
     },
   ]);
   assert.deepEqual(inserted, [["i9", "i10"]]);
@@ -239,6 +239,9 @@ test("last copied card keeps a ring that reduce motion holds still", () => {
   assert.match(live, /planNewItemFollow/);
   assert.match(live, /plan\.scrollId/);
   assert.match(reveal, /queue_query/);
+  assert.match(reveal, /itemId/);
+  assert.match(live, /itemId/);
+  assert.doesNotMatch(reveal, /for \(let hop/);
   assert.doesNotMatch(reveal, /queue_page_for_item/);
   assert.doesNotMatch(reveal, /list_overview_items/);
   assert.match(live, /notice-activate/);

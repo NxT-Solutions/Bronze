@@ -776,28 +776,21 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (findQueueCard(list, id)) {
       return;
     }
-    if (state.items.length === 0) {
-      const page = await queryPage(null);
-      state = applyQueuePage(
-        { items: [], nextCursor: null, anchorCursor: null },
-        page,
-        "head",
-      );
+    const page = await invokeFn("queue_query", {
+      filter: "overview",
+      limit: QUEUE_PAGE_SIZE,
+      sort: activeSort,
+      itemId: id,
+    });
+    const items = page?.items ?? [];
+    if (!items.some((row) => row.id === id)) {
+      return;
     }
-    let guard = 0;
-    while (
-      !state.items.some((row) => row.id === id) &&
-      state.nextCursor &&
-      guard < 200
-    ) {
-      const page = await queryPage(state.nextCursor);
-      const before = state.items.length;
-      state = applyQueuePage(state, page, "more");
-      guard += 1;
-      if ((page?.items ?? []).length === 0 || state.items.length === before) {
-        break;
-      }
-    }
+    state = {
+      items,
+      nextCursor: page?.nextCursor ?? null,
+      anchorCursor: null,
+    };
     await paint({ action: "replace" });
     if (lastCopiedId) {
       markLastCopied(list, lastCopiedId);

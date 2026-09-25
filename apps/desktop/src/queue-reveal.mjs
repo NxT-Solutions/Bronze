@@ -212,29 +212,20 @@ export async function revealQueueItem({
   if (!card && typeof invoke === "function") {
     const mode =
       typeof sort === "string" ? normalizeQueueSort(sort) : readQueueSort(list);
-    let cursor = null;
-    const seen = new Set();
-    for (let hop = 0; hop < 200 && !card; hop += 1) {
-      const args = { filter: "overview", limit: 20, sort: mode };
-      if (cursor) {
-        args.cursor = cursor;
-      }
-      const page = await invoke("queue_query", args);
-      const items = page?.items ?? [];
-      if (
-        items.some((item) => item?.id === id) &&
-        typeof insertMissing === "function"
-      ) {
-        insertMissing(list, items, template);
-      }
-      card = findQueueCard(list, id);
-      const next = page?.nextCursor ?? null;
-      if (card || !next || seen.has(next) || items.length === 0) {
-        break;
-      }
-      seen.add(next);
-      cursor = next;
+    const page = await invoke("queue_query", {
+      filter: "overview",
+      limit: 20,
+      sort: mode,
+      itemId: id,
+    });
+    const items = page?.items ?? [];
+    if (
+      items.some((item) => item?.id === id) &&
+      typeof insertMissing === "function"
+    ) {
+      insertMissing(list, items, template);
     }
+    card = findQueueCard(list, id);
   }
   if (!card) {
     return { found: false, behavior: "auto" };
