@@ -54,8 +54,8 @@ pub use pasteboard::{
 #[cfg(target_os = "macos")]
 pub use permission::MacosPreflightHost;
 pub use permission::{
-    prompt_used_permissions, snapshot_from_preflight, PermissionRequestHost, PreflightError,
-    PreflightHost, PromptAttempt, PromptReason,
+    prompt_used_permissions, snapshot_from_preflight, MemoryPromptLedger, PermissionRequestHost,
+    PreflightError, PreflightHost, PromptAttempt, PromptLedger, PromptReason, ShownPrompts,
 };
 pub use settings_file::{
     accept_settings_file_path, read_settings_import_bytes, try_pick_settings_export_path,

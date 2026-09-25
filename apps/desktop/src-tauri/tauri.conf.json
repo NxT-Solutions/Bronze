@@ -96,7 +96,8 @@
       "../../../packages/i18n/locales": "locales/"
     },
     "macOS": {
-      "entitlements": "entitlements/macos.release.plist"
+      "entitlements": "entitlements/macos.release.plist",
+      "infoPlist": "Info.plist"
     }
   }
 }

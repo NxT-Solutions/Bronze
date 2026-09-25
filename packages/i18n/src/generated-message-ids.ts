@@ -395,10 +395,14 @@ export const MessageIds = {
   "settings.permission.status.denied": "settings.permission.status.denied",
   "settings.permission.inputMonitoring.why":
     "settings.permission.inputMonitoring.why",
+  "settings.permission.inputMonitoring.usage":
+    "settings.permission.inputMonitoring.usage",
   "settings.permission.inputMonitoring.alternative":
     "settings.permission.inputMonitoring.alternative",
   "settings.permission.accessibility.why":
     "settings.permission.accessibility.why",
+  "settings.permission.accessibility.usage":
+    "settings.permission.accessibility.usage",
   "settings.permission.accessibility.alternative":
     "settings.permission.accessibility.alternative",
   "settings.permission.launchAtLogin.why":

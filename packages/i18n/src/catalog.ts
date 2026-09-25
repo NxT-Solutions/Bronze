@@ -14,6 +14,14 @@ export const ADVERTISED_LOCALES = [
 export const INFOPLIST_GLOSSARY = [
   ["CFBundleDisplayName", "app.name"],
   ["CFBundleName", "app.name"],
+  [
+    "NSAccessibilityUsageDescription",
+    "settings.permission.accessibility.usage",
+  ],
+  [
+    "NSInputMonitoringUsageDescription",
+    "settings.permission.inputMonitoring.usage",
+  ],
 ] as const;
 
 export const NATIVE_GLOSSARY_KEYS = [

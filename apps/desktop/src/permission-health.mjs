@@ -1,5 +1,6 @@
 import { catalogMessage, LOCALE_APPLIED_EVENT } from "./apply-locale.mjs";
 
+export const READ_COMMAND = "read_used_permissions";
 export const RETEST_COMMAND = "retest_used_permissions";
 export const OPEN_SETTINGS_COMMAND = "open_privacy_settings";
 export const NOTICE_STATUS_COMMAND = "notification_authorization_status";
@@ -171,7 +172,7 @@ export async function retestUsedPermission(capability, invokeFn = tauriInvoke) {
 }
 
 export function bindPermissionHealth(root = document, invokeFn = tauriInvoke) {
-  invokeFn(RETEST_COMMAND)
+  invokeFn(READ_COMMAND)
     .then((result) => applyPermissionResult(root, result))
     .catch(() => {});
   loadNoticeAuthorization(root, invokeFn).catch(() => {
