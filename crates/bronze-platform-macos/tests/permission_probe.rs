@@ -3,7 +3,8 @@
 use std::cell::Cell;
 
 use bronze_platform_macos::{
-    prompt_used_permissions, PermissionRequestHost, PreflightError, PreflightHost, PromptReason,
+    prompt_used_permissions, MemoryPromptLedger, PermissionRequestHost, PreflightError,
+    PreflightHost, PromptReason,
 };
 use bronze_settings::{manual_composer_available, PermissionState};
 
@@ -49,7 +50,11 @@ fn native_start_requests_when_preflight_is_not_a_grant() {
         listen_requests: Cell::new(0),
         accessibility_requests: Cell::new(0),
     };
-    let attempt = prompt_used_permissions(&host, PromptReason::NativeStart);
+    let attempt = prompt_used_permissions(
+        &host,
+        PromptReason::NativeStart,
+        &MemoryPromptLedger::default(),
+    );
     assert_eq!(host.listen_requests.get(), 1);
     assert_eq!(host.accessibility_requests.get(), 1);
     assert!(attempt.listen_requested);
@@ -74,7 +79,11 @@ fn health_retest_probe_errors_stay_unhealthy() {
         listen_requests: Cell::new(0),
         accessibility_requests: Cell::new(0),
     };
-    let attempt = prompt_used_permissions(&host, PromptReason::HealthRetest);
+    let attempt = prompt_used_permissions(
+        &host,
+        PromptReason::HealthRetest,
+        &MemoryPromptLedger::default(),
+    );
     assert_eq!(host.listen_requests.get(), 1);
     assert_eq!(host.accessibility_requests.get(), 1);
     assert_eq!(attempt.snapshot.input_monitoring, PermissionState::Degraded);
