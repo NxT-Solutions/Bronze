@@ -17,6 +17,21 @@ describe("settings schema (SET-001)", () => {
   it("search finds backup and rejects off schedule", () => {
     const hits = searchSettingsFields("backup");
     expect(hits.some((field) => field.id === "data.backupSchedule")).toBe(true);
+    expect(hits[0]?.id).toBe("data.backupSchedule");
+    expect(
+      searchSettingsFields("BCKP").some(
+        (field) => field.id === "data.backupSchedule",
+      ),
+    ).toBe(true);
+    expect(
+      searchSettingsFields("BACKUP").some(
+        (field) => field.id === "data.backupSchedule",
+      ),
+    ).toBe(true);
+    expect(searchSettingsFields("zzzz")).toEqual([]);
+    expect(searchSettingsFields("  ").map((field) => field.id)).toEqual(
+      searchSettingsFields("").map((field) => field.id),
+    );
     expect(parseBackupSchedule("daily")).toBe("daily");
     expect(parseBackupSchedule("weekly")).toBe("weekly");
     expect(parseBackupSchedule("off")).toBeNull();

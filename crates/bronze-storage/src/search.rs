@@ -2,6 +2,7 @@
 //! ADR-018 stays Proposed; this hook does not complete locale search.
 
 use crate::migrate::Store;
+use bronze_domain::fuzzy_best_score;
 
 pub const ADR_018_STATUS: &str = "Proposed";
 pub const QUE_007_COMPLETE: bool = false;
@@ -41,27 +42,60 @@ impl Store {
         self.search(query, SearchKind::PlaceholderSubstring)
     }
 
+    pub fn search_placeholder_in_locale(
+        &self,
+        query: &str,
+        locale: &str,
+    ) -> Result<Vec<SearchHit>, SearchError> {
+        self.search_for_locale(query, SearchKind::PlaceholderSubstring, locale)
+    }
+
     pub fn search(&self, query: &str, kind: SearchKind) -> Result<Vec<SearchHit>, SearchError> {
+        self.search_for_locale(query, kind, "en")
+    }
+
+    pub fn search_for_locale(
+        &self,
+        query: &str,
+        kind: SearchKind,
+        locale: &str,
+    ) -> Result<Vec<SearchHit>, SearchError> {
         if kind == SearchKind::LocaleAware || !matches_placeholder_contract() {
             return Err(SearchError::LocaleSemanticsUnavailable);
         }
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, body FROM items ORDER BY id")
-            .map_err(|_| SearchError::Store)?;
-        let rows = stmt
-            .query_map([], |row| {
-                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-            })
-            .map_err(|_| SearchError::Store)?;
-        let mut hits = Vec::new();
+        let rows = self.list_items(true).map_err(|_| SearchError::Store)?;
+        if query.trim().is_empty() {
+            return Ok(rows
+                .into_iter()
+                .map(|row| SearchHit { item_id: row.id })
+                .collect());
+        }
+        let mut ranked = Vec::new();
         for row in rows {
-            let (id, body) = row.map_err(|_| SearchError::Store)?;
-            if body.contains(query) {
-                hits.push(SearchHit { item_id: id });
+            let title = row.title.unwrap_or_default();
+            let app = row.source_app_name.unwrap_or_default();
+            let bundle = row.source_bundle_id.unwrap_or_default();
+            let Some(score) = fuzzy_best_score(
+                [
+                    row.body.as_str(),
+                    title.as_str(),
+                    app.as_str(),
+                    bundle.as_str(),
+                ],
+                query,
+                locale,
+            ) else {
+                continue;
+            };
+            if score > 0 {
+                ranked.push((score, row.id));
             }
         }
-        Ok(hits)
+        ranked.sort_by_key(|row| std::cmp::Reverse(row.0));
+        Ok(ranked
+            .into_iter()
+            .map(|(_, item_id)| SearchHit { item_id })
+            .collect())
     }
 }
 
@@ -180,5 +214,92 @@ mod search_placeholder_tests {
         let rendered = format!("{announced:?}{announced:?}");
         assert!(!rendered.contains(query));
         assert!(!rendered.contains("plain"));
+    }
+
+    #[test]
+    fn search_is_fuzzy_case_insensitive_and_scans_the_full_list() {
+        use crate::queue::{QueueListFilter, QUEUE_PAGE_SIZE};
+
+        let store = open_store();
+        let page = QUEUE_PAGE_SIZE as i64;
+        for index in 0..page {
+            store
+                .conn
+                .execute(
+                    "INSERT INTO items VALUES (?1,'s1','note','filler','und','queued',?2,NULL,1,1,1,NULL,NULL,NULL)",
+                    rusqlite::params![format!("fill-{index}"), format!("m{index:02}")],
+                )
+                .expect("filler");
+        }
+        store
+            .conn
+            .execute(
+                "INSERT INTO sources VALUES ('src-safari','com.apple.Safari','Safari',NULL,NULL,1,1)",
+                [],
+            )
+            .expect("source");
+        store
+            .conn
+            .execute(
+                "INSERT INTO items VALUES ('late','s1','note','unrelated words','und','queued','z','src-safari',1,1,1,NULL,NULL,'Bronze')",
+                [],
+            )
+            .expect("late");
+
+        let first = store
+            .query_queue_page(None, QueueListFilter::Overview, QUEUE_PAGE_SIZE)
+            .expect("page");
+        assert!(first.next_cursor.is_some());
+        assert!(!first.items.iter().any(|row| row.id == "late"));
+
+        let fuzzy = store.search_placeholder("brn").expect("fuzzy");
+        assert_eq!(fuzzy.len(), 1);
+        assert_eq!(fuzzy[0].item_id, "late");
+        let upper = store.search_placeholder("BRONZE").expect("case");
+        assert_eq!(upper[0].item_id, "late");
+        assert!(store.search_placeholder("zzzz").expect("miss").is_empty());
+        assert!(store.search_placeholder("cafe").expect("ascii").is_empty());
+        let folded = store.search_placeholder("CAFÉ").expect("folded");
+        assert_eq!(folded.len(), 1);
+        assert_eq!(folded[0].item_id, "i1");
+
+        let safari = store.search_placeholder("sfri").expect("app");
+        assert_eq!(safari.len(), 1);
+        assert_eq!(safari[0].item_id, "late");
+
+        let all = store.search_placeholder("  ").expect("empty");
+        let listed = store.list_items(true).expect("list");
+        assert_eq!(all.len(), listed.len());
+        assert_eq!(
+            all.iter()
+                .map(|hit| hit.item_id.as_str())
+                .collect::<Vec<_>>(),
+            listed.iter().map(|row| row.id.as_str()).collect::<Vec<_>>()
+        );
+
+        let turkish = store
+            .search_placeholder_in_locale("ıstanbul", "tr")
+            .expect("tr miss");
+        assert!(turkish.is_empty());
+        store
+            .conn
+            .execute(
+                "INSERT INTO items VALUES ('ist','s1','note','Istanbul','und','queued','y',NULL,1,1,1,NULL,NULL,NULL)",
+                [],
+            )
+            .expect("istanbul");
+        let dotted = store
+            .search_placeholder_in_locale("istanbul", "tr")
+            .expect("tr dotted");
+        assert!(dotted.is_empty());
+        let dotless = store
+            .search_placeholder_in_locale("ıstanbul", "tr")
+            .expect("tr dotless");
+        assert_eq!(dotless.len(), 1);
+        assert_eq!(dotless[0].item_id, "ist");
+        let english = store
+            .search_for_locale("istanbul", SearchKind::PlaceholderSubstring, "en")
+            .expect("en");
+        assert_eq!(english[0].item_id, "ist");
     }
 }

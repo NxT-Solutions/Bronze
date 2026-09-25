@@ -18,7 +18,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const live = readFileSync(join(root, "library-live.mjs"), "utf8");
 const html = readFileSync(join(root, "library.html"), "utf8");
 
-test("library search stays a substring placeholder", () => {
+test("library search announces a count and leaves QUE-007 incomplete", () => {
   assert.equal(announceCount(0), "0 items");
   assert.equal(announceCount(2), "2 items");
   assert.equal(QUE_007_COMPLETE, false);
@@ -44,6 +44,8 @@ test("library items sanitize markdown and keep a title plus expand reader", () =
   assert.match(live, /hashchange/);
   assert.match(live, /libraryListMode/);
   assert.match(live, /mode === "search"/);
+  assert.match(live, /search_library_items/);
+  assert.doesNotMatch(live, /fuzzyMatchScore|fuzzyFilter|\.includes\(query\)/);
   assert.match(html, /class="chrome-search"/);
   assert.match(html, /data-search-clear/);
   assert.doesNotMatch(html, /href="#search"/);
