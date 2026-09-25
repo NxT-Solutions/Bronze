@@ -111,6 +111,19 @@ mod packaging_tests {
             sizes.contains(&(1024, 1024)),
             "icon.icns must include the 1024px image, found {sizes:?}"
         );
+        let checker = manifest.join("../../../tooling/dock-icon-fill.py");
+        let fill = std::process::Command::new("python3")
+            .arg(&checker)
+            .arg(manifest.join("icons/icon.icns"))
+            .arg(manifest.join("icons/icon.png"))
+            .arg(manifest.join("icons/128x128.png"))
+            .arg(manifest.join("icons/128x128@2x.png"))
+            .status()
+            .expect("dock icon fill check");
+        assert!(
+            fill.success(),
+            "Dock icon artwork must cover the canvas edge"
+        );
         let icns_at = conf.find("\"icons/icon.icns\"").unwrap();
         let template_at = conf.find("\"icons/32x32.png\"").unwrap();
         assert!(

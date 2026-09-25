@@ -337,6 +337,7 @@ jobs:
             echo "Bundled icon.icns largest image is ${width}px, expected 1024."
             exit 1
           fi
+          python3 tooling/dock-icon-fill.py "$app/Contents/Resources/icon.icns"
           rm -rf pkgroot
           mkdir -p pkgroot/Applications
           cp -R "$app" pkgroot/Applications/
