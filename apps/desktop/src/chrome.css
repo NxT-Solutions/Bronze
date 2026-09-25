@@ -1321,7 +1321,7 @@ menu {
   letter-spacing: 0;
   word-spacing: normal;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .health-card {
