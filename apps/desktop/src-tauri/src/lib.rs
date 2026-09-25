@@ -826,6 +826,13 @@ pub use packaging::{
 };
 
 #[cfg(test)]
+#[path = "../notice_signing.rs"]
+mod notice_signing;
+#[cfg(test)]
+#[path = "../title_model_bundle.rs"]
+mod title_model_bundle;
+
+#[cfg(test)]
 mod abi_ownership;
 
 #[cfg(test)]

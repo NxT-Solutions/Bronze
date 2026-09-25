@@ -154,6 +154,7 @@ mod packaging_tests {
         assert!(build.contains("/usr/bin/codesign"));
         assert!(build.contains("app.bronze.desktop.notice"));
         assert!(build.contains("Bronze Notice"));
+        assert!(build.contains("--keychain"));
         assert!(build.contains("bronze-notice-signing.keychain"));
         assert!(build.contains("--arch"));
         assert!(build.contains("swift_target_triple") || build.contains("apple-macosx14.0"));
