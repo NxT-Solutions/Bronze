@@ -199,6 +199,7 @@ test("settings window is searchable grouped with daily weekly backup and export 
   );
   assert.match(html, /data-app-version/);
   assert.match(html, /data-check-update/);
+  assert.doesNotMatch(html, /class="btn-ghost"\s+data-check-update/);
   assert.match(html, /id="update-sheet"/);
   assert.match(html, /data-i18n="settings.field.version.check"/);
   assert.equal(en["settings.field.version"], "Version");
