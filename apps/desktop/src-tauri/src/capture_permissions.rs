@@ -1,7 +1,11 @@
 //! Used-permission prompts for native start, first capture, and health retest (SET-003, SET-004).
 
-use bronze_platform_macos::{prompt_used_permissions, PromptAttempt, PromptReason};
-use serde::Serialize;
+use std::path::{Path, PathBuf};
+
+use bronze_platform_macos::{
+    prompt_used_permissions, PromptAttempt, PromptLedger, PromptReason, ShownPrompts,
+};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct PermissionPromptDto {
@@ -34,11 +38,106 @@ impl PermissionPromptDto {
     }
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+struct PromptRecord {
+    accessibility: String,
+    listen: String,
+}
+
+/// Remembers which binary already showed each system prompt.
+///
+/// Identity is the executable path, mtime, and length. Relaunching that
+/// binary does not prompt again. A replaced binary has a new identity.
+pub struct FilePromptLedger {
+    path: PathBuf,
+    identity: String,
+}
+
+impl FilePromptLedger {
+    pub fn at(path: PathBuf, identity: impl Into<String>) -> Self {
+        Self {
+            path,
+            identity: identity.into(),
+        }
+    }
+
+    pub fn for_data_dir(data_dir: &Path) -> Self {
+        Self::at(
+            data_dir.join("permission-prompts.json"),
+            current_binary_identity(),
+        )
+    }
+
+    fn load(&self) -> PromptRecord {
+        let Ok(raw) = std::fs::read(&self.path) else {
+            return PromptRecord::default();
+        };
+        serde_json::from_slice(&raw).unwrap_or_default()
+    }
+}
+
+impl PromptLedger for FilePromptLedger {
+    fn shown(&self) -> ShownPrompts {
+        if self.identity.is_empty() {
+            return ShownPrompts::default();
+        }
+        let record = self.load();
+        ShownPrompts {
+            accessibility: record.accessibility == self.identity,
+            listen: record.listen == self.identity,
+        }
+    }
+
+    fn remember(&self, shown: ShownPrompts) {
+        if self.identity.is_empty() {
+            return;
+        }
+        let mut record = self.load();
+        if shown.accessibility {
+            record.accessibility = self.identity.clone();
+        }
+        if shown.listen {
+            record.listen = self.identity.clone();
+        }
+        if let Some(parent) = self.path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let Ok(raw) = serde_json::to_vec(&record) else {
+            return;
+        };
+        if std::fs::write(&self.path, raw).is_ok() {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let _ =
+                    std::fs::set_permissions(&self.path, std::fs::Permissions::from_mode(0o600));
+            }
+        }
+    }
+}
+
+fn current_binary_identity() -> String {
+    let Ok(path) = std::env::current_exe() else {
+        return String::new();
+    };
+    let Ok(meta) = std::fs::metadata(&path) else {
+        return String::new();
+    };
+    let modified = meta
+        .modified()
+        .ok()
+        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+    format!("{}:{modified}:{}", path.display(), meta.len())
+}
+
 #[cfg(target_os = "macos")]
-pub fn prompt_on_native_start() -> PromptAttempt {
+pub fn prompt_on_native_start(data_dir: &Path) -> PromptAttempt {
     prompt_used_permissions(
         &bronze_platform_macos::MacosPreflightHost,
         PromptReason::NativeStart,
+        &FilePromptLedger::for_data_dir(data_dir),
     )
 }
 
@@ -64,7 +163,7 @@ pub fn request_notification_authorization() -> String {
 }
 
 #[cfg(target_os = "macos")]
-pub fn prompt_on_first_capture_path() -> Option<PromptAttempt> {
+pub fn prompt_on_first_capture_path(data_dir: &Path) -> Option<PromptAttempt> {
     use std::sync::atomic::{AtomicBool, Ordering};
     static DONE: AtomicBool = AtomicBool::new(false);
     if DONE.swap(true, Ordering::SeqCst) {
@@ -73,15 +172,35 @@ pub fn prompt_on_first_capture_path() -> Option<PromptAttempt> {
     Some(prompt_used_permissions(
         &bronze_platform_macos::MacosPreflightHost,
         PromptReason::FirstCapture,
+        &FilePromptLedger::for_data_dir(data_dir),
     ))
 }
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
-pub fn retest_used_permissions() -> PermissionPromptDto {
+pub fn read_used_permissions() -> PermissionPromptDto {
+    let snapshot =
+        bronze_platform_macos::snapshot_from_preflight(&bronze_platform_macos::MacosPreflightHost);
+    PermissionPromptDto::from_attempt(PromptAttempt {
+        snapshot,
+        listen_requested: false,
+        accessibility_requested: false,
+        screen_recording_requested: false,
+    })
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn retest_used_permissions(app: tauri::AppHandle) -> PermissionPromptDto {
+    use tauri::Manager;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir());
     let attempt = prompt_used_permissions(
         &bronze_platform_macos::MacosPreflightHost,
         PromptReason::HealthRetest,
+        &FilePromptLedger::for_data_dir(&dir),
     );
     PermissionPromptDto::from_attempt(attempt)
 }
@@ -125,11 +244,13 @@ pub fn open_privacy_settings(capability: String) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    use super::FilePromptLedger;
     use super::{privacy_settings_open_target, PermissionPromptDto};
     use bronze_platform_macos::{
         prompt_used_permissions, PermissionRequestHost, PreflightError, PreflightHost, PromptReason,
     };
     use bronze_settings::PermissionState;
+    use std::cell::Cell;
 
     struct FakeHost;
 
@@ -155,7 +276,11 @@ mod tests {
 
     #[test]
     fn dto_maps_denied_request_and_never_opens_screen_recording() {
-        let attempt = prompt_used_permissions(&FakeHost, PromptReason::HealthRetest);
+        let attempt = prompt_used_permissions(
+            &FakeHost,
+            PromptReason::HealthRetest,
+            &bronze_platform_macos::MemoryPromptLedger::default(),
+        );
         let dto = PermissionPromptDto::from_attempt(attempt);
         assert_eq!(dto.input_monitoring, PermissionState::Denied.as_str());
         assert_eq!(dto.accessibility, PermissionState::Denied.as_str());
@@ -193,11 +318,75 @@ mod tests {
         assert!(production.contains("request_notification_authorization"));
         assert!(production.contains("PromptReason::FirstCapture"));
         assert!(production.contains("PromptReason::HealthRetest"));
+        assert!(production.contains("read_used_permissions"));
+        assert!(production.contains("permission-prompts.json"));
+        assert!(production.contains("FilePromptLedger"));
         assert!(!production.contains("CGRequestScreenCaptureAccess"));
         let live_host = format!("{}{}{}", "Macos", "Preflight", "Host");
         assert!(
             !tests.contains(&live_host),
             "tests must use a fake host only and never invoke the live host"
         );
+    }
+
+    #[test]
+    fn remembered_prompt_is_not_repeated_for_the_same_binary() {
+        struct CountingHost {
+            requests: Cell<u32>,
+        }
+
+        impl PreflightHost for CountingHost {
+            fn listen_event_access(&self) -> Result<bool, PreflightError> {
+                Ok(false)
+            }
+
+            fn accessibility_trusted(&self) -> Result<bool, PreflightError> {
+                Ok(false)
+            }
+        }
+
+        impl PermissionRequestHost for CountingHost {
+            fn request_listen_event_access(&self) -> Result<bool, PreflightError> {
+                self.requests.set(self.requests.get() + 1);
+                Ok(false)
+            }
+
+            fn request_accessibility_trusted(&self) -> Result<bool, PreflightError> {
+                self.requests.set(self.requests.get() + 1);
+                Ok(false)
+            }
+        }
+
+        let dir = std::env::temp_dir().join(format!(
+            "bronze-prompt-ledger-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let path = dir.join("permission-prompts.json");
+        let host = CountingHost {
+            requests: Cell::new(0),
+        };
+        let first = FilePromptLedger::at(path.clone(), "binary-a");
+        let opened = prompt_used_permissions(&host, PromptReason::NativeStart, &first);
+        assert!(opened.listen_requested);
+        assert!(opened.accessibility_requested);
+        assert_eq!(host.requests.get(), 2);
+
+        let relaunch = FilePromptLedger::at(path.clone(), "binary-a");
+        let again = prompt_used_permissions(&host, PromptReason::NativeStart, &relaunch);
+        assert!(!again.listen_requested);
+        assert!(!again.accessibility_requested);
+        assert_eq!(again.snapshot.accessibility, PermissionState::Denied);
+        assert_eq!(host.requests.get(), 2);
+
+        let replaced = FilePromptLedger::at(path, "binary-b");
+        let next_binary = prompt_used_permissions(&host, PromptReason::NativeStart, &replaced);
+        assert!(next_binary.accessibility_requested);
+        assert!(next_binary.listen_requested);
+        assert_eq!(host.requests.get(), 4);
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

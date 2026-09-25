@@ -276,8 +276,8 @@ Rules:
 5. Load settings and locale (`SettingsV1.general.locale`; `system` and unknown map to **en**; native menus use that catalog at launch).
 6. Create accessible status item and warm quick panel (debug `tauri dev` shows it on launch; capture-only still does not reveal it).
 7. Register last-known-good standard chord.
-8. Request Accessibility and Input Monitoring when not already granted; never Screen Recording; never loop-prompt.
-9. Start passive event tap only when configured and authorized.
+8. Request Accessibility and Input Monitoring once for this binary when not already granted and that prompt has not been shown. Remember a dismissed prompt. Never Screen Recording. Never loop-prompt. Request notification authorization while it is not determined.
+9. Start the passive event tap after those requests. Recreate it when Input Monitoring becomes granted.
 10. Publish local health snapshot to settings/support UI.
 
 If storage cannot enter writable healthy state, app enters read-only recovery. It must not accept captures that appear saved.

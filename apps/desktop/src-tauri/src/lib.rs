@@ -17,6 +17,7 @@ pub fn run() {
         builder = builder
             .invoke_handler(tauri::generate_handler![
                 capture_permissions::retest_used_permissions,
+                capture_permissions::read_used_permissions,
                 capture_permissions::open_privacy_settings,
                 capture_permissions::notification_authorization_status,
                 capture_permissions::request_notification_authorization,
@@ -64,13 +65,16 @@ pub fn run() {
             ])
             .setup(|app| {
                 use tauri::Manager;
+                let data_dir = app.path().app_data_dir()?;
+                let _ = capture_permissions::prompt_on_native_start(&data_dir);
+                let _ = capture_permissions::prompt_notification_if_undetermined();
+                let _ = bronze_platform_macos::NativeRuntime::event_tap_start_shared();
                 if let Ok(dir) = app.path().resource_dir() {
                     let models = dir.join("models");
                     if models.is_dir() {
                         bronze_title_model::set_weights_dir(models);
                     }
                 }
-                let data_dir = app.path().app_data_dir()?;
                 let session = live_session::LiveSession::open(data_dir)?;
                 app.manage(std::sync::Mutex::new(session));
                 title_refine::attach_title_engine_status(app.handle());
@@ -302,9 +306,6 @@ fn start_native_or_die() {
                 .expect("BronzeNative version query (CAP-004)");
             bronze_platform_macos::check_abi_version(version)
                 .expect("BronzeNative ABI mismatch is fail-closed (CAP-004)");
-            let _ = capture_permissions::prompt_on_native_start();
-            let _ = capture_permissions::prompt_notification_if_undetermined();
-            let _ = runtime.event_tap_start();
             // Process-lifetime: dropping would shutdown the in-process static lib.
             std::mem::forget(runtime);
         }
@@ -627,8 +628,11 @@ fn handle_menu_id(app: &tauri::AppHandle, id: &str) {
 
 #[cfg(target_os = "macos")]
 pub fn on_capture_requested(app: &tauri::AppHandle) {
+    use tauri::Manager;
     bronze_platform_macos::note_external_focus();
-    let _ = capture_permissions::prompt_on_first_capture_path();
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = capture_permissions::prompt_on_first_capture_path(&dir);
+    }
     if bronze_platform_macos::bronze_is_frontmost() {
         let handle = app.clone();
         let _ = std::thread::Builder::new()
