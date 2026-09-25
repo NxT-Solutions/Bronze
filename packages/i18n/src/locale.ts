@@ -5,6 +5,15 @@ export type SupportedLocale =
   | "de"
   | "es"
   | "it"
+  | "ru"
+  | "uk"
+  | "hr"
+  | "sl"
+  | "da"
+  | "sv"
+  | "nb"
+  | "fi"
+  | "tr"
   | "en-XA"
   | "ar-XB";
 export type FallbackChain = readonly string[];
@@ -16,6 +25,15 @@ const SUPPORTED: SupportedLocale[] = [
   "de",
   "es",
   "it",
+  "ru",
+  "uk",
+  "hr",
+  "sl",
+  "da",
+  "sv",
+  "nb",
+  "fi",
+  "tr",
   "en-XA",
   "ar-XB",
 ];

@@ -7,7 +7,25 @@ import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
 const localesRoot = join(root, "../../../packages/i18n/locales");
-const locales = ["en", "nl", "fr", "de", "es", "it", "en-XA", "ar-XB"];
+const locales = [
+  "en",
+  "nl",
+  "fr",
+  "de",
+  "es",
+  "it",
+  "ru",
+  "uk",
+  "hr",
+  "sl",
+  "da",
+  "sv",
+  "nb",
+  "fi",
+  "tr",
+  "en-XA",
+  "ar-XB",
+];
 const nativeKeys = [
   "app.name",
   "menu.status.capture",

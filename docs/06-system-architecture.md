@@ -175,7 +175,7 @@ packages/
     src/index.ts
   i18n/
     src/
-    locales/{en,nl,fr,de,es,it,en-XA,ar-XB}/app.json
+    locales/{en,nl,fr,de,es,it,ru,uk,hr,sl,da,sv,nb,fi,tr,en-XA,ar-XB}/app.json
     scripts/
   test-support/
 crates/

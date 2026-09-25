@@ -41,6 +41,16 @@ describe("locale fallback", () => {
     expect(isSupported("de")).toBe(true);
     expect(isSupported("es")).toBe(true);
     expect(isSupported("it")).toBe(true);
+    expect(isSupported("ru")).toBe(true);
+    expect(isSupported("uk")).toBe(true);
+    expect(isSupported("hr")).toBe(true);
+    expect(isSupported("sl")).toBe(true);
+    expect(isSupported("da")).toBe(true);
+    expect(isSupported("sv")).toBe(true);
+    expect(isSupported("nb")).toBe(true);
+    expect(isSupported("fi")).toBe(true);
+    expect(isSupported("tr")).toBe(true);
+    expect(isSupported("nn")).toBe(false);
     expect(isSupported("pt")).toBe(false);
   });
 });

@@ -52,7 +52,7 @@ type SettingsV1 = {
   general: {
     launchAtLogin: boolean
     showDockIcon: boolean
-    locale: "system" | "en" | "nl" | "fr" | "de" | "es" | "it" | "en-XA" | "ar-XB"
+    locale: "system" | "en" | "nl" | "fr" | "de" | "es" | "it" | "ru" | "uk" | "hr" | "sl" | "da" | "sv" | "nb" | "fi" | "tr" | "en-XA" | "ar-XB"
     titleModel: "extractive" | "smol-135" | "smol-360" | "qwen-05" | "custom" | "ollama" | "hosted-openai" | "hosted-anthropic" | "hosted-openrouter"
     titleCustomId?: string
     titleCustomName?: string
@@ -140,7 +140,7 @@ Shipped defaults:
 | built-in profile post-copy lifecycle | copied | do not claim task done from copy |
 | provenance | none | workflow metadata is sensitive; onboarding may offer opt-in app identity |
 | launch at login | off | explicit consent; Settings → General checkbox applies `SMAppService.mainApp` |
-| UI locale | `system` (resolves to **en**) | Settings → General switcher persists en, nl, fr, de, es, or it; unknown tags reject on save; `system` and unknown effective tags map to en |
+| UI locale | `system` (resolves to **en**) | Settings → General switcher persists en, nl, fr, de, es, it, ru, uk, hr, sl, da, sv, nb, fi, or tr; unknown tags reject on save; `system` and unknown effective tags map to en |
 | title engine | empty auto-picks among bundled pins already on disk; otherwise last persisted `general.titleModel` | extractive uses no GGUF; `custom` stores `titleCustomId` (no path); `ollama` stores `titleOllamaModel`; hosted ids store `titleHostedBase` after confirm; a local change reloads the title worker; Settings shows load status (`title-engine-status` / `title_engine_status`); hosted keys stay in Keychain |
 | reduce motion | `system` (follows this Mac) | play motion unless macOS Reduce Motion is on; Settings `on` always reduces; `off` always plays (Tools test) |
 | Dock icon | off/accessory | menu-bar utility; user can enable |

@@ -2609,6 +2609,17 @@ mod live_session_tests {
         assert_eq!(effective_ui_locale(Some("de")), "de");
         assert_eq!(effective_ui_locale(Some("es")), "es");
         assert_eq!(effective_ui_locale(Some("it")), "it");
+        assert_eq!(effective_ui_locale(Some("ru")), "ru");
+        assert_eq!(effective_ui_locale(Some("uk")), "uk");
+        assert_eq!(effective_ui_locale(Some("hr")), "hr");
+        assert_eq!(effective_ui_locale(Some("sl")), "sl");
+        assert_eq!(effective_ui_locale(Some("da")), "da");
+        assert_eq!(effective_ui_locale(Some("sv")), "sv");
+        assert_eq!(effective_ui_locale(Some("nb")), "nb");
+        assert_eq!(effective_ui_locale(Some("fi")), "fi");
+        assert_eq!(effective_ui_locale(Some("tr")), "tr");
+        assert_eq!(effective_ui_locale(Some("sv-SE")), "sv");
+        assert_eq!(effective_ui_locale(Some("nn")), "en");
         assert_eq!(effective_ui_locale(Some("nl-BE")), "nl");
         assert_eq!(effective_ui_locale(Some("zz")), "en");
         assert!(!search_settings("backup").is_empty());

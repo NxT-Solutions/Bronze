@@ -483,7 +483,8 @@ fn is_zero_u64(value: &u64) -> bool {
 }
 
 pub const PERSISTED_LOCALE_TAGS: &[&str] = &[
-    "system", "en", "nl", "fr", "de", "es", "it", "en-XA", "ar-XB",
+    "system", "en", "nl", "fr", "de", "es", "it", "ru", "uk", "hr", "sl", "da", "sv", "nb", "fi",
+    "tr", "en-XA", "ar-XB",
 ];
 
 pub fn persisted_locale_allowed(tag: &str) -> bool {
