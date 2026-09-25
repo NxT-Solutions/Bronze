@@ -66,7 +66,7 @@ jobs:
 
   quality-macos:
     name: quality-macos
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,14 +86,21 @@ jobs:
             ~/.cargo/git
             target
           key: rust-macos-${{ hashFiles('Cargo.lock') }}
-      - run: swift build --package-path native/macos/BronzeNative
       - run: cargo clippy --workspace --locked --exclude bronze-desktop -- -D warnings
       - run: cargo test --workspace --locked --exclude bronze-desktop
+
+  quality-swift:
+    name: quality-swift
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: swift build --package-path native/macos/BronzeNative
 
   ci:
     name: CI
     if: always()
-    needs: [quality-js, quality-docs, quality-rust, quality-macos]
+    needs: [quality-js, quality-docs, quality-rust, quality-macos, quality-swift]
     runs-on: ubuntu-22.04
     steps:
       - name: Require every quality job
@@ -103,3 +110,4 @@ jobs:
           test "${{ needs.quality-docs.result }}" = "success"
           test "${{ needs.quality-rust.result }}" = "success"
           test "${{ needs.quality-macos.result }}" = "success"
+          test "${{ needs.quality-swift.result }}" = "success"
