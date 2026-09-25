@@ -30,17 +30,17 @@
     "tailwindcss": "4.3.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
-    "@testing-library/react": "16.3.2",
+    "@biomejs/biome": "2.5.14",
+    "@testing-library/react": "16.3.3",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/user-event": "14.6.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
-    "@vitejs/plugin-react": "6.1.0",
+    "@vitejs/plugin-react": "6.1.1",
     "axe-core": "4.13.0",
     "jsdom": "26.0.0",
     "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "vitest": "5.0.2"
   },
   "peerDependencies": {
     "react": "^19.2.8",

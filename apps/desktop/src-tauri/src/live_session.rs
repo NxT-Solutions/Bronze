@@ -1387,8 +1387,8 @@ impl LiveSession {
             app_version: env!("CARGO_PKG_VERSION").into(),
             toolchain: "1.98.1".into(),
             rust_min: env!("CARGO_PKG_RUST_VERSION").into(),
-            tauri_version: "2.11.3".into(),
-            rusqlite_version: "0.32".into(),
+            tauri_version: "2.11.6".into(),
+            rusqlite_version: "0.40".into(),
             settings_schema: SCHEMA_VERSION.to_string(),
             store_schema: self
                 .store
