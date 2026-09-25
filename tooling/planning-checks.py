@@ -305,6 +305,12 @@ def check_oss_release() -> list[str]:
             errors.append("publish-homebrew.yml must not write Formula/bronze.rb")
         if "brew upgrade --cask bronze" not in brew_text and "pkgutil" not in brew_text:
             errors.append("publish-homebrew.yml missing cask uninstall identity")
+
+    readme = (ROOT / "README.md").read_text() if (ROOT / "README.md").is_file() else ""
+    if "brew tap NxT-Solutions/nxt-solutions-packages" not in readme:
+        errors.append("README must tap NxT-Solutions/nxt-solutions-packages")
+    if "brew tap NoahNxT/nxt-solutions-packages" in readme:
+        errors.append("README must not tap NoahNxT/nxt-solutions-packages")
     return errors
 
 

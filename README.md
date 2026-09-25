@@ -72,7 +72,7 @@ See the prompts with `pnpm --filter desktop tauri dev` (no Corepack). After a gr
 Homebrew, after the tap publishes `Casks/bronze.rb`:
 
 ```bash
-brew tap NoahNxT/nxt-solutions-packages
+brew tap NxT-Solutions/nxt-solutions-packages
 brew install --cask bronze
 brew upgrade --cask bronze
 ```
