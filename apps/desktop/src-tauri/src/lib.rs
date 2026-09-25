@@ -64,6 +64,7 @@ pub fn run() {
                 update::app_version_info,
                 update::check_for_update,
                 update::open_release_page,
+                take_notice_activation,
             ])
             .setup(|app| {
                 use tauri::Manager;
@@ -83,6 +84,10 @@ pub fn run() {
                 title_refine::warmup();
                 install_chrome_menu(app.handle())?;
                 install_status_item(app.handle())?;
+                if let Ok(mut slot) = notice_app().lock() {
+                    *slot = Some(app.handle().clone());
+                }
+                bronze_platform_macos::install_notice_click_hook(on_notice_click);
                 reveal_quick_panel(app.handle())?;
                 start_capture_pump(app.handle().clone());
                 Ok(())
@@ -122,6 +127,67 @@ fn show_chrome_window(app: tauri::AppHandle, kind: String) -> Result<(), String>
         .map_err(|err| err.to_string())?;
     let _ = window.set_focus();
     Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn notice_app() -> &'static std::sync::Mutex<Option<tauri::AppHandle>> {
+    static APP: std::sync::OnceLock<std::sync::Mutex<Option<tauri::AppHandle>>> =
+        std::sync::OnceLock::new();
+    APP.get_or_init(|| std::sync::Mutex::new(None))
+}
+
+#[cfg(target_os = "macos")]
+fn pending_notice() -> &'static std::sync::Mutex<Option<String>> {
+    static PENDING: std::sync::OnceLock<std::sync::Mutex<Option<String>>> =
+        std::sync::OnceLock::new();
+    PENDING.get_or_init(|| std::sync::Mutex::new(None))
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NoticeActivate {
+    item_id: String,
+}
+
+#[cfg(target_os = "macos")]
+unsafe extern "C" fn on_notice_click(ptr: *const u8, len: u64) {
+    if ptr.is_null() || len == 0 || len > 80 {
+        return;
+    }
+    let bytes = unsafe { std::slice::from_raw_parts(ptr, len as usize) };
+    let Ok(id) = std::str::from_utf8(bytes) else {
+        return;
+    };
+    if !id
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+    {
+        return;
+    }
+    if let Ok(mut slot) = pending_notice().lock() {
+        *slot = Some(id.to_string());
+    }
+    let app = notice_app().lock().ok().and_then(|guard| guard.clone());
+    if let Some(app) = app {
+        use tauri::Emitter;
+        let _ = reveal_quick_panel(&app);
+        let _ = app.emit(
+            "notice-activate",
+            NoticeActivate {
+                item_id: id.to_string(),
+            },
+        );
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn take_notice_activation() -> Option<String> {
+    pending_notice()
+        .lock()
+        .ok()
+        .and_then(|mut slot| slot.take())
 }
 
 #[cfg(target_os = "macos")]
@@ -855,6 +921,7 @@ mod tests {
                     fs::read_to_string(manifest_dir().join("permissions/used-permissions.toml"))
                         .expect("permissions");
                 assert!(used.contains("list_overview_items"));
+                assert!(used.contains("take_notice_activation"));
                 assert!(
                     permission_block(&used, "allow-queue-live").contains("queue_query"),
                     "allow-queue-live must include queue_query (SEC-002)"

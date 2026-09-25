@@ -108,34 +108,306 @@ pub fn allowed_release_url(url: &str) -> bool {
     rest.is_empty() || rest.starts_with('/') || rest.starts_with('?')
 }
 
+const MAX_UPDATE_NOTES: usize = 5;
+const NOTE_CHECK_FOR_UPDATES: &str = "Check for updates is easier to see.";
+const NOTE_ENGINE_SWITCH: &str =
+    "Switching the on-this-Mac title engine finishes instead of staying on Loading.";
+const NOTE_PERMISSIONS: &str = "Bronze asks once for the macOS permissions it uses.";
+
 pub fn release_notes_from_markdown(markdown: &str) -> Vec<String> {
-    let mut lines: Vec<String> = Vec::new();
-    for raw_line in markdown.lines() {
-        let trimmed = raw_line.trim();
-        if trimmed.is_empty() {
-            if !matches!(lines.last(), Some(last) if last.is_empty()) {
-                lines.push(String::new());
+    let lines: Vec<&str> = markdown.lines().collect();
+    if let Some(section) = whats_new_section(&lines) {
+        return take_notes(section.iter().map(String::as_str), true);
+    }
+    take_notes(lines.into_iter(), false)
+}
+
+fn whats_new_section(lines: &[&str]) -> Option<Vec<String>> {
+    let mut start = None;
+    for (index, line) in lines.iter().enumerate() {
+        if heading_text(line).is_some_and(|text| is_whats_new_heading(&text)) {
+            start = Some(index + 1);
+            break;
+        }
+    }
+    let start = start?;
+    let mut section = Vec::new();
+    for line in &lines[start..] {
+        if heading_text(line).is_some() {
+            break;
+        }
+        section.push((*line).to_string());
+    }
+    Some(section)
+}
+
+fn take_notes<'a>(lines: impl Iterator<Item = &'a str>, from_whats_new: bool) -> Vec<String> {
+    let mut notes = Vec::new();
+    for raw in lines {
+        if notes.len() >= MAX_UPDATE_NOTES {
+            break;
+        }
+        let Some(note) = note_from_line(raw, from_whats_new) else {
+            continue;
+        };
+        if notes.iter().any(|existing| existing == &note) {
+            continue;
+        }
+        notes.push(note);
+    }
+    notes
+}
+
+fn note_from_line(raw: &str, from_whats_new: bool) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() || heading_text(trimmed).is_some() {
+        return None;
+    }
+    let cleaned = clean_note_line(trimmed);
+    if cleaned.is_empty() || is_version_line(&cleaned) || is_changelog_trailer(&cleaned) {
+        return None;
+    }
+    if let Some((kind, desc)) = conventional_commit(&cleaned) {
+        return map_user_change(kind, desc);
+    }
+    if cleaned.contains('@') {
+        return None;
+    }
+    if !from_whats_new && (looks_like_commit_subject(&cleaned) || !cleaned.contains(' ')) {
+        return None;
+    }
+    Some(cleaned)
+}
+
+fn heading_text(line: &str) -> Option<String> {
+    let trimmed = line.trim();
+    if !trimmed.starts_with('#') {
+        return None;
+    }
+    let text = trimmed.trim_start_matches('#').trim();
+    if text.is_empty() {
+        None
+    } else {
+        Some(text.to_string())
+    }
+}
+
+fn is_whats_new_heading(text: &str) -> bool {
+    let normalized = normalize_apostrophe(text.trim().trim_end_matches(':'));
+    normalized == "what's new" || normalized == "whats new"
+}
+
+fn is_version_line(line: &str) -> bool {
+    let lower = line.to_ascii_lowercase();
+    lower.starts_with("version ") && lower.contains("is available")
+}
+
+fn is_changelog_trailer(line: &str) -> bool {
+    let normalized = normalize_apostrophe(line);
+    normalized.starts_with("full changelog")
+        || normalized.starts_with("what's changed")
+        || normalized == "changes"
+}
+
+fn looks_like_commit_subject(line: &str) -> bool {
+    if line.ends_with('.') {
+        return false;
+    }
+    let first = line
+        .split_whitespace()
+        .next()
+        .unwrap_or("")
+        .trim_end_matches(':')
+        .to_ascii_lowercase();
+    matches!(
+        first.as_str(),
+        "fix"
+            | "feat"
+            | "chore"
+            | "docs"
+            | "style"
+            | "refactor"
+            | "perf"
+            | "test"
+            | "build"
+            | "ci"
+            | "revert"
+            | "add"
+            | "update"
+            | "set"
+            | "bump"
+            | "wip"
+    )
+}
+
+fn clean_note_line(raw: &str) -> String {
+    let line = strip_bullet(raw.trim());
+    let line = strip_markdown_links(line);
+    let line = line.replace("**", "").replace("__", "").replace('`', "");
+    let line = strip_author_and_urls(&line);
+    line.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn strip_bullet(line: &str) -> &str {
+    for marker in ["- ", "* ", "• "] {
+        if let Some(rest) = line.strip_prefix(marker) {
+            return rest.trim();
+        }
+    }
+    line
+}
+
+fn strip_markdown_links(input: &str) -> String {
+    let chars: Vec<char> = input.chars().collect();
+    let mut out = String::new();
+    let mut index = 0;
+    while index < chars.len() {
+        if let Some((text, next)) = markdown_link_at(&chars, index) {
+            out.push_str(&text);
+            index = next;
+            continue;
+        }
+        out.push(chars[index]);
+        index += 1;
+    }
+    out
+}
+
+fn markdown_link_at(chars: &[char], start: usize) -> Option<(String, usize)> {
+    if chars.get(start) != Some(&'[') {
+        return None;
+    }
+    let mut index = start + 1;
+    let text_start = index;
+    while index < chars.len() && chars[index] != ']' {
+        index += 1;
+    }
+    if index >= chars.len() || chars.get(index + 1) != Some(&'(') {
+        return None;
+    }
+    let text: String = chars[text_start..index].iter().collect();
+    index += 2;
+    while index < chars.len() && chars[index] != ')' {
+        index += 1;
+    }
+    if index >= chars.len() {
+        return None;
+    }
+    Some((text, index + 1))
+}
+
+fn strip_author_and_urls(input: &str) -> String {
+    let without_urls = strip_urls(input);
+    let words: Vec<&str> = without_urls.split_whitespace().collect();
+    let mut kept = Vec::new();
+    let mut index = 0;
+    while index < words.len() {
+        if words[index].eq_ignore_ascii_case("by")
+            && words
+                .get(index + 1)
+                .is_some_and(|next| next.starts_with('@'))
+        {
+            index += 2;
+            if words
+                .get(index)
+                .is_some_and(|next| next.eq_ignore_ascii_case("in"))
+            {
+                index += 1;
             }
             continue;
         }
-        let mut line = trimmed
-            .trim_start_matches('#')
-            .trim()
-            .replace("**", "")
-            .replace("__", "")
-            .replace('`', "");
-        if line.eq_ignore_ascii_case("What's Changed") {
-            continue;
-        }
-        if let Some(stripped) = line.strip_prefix("* ").or_else(|| line.strip_prefix("- ")) {
-            line = format!("• {}", stripped.trim());
-        }
-        lines.push(line);
+        kept.push(words[index]);
+        index += 1;
     }
-    while matches!(lines.last(), Some(last) if last.is_empty()) {
-        lines.pop();
+    kept.join(" ")
+}
+
+fn strip_urls(input: &str) -> String {
+    input
+        .split_whitespace()
+        .filter(|word| !word_has_http_url(word))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn word_has_http_url(word: &str) -> bool {
+    let lower = word.to_ascii_lowercase();
+    lower.contains("https://") || lower.contains("http://")
+}
+
+fn conventional_commit(line: &str) -> Option<(&str, &str)> {
+    let colon = line.find(':')?;
+    let head = line[..colon].trim();
+    let desc = line[colon + 1..].trim();
+    if desc.is_empty() || head.contains(' ') {
+        return None;
     }
-    lines
+    let type_name = head.split('(').next()?.trim().trim_end_matches('!');
+    if type_name.is_empty() || !type_name.chars().all(|c| c.is_ascii_alphabetic()) {
+        return None;
+    }
+    if !is_conventional_type(type_name) {
+        return None;
+    }
+    if let Some(open) = head.find('(') {
+        let close = head.find(')')?;
+        if close < open {
+            return None;
+        }
+        let after = &head[close + 1..];
+        if after != "!" && !after.is_empty() {
+            return None;
+        }
+    } else if head.contains('!') && !head.ends_with('!') {
+        return None;
+    }
+    Some((type_name, desc))
+}
+
+fn is_conventional_type(type_name: &str) -> bool {
+    matches!(
+        type_name.to_ascii_lowercase().as_str(),
+        "feat"
+            | "fix"
+            | "chore"
+            | "docs"
+            | "style"
+            | "refactor"
+            | "perf"
+            | "test"
+            | "build"
+            | "ci"
+            | "revert"
+    )
+}
+
+fn map_user_change(kind: &str, desc: &str) -> Option<String> {
+    if !matches!(kind.to_ascii_lowercase().as_str(), "feat" | "fix") {
+        return None;
+    }
+    let description = desc.trim().trim_end_matches('.').to_ascii_lowercase();
+    if description.contains("set version") || description.contains("bump version") {
+        return None;
+    }
+    if description.contains("check for updates") && description.contains("push button") {
+        return Some(NOTE_CHECK_FOR_UPDATES.to_string());
+    }
+    if (description.contains("on-this-mac") || description.contains("on this mac"))
+        && description.contains("engine")
+        && (description.contains("switch") || description.contains("settle"))
+    {
+        return Some(NOTE_ENGINE_SWITCH.to_string());
+    }
+    if description.contains("permission")
+        && (description.contains("once") || description.contains("prompt"))
+    {
+        return Some(NOTE_PERMISSIONS.to_string());
+    }
+    None
+}
+
+fn normalize_apostrophe(text: &str) -> String {
+    text.replace('\u{2019}', "'").to_ascii_lowercase()
 }
 
 fn parse_semver(raw: &str) -> Option<SemVer> {
@@ -410,7 +682,7 @@ mod tests {
         let info = resolve_check(
             release(
                 "v1.2.0",
-                "## What's Changed\n* Fix updater popup\n\n**Full Changelog**: https://example.com",
+                "### What's new\n- The update window lists what changed.\n\n**Full Changelog**: https://example.com",
             ),
             "1.1.0",
             InstallSource::Direct,
@@ -421,13 +693,89 @@ mod tests {
         assert_eq!(info.action, UpdateAction::OpenRelease);
         assert_eq!(
             info.notes,
-            vec![
-                "• Fix updater popup".to_string(),
-                String::new(),
-                "Full Changelog: https://example.com".to_string()
-            ]
+            vec!["The update window lists what changed.".to_string()]
         );
         assert!(allowed_release_url(&info.release_url));
+    }
+
+    #[test]
+    fn conventional_commit_becomes_a_plain_bullet() {
+        let notes = release_notes_from_markdown(
+            "* fix(desktop): style Check for updates as a push button by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/44",
+        );
+        assert_eq!(notes, vec![NOTE_CHECK_FOR_UPDATES.to_string()]);
+    }
+
+    #[test]
+    fn published_012_notes_drop_author_url_and_jargon() {
+        let body = [
+            "## What's Changed",
+            "* fix(desktop): style Check for updates as a push button by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/44",
+            "* fix(release): bleed the Dock mark to the icon canvas by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/45",
+            "* fix(title): settle on-this-Mac engine switches by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/46",
+            "* feat(desktop): prompt used macOS permissions once by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/49",
+            "* chore(release): set version 0.1.2 by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/47",
+            "* fix(storage): retune sqlite wal checkpoint pragma by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/99",
+            "",
+            "**Full Changelog**: https://github.com/NxT-Solutions/Bronze/compare/v0.1.1...v0.1.2",
+        ]
+        .join("\n");
+        let notes = release_notes_from_markdown(&body);
+        assert_eq!(
+            notes,
+            vec![
+                NOTE_CHECK_FOR_UPDATES.to_string(),
+                NOTE_ENGINE_SWITCH.to_string(),
+                NOTE_PERMISSIONS.to_string(),
+            ]
+        );
+        for note in &notes {
+            assert!(!note.contains("http"), "{note}");
+            assert!(!note.contains('@'), "{note}");
+            assert!(!note.contains("fix("), "{note}");
+            assert!(!note.to_ascii_lowercase().contains("dock"), "{note}");
+            assert!(!note.to_ascii_lowercase().contains("tile"), "{note}");
+            assert!(
+                note.split_whitespace().count() >= 2,
+                "wrap on words: {note}"
+            );
+        }
+    }
+
+    #[test]
+    fn whats_new_section_wins_over_commit_subjects() {
+        let notes = release_notes_from_markdown(
+            "### What's new\n\n- Search is faster.\n- Check for updates is easier to see.\n\n## What's Changed\n* fix(release): bleed the Dock mark to the icon canvas by @NoahNxT in https://github.com/NxT-Solutions/Bronze/pull/45\n",
+        );
+        assert_eq!(
+            notes,
+            vec![
+                "Search is faster.".to_string(),
+                NOTE_CHECK_FOR_UPDATES.to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn version_line_stays_out_of_the_notes() {
+        let notes = release_notes_from_markdown(
+            "Version 0.1.2 is available.\n### What's new\n- Check for updates is easier to see.\n",
+        );
+        assert_eq!(notes, vec![NOTE_CHECK_FOR_UPDATES.to_string()]);
+        assert!(notes.iter().all(|note| !note.contains("Version")));
+    }
+
+    #[test]
+    fn plain_notes_cap_and_do_not_need_a_url_to_wrap() {
+        let body = (1..=6)
+            .map(|index| format!("- Sentence number {index} stays short."))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let markdown = format!("### What's new\n{body}\n");
+        let notes = release_notes_from_markdown(&markdown);
+        assert_eq!(notes.len(), MAX_UPDATE_NOTES);
+        assert!(notes.iter().all(|note| !note.contains("://")));
+        assert!(notes.iter().all(|note| note.contains(' ')));
     }
 
     #[test]

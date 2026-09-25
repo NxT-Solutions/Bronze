@@ -147,6 +147,12 @@ export const MessageIds = {
   "settings.field.version.failed": "settings.field.version.failed",
   "settings.field.version.whatsNew": "settings.field.version.whatsNew",
   "settings.field.version.notesEmpty": "settings.field.version.notesEmpty",
+  "settings.field.version.note.checkForUpdates":
+    "settings.field.version.note.checkForUpdates",
+  "settings.field.version.note.engineSwitch":
+    "settings.field.version.note.engineSwitch",
+  "settings.field.version.note.permissions":
+    "settings.field.version.note.permissions",
   "settings.field.version.openRelease": "settings.field.version.openRelease",
   "settings.field.version.brew": "settings.field.version.brew",
   "settings.field.version.brewCopied": "settings.field.version.brewCopied",

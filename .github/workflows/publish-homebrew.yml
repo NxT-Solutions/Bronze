@@ -6,8 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v0.1.0). Leave empty to use latest."
+        description: "Release tag to publish. Leave empty to use the latest GitHub release."
         required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -43,14 +45,31 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          dispatch_tag="${DISPATCH_TAG:-}"
+          dispatch_tag="${dispatch_tag#"${dispatch_tag%%[![:space:]]*}"}"
+          dispatch_tag="${dispatch_tag%"${dispatch_tag##*[![:space:]]}"}"
           if [[ "${EVENT_NAME}" == "release" ]]; then
-            echo "RELEASE_TAG=${RELEASE_TAG_INPUT}" >> "$GITHUB_ENV"
-          elif [[ "${EVENT_NAME}" == "workflow_dispatch" && -n "${DISPATCH_TAG}" ]]; then
-            echo "RELEASE_TAG=${DISPATCH_TAG}" >> "$GITHUB_ENV"
+            if [[ -z "${RELEASE_TAG_INPUT}" ]]; then
+              echo "Release event has no tag."
+              exit 1
+            fi
+            resolved="${RELEASE_TAG_INPUT}"
+          elif [[ "${EVENT_NAME}" == "workflow_dispatch" && -n "${dispatch_tag}" ]]; then
+            resolved="${dispatch_tag}"
           else
-            tag=$(gh release view -R "${REPO}" --json tagName --jq .tagName)
-            echo "RELEASE_TAG=${tag}" >> "$GITHUB_ENV"
+            resolved="$(gh release view -R "${REPO}" --json tagName --jq .tagName)"
           fi
+          if [[ -z "${resolved}" ]]; then
+            echo "Could not resolve a release tag."
+            exit 1
+          fi
+          if [[ ! "${resolved}" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+            echo "Refusing release tag with unexpected characters."
+            exit 1
+          fi
+          gh release view "${resolved}" -R "${REPO}" --json tagName --jq .tagName >/dev/null
+          echo "Publishing Homebrew cask for ${resolved}"
+          echo "RELEASE_TAG=${resolved}" >> "$GITHUB_ENV"
 
       - name: Checkout packages repo
         if: steps.token.outputs.skip != 'true'
@@ -108,12 +127,39 @@ jobs:
               raise SystemExit("Missing bronze-macos-x86_64.pkg")
           arm_sha = hashlib.sha256(arm_pkg.read_bytes()).hexdigest()
           intel_sha = hashlib.sha256(intel_pkg.read_bytes()).hexdigest()
+
+          def version_key(value: str) -> tuple[int, ...]:
+              parts = value.split(".")
+              if not parts or any(not part.isdigit() for part in parts):
+                  raise ValueError(value)
+              return tuple(int(part) for part in parts)
+
+          cask_path = Path("Casks/bronze.rb")
+          previous = ""
+          if cask_path.is_file():
+              for line in cask_path.read_text(encoding="utf-8").splitlines():
+                  stripped = line.strip()
+                  prefix = 'version "'
+                  if stripped.startswith(prefix) and stripped.endswith('"'):
+                      previous = stripped[len(prefix) : -1]
+                      break
+          if previous:
+              try:
+                  older = version_key(version) < version_key(previous)
+              except ValueError as exc:
+                  raise SystemExit(
+                      f"Cannot compare cask versions {previous!r} and {version!r}."
+                  ) from exc
+              if older:
+                  raise SystemExit(
+                      f"Refusing to replace Homebrew cask {previous} with older version {version}."
+                  )
+
           Path("Casks").mkdir(exist_ok=True)
           formula = Path("Formula/bronze.rb")
           if formula.exists():
               formula.unlink()
-          Path("Casks/bronze.rb").write_text(
-              "\n".join(
+          cask = "\n".join(
                   [
                       'cask "bronze" do',
                       f'  version "{version}"',
@@ -153,9 +199,10 @@ jobs:
                       "end",
                       "",
                   ]
-              ),
-              encoding="utf-8",
           )
+          if "depends_on macos: :sonoma" not in cask or 'depends_on macos: "' in cask:
+              raise SystemExit("cask depends_on macos must be the :sonoma symbol")
+          cask_path.write_text(cask, encoding="utf-8")
           with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as fh:
               fh.write(f"VERSION={version}\n")
           PY

@@ -106,6 +106,14 @@ pub fn decode_sorted_queue_cursor(cursor: &str) -> Result<(QueueSort, i64, Strin
     Ok((sort, created_at_ms, id))
 }
 
+fn is_page_item_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 80
+        && id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+}
+
 fn page_limit(limit: usize) -> usize {
     match limit {
         0 => QUEUE_PAGE_SIZE,
@@ -243,6 +251,23 @@ impl Store {
         }
     }
 
+    pub fn query_sorted_page_containing(
+        &self,
+        item_id: &str,
+        filter: QueueListFilter,
+        limit: usize,
+        sort: QueueSort,
+    ) -> Result<QueuePage, QueueError> {
+        if !is_page_item_id(item_id) {
+            return Err(QueueError::NotFound);
+        }
+        match filter {
+            QueueListFilter::Overview => {
+                self.query_overview_sorted_containing(item_id, page_limit(limit), sort)
+            }
+        }
+    }
+
     fn query_overview_page(
         &self,
         cursor: Option<&str>,
@@ -345,6 +370,68 @@ impl Store {
                     .map_err(|_| QueueError::Store)?
             }
         };
+        let next_cursor = if rows.len() > limit {
+            let boundary = &rows[limit - 1];
+            Some(encode_sorted_queue_cursor(
+                sort,
+                boundary.created_at_ms,
+                &boundary.id,
+            ))
+        } else {
+            None
+        };
+        rows.truncate(limit);
+        Ok(QueuePage {
+            items: rows,
+            next_cursor,
+        })
+    }
+
+    fn query_overview_sorted_containing(
+        &self,
+        item_id: &str,
+        limit: usize,
+        sort: QueueSort,
+    ) -> Result<QueuePage, QueueError> {
+        let order = match sort {
+            QueueSort::Newest => "items.created_at_ms DESC, items.id DESC",
+            QueueSort::Oldest => "items.created_at_ms ASC, items.id ASC",
+        };
+        let fetch = limit + 1;
+        let sql = format!(
+            "WITH ordered AS (
+                SELECT items.id AS id, items.section_id AS section_id, items.body AS body,
+                       items.title AS title, items.content_language AS content_language,
+                       items.status AS status, items.rank AS rank,
+                       sources.app_name AS source_app_name, sources.bundle_id AS source_bundle_id,
+                       items.created_at_ms AS created_at_ms,
+                       ROW_NUMBER() OVER (ORDER BY {order}) AS rn
+                FROM items
+                LEFT JOIN sources ON sources.id = items.source_id
+                WHERE items.status IN ('queued','copied','active')
+            ),
+            target AS (SELECT rn FROM ordered WHERE id = ?1)
+            SELECT ordered.id, ordered.section_id, ordered.body, ordered.title,
+                   ordered.content_language, ordered.status, ordered.rank,
+                   ordered.source_app_name, ordered.source_bundle_id, ordered.created_at_ms
+            FROM ordered, target
+            WHERE ordered.rn >= ((target.rn - 1) / ?2) * ?2 + 1
+              AND ordered.rn < ((target.rn - 1) / ?2) * ?2 + 1 + ?3
+            ORDER BY ordered.rn"
+        );
+        let mut stmt = self.conn.prepare(&sql).map_err(|_| QueueError::Store)?;
+        let mapped = stmt
+            .query_map(
+                rusqlite::params![item_id, limit as i64, fetch as i64],
+                queue_item_from_row,
+            )
+            .map_err(|_| QueueError::Store)?;
+        let mut rows = mapped
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|_| QueueError::Store)?;
+        if rows.iter().all(|row| row.id != item_id) {
+            return Err(QueueError::NotFound);
+        }
         let next_cursor = if rows.len() > limit {
             let boundary = &rows[limit - 1];
             Some(encode_sorted_queue_cursor(
@@ -869,5 +956,40 @@ mod queue_tests {
                 .collect::<Vec<_>>(),
             vec!["d", "a"]
         );
+
+        let located = store
+            .query_sorted_page_containing("a", QueueListFilter::Overview, 2, QueueSort::Newest)
+            .expect("page for a");
+        assert_eq!(
+            located
+                .items
+                .iter()
+                .map(|row| row.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["b", "a"]
+        );
+        let cursor = located.next_cursor.clone().expect("v2 cursor");
+        assert!(cursor.starts_with("v2.newest."));
+        assert!(!cursor.contains("OFFSET"));
+        let after = store
+            .query_queue_page_sorted(
+                Some(&cursor),
+                QueueListFilter::Overview,
+                2,
+                QueueSort::Newest,
+            )
+            .expect("continue");
+        assert_eq!(after.items[0].id, "d");
+        let oldest_tail = store
+            .query_sorted_page_containing("c", QueueListFilter::Overview, 2, QueueSort::Oldest)
+            .expect("oldest tail");
+        assert_eq!(oldest_tail.items[0].id, "c");
+        assert!(oldest_tail.next_cursor.is_none());
+        assert!(store
+            .query_sorted_page_containing("z", QueueListFilter::Overview, 2, QueueSort::Newest)
+            .is_err());
+        assert!(store
+            .query_sorted_page_containing("../x", QueueListFilter::Overview, 2, QueueSort::Newest)
+            .is_err());
     }
 }
