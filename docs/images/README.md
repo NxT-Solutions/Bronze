@@ -1,14 +1,12 @@
 # README visuals
 
-Original product images for the public README. Not Copper frames and not a pixel specification.
+Live WebView stills from `apps/desktop/src`, shot with Playwright. Queue items are a curated demo set, not a development database. The mark is `apps/desktop/src-tauri/icons/128x128.png`.
 
 | File | Kind |
 | --- | --- |
-| `bronze-mark.png` | App mark |
-| `bronze-hero.png` | Hero still, no UI chrome |
-| `bronze-queue.png` | Queue window still |
-| `bronze-settings.png` | Settings window still |
+| `bronze-mark.png` | App icon |
+| `bronze-hero.png` | Queue surface on the zinc page ground |
+| `bronze-queue.png` | Queue window (400×720) |
+| `bronze-settings.png` | Settings window (640×720) |
 
-These are independent Bronze visuals. The older concept file stays at `assets/bronze-ui-concept.png`.
-
-Do not replace them with Copper screenshots or video frames.
+Not Copper frames. Not generated art. Last-letter smear on a screenshot is a capture artifact, not the catalog.

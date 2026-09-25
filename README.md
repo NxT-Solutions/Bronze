@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/bronze-hero.png" width="920" alt="Bronze on a quiet desk">
+  <img src="docs/images/bronze-hero.png" width="920" alt="Bronze queue">
 </p>
 
 Bronze sits beside the app you are already in. Capture the selection, order the work, copy it back. It is not a clipboard recorder, a task manager, a note vault, or an AI client.
