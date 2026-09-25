@@ -277,17 +277,17 @@ jobs:
       - name: Cache title models
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: bronze-title-model/vendor/*.gguf
-          key: gguf-${{ hashFiles('bronze-title-model/vendor/manifests/**') }}
+          path: crates/bronze-title-model/vendor/*.gguf
+          key: gguf-${{ hashFiles('crates/bronze-title-model/vendor/manifests/**') }}
 
       - name: Vendor title models when missing
         shell: bash
         run: |
           set -euo pipefail
-          if ls bronze-title-model/vendor/*.gguf >/dev/null 2>&1; then
+          if ls crates/bronze-title-model/vendor/*.gguf >/dev/null 2>&1; then
             echo "GGUF files already present"
           else
-            sh bronze-title-model/scripts/vendor-gguf.sh all
+            sh crates/bronze-title-model/scripts/vendor-gguf.sh all
           fi
 
       - name: Install JS dependencies
