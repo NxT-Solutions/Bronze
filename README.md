@@ -61,12 +61,14 @@ Pins match CI: Node 24.21.0 (`package.json` `engines` and `.github/workflows/ci.
 
 ### First time
 
-1. Install the Xcode app so Swift and the Apple SDKs are available. The desktop build links `libBronzeNative.a` from `native/macos/BronzeNative`.
+1. Install the Xcode app so Swift 6 and the Apple SDKs are available. `native/macos/BronzeNative/Package.swift` declares `// swift-tools-version: 6.0`. The desktop build links `libBronzeNative.a` from that package.
 
 ```bash
 xcode-select -p
 swift --version
 ```
+
+`swift --version` reports Swift 6.
 
 2. Install rustup. From this clone, `rust-toolchain.toml` selects 1.98.1:
 
@@ -84,10 +86,12 @@ pnpm -v
 
 `node -v` prints `v24.21.0`. `pnpm -v` prints `12.4.2`.
 
-4. CMake builds `llama-cpp-sys-2` for the on-this-Mac title engine. The macOS CI job installs it when `cmake` is missing.
+4. CMake builds `llama-cpp-sys-2` for the on-this-Mac title engine. The macOS CI job installs CMake when it is missing. The release workflow sets the macOS 14 deployment target for that CMake build. Export the same variables in the shell you use for `tauri dev` and `pnpm verify`. Swift already links with `arm64-apple-macosx14.0` or `x86_64-apple-macosx14.0` from `apps/desktop/src-tauri/build.rs`.
 
 ```bash
 cmake --version || brew install cmake
+export MACOSX_DEPLOYMENT_TARGET=14.0
+export CMAKE_OSX_DEPLOYMENT_TARGET=14.0
 ```
 
 5. Clone and install JavaScript dependencies.
@@ -118,7 +122,22 @@ A local debug package (unsigned) is `tooling/package-debug.sh`. Pull requests ru
 pnpm --allow-build=@ladybugdb/core --allow-build=gitnexus --allow-build=tree-sitter dlx gitnexus@latest analyze
 ```
 
-Run that again after every fresh clone. It writes `.gitnexus/` (LadybugDB graph, parse cache, and the local runner). That directory is gitignored. `.gitnexusrc` sets `defaultBranch` to `main` and `skipContextFiles`, so analyze leaves `AGENTS.md` and `CLAUDE.md` in place. Embeddings stay off, so analyze does not download a model.
+Run that again after every fresh clone. It writes `.gitnexus/` (LadybugDB graph, parse cache, and the local runner). `.gitnexusrc` sets `defaultBranch` to `main` and `skipContextFiles`, so analyze leaves `AGENTS.md` and `CLAUDE.md` in place. Embeddings stay off, so analyze does not download a model. GitNexus is not a dependency of the Bronze app, and the app does not read the index.
+
+Committed, so every clone matches:
+
+| Path | What it is |
+| --- | --- |
+| `.gitnexusrc` | Index defaults for this repo |
+| `.cursor/mcp.json`, `.mcp.json`, `.codex/config.toml`, `opencode.json`, `.grok/config.toml`, `.factory/mcp.json` | Shared editor MCP config |
+| `.gitignore` | Rules for the generated index and local secrets |
+
+Gitignored, rebuilt or created on each machine:
+
+| Path | What it is |
+| --- | --- |
+| `.gitnexus/` | Generated index, LadybugDB graph, parse cache, local runner |
+| `.env`, `.env.*` | Secrets, including a GitNexus eval-server token. `.env.example` stays trackable |
 
 9. Cursor loads the committed `.cursor/mcp.json`. Enable GitNexus once under Cursor Settings → MCP. That approval stays on this machine.
 
