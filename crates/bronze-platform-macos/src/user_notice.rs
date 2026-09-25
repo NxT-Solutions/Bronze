@@ -215,6 +215,8 @@ mod user_notice_tests {
         assert!(wrap.contains("icons/icon.icns") || build.contains("icons/icon.icns"));
         assert!(wrap.contains("AppIcon.icns"));
         assert!(wrap.contains("notification banner must use the Dock icon.icns"));
+        assert!(wrap.contains("AppIcon.icns must match icon.icns"));
+        assert!(wrap.contains("dock-icon-fill.py"));
         assert!(!wrap.contains("32x32"));
         assert!(!wrap.contains("128x128"));
         let call_at = build

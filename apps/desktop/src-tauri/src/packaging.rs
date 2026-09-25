@@ -142,6 +142,12 @@ mod packaging_tests {
         assert!(build.contains("wrap_notice_helper"));
         assert!(build.contains("BronzeNotice.app"));
         assert!(build.contains("AppIcon.icns"));
+        assert!(build.contains("AppIcon.icns must match icon.icns"));
+        assert!(build.contains("dock-icon-fill.py"));
+        let release =
+            fs::read_to_string(manifest.join("../../../.github/workflows/release.yml")).unwrap();
+        assert!(release.contains("differs from icon.icns"));
+        assert!(release.contains("BronzeNotice AppIcon.icns was not produced"));
         assert!(build.contains("NSUserNotificationsUsageDescription"));
         assert!(build.contains("NSUserNotificationAlertStyle"));
         assert!(build.contains("NSPrincipalClass"));

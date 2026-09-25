@@ -122,7 +122,29 @@ fn wrap_notice_helper(swift_bin: &Path, dest_dir: &Path, dock_icon: &Path) {
         dock_icon.is_file(),
         "icons/icon.icns must exist so the banner is not a generic tile"
     );
-    std::fs::copy(dock_icon, resources.join("AppIcon.icns")).expect("BronzeNotice icon");
+    let notice_icon = resources.join("AppIcon.icns");
+    std::fs::copy(dock_icon, &notice_icon).expect("BronzeNotice icon");
+    let source = std::fs::read(dock_icon).expect("read icon.icns");
+    let copied = std::fs::read(&notice_icon).expect("read AppIcon.icns");
+    assert!(source == copied, "AppIcon.icns must match icon.icns");
+    let checker = dock_icon
+        .ancestors()
+        .nth(5)
+        .expect("repo root")
+        .join("tooling/dock-icon-fill.py");
+    assert!(
+        checker.is_file(),
+        "dock-icon-fill.py must sit at the repo tooling path"
+    );
+    let filled = Command::new("python3")
+        .arg(&checker)
+        .arg(&notice_icon)
+        .status()
+        .expect("dock icon fill check");
+    assert!(
+        filled.success(),
+        "AppIcon.icns must match icon.icns and cover the Dock tile"
+    );
     std::fs::write(app.join("Contents/PkgInfo"), "APPL????").expect("BronzeNotice PkgInfo");
     sign_notice_helper(&app, dest_dir);
 }
