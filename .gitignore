@@ -29,6 +29,16 @@ yarn-error.log*
 *.local
 .env*.local
 
+# GitNexus index, LadybugDB graph, and parse cache.
+# Rebuild from the repo root:
+# pnpm --allow-build=@ladybugdb/core --allow-build=gitnexus --allow-build=tree-sitter dlx gitnexus@latest analyze
+.gitnexus/
+
+# Local secrets, including a GitNexus eval-server token in .env.
+.env
+.env.*
+!.env.example
+
 # rust
 apps/desktop/src-tauri/models/*.gguf
 target/
