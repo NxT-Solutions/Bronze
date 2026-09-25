@@ -33,13 +33,16 @@ bronze-app/
     contracts/                   # generated/shared IPC DTOs
     i18n/                        # catalogs, formatters, pseudo-locales
     test-support/                # UI/import/export fixtures
-  bronze-domain/               # entities, commands, capture state/result
-  bronze-capture/              # request state machine/provider policy
-  bronze-storage/              # SQLite/migrations/backup/export/import
-  bronze-settings/             # typed settings/shortcut policy
-  bronze-diagnostics/          # content-free diagnostics/support bundle
-  bronze-platform/             # platform-neutral traits
-  bronze-platform-macos/       # safe façade over native ABI
+  crates/
+    bronze-domain/             # entities, commands, capture state/result
+    bronze-capture/            # request state machine/provider policy
+    bronze-storage/            # SQLite/migrations/backup/export/import
+    bronze-settings/           # typed settings/shortcut policy
+    bronze-diagnostics/        # content-free diagnostics/support bundle
+    bronze-platform/           # platform-neutral traits
+    bronze-platform-macos/     # safe façade over native ABI
+    bronze-title-model/        # local title refine
+    bronze-title-remote/       # opt-in loopback and hosted title adapters
   native/macos/BronzeNative/     # Swift Package/static library
   tooling/                       # generation/check/release scripts
   docs/                          # this pack and future evidence

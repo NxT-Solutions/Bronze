@@ -178,13 +178,16 @@ packages/
     locales/{en,nl,fr,de,es,it,en-XA,ar-XB}/app.json
     scripts/
   test-support/
-bronze-domain/
-bronze-capture/
-bronze-storage/
-bronze-settings/
-bronze-diagnostics/
-bronze-platform/
-bronze-platform-macos/
+crates/
+  bronze-domain/
+  bronze-capture/
+  bronze-storage/
+  bronze-settings/
+  bronze-diagnostics/
+  bronze-platform/
+  bronze-platform-macos/
+  bronze-title-model/
+  bronze-title-remote/
 native/
   macos/
     BronzeNative/
@@ -214,10 +217,10 @@ Turborepo tasks:
 
 | Task | Cache |
 | --- | --- |
-| format, lint, typecheck, unit test, frontend build | enabled with declared inputs |
-| Rust compile/test | enabled only with toolchain and Cargo inputs included |
-| native Swift test | enabled only with Xcode/SDK identity included |
-| accessibility E2E, TCC tests, signing, notarization, release packaging | disabled |
+| lint, typecheck, test, validate | local cache on, `dependsOn` the package task, declared inputs, no file outputs |
+| build | disabled; there is no frontend build script |
+| Rust compile/test, Swift build | Cargo and Swift, not Turbo tasks |
+| remote Turbo cache, Turbo telemetry, release packaging | off |
 
 Pin Node/package manager, Rust, Xcode minimum, Swift tools version, Tauri, and dependency lockfiles. Generated contracts must be reproducible and CI must fail on uncommitted generation drift.
 
