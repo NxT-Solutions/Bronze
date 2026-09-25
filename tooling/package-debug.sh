@@ -4,16 +4,15 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${BRONZE_PACKAGE_OUT:-$ROOT/dist/debug-pack}"
-HOST="$(uname -m)"
-case "$HOST" in
-  arm64|aarch64) ARCH="arm64" ;;
-  x86_64) ARCH="x86_64" ;;
-  *) ARCH="$HOST" ;;
-esac
+DG01_INTEL="${DG01_INTEL:-0}"
+ARCH="arm64"
+if [[ "$DG01_INTEL" == "1" ]]; then
+  echo "DG-01 Intel support is not accepted silently (ADR-002 remains Proposed)." >&2
+  exit 1
+fi
 
 mkdir -p "$OUT"
 printf '%s\n' "$ARCH" >"$OUT/arch.txt"
-printf '%s\n' "arm64" "x86_64" >"$OUT/release-arches.txt"
 
 ENTITLEMENTS="$ROOT/apps/desktop/src-tauri/entitlements/macos.release.plist"
 CONF="$ROOT/apps/desktop/src-tauri/tauri.conf.json"
@@ -39,8 +38,7 @@ fi
     "$ROOT/pnpm-lock.yaml" \
     "$ENTITLEMENTS" \
     "$OUT/arch.txt" \
-    "$OUT/release-arches.txt" \
     "$OUT/sbom-stub.txt"
 } >"$OUT/SHA256SUMS"
 
-echo "wrote $OUT (arch=$ARCH; release arches arm64 + x86_64; ADR-002 Accepted)"
+echo "wrote $OUT (arch=$ARCH)"

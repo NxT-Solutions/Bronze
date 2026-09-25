@@ -227,33 +227,15 @@ jobs:
 
   build:
     needs: prepare
-    # Named artifacts: bronze-macos-arm64.pkg and bronze-macos-x86_64.pkg
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - rust_target: aarch64-apple-darwin
-            pkg_arch: arm64
-            artifact: bronze-macos-arm64
-            cmake_arch: arm64
-            runs_on: macos-15
-          - rust_target: x86_64-apple-darwin
-            pkg_arch: x86_64
-            artifact: bronze-macos-x86_64
-            cmake_arch: x86_64
-            runs_on: macos-15-intel
-    runs-on: ${{ matrix.runs_on }}
+    runs-on: macos-15
     timeout-minutes: 90
     env:
       MACOSX_DEPLOYMENT_TARGET: "14.0"
       CMAKE_OSX_DEPLOYMENT_TARGET: "14.0"
-      CMAKE_OSX_ARCHITECTURES: ${{ matrix.cmake_arch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Reuse tag v0.1.0 for the GitHub Release. Build this dispatch
-          # commit so Swift --arch and the split packages land.
-          ref: ${{ github.sha }}
+          ref: main
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
@@ -265,8 +247,6 @@ jobs:
           cache: pnpm
 
       - uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
-        with:
-          targets: ${{ matrix.rust_target }}
 
       - name: Install CMake
         run: |
@@ -293,26 +273,21 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build ${{ matrix.pkg_arch }} app
+      - name: Build arm64 app
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --filter desktop exec tauri build --target ${{ matrix.rust_target }} --bundles app --config '{"bundle":{"macOS":{"signingIdentity":"-","minimumSystemVersion":"14.0"}}}'
+          pnpm --filter desktop exec tauri build --bundles app --config '{"bundle":{"macOS":{"signingIdentity":"-","minimumSystemVersion":"14.0"}}}'
 
       - name: Package pkg
         shell: bash
-        env:
-          ARTIFACT: ${{ matrix.artifact }}
-          RUST_TARGET: ${{ matrix.rust_target }}
         run: |
           set -euo pipefail
           mkdir -p dist
           app=""
           for candidate in \
-            "target/${RUST_TARGET}/release/bundle/macos/Bronze.app" \
-            "apps/desktop/src-tauri/target/${RUST_TARGET}/release/bundle/macos/Bronze.app" \
-            "target/release/bundle/macos/Bronze.app" \
-            "apps/desktop/src-tauri/target/release/bundle/macos/Bronze.app"
+            "apps/desktop/src-tauri/target/release/bundle/macos/Bronze.app" \
+            "target/release/bundle/macos/Bronze.app"
           do
             if [[ -d "$candidate" ]]; then
               app="$candidate"
@@ -330,18 +305,18 @@ jobs:
           pkgbuild --identifier app.bronze.desktop \
             --version "${{ needs.prepare.outputs.version }}" \
             --root pkgroot \
-            "dist/${ARTIFACT}.pkg"
-          shasum -a 256 "dist/${ARTIFACT}.pkg" | awk -v name="${ARTIFACT}.pkg" '{print $1 "  " name}' \
-            > "dist/${ARTIFACT}.pkg.sha256"
+            dist/bronze-macos.pkg
+          shasum -a 256 dist/bronze-macos.pkg | awk '{print $1 "  bronze-macos.pkg"}' \
+            > dist/bronze-macos.pkg.sha256
           echo "This package is not a notarization claim." > dist/NOTARIZATION.txt
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ matrix.artifact }}
+          name: bronze-macos
           path: |
-            dist/${{ matrix.artifact }}.pkg
-            dist/${{ matrix.artifact }}.pkg.sha256
+            dist/bronze-macos.pkg
+            dist/bronze-macos.pkg.sha256
             dist/NOTARIZATION.txt
 
   release:
@@ -351,7 +326,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: main
 
       - name: Download artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
