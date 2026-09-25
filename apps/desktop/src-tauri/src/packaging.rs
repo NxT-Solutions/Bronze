@@ -39,6 +39,30 @@ pub fn forbids_get_task_allow(text: &str) -> bool {
     !text.contains("get-task-allow")
 }
 
+fn icns_png_sizes(bytes: &[u8]) -> Vec<(u32, u32)> {
+    if bytes.len() < 8 || &bytes[..4] != b"icns" {
+        return Vec::new();
+    }
+    let mut sizes = Vec::new();
+    let mut off = 8usize;
+    while off + 8 <= bytes.len() {
+        let len = u32::from_be_bytes(bytes[off + 4..off + 8].try_into().unwrap()) as usize;
+        if len < 8 || off + len > bytes.len() {
+            break;
+        }
+        let payload = &bytes[off + 8..off + len];
+        if payload.len() >= 24
+            && payload.starts_with(&[0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n'])
+        {
+            let width = u32::from_be_bytes(payload[16..20].try_into().unwrap());
+            let height = u32::from_be_bytes(payload[20..24].try_into().unwrap());
+            sizes.push((width, height));
+        }
+        off += len;
+    }
+    sizes
+}
+
 #[cfg(test)]
 mod packaging_tests {
     use super::*;
@@ -81,6 +105,18 @@ mod packaging_tests {
         assert!(info.contains("NSUserNotificationsUsageDescription"));
         assert!(info.contains("local banner"));
         assert!(manifest.join("icons/icon.icns").is_file());
+        let icns = fs::read(manifest.join("icons/icon.icns")).unwrap();
+        let sizes = icns_png_sizes(&icns);
+        assert!(
+            sizes.contains(&(1024, 1024)),
+            "icon.icns must include the 1024px image, found {sizes:?}"
+        );
+        let icns_at = conf.find("\"icons/icon.icns\"").unwrap();
+        let template_at = conf.find("\"icons/32x32.png\"").unwrap();
+        assert!(
+            icns_at < template_at,
+            "bundle.icon must list icon.icns before the menu-bar template"
+        );
         let build = fs::read_to_string(manifest.join("build.rs")).unwrap();
         assert!(build.contains("wrap_notice_helper"));
         assert!(build.contains("BronzeNotice.app"));
