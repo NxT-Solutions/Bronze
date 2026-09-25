@@ -18,9 +18,11 @@ import {
   exportSensitiveLabel,
   filterInstalledApps,
   formatCustomTitleOption,
+  bundledWeightsAbsent,
   formatTitleEngineLifecycle,
   formatTitleFileSize,
   formatTitleModelStatus,
+  titleEngineProgress,
   isSafeBundleId,
   isSafeDisplayName,
   parseInstallSource,
@@ -596,7 +598,7 @@ test("title model status shows present vs vendor command and never fetches", asy
       vendorCommand:
         "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
     }),
-    "Vendored file missing — titles stay extractive until you run sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05.",
+    "This model is not in this build, so titles stay extractive.",
   );
   assert.equal(
     formatTitleModelStatus(
@@ -622,7 +624,8 @@ test("title model status shows present vs vendor command and never fetches", asy
     vendorCommand:
       "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
   });
-  assert.match(status.textContent, /vendor-gguf\.sh qwen-05/);
+  assert.match(status.textContent, /not in this build/);
+  assert.doesNotMatch(status.textContent, /vendor-gguf/);
   assert.doesNotMatch(status.textContent, /Title:/);
   const listed = await refreshTitleModelStatus(root, async (cmd) => {
     if (cmd === "title_engine_status") {
@@ -640,7 +643,8 @@ test("title model status shows present vs vendor command and never fetches", asy
     ];
   });
   assert.equal(listed?.[1]?.present, false);
-  assert.match(status.textContent, /Vendored file missing/);
+  assert.match(status.textContent, /not in this build/);
+  assert.doesNotMatch(status.textContent, /Loading/);
   assert.equal(spinner.hidden, true);
   assert.equal(
     formatTitleEngineLifecycle({ tier: "qwen-05", phase: "loading" }),
@@ -680,8 +684,12 @@ test("title model status shows present vs vendor command and never fetches", asy
         "sh crates/bronze-title-model/scripts/vendor-gguf.sh qwen-05",
     },
   );
-  assert.match(status.textContent, /Vendored file missing/);
+  assert.match(status.textContent, /not in this build/);
+  assert.doesNotMatch(status.textContent, /Loading/);
   assert.equal(spinner.hidden, true);
+  assert.match(html, /id="title-model-progress"/);
+  assert.match(html, /aria-labelledby="title-model-status"/);
+  assert.match(html, /data-title-model-progress/);
   assert.match(html, /id="title-model"/);
   assert.match(html, /name="titleModel"/);
   assert.match(html, /data-reset-field="general.titleModel"/);
@@ -797,7 +805,8 @@ test("title-engine-status replaces loading and a stale snapshot does not", async
       reason: "missing_weights",
     },
   });
-  assert.match(status.textContent, /Vendored file missing/);
+  assert.match(status.textContent, /not in this build/);
+  assert.doesNotMatch(status.textContent, /Loading/);
   assert.equal(spinner.hidden, true);
 
   let releaseReady;
@@ -817,6 +826,136 @@ test("title-engine-status replaces loading and a stale snapshot does not", async
   await readyRefresh;
   assert.equal(status.textContent, "Loaded — will title the next capture");
   assert.equal(spinner.hidden, true);
+});
+
+test("title engine progress follows bytes and terminal phases", () => {
+  const status = { textContent: "", setAttribute() {}, removeAttribute() {} };
+  const spinner = { hidden: true };
+  const wrap = { hidden: true };
+  const meter = {
+    value: undefined,
+    max: 100,
+    labelledBy: "title-model-status",
+    removeAttribute(name) {
+      if (name === "value") this.value = undefined;
+    },
+    setAttribute(name, value) {
+      if (name === "value") this.value = Number(value);
+      if (name === "max") this.max = Number(value);
+      if (name === "aria-labelledby") this.labelledBy = value;
+    },
+  };
+  const percent = { hidden: true, textContent: "" };
+  const root = {
+    querySelector(sel) {
+      if (sel === "[data-title-model-status]") return status;
+      if (sel === "[data-title-model-spinner]") return spinner;
+      if (sel === "[data-title-model-progress]") return wrap;
+      if (sel === "#title-model-progress") return meter;
+      if (sel === "[data-title-model-progress-value]") return percent;
+      if (sel === "#title-model") return { value: "smol-360" };
+      if (sel === "#title-integration") return { value: "none" };
+      return null;
+    },
+  };
+
+  assert.deepEqual(titleEngineProgress({ phase: "loading" }), {
+    visible: true,
+    determinate: false,
+    percent: null,
+    value: 0,
+    max: 1,
+  });
+  assert.deepEqual(
+    titleEngineProgress({
+      phase: "loading",
+      bytesRead: 135295440,
+      bytesTotal: 270590880,
+    }),
+    {
+      visible: true,
+      determinate: true,
+      percent: 50,
+      value: 135295440,
+      max: 270590880,
+    },
+  );
+  assert.equal(titleEngineProgress({ phase: "hashing" }).determinate, false);
+  assert.equal(titleEngineProgress({ phase: "hashing" }).visible, true);
+  assert.equal(titleEngineProgress({ phase: "ready" }).visible, false);
+  assert.equal(titleEngineProgress({ phase: "failed" }).visible, false);
+  assert.equal(titleEngineProgress({ phase: "missing" }).visible, false);
+
+  applyTitleEngineLifecycle(
+    root,
+    {
+      tier: "smol-360",
+      phase: "loading",
+      bytesRead: 135295440,
+      bytesTotal: 270590880,
+    },
+    { id: "smol-360", present: true },
+  );
+  assert.match(status.textContent, /Loading SmolLM2 360M/);
+  assert.equal(wrap.hidden, false);
+  assert.equal(meter.value, 135295440);
+  assert.equal(percent.hidden, false);
+  assert.equal(percent.textContent, "50%");
+  assert.match(meter.labelledBy, /title-model-status/);
+  assert.match(meter.labelledBy, /title-model-progress-value/);
+  assert.equal(spinner.hidden, false);
+
+  applyTitleEngineLifecycle(
+    root,
+    { tier: "smol-360", phase: "hashing" },
+    { id: "smol-360", present: true },
+  );
+  assert.match(status.textContent, /Checking SmolLM2 360M/);
+  assert.equal(wrap.hidden, false);
+  assert.equal(meter.value, undefined);
+  assert.equal(percent.hidden, true);
+  assert.equal(spinner.hidden, false);
+
+  applyTitleEngineLifecycle(
+    root,
+    { tier: "smol-360", phase: "loading" },
+    { id: "smol-360", present: false },
+  );
+  assert.match(status.textContent, /not in this build/);
+  assert.doesNotMatch(status.textContent, /Loading/);
+  assert.equal(wrap.hidden, true);
+  assert.equal(spinner.hidden, true);
+  assert.equal(
+    bundledWeightsAbsent(
+      { tier: "smol-360", phase: "loading" },
+      { id: "smol-360", present: false },
+    ),
+    true,
+  );
+
+  applyTitleEngineLifecycle(
+    root,
+    { tier: "smol-360", phase: "ready" },
+    { id: "smol-360", present: true },
+  );
+  assert.equal(status.textContent, "Loaded — will title the next capture");
+  assert.equal(wrap.hidden, true);
+  assert.equal(meter.value, undefined);
+  assert.equal(percent.hidden, true);
+  assert.equal(spinner.hidden, true);
+
+  applyTitleEngineLifecycle(
+    root,
+    { tier: "smol-360", phase: "failed", reason: "unreadable" },
+    { id: "smol-360", present: true },
+  );
+  assert.equal(
+    status.textContent,
+    "This file could not be read, so titles stay extractive.",
+  );
+  assert.equal(wrap.hidden, true);
+  assert.equal(spinner.hidden, true);
+  assert.equal(titleEngineProgress({ phase: "failed", reason: "unreadable" }).visible, false);
 });
 
 test("imported GGUF option shows RAM from file size and keeps two CPU threads", () => {

@@ -171,6 +171,8 @@
   "settings.field.titleModel.engine.qwen05": "Qwen2.5 0.5B",
   "settings.field.titleModel.loading": "{engine} yükleniyor…",
   "settings.field.titleModel.hashing": "{engine} denetleniyor…",
+  "settings.field.titleModel.notInBuild": "Bu model bu derlemede yok, bu yüzden başlıklar çıkarımsal kalır.",
+  "settings.field.titleModel.progressPercent": "{percent}%",
   "settings.field.titleModel.ready": "Hazır",
   "settings.field.titleModel.loaded": "Yüklendi — sonraki metne başlık verecek",
   "settings.field.titleModel.failed.bad_hash": "Dosya beklenen özetle eşleşmedi, bu yüzden başlıklar çıkarımsal kalır.",

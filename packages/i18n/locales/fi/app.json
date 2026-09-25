@@ -171,6 +171,8 @@
   "settings.field.titleModel.engine.qwen05": "Qwen2.5 0.5B",
   "settings.field.titleModel.loading": "Ladataan {engine}…",
   "settings.field.titleModel.hashing": "Tarkistetaan {engine}…",
+  "settings.field.titleModel.notInBuild": "Tätä mallia ei ole tässä koosteessa, joten otsikot pysyvät ekstraktiivisina.",
+  "settings.field.titleModel.progressPercent": "{percent}%",
   "settings.field.titleModel.ready": "Valmis",
   "settings.field.titleModel.loaded": "Ladattu — otsikoi seuraavan tekstin",
   "settings.field.titleModel.failed.bad_hash": "Tiedosto ei vastannut odotettua tiivistettä, joten otsikot pysyvät ekstraktiivisina.",

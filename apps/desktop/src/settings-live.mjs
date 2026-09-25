@@ -116,6 +116,9 @@ const TITLE_MODEL_STATUS_FALLBACK = {
   present: "This file is on this Mac and can title the next capture.",
   missing:
     "Vendored file missing — titles stay extractive until you run {command}.",
+  notInBuild:
+    "This model is not in this build, so titles stay extractive.",
+  progressPercent: "{percent}%",
   unavailable: "Title engines could not be listed.",
   loading: "Loading {engine}…",
   hashing: "Checking {engine}…",
@@ -289,6 +292,9 @@ export function formatTitleModelStatus(row, options = {}) {
       TITLE_MODEL_STATUS_FALLBACK.present
     );
   }
+  if (isBundledTitleModel(id)) {
+    return notInBuildStatus();
+  }
   const command = String(
     row?.vendorCommand || TITLE_MODEL_VENDOR[id] || "",
   ).trim();
@@ -315,6 +321,148 @@ export function titleEngineBusy(phase) {
   return phase === "loading" || phase === "hashing";
 }
 
+const titleModelPresence = new WeakMap();
+
+function rememberTitleModelPresence(root, rows) {
+  if (!root || !Array.isArray(rows)) {
+    return;
+  }
+  const presence = new Map();
+  for (const row of rows) {
+    const id = parseTitleModelId(row?.id);
+    if (id) {
+      presence.set(id, row.present === true);
+    }
+  }
+  titleModelPresence.set(root, presence);
+}
+
+function rowWithKnownPresence(root, row) {
+  if (!row || typeof row.present === "boolean") {
+    return row;
+  }
+  const id = parseTitleModelId(row.id);
+  const presence = root ? titleModelPresence.get(root) : undefined;
+  if (!id || !presence || !presence.has(id)) {
+    return row;
+  }
+  return { ...row, present: presence.get(id) };
+}
+
+export function finiteByteCount(value) {
+  if (value == null || value === "") {
+    return null;
+  }
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n) || n < 0) {
+    return null;
+  }
+  return n;
+}
+
+export function bundledWeightsAbsent(status, row) {
+  const id =
+    parseTitleModelId(row?.id) || parseTitleModelId(status?.tier) || "";
+  if (!isBundledTitleModel(id)) {
+    return false;
+  }
+  const phase = parseTitleEnginePhase(status?.phase);
+  if (phase === "missing") {
+    return true;
+  }
+  return row?.present === false && titleEngineBusy(phase);
+}
+
+export function titleEngineProgress(status) {
+  const phase = parseTitleEnginePhase(status?.phase);
+  if (!titleEngineBusy(phase)) {
+    return {
+      visible: false,
+      determinate: false,
+      percent: null,
+      value: 0,
+      max: 1,
+    };
+  }
+  const total = finiteByteCount(status?.bytesTotal ?? status?.bytes_total);
+  const read = finiteByteCount(status?.bytesRead ?? status?.bytes_read);
+  if (total != null && total > 0 && read != null) {
+    const bounded = Math.min(read, total);
+    return {
+      visible: true,
+      determinate: true,
+      percent: Math.floor((bounded * 100) / total),
+      value: bounded,
+      max: total,
+    };
+  }
+  return {
+    visible: true,
+    determinate: false,
+    percent: null,
+    value: 0,
+    max: 1,
+  };
+}
+
+function formatProgressPercent(percent) {
+  const template =
+    catalogMessage("settings.field.titleModel.progressPercent") ||
+    TITLE_MODEL_STATUS_FALLBACK.progressPercent;
+  return template.replaceAll("{percent}", String(percent));
+}
+
+function notInBuildStatus() {
+  return (
+    catalogMessage("settings.field.titleModel.notInBuild") ||
+    TITLE_MODEL_STATUS_FALLBACK.notInBuild
+  );
+}
+
+function syncTitleEngineProgress(root, status, absent) {
+  const wrap = root.querySelector("[data-title-model-progress]");
+  const meter = root.querySelector("#title-model-progress");
+  const percentNode = root.querySelector("[data-title-model-progress-value]");
+  const view = absent
+    ? { visible: false, determinate: false, percent: null, value: 0, max: 1 }
+    : titleEngineProgress(status);
+  if (wrap) {
+    wrap.hidden = !view.visible;
+  }
+  if (!meter) {
+    return;
+  }
+  if (!view.visible || !view.determinate) {
+    if (typeof meter.removeAttribute === "function") {
+      meter.removeAttribute("value");
+    } else {
+      meter.value = undefined;
+    }
+    if (typeof meter.setAttribute === "function") {
+      meter.setAttribute("aria-labelledby", "title-model-status");
+    }
+    if (percentNode) {
+      percentNode.hidden = true;
+      percentNode.textContent = "";
+    }
+    return;
+  }
+  meter.max = view.max;
+  meter.value = view.value;
+  if (typeof meter.setAttribute === "function") {
+    meter.setAttribute("max", String(view.max));
+    meter.setAttribute("value", String(view.value));
+    meter.setAttribute(
+      "aria-labelledby",
+      "title-model-status title-model-progress-value",
+    );
+  }
+  if (percentNode) {
+    percentNode.hidden = false;
+    percentNode.textContent = formatProgressPercent(view.percent);
+  }
+}
+
 function titleEngineName(id) {
   const key = TITLE_ENGINE_NAME_KEYS[id];
   if (!key) {
@@ -337,12 +485,15 @@ export function formatTitleEngineLifecycle(status, row, options = {}) {
     parseTitleModelId(status?.tier) ||
     parseTitleModelId(row?.id) ||
     "extractive";
-  if (
-    selected === "custom" ||
-    selected === "ollama" ||
-    isHostedTitleModel(selected)
-  ) {
+  if (selected === "ollama" || isHostedTitleModel(selected)) {
     return formatTitleModelStatus({ id: selected, ...row }, options);
+  }
+  if (selected === "custom" && !titleEngineBusy(phase) && phase !== "failed") {
+    return formatTitleModelStatus({ id: selected, ...row }, options);
+  }
+  const described = { id, ...row };
+  if (bundledWeightsAbsent(status, described)) {
+    return notInBuildStatus();
   }
   const engine = titleEngineName(id);
   if (phase === "loading") {
@@ -390,9 +541,11 @@ export function applyTitleEngineLifecycle(root, status, row, options = {}) {
   if (!node) {
     return;
   }
+  const absent = bundledWeightsAbsent(status, row);
   node.textContent = formatTitleEngineLifecycle(status, row, options);
   node.setAttribute("aria-live", "polite");
-  const busy = titleEngineBusy(parseTitleEnginePhase(status?.phase));
+  const busy =
+    !absent && titleEngineBusy(parseTitleEnginePhase(status?.phase));
   if (busy) {
     node.setAttribute("aria-busy", "true");
   } else {
@@ -401,6 +554,7 @@ export function applyTitleEngineLifecycle(root, status, row, options = {}) {
   if (spinner) {
     spinner.hidden = !busy;
   }
+  syncTitleEngineProgress(root, status, absent);
 }
 
 export function bindTitleEngineStatus(root, listenFn = tauriListen) {
@@ -408,10 +562,14 @@ export function bindTitleEngineStatus(root, listenFn = tauriListen) {
     const payload = event?.payload ?? event;
     bumpTitleEngineRevision(root, parseTitleEnginePhase(payload?.phase));
     const id = parseTitleModelId(payload?.tier) || "extractive";
-    applyTitleEngineLifecycle(root, payload, {
-      id,
-      vendorCommand: TITLE_MODEL_VENDOR[id] || "",
-    });
+    applyTitleEngineLifecycle(
+      root,
+      payload,
+      rowWithKnownPresence(root, {
+        id,
+        vendorCommand: TITLE_MODEL_VENDOR[id] || "",
+      }),
+    );
   });
 }
 
@@ -426,6 +584,7 @@ export async function refreshTitleModelStatus(root, invokeFn, settings) {
   } catch {
     rows = null;
   }
+  rememberTitleModelPresence(root, rows);
   let engine = null;
   try {
     engine = await invokeFn("title_engine_status");
@@ -435,7 +594,8 @@ export async function refreshTitleModelStatus(root, invokeFn, settings) {
   const customName = String(settings?.general?.titleCustomName ?? "").trim();
   const row = rows?.find((item) => item?.id === id) ?? {
     id,
-    present: id === "custom" ? customName.length > 0 : false,
+    present:
+      rows === null ? undefined : id === "custom" ? customName.length > 0 : false,
     displayName: customName,
   };
   const options = {

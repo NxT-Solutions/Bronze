@@ -171,6 +171,8 @@
   "settings.field.titleModel.engine.qwen05": "Qwen2.5 0.5B",
   "settings.field.titleModel.loading": "Chargement de {engine}…",
   "settings.field.titleModel.hashing": "Vérification de {engine}…",
+  "settings.field.titleModel.notInBuild": "Ce modèle n’est pas dans cette version, donc les titres restent extractifs.",
+  "settings.field.titleModel.progressPercent": "{percent}%",
   "settings.field.titleModel.ready": "Prêt",
   "settings.field.titleModel.loaded": "Chargé — titrera la prochaine capture",
   "settings.field.titleModel.failed.bad_hash": "Ce fichier ne correspond pas au hash attendu, les titres restent extractifs.",

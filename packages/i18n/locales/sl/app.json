@@ -171,6 +171,8 @@
   "settings.field.titleModel.engine.qwen05": "Qwen2.5 0.5B",
   "settings.field.titleModel.loading": "Nalaganje {engine}…",
   "settings.field.titleModel.hashing": "Preverjanje {engine}…",
+  "settings.field.titleModel.notInBuild": "Tega modela ni v tej izgradnji, zato naslovi ostanejo ekstraktivni.",
+  "settings.field.titleModel.progressPercent": "{percent}%",
   "settings.field.titleModel.ready": "Pripravljeno",
   "settings.field.titleModel.loaded": "Naloženo — naslovilo bo naslednje besedilo",
   "settings.field.titleModel.failed.bad_hash": "Datoteka se ni ujemala s pričakovanim hashom, zato naslovi ostanejo ekstraktivni.",

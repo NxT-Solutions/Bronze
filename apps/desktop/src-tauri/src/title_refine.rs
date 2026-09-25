@@ -17,6 +17,8 @@ pub struct TitleEngineStatusDto {
     pub tier: String,
     pub phase: String,
     pub reason: Option<String>,
+    pub bytes_read: Option<u64>,
+    pub bytes_total: Option<u64>,
 }
 
 impl From<TitleEngineStatus> for TitleEngineStatusDto {
@@ -25,6 +27,8 @@ impl From<TitleEngineStatus> for TitleEngineStatusDto {
             tier: status.tier.as_str().into(),
             phase: status.phase.as_str().into(),
             reason: status.reason.map(|reason| reason.as_str().into()),
+            bytes_read: status.bytes_read,
+            bytes_total: status.bytes_total,
         }
     }
 }
@@ -213,6 +217,15 @@ mod title_refine_tests {
         assert_eq!(dto.tier, "qwen-05");
         assert_eq!(dto.phase, "loading");
         assert_eq!(dto.reason, None);
+        assert_eq!(dto.bytes_read, None);
+        let reading = apply_diag(loading, "read progress bytes=4 total=8");
+        let reading_dto = TitleEngineStatusDto::from(reading);
+        assert_eq!(reading_dto.bytes_read, Some(4));
+        assert_eq!(reading_dto.bytes_total, Some(8));
+        assert_eq!(
+            TitleEngineStatusDto::from(apply_diag(reading, "fallback reason=unreadable")).phase,
+            "failed"
+        );
         assert_eq!(
             TitleEngineStatusDto::from(apply_diag(loading, "hash ok")).phase,
             "hashing"

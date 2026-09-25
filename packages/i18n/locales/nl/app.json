@@ -171,6 +171,8 @@
   "settings.field.titleModel.engine.qwen05": "Qwen2.5 0.5B",
   "settings.field.titleModel.loading": "{engine} wordt geladen…",
   "settings.field.titleModel.hashing": "{engine} wordt gecontroleerd…",
+  "settings.field.titleModel.notInBuild": "Dit model zit niet in deze build, dus titels blijven extractief.",
+  "settings.field.titleModel.progressPercent": "{percent}%",
   "settings.field.titleModel.ready": "Gereed",
   "settings.field.titleModel.loaded": "Geladen — geeft de volgende capture een titel",
   "settings.field.titleModel.failed.bad_hash": "Dit bestand kwam niet overeen met de verwachte hash, dus titels blijven extractief.",

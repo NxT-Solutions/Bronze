@@ -250,20 +250,61 @@ fn cached_verify(path: &Path, sha256_hex: &str) -> Result<(), WeightsError> {
     result
 }
 
-fn hash_file(path: &Path, sha256_hex: &str) -> Result<(), WeightsError> {
-    if !path.is_file() {
-        return Err(WeightsError::Missing);
+pub(crate) fn next_read_percent(
+    previous: Option<u8>,
+    bytes_read: u64,
+    bytes_total: u64,
+) -> Option<u8> {
+    if bytes_total == 0 {
+        return None;
     }
+    let percent = ((bytes_read.saturating_mul(100)) / bytes_total).min(100) as u8;
+    if previous == Some(percent) {
+        return None;
+    }
+    Some(percent)
+}
+
+fn note_streamed_read(last_percent: &mut Option<u8>, bytes_read: u64, bytes_total: u64) {
+    let Some(percent) = next_read_percent(*last_percent, bytes_read, bytes_total) else {
+        return;
+    };
+    *last_percent = Some(percent);
+    crate::status::note_read_progress(bytes_read, bytes_total);
+}
+
+pub(crate) fn read_file_with_progress(path: &Path) -> Result<(), WeightsError> {
+    stream_file_with_progress(path, |_| {})
+}
+
+fn stream_file_with_progress(
+    path: &Path,
+    mut on_bytes: impl FnMut(&[u8]),
+) -> Result<(), WeightsError> {
     let mut file = File::open(path).map_err(|_| WeightsError::Unreadable)?;
-    let mut hasher = Sha256::new();
+    let total = file.metadata().map(|meta| meta.len()).unwrap_or(0);
     let mut buf = [0_u8; 64 * 1024];
+    let mut read = 0u64;
+    let mut last_percent = None;
+    note_streamed_read(&mut last_percent, 0, total);
     loop {
         let n = file.read(&mut buf).map_err(|_| WeightsError::Unreadable)?;
         if n == 0 {
             break;
         }
-        hasher.update(&buf[..n]);
+        on_bytes(&buf[..n]);
+        read = read.saturating_add(n as u64);
+        note_streamed_read(&mut last_percent, read, total);
     }
+    Ok(())
+}
+
+fn hash_file(path: &Path, sha256_hex: &str) -> Result<(), WeightsError> {
+    if !path.is_file() {
+        return Err(WeightsError::Missing);
+    }
+    let mut hasher = Sha256::new();
+    stream_file_with_progress(path, |chunk| hasher.update(chunk))?;
     let actual = hex_lower(&hasher.finalize());
     if actual == sha256_hex {
         Ok(())
@@ -328,6 +369,15 @@ fn hex_lower(bytes: &[u8]) -> String {
 mod weights_tests {
     use super::*;
     use std::io::Write;
+
+    #[test]
+    fn read_percent_advances_once_per_step() {
+        assert_eq!(next_read_percent(None, 0, 0), None);
+        assert_eq!(next_read_percent(None, 0, 100), Some(0));
+        assert_eq!(next_read_percent(Some(0), 1, 100), Some(1));
+        assert_eq!(next_read_percent(Some(1), 1, 100), None);
+        assert_eq!(next_read_percent(Some(99), 100, 100), Some(100));
+    }
 
     #[test]
     fn missing_file_is_missing() {
