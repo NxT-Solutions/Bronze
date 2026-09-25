@@ -27,6 +27,7 @@
       "!!.bmad-loop",
       "!!.hedgehog",
       "!!.cursor",
+      "!!hooks",
       "!!vendor-skills",
       "!!apps/desktop/src-tauri"
     ]
