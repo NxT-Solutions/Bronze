@@ -322,4 +322,59 @@ mod catalog_tests {
         assert!(conf.contains("\"../../../packages/i18n/locales\": \"locales/\""));
         let _ = std::fs::remove_dir_all(&root);
     }
+
+    #[test]
+    fn missing_locale_falls_back_and_rejects_empty_or_absent_keys() {
+        let root = std::env::temp_dir().join(format!(
+            "bronze-catalog-fallback-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("en")).expect("en dir");
+        std::fs::write(
+            root.join("en/app.json"),
+            r#"{"app":{"name":"Bronze","count":1},"blank":"","settings":{"title":"Settings"}}"#,
+        )
+        .expect("en json");
+        assert!(!catalog_exists(&root, "zz"));
+        let loaded = load_ui_catalog_map(&root, "zz");
+        assert_eq!(loaded.get("app.name").map(String::as_str), Some("Bronze"));
+        assert_eq!(
+            loaded.get("settings.title").map(String::as_str),
+            Some("Settings")
+        );
+        assert!(!loaded.contains_key("app.count"));
+        assert_eq!(require_key(&loaded, "blank"), Err(CatalogError::EmptyValue));
+        assert_eq!(
+            require_key(&loaded, "menu.status.capture"),
+            Err(CatalogError::MissingKey)
+        );
+        assert_eq!(html_lang("fr"), "fr");
+        assert_eq!(html_lang("de"), "de");
+        assert_eq!(html_lang("es"), "es");
+        assert_eq!(html_lang("it"), "it");
+        assert_eq!(catalog_dir("he"), TextDirection::Rtl);
+        assert_eq!(catalog_dir("fa-IR"), TextDirection::Rtl);
+        assert_eq!(catalog_dir("ur"), TextDirection::Rtl);
+        assert_eq!(catalog_dir("en-US"), TextDirection::Ltr);
+
+        let exe = root.join("Bronze.app/Contents/MacOS/bronze-desktop");
+        std::fs::create_dir_all(exe.parent().expect("macos")).expect("macos");
+        std::fs::write(&exe, b"").expect("exe");
+        let bundled = root.join("Bronze.app/Contents/Resources/locales");
+        std::fs::create_dir_all(&bundled).expect("empty bundle locales");
+        let workspace = root.join("workspace");
+        std::fs::create_dir_all(workspace.join("en")).expect("workspace en");
+        std::fs::write(
+            workspace.join("en/app.json"),
+            r#"{"app":{"name":"Workspace"}}"#,
+        )
+        .expect("workspace json");
+        assert_eq!(resolve_locales_root(Some(&exe), &workspace), workspace);
+        let _ = std::fs::remove_dir_all(&root);
+    }
 }

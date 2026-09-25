@@ -42,6 +42,11 @@ yarn-error.log*
 # rust
 apps/desktop/src-tauri/models/*.gguf
 target/
+mutants.out/
+
+# mutation reports
+packages/i18n/reports/
+packages/i18n/.stryker-tmp/
 **/*.rs.bk
 .cargo/
 Cargo.lock.bak

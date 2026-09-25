@@ -40,6 +40,35 @@ describe("ItemList (QUE-002, A11Y-002)", () => {
     expect(onAction).toHaveBeenCalledWith("1", "moveUp");
   });
 
+  it("renders an empty queue and keeps each card language", () => {
+    const empty = render(
+      <ItemList items={[]} labels={labels} onAction={() => undefined} />,
+    );
+    expect(empty.container.querySelector("ul")).toBeTruthy();
+    expect(empty.container.querySelectorAll("article")).toHaveLength(0);
+    expect(empty.container.querySelector("button")).toBeNull();
+    empty.unmount();
+
+    const { container } = render(
+      <ItemList
+        items={[
+          { id: "1", body: "hello", contentLanguage: "en" },
+          { id: "2", body: "مرحبا", contentLanguage: "ar" },
+        ]}
+        labels={labels}
+        onAction={() => undefined}
+      />,
+    );
+    const articles = container.querySelectorAll("article");
+    expect(articles).toHaveLength(2);
+    expect(articles[0]).toHaveAttribute("lang", "en");
+    expect(articles[1]).toHaveAttribute("lang", "ar");
+    expect(articles[0]).toHaveAttribute("dir", "auto");
+    expect(articles[1]).toHaveAttribute("dir", "auto");
+    expect(screen.getByText("hello")).toBeTruthy();
+    expect(screen.getByText("مرحبا")).toBeTruthy();
+  });
+
   it("axe passes on the queue list", async () => {
     const { container } = render(
       <ItemList

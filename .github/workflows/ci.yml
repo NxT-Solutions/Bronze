@@ -93,15 +93,80 @@ jobs:
   quality-swift:
     name: quality-swift
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: swift build --package-path native/macos/BronzeNative
+      - name: Swift package tests
+        run: swift test --package-path native/macos/BronzeNative
+      - name: Native package smoke
+        run: |
+          set -euo pipefail
+          bin="$(swift build --package-path native/macos/BronzeNative --show-bin-path)"
+          test -f "${bin}/libBronzeNative.a"
+          test -x "${bin}/BronzeNotice"
+
+  mutation-rust:
+    name: mutation-rust
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@ce678459e9fc7500d337468f904b95f1b5c10b5e # 1.98.1
+        with:
+          toolchain: 1.98.1
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/cargo-mutants
+            target
+          key: mutants-ubuntu-${{ hashFiles('Cargo.lock', 'tooling/mutation-baseline.json') }}
+      - name: Install cargo-mutants
+        run: |
+          set -euo pipefail
+          if ! cargo mutants --version | grep -q 'cargo-mutants 27.1.0'; then
+            cargo install cargo-mutants --version 27.1.0 --locked
+          fi
+      - name: Mutate bronze-capture
+        env:
+          CARGO_INCREMENTAL: "1"
+        run: |
+          set -euo pipefail
+          cargo mutants --version
+          set +e
+          cargo mutants \
+            --package bronze-capture \
+            --file '**/ax.rs' \
+            --file '**/clipboard_manual.rs' \
+            --file '**/coordinator.rs' \
+            --file '**/focus_policy.rs' \
+            --timeout 20 \
+            --in-place
+          status=$?
+          set -e
+          case "$status" in
+            0|2|3) ;;
+            *) exit "$status" ;;
+          esac
+      - name: Require rust mutation score
+        run: |
+          set -euo pipefail
+          minimum="$(python3 -c 'import json; print(json.load(open("tooling/mutation-baseline.json"))["rust"]["minimumScore"])')"
+          python3 tooling/check-mutation-score.py rust mutants.out/outcomes.json "$minimum"
 
   ci:
     name: CI
     if: always()
-    needs: [quality-js, quality-docs, quality-rust, quality-macos, quality-swift]
+    needs:
+      [
+        quality-js,
+        quality-docs,
+        quality-rust,
+        quality-macos,
+        quality-swift,
+        mutation-rust,
+      ]
     runs-on: ubuntu-22.04
     steps:
       - name: Require every quality job
@@ -112,3 +177,4 @@ jobs:
           test "${{ needs.quality-rust.result }}" = "success"
           test "${{ needs.quality-macos.result }}" = "success"
           test "${{ needs.quality-swift.result }}" = "success"
+          test "${{ needs.mutation-rust.result }}" = "success"
