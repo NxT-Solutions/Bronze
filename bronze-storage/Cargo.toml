@@ -6,6 +6,6 @@ edition = "2021"
 [dependencies]
 bronze-domain = { path = "../bronze-domain" }
 bronze-settings = { path = "../bronze-settings" }
-rusqlite = { version = "0.32", features = ["backup", "bundled"] }
+rusqlite = { version = "0.40", features = ["backup", "bundled"] }
 serde_json = "1.0"
 sha2 = "0.10"
