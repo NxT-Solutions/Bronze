@@ -203,6 +203,8 @@ jobs:
 
       - name: Tag only
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git fetch --tags
@@ -219,7 +221,13 @@ jobs:
           fi
           tag="v${{ steps.set_tag.outputs.version }}"
           if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Using existing tag $tag"
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "Using existing tag $tag"
+            else
+              echo "Moving unpublished tag $tag to $(git rev-parse HEAD)"
+              git tag -f "$tag"
+              git push --force origin "refs/tags/$tag"
+            fi
           else
             git tag "$tag"
             git push origin "$tag"
