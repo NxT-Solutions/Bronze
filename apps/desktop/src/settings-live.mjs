@@ -59,6 +59,28 @@ const TITLE_MODEL_VENDOR = {
 
 export const TITLE_ENGINE_STATUS_EVENT = "title-engine-status";
 
+const titleEngineRevisions = new WeakMap();
+const titleEnginePhases = new WeakMap();
+
+function titleEngineRevision(root) {
+  return titleEngineRevisions.get(root) ?? 0;
+}
+
+function notedTitleEnginePhase(root) {
+  return titleEnginePhases.get(root) ?? "";
+}
+
+function rememberTitleEnginePhase(root, phase) {
+  titleEnginePhases.set(root, phase);
+}
+
+function bumpTitleEngineRevision(root, phase) {
+  const next = titleEngineRevision(root) + 1;
+  titleEngineRevisions.set(root, next);
+  rememberTitleEnginePhase(root, phase);
+  return next;
+}
+
 const TITLE_ENGINE_PHASES = Object.freeze([
   "idle",
   "loading",
@@ -363,6 +385,7 @@ export function applyTitleEngineLifecycle(root, status, row, options = {}) {
 export function bindTitleEngineStatus(root, listenFn = tauriListen) {
   return listenFn(TITLE_ENGINE_STATUS_EVENT, (event) => {
     const payload = event?.payload ?? event;
+    bumpTitleEngineRevision(root, parseTitleEnginePhase(payload?.phase));
     const id = parseTitleModelId(payload?.tier) || "extractive";
     applyTitleEngineLifecycle(root, payload, {
       id,
@@ -372,6 +395,7 @@ export function bindTitleEngineStatus(root, listenFn = tauriListen) {
 }
 
 export async function refreshTitleModelStatus(root, invokeFn, settings) {
+  const revision = titleEngineRevision(root);
   const selected = selectedTitleModelId(root, settings);
   const id = selected || "extractive";
   let rows = null;
@@ -404,17 +428,18 @@ export async function refreshTitleModelStatus(root, invokeFn, settings) {
         ?.titleHostedHost ?? "",
     ).trim(),
   };
-  if (
-    engine &&
-    parseTitleEnginePhase(engine.phase) &&
-    isBundledTitleModel(id)
-  ) {
+  const incoming = parseTitleEnginePhase(engine?.phase);
+  if (revision !== titleEngineRevision(root)) {
+    const liveBusy = titleEngineBusy(notedTitleEnginePhase(root));
+    if (!liveBusy || titleEngineBusy(incoming) || !incoming) {
+      return rows;
+    }
+  }
+  if (engine && incoming && isBundledTitleModel(id)) {
+    rememberTitleEnginePhase(root, incoming);
     applyTitleEngineLifecycle(root, engine, row, options);
-  } else if (
-    engine &&
-    parseTitleEnginePhase(engine.phase) &&
-    id === "extractive"
-  ) {
+  } else if (engine && incoming && id === "extractive") {
+    rememberTitleEnginePhase(root, incoming);
     applyTitleEngineLifecycle(root, engine, row, options);
   } else {
     applyTitleModelStatus(root, row, options);
