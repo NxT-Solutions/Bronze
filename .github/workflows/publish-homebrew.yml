@@ -46,7 +46,7 @@ jobs:
           PACKAGES_TOKEN: ${{ secrets.PACKAGES_REPO_TOKEN }}
         run: |
           set -euo pipefail
-          remote="https://x-access-token:${PACKAGES_TOKEN}@github.com/NoahNxT/homebrew-nxt-solutions-packages.git"
+          remote="https://x-access-token:${PACKAGES_TOKEN}@github.com/NxT-Solutions/homebrew-nxt-solutions-packages.git"
           default_branch=$(git ls-remote --symref "$remote" HEAD | awk '/^ref:/ {print $2}' | sed 's@refs/heads/@@')
           if [[ -z "${default_branch}" ]]; then
             for candidate in main master; do
