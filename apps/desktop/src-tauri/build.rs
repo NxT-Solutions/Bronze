@@ -24,8 +24,19 @@ fn stage_bundled_title_models() {
         let src = vendor.join(name);
         println!("cargo:rerun-if-changed={}", src.display());
         if src.is_file() {
-            let _ = std::fs::copy(&src, dest.join(name));
+            let dest_path = dest.join(name);
+            if same_len(&src, &dest_path) {
+                continue;
+            }
+            let _ = std::fs::copy(&src, &dest_path);
         }
+    }
+}
+
+fn same_len(src: &Path, dest: &Path) -> bool {
+    match (src.metadata(), dest.metadata()) {
+        (Ok(src_meta), Ok(dest_meta)) => src_meta.len() == dest_meta.len(),
+        _ => false,
     }
 }
 
