@@ -36,6 +36,11 @@ export function isNearLoadedStart(scroller, threshold = 24) {
   return top <= threshold;
 }
 
+export function shouldLoadNextOnKey({ key, onLastCard, hasCursor } = {}) {
+  const atEnd = key === "ArrowDown" || key === "End" || key === "PageDown";
+  return Boolean(atEnd && onLastCard && hasCursor);
+}
+
 export function planNewItemFollow({
   sort,
   nearStart = false,

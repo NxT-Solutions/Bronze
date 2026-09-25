@@ -26,6 +26,7 @@ import {
   queueScrollParent,
   revealQueueItem,
   scrollQueueCard,
+  shouldLoadNextOnKey,
 } from "./queue-reveal.mjs";
 import {
   listenQueueSortChanged,
@@ -1062,6 +1063,18 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   list.addEventListener("focusin", (event) => {
     if (queueFocusAtEnd(queueItemRows(list), event.target)) {
+      loadMore();
+    }
+  });
+  list.addEventListener("keydown", (event) => {
+    if (
+      shouldLoadNextOnKey({
+        key: event.key,
+        onLastCard: queueFocusAtEnd(queueItemRows(list), event.target),
+        hasCursor: Boolean(state.nextCursor),
+      })
+    ) {
+      event.preventDefault();
       loadMore();
     }
   });
