@@ -160,4 +160,30 @@ mod packaging_tests {
         assert!(!build.contains("same_len"));
         assert!(!build.contains("manifest.join(\"models\")"));
     }
+
+    #[test]
+    fn sbom_stub_sorts_dedups_and_ignores_non_names() {
+        let names = sbom_stub(&[
+            "name = \"zeta\"",
+            "version = \"1.0.0\"",
+            "name = \"alpha\"",
+            "name = \"alpha\"",
+            "not a crate line",
+            "name = \"beta\"",
+        ]);
+        assert_eq!(
+            names,
+            vec!["alpha".to_string(), "beta".to_string(), "zeta".to_string()]
+        );
+    }
+
+    #[test]
+    fn get_task_allow_in_text_fails_the_packaging_check() {
+        assert!(!forbids_get_task_allow("com.apple.security.get-task-allow"));
+        assert!(forbids_get_task_allow(
+            "<key>com.apple.security.app-sandbox</key>"
+        ));
+        assert!(icns_png_sizes(b"not-an-icns").is_empty());
+        assert!(icns_png_sizes(b"icns\x00\x00\x00\xff").is_empty());
+    }
 }

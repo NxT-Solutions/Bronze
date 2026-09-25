@@ -351,4 +351,88 @@ mod ax_tests {
         assert!(!blob.contains("hunter2"));
         assert!(!blob.contains("secret"));
     }
+
+    #[test]
+    fn ax_accessibility_denied_and_missing_focus_store_nothing() {
+        let denied = FakeAxTree {
+            nodes: vec![FakeAxNode::new(
+                AxRole::TextArea,
+                None,
+                FakeSelection::Text("secret-body".into()),
+                None,
+            )],
+            focused: Some(0),
+            excluded: false,
+            accessibility_granted: false,
+        };
+        let (outcome, text) = capture(&denied);
+        assert_eq!(outcome, AxOutcome::AccessibilityDenied);
+        assert!(text.is_none());
+        assert_eq!(denied.total_queries(), 0);
+        let mut store = Vec::new();
+        store_capture(&mut store, outcome, text);
+        assert!(store.is_empty());
+
+        let missing = FakeAxTree {
+            nodes: vec![FakeAxNode::new(
+                AxRole::TextArea,
+                None,
+                FakeSelection::Text("unread".into()),
+                None,
+            )],
+            focused: None,
+            excluded: false,
+            accessibility_granted: true,
+        };
+        let (outcome, text) = capture(&missing);
+        assert_eq!(outcome, AxOutcome::FocusedElementMissing);
+        assert!(text.is_none());
+        assert_eq!(missing.total_queries(), 0);
+    }
+
+    #[test]
+    fn ax_invalid_encoding_and_oversize_are_not_stored() {
+        let invalid = FakeAxTree {
+            nodes: vec![FakeAxNode::new(
+                AxRole::TextField,
+                None,
+                FakeSelection::InvalidUtf8,
+                None,
+            )],
+            focused: Some(0),
+            excluded: false,
+            accessibility_granted: true,
+        };
+        let (outcome, text) = capture(&invalid);
+        assert_eq!(outcome, AxOutcome::InvalidTextEncoding);
+        assert!(text.is_none());
+        assert_eq!(invalid.total_queries(), 1);
+
+        let huge = "x".repeat(AX_MAX_SELECTION_BYTES + 1);
+        let oversize = FakeAxTree {
+            nodes: vec![FakeAxNode::new(
+                AxRole::TextArea,
+                None,
+                FakeSelection::Text(huge),
+                None,
+            )],
+            focused: Some(0),
+            excluded: false,
+            accessibility_granted: true,
+        };
+        let (outcome, text) = capture(&oversize);
+        assert_eq!(outcome, AxOutcome::SelectionTooLarge);
+        assert!(text.is_none());
+        let mut store = Vec::new();
+        store_capture(&mut store, outcome, text);
+        assert!(store.is_empty());
+        assert_eq!(
+            classify(AxRole::SecureTextField, None),
+            ProtectionClass::Protected
+        );
+        assert_eq!(
+            classify(AxRole::TextField, Some(AxSubrole::Other)),
+            ProtectionClass::AllowedText
+        );
+    }
 }

@@ -301,4 +301,17 @@ mod coordinator_tests {
             Terminal::ContextUnavailable
         );
     }
+
+    #[test]
+    fn coordinator_zero_capacity_still_terminates_the_first_request() {
+        let mut coord = CaptureCoordinator::new(0);
+        let first = coord.submit(snap(1));
+        let second = coord.submit(snap(2));
+        coord.drain();
+        assert_eq!(coord.receipt(first).unwrap().terminal, Terminal::Saved);
+        assert_eq!(
+            coord.receipt(second).unwrap().terminal,
+            Terminal::TriggerQueueOverflow
+        );
+    }
 }

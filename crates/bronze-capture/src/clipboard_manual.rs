@@ -205,4 +205,74 @@ mod clipboard_manual_tests {
         }
         assert!(tap.contains("0x42524E5A434F5059"));
     }
+
+    #[test]
+    fn clipboard_empty_missing_and_other_are_not_imported() {
+        let settings = ClipboardSettings::default();
+        let empty = FakeBoard {
+            generation: Cell::new(2),
+            kind: ClipboardKind::PlainText,
+            text: Some(String::new()),
+            reads: Cell::new(0),
+            bump_on_read: false,
+        };
+        assert_eq!(
+            create_from_clipboard(&empty, &settings),
+            ClipboardOutcome::NoSelection
+        );
+        let missing = FakeBoard {
+            generation: Cell::new(2),
+            kind: ClipboardKind::PlainText,
+            text: None,
+            reads: Cell::new(0),
+            bump_on_read: false,
+        };
+        assert_eq!(
+            create_from_clipboard(&missing, &settings),
+            ClipboardOutcome::NoSelection
+        );
+        let other = FakeBoard {
+            generation: Cell::new(2),
+            kind: ClipboardKind::Other,
+            text: Some("not-plain".into()),
+            reads: Cell::new(0),
+            bump_on_read: false,
+        };
+        assert_eq!(
+            create_from_clipboard(&other, &settings),
+            ClipboardOutcome::ClipboardUnsupportedType
+        );
+        assert_eq!(other.reads.get(), 0);
+    }
+
+    #[test]
+    fn clipboard_unsupported_type_reports_change_when_generation_moves() {
+        struct BumpOnInspect {
+            generation: Cell<u64>,
+            reads: Cell<u32>,
+        }
+        impl Pasteboard for BumpOnInspect {
+            fn generation(&self) -> u64 {
+                self.generation.get()
+            }
+            fn inspect_kind(&self) -> ClipboardKind {
+                self.generation.set(self.generation.get() + 1);
+                ClipboardKind::Image
+            }
+            fn read_plain_text(&self) -> Option<String> {
+                self.reads.set(self.reads.get() + 1);
+                Some("pixels".into())
+            }
+        }
+        let settings = ClipboardSettings::default();
+        let board = BumpOnInspect {
+            generation: Cell::new(4),
+            reads: Cell::new(0),
+        };
+        assert_eq!(
+            create_from_clipboard(&board, &settings),
+            ClipboardOutcome::ClipboardChanged
+        );
+        assert_eq!(board.reads.get(), 0);
+    }
 }

@@ -19,8 +19,9 @@ final class TitleTests: XCTestCase {
 
     func testNonEmptyBodyIsDegraded() {
         let text = "The migration timeout is the real bug in persist."
-        text.withCString { ptr in
-            let view = bronze_native_utf8_view(ptr: ptr, len: UInt64(text.utf8.count))
+        let bytes = Array(text.utf8)
+        bytes.withUnsafeBufferPointer { buf in
+            let view = bronze_native_utf8_view(ptr: buf.baseAddress, len: UInt64(bytes.count))
             var out = bronze_native_utf8_view(ptr: nil, len: 0)
             XCTAssertEqual(bronze_native_item_title(view, &out), BRONZE_STATUS_DEGRADED)
         }

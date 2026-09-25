@@ -65,4 +65,20 @@ describe("SettingsForm (SET-001, WIN-005)", () => {
     expect(json).not.toContain("/Users/me");
     expect((await axe.run(container)).violations).toEqual([]);
   });
+
+  it("hides every settings group when the search matches nothing", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SettingsForm labels={labels} />);
+    expect(
+      container.querySelectorAll("[data-settings-group]").length,
+    ).toBeGreaterThan(0);
+    await user.type(
+      screen.getByRole("searchbox", { name: "Search settings" }),
+      "zzzz-no-such-setting",
+    );
+    expect(container.querySelector("[data-settings-group]")).toBeNull();
+    expect(screen.queryByLabelText("Backup schedule")).toBeNull();
+    expect(screen.queryByLabelText("Launch at login")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeTruthy();
+  });
 });

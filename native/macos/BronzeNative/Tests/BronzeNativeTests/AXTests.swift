@@ -45,4 +45,20 @@ final class AXTests: XCTestCase {
         XCTAssertEqual(spaceOut, .captured(length: 3))
         XCTAssertEqual(spaceText, "   ")
     }
+
+    func testAccessibilityDeniedAndMissingFocusStoreNothing() {
+        let node = AXFakeNode(role: .textArea, selection: .text("secret-body"))
+        let denied = AXFakeTree(focused: node, accessibilityGranted: false)
+        let (outcome, text) = axCapture(denied)
+        XCTAssertEqual(outcome, .accessibilityDenied)
+        XCTAssertNil(text)
+        XCTAssertEqual(node.queryCount, 0)
+
+        let unread = AXFakeNode(role: .textArea, selection: .text("unread"))
+        let missing = AXFakeTree(focused: nil, accessibilityGranted: true)
+        let (missingOut, missingText) = axCapture(missing)
+        XCTAssertEqual(missingOut, .focusedElementMissing)
+        XCTAssertNil(missingText)
+        XCTAssertEqual(unread.queryCount, 0)
+    }
 }

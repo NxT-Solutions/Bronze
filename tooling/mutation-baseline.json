@@ -1,0 +1,21 @@
+{
+  "rust": {
+    "tool": "cargo-mutants",
+    "version": "27.1.0",
+    "package": "bronze-capture",
+    "files": [
+      "src/ax.rs",
+      "src/clipboard_manual.rs",
+      "src/coordinator.rs",
+      "src/focus_policy.rs"
+    ],
+    "measured": {
+      "caught": 52,
+      "missed": 8,
+      "timeout": 1,
+      "unviable": 10,
+      "score": 86.89
+    },
+    "minimumScore": 86
+  }
+}
