@@ -3,6 +3,7 @@ mod live_session;
 mod own_selection;
 mod title_engines;
 mod title_refine;
+mod update;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -57,6 +58,9 @@ pub fn run() {
                 title_engines::set_hosted_title_key,
                 title_engines::clear_hosted_title_key,
                 title_engines::hosted_title_disclosure,
+                update::app_version_info,
+                update::check_for_update,
+                update::open_release_page,
             ])
             .setup(|app| {
                 use tauri::Manager;

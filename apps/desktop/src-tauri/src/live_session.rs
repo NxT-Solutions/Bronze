@@ -2613,6 +2613,9 @@ mod live_session_tests {
         assert!(used.contains("list_ollama_title_models"));
         assert!(used.contains("set_hosted_title_key"));
         assert!(used.contains("hosted_title_disclosure"));
+        assert!(used.contains("app_version_info"));
+        assert!(used.contains("check_for_update"));
+        assert!(used.contains("open_release_page"));
         assert!(used.contains("login_item_status"));
         assert!(used.contains("preview_support_bundle"));
         assert!(used.contains("export_support_file"));
@@ -3151,6 +3154,9 @@ mod live_session_tests {
         assert!(used.contains("set_hosted_title_key"));
         assert!(used.contains("clear_hosted_title_key"));
         assert!(used.contains("hosted_title_disclosure"));
+        assert!(used.contains("app_version_info"));
+        assert!(used.contains("check_for_update"));
+        assert!(used.contains("open_release_page"));
         assert!(used.contains("login_item_status"));
         assert!(used.contains("preview_support_bundle"));
         assert!(used.contains("export_support_file"));

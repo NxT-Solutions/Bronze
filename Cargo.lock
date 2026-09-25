@@ -386,6 +386,7 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "ureq",
 ]
 
 [[package]]
