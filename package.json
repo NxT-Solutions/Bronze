@@ -7,7 +7,7 @@
     "verify": "biome check . && turbo run typecheck && turbo run test && turbo run validate && cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace && python3 tooling/planning-checks.py"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
+    "@biomejs/biome": "2.5.14",
     "@tauri-apps/cli": "2.11.4",
     "turbo": "2.10.12"
   },
