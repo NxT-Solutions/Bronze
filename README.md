@@ -32,10 +32,11 @@ Bronze sits beside the app you are already in. Capture the selection, order the 
 
 ## Install
 
-macOS 14 (Sonoma) or later, Apple Silicon and Intel.
+macOS 14 (Sonoma) or later, Apple Silicon and Intel. Homebrew 7 refuses the cask until the tap is trusted.
 
 ```bash
 brew tap NxT-Solutions/nxt-solutions-packages
+brew trust nxt-solutions/nxt-solutions-packages
 brew install --cask bronze
 brew upgrade --cask bronze
 ```
