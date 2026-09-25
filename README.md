@@ -186,11 +186,14 @@ Permissions: Accessibility and Input Monitoring. Bronze never asks for Screen Re
 
 | Check | Where |
 | --- | --- |
-| Biome, typecheck, JS tests, i18n validate | `quality-js` |
+| Biome, typecheck, JS tests, desktop smoke, i18n validate | `quality-js` |
 | Planning-pack gates | `quality-docs` |
-| `cargo fmt`, Clippy, portable crate tests | `quality-rust` |
+| `cargo fmt`, Clippy, portable crate unit and integration tests | `quality-rust` |
 | macOS Clippy and tests except `bronze-desktop` | `quality-macos` |
-| Full workspace including Swift | `pnpm verify` on a Mac |
+| Swift package tests and native smoke | `quality-swift` on macos-15 |
+| Desktop crate tests | `quality-app` on macos-15 |
+| Bounded cargo-mutants | `mutation-rust` |
+| `pnpm verify` | a Mac |
 
 Do not claim WCAG, VoiceOver, or notarization without files in `docs/evidence/`.
 

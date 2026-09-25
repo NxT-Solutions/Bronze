@@ -41,7 +41,7 @@ format-check
 
 Turbo cache: pure JS generation/test tasks only. Native signing, notarization, permission, E2E, timing, network, and release tasks `cache: false`. CI actions pinned to commit SHA; default permissions read-only.
 
-Pull-request CI is `.github/workflows/ci.yml`. It runs `quality-js` (Biome, typecheck, JS tests, i18n validate), `quality-docs` (`planning-checks.py`), `quality-rust` (fmt, Clippy, portable crate tests on Ubuntu), and `quality-macos` (Clippy and tests except the Swift-linked `bronze-desktop` crate). The `CI` job fails if any of those fail. That workflow does not notarize, does not claim WCAG, and does not replace `pnpm verify` on a Mac.
+Pull-request CI is `.github/workflows/ci.yml`. It runs `quality-js` (Biome, typecheck, JS unit tests including the desktop smoke, i18n validate), `quality-docs` (`planning-checks.py`), `quality-rust` (fmt, Clippy, portable crate unit and integration tests on Ubuntu), `quality-macos` (Clippy and tests except the Swift-linked `bronze-desktop` crate), `quality-swift` (`swift test` and the BronzeNative smoke on macos-15), `quality-app` (`cargo test -p bronze-desktop` on macos-15), and `mutation-rust` (cargo-mutants on the bronze-capture selection files, 15-minute job, score floor in `tooling/mutation-baseline.json`). The `CI` job fails if any of those fail. That workflow does not notarize, does not claim WCAG, and does not replace `pnpm verify` on a Mac.
 
 ## 4. Unit tests
 
