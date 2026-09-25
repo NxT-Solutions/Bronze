@@ -1,0 +1,126 @@
+name: 🍺 Publish Homebrew
+
+on:
+  release:
+    types: [published]
+  workflow_run:
+    workflows: ["🔖 Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v0.1.0). Leave empty to use latest."
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  homebrew:
+    if: ${{ github.event_name == 'release' || github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Guard missing packages repo token
+        run: |
+          if [[ -z "${{ secrets.PACKAGES_REPO_TOKEN }}" ]]; then
+            echo "PACKAGES_REPO_TOKEN not set; skipping."
+            exit 0
+          fi
+
+      - name: Resolve release tag
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> "$GITHUB_ENV"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.tag }}" ]]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.tag }}" >> "$GITHUB_ENV"
+          else
+            tag=$(curl -sS "https://api.github.com/repos/${{ github.repository }}/releases/latest" \
+              | python3 -c "import sys, json; print(json.load(sys.stdin)['tag_name'])")
+            echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          fi
+
+      - name: Checkout packages repo
+        if: ${{ secrets.PACKAGES_REPO_TOKEN != '' }}
+        shell: bash
+        env:
+          PACKAGES_TOKEN: ${{ secrets.PACKAGES_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          remote="https://x-access-token:${PACKAGES_TOKEN}@github.com/NoahNxT/homebrew-nxt-solutions-packages.git"
+          default_branch=$(git ls-remote --symref "$remote" HEAD | awk '/^ref:/ {print $2}' | sed 's@refs/heads/@@')
+          if [[ -z "${default_branch}" ]]; then
+            for candidate in main master; do
+              if git ls-remote --heads "$remote" "${candidate}" | grep -q "${candidate}$"; then
+                default_branch="${candidate}"
+                break
+              fi
+            done
+          fi
+          if [[ -z "${default_branch}" ]]; then
+            echo "Could not resolve tap default branch."
+            exit 1
+          fi
+          git clone "$remote" --branch "${default_branch}" --depth 1 homebrew-nxt-solutions-packages
+
+      - name: Download release assets
+        if: ${{ secrets.PACKAGES_REPO_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "$RELEASE_TAG" -R "${{ github.repository }}" -p "bronze-macos.pkg" -D /tmp/releases
+
+      - name: Generate Homebrew cask
+        if: ${{ secrets.PACKAGES_REPO_TOKEN != '' }}
+        working-directory: homebrew-nxt-solutions-packages
+        run: |
+          set -euo pipefail
+          tag="${RELEASE_TAG}"
+          version="${tag#v}"
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          pkg="/tmp/releases/bronze-macos.pkg"
+          if [[ ! -f "$pkg" ]]; then
+            echo "Missing bronze-macos.pkg"
+            ls -la /tmp/releases || true
+            exit 1
+          fi
+          sha=$(shasum -a 256 "$pkg" | awk '{print $1}')
+          mkdir -p Casks
+          rm -f Formula/bronze.rb
+          cat > Casks/bronze.rb <<EOF
+          cask "bronze" do
+            version "${version}"
+            sha256 "${sha}"
+
+            url "https://github.com/${{ github.repository }}/releases/download/${tag}/bronze-macos.pkg"
+            name "Bronze"
+            desc "Local-first macOS selection-to-action queue"
+            homepage "https://github.com/${{ github.repository }}"
+
+            depends_on macos: ">= :sonoma"
+            depends_on arch: :arm64
+
+            pkg "bronze-macos.pkg"
+
+            uninstall pkgutil: "app.bronze.desktop"
+
+            caveats <<~EOS
+              Bronze ships an arm64 package. Intel/universal2 stays Proposed (ADR-002).
+              This cask does not claim Apple notarization.
+            EOS
+          end
+          EOF
+
+      - name: Commit and push
+        if: ${{ secrets.PACKAGES_REPO_TOKEN != '' }}
+        working-directory: homebrew-nxt-solutions-packages
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add Casks/bronze.rb
+          git reset HEAD -- Formula/bronze.rb 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "bronze ${VERSION}"
+          git push -u origin HEAD

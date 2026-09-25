@@ -244,6 +244,70 @@ def check_title_adr() -> list[str]:
     return errors
 
 
+def check_oss_release() -> list[str]:
+    errors: list[str] = []
+    license_text = (ROOT / "LICENSE").read_text() if (ROOT / "LICENSE").is_file() else ""
+    if not license_text:
+        errors.append("LICENSE missing")
+    else:
+        if "MIT License" not in license_text:
+            errors.append("LICENSE must be MIT")
+        if "Noah Gillard" not in license_text:
+            errors.append("LICENSE missing copyright holder")
+        if "2026" not in license_text:
+            errors.append("LICENSE missing copyright year")
+
+    changelog = (ROOT / "CHANGELOG.md").read_text() if (ROOT / "CHANGELOG.md").is_file() else ""
+    if not changelog:
+        errors.append("CHANGELOG.md missing")
+    elif "## Unreleased" not in changelog:
+        errors.append("CHANGELOG.md missing Unreleased")
+
+    for name in ("CONTRIBUTING.md", "SECURITY.md"):
+        if not (ROOT / name).is_file():
+            errors.append(f"{name} missing")
+
+    security = (ROOT / "SECURITY.md").read_text() if (ROOT / "SECURITY.md").is_file() else ""
+    if security and "NxT-Solutions/Bronze/security/advisories" not in security:
+        errors.append("SECURITY.md missing GitHub Advisories URL")
+
+    owners = ROOT / ".github" / "CODEOWNERS"
+    if not owners.is_file():
+        errors.append(".github/CODEOWNERS missing")
+    elif "@NoahNxT" not in owners.read_text():
+        errors.append(".github/CODEOWNERS must name @NoahNxT")
+
+    release = ROOT / ".github" / "workflows" / "release.yml"
+    release_text = release.read_text() if release.is_file() else ""
+    if not release_text:
+        errors.append(".github/workflows/release.yml missing")
+    else:
+        for needle in (
+            "workflow_dispatch",
+            "pkgbuild",
+            "app.bronze.desktop",
+            "bronze-macos.pkg",
+            "This package is not a notarization claim.",
+        ):
+            if needle not in release_text:
+                errors.append(f"release.yml missing {needle}")
+
+    brew = ROOT / ".github" / "workflows" / "publish-homebrew.yml"
+    brew_text = brew.read_text() if brew.is_file() else ""
+    if not brew_text:
+        errors.append(".github/workflows/publish-homebrew.yml missing")
+    else:
+        if "Casks/bronze.rb" not in brew_text:
+            errors.append("publish-homebrew.yml must write Casks/bronze.rb")
+        if 'cask "bronze"' not in brew_text:
+            errors.append("publish-homebrew.yml must emit a Homebrew cask")
+        if "class Bronze < Formula" in brew_text:
+            errors.append("publish-homebrew.yml must not write Formula/bronze.rb")
+        if "brew upgrade --cask bronze" not in brew_text and "pkgutil" not in brew_text:
+            errors.append("publish-homebrew.yml missing cask uninstall identity")
+    return errors
+
+
 def check_local_links() -> list[str]:
     errors: list[str] = []
     roots = [
@@ -270,6 +334,7 @@ def main() -> int:
     errors.extend(check_enums())
     errors.extend(check_local_links())
     errors.extend(check_title_adr())
+    errors.extend(check_oss_release())
     if errors:
         return fail(errors)
     print("PASS requirement-parity")
@@ -277,6 +342,7 @@ def main() -> int:
     print("PASS local-links")
     print("PASS traceability")
     print("PASS title-adr")
+    print("PASS oss-release")
     print(f"checked {len(PRD_IDS)} requirement IDs")
     return 0
 

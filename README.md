@@ -140,3 +140,13 @@ Original visual direction: [Bronze UI concept](assets/bronze-ui-concept.png). It
 Planning pack IDs in [docs/03-prd.md](docs/03-prd.md) and [docs/18-adrs.md](docs/18-adrs.md) remain authority. Implementation lives on `main`. New work uses a feature branch from `main`.
 
 Local debug package (SEC-005): `tooling/package-debug.sh` — arm64 unless DG-01 says otherwise, checksums + SBOM stub, no `get-task-allow`, no notarization.
+
+## Project
+
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Security: [SECURITY.md](SECURITY.md)
+
+## License
+
+MIT. See [LICENSE](LICENSE). Copyright 2026 Noah Gillard.
