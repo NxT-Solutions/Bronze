@@ -375,7 +375,13 @@ function arrivalList(id, index) {
   };
   const head = {
     dataset: { itemId: "a" },
-    classList: { add() {}, remove() {}, has() { return false; } },
+    classList: {
+      add() {},
+      remove() {},
+      has() {
+        return false;
+      },
+    },
   };
   const rows = index === 0 ? [card, head] : [head, card];
   return {
