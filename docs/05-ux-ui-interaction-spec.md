@@ -157,11 +157,12 @@ Panel must remain usable under 200% text resize and 400% WebView zoom/reflow at 
 
 ## 11. Motion and materials
 
-- Transitions use `--duration` (180ms) and `--ease` / `--ease-out` (`cubic-bezier(0.22, 1, 0.36, 1)`), cap ≤200 ms, and are not required to understand state.
+- Controls use `--duration` (180ms) and `--ease` / `--ease-out` (`cubic-bezier(0.22, 1, 0.36, 1)`). Queue arrival and the copied-card ring use `--arrive` (280ms). Motion is not required to understand state.
 - Queue card leave (Complete, Skip, Trash): persist `apply_queue_item_action` first, then collapse height (`grid-template-rows` 1fr→0fr plus measured height→0) with fade. Complete adds `translateY(-8px)`; Skip is fade only; Trash adds `scale(0.96)`. Node is removed after `transitionend` or a `--duration` timeout. Single-item Trash has no confirm.
 - Queue card Move up / down: FLIP `translateY` on the moved card and neighbors for one `--duration` shot, then settle. Copy, Edit, and hover stay unanimated.
-- New captures and composer inserts may use the existing `bronze-enter` opacity fade. Locale and edit refreshes replace without motion.
-- `html[data-motion="reduce"]` and `data-reduce-motion` skip slide/collapse. The list updates immediately (opacity-only at most). Reorder movement disables under Reduce Motion. Persist still runs if animation fails. `html[data-motion="full"]` plays motion even if `@media (prefers-reduced-motion: reduce)` matches. That media query is first-paint fallback only and must not win over `data-motion=full`.
+- A new card that lands as the first loaded row, while the queue is newest-first and the scrollport is already within 24px of the top, slides in (`is-arriving`, `--arrive`) and the rows below ease down by the card height plus the list gap. Oldest-first does not scroll. Other inserts use the `bronze-enter` opacity fade. Locale and edit refreshes replace without motion.
+- The last copied card holds `box-shadow: 0 0 0 2px var(--ring)` on `--radius-card` and pulses that ring three times. The ring shows whether or not the list slid.
+- `html[data-motion="reduce"]` and `data-reduce-motion` skip slide, pulse, and collapse. The list updates immediately and the last copied card keeps the static ring. Reorder movement disables under Reduce Motion. Persist still runs if animation fails. `html[data-motion="full"]` plays motion even if `@media (prefers-reduced-motion: reduce)` matches. That media query is first-paint fallback only and must not win over `data-motion=full`.
 - Title engine spinner uses `bronze-spin`; Reduce Motion sets `animation: none`. Status text still updates.
 - No parallax, flashing, or auto-moving content.
 - Reduce Transparency uses opaque surface and border.

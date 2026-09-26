@@ -1,5 +1,7 @@
 import { MOTION, motionAllowed } from "./control.mjs";
 
+export const ARRIVAL_MS = 280;
+
 const NEWEST = new Set(["newest", "created-desc", "createddesc"]);
 
 export function normalizeQueueSort(value) {
@@ -122,7 +124,10 @@ export function travelScroll(
   return { behavior: "smooth" };
 }
 
-export function scrollQueueCard(card, { motion = false } = {}) {
+export function scrollQueueCard(
+  card,
+  { motion = false, duration = MOTION.duration } = {},
+) {
   if (!card) {
     return { behavior: "auto" };
   }
@@ -137,7 +142,7 @@ export function scrollQueueCard(card, { motion = false } = {}) {
       scroller.getBoundingClientRect(),
     );
     const from = Number(scroller.scrollTop ?? 0);
-    return travelScroll(scroller, from, from + delta, { motion });
+    return travelScroll(scroller, from, from + delta, { motion, duration });
   }
   const behavior = motion ? "smooth" : "auto";
   if (typeof card.scrollIntoView === "function") {
@@ -186,7 +191,58 @@ export function insertionBeforeId(loadedIds, pageIds, itemId) {
   return null;
 }
 
-export function markLastCopied(list, id) {
+function rowGapPx(list) {
+  const view = list?.ownerDocument?.defaultView;
+  const style = view?.getComputedStyle?.(list);
+  const raw =
+    style?.rowGap && style.rowGap !== "normal" ? style.rowGap : style?.gap;
+  const parsed = parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : 16;
+}
+
+function clearArrival(list, card) {
+  card?.classList?.remove?.("is-arriving");
+  list?.style?.removeProperty?.("--arrive-shift");
+}
+
+export function playQueueArrival(list, id, { motion = false } = {}) {
+  if (!motion || !list) {
+    return { traveled: false, duration: ARRIVAL_MS };
+  }
+  const card = findQueueCard(list, id);
+  if (!card?.classList) {
+    return { traveled: false, duration: ARRIVAL_MS };
+  }
+  const rows = list.children
+    ? Array.from(list.children)
+    : Array.from(list.querySelectorAll?.(".queue-item") ?? []);
+  if (rows[0] !== card) {
+    return { traveled: false, duration: ARRIVAL_MS };
+  }
+  const height = Number(card.getBoundingClientRect?.().height);
+  if (Number.isFinite(height) && height > 0) {
+    const shift = -(height + rowGapPx(list));
+    list.style?.setProperty?.("--arrive-shift", `${shift}px`);
+  }
+  card.classList.add("is-arriving");
+  const finish = (event) => {
+    if (event && event.target !== card) {
+      return;
+    }
+    card.removeEventListener?.("animationend", finish);
+    clearArrival(list, card);
+  };
+  if (typeof card.addEventListener === "function") {
+    card.addEventListener("animationend", finish);
+  }
+  const view = list.ownerDocument?.defaultView;
+  if (typeof view?.setTimeout === "function") {
+    view.setTimeout(() => finish(), ARRIVAL_MS + 48);
+  }
+  return { traveled: true, duration: ARRIVAL_MS };
+}
+
+export function markLastCopied(list, id, { pulse = false } = {}) {
   if (!list || typeof list.querySelectorAll !== "function") {
     return;
   }
@@ -194,10 +250,9 @@ export function markLastCopied(list, id) {
     if (!row?.classList) {
       continue;
     }
-    row.classList.toggle(
-      "is-last-copied",
-      Boolean(id) && row.dataset?.itemId === id,
-    );
+    const copied = Boolean(id) && row.dataset?.itemId === id;
+    row.classList.toggle("is-last-copied", copied);
+    row.classList.toggle("is-ring-pulse", Boolean(pulse) && copied);
   }
 }
 
