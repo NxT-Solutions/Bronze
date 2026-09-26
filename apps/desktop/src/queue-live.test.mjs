@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
   applyCaptureResult,
+  applyLiveWindow,
   applyQueuePage,
   captureFeedbackKey,
   composerFormatAction,
@@ -13,13 +14,15 @@ import {
   composerShouldSubmit,
   composerSubmitLabelKey,
   formatCaptureSource,
+  liveQueueFetchPlan,
   QUE_007_COMPLETE,
   QUEUE_PAGE_SIZE,
   queueFocusAtEnd,
   queueMoveDisabled,
   syncQueueMoveAvailability,
 } from "./queue-live.mjs";
-import { queueListArgs } from "./queue-sort.mjs";
+import { planNewItemFollow } from "./queue-reveal.mjs";
+import { queueListArgs, queueSortFromEvent } from "./queue-sort.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
@@ -452,4 +455,147 @@ test("queue pages keep order when a capture is prepended (QUE-002, QUE-008, A11Y
   assert.match(live, /focusin/);
   assert.match(live, /IntersectionObserver/);
   assert.match(live, /rootMargin: "240px"/);
+});
+
+test("a live insert updates the loaded edge and leaves a later page alone", () => {
+  const newestLoaded = {
+    items: [
+      { id: "b", status: "queued", title: "B" },
+      { id: "c", status: "queued", title: "C" },
+    ],
+    nextCursor: "v2.newest.2.63",
+    pagesLoaded: 1,
+  };
+  assert.deepEqual(liveQueueFetchPlan(newestLoaded), {
+    pages: 1,
+    extendEnd: false,
+  });
+  const newest = applyLiveWindow([
+    {
+      items: [
+        { id: "a", status: "queued", title: "A" },
+        { id: "b", status: "queued", title: "B2" },
+      ],
+      nextCursor: "v2.newest.3.62",
+    },
+  ]);
+  assert.deepEqual(
+    newest.items.map((item) => item.id),
+    ["a", "b"],
+  );
+  assert.equal(newest.items[1].title, "B2");
+  assert.equal(
+    planNewItemFollow({
+      sort: "newest",
+      nearStart: true,
+      prevIds: ["b", "c"],
+      nextIds: newest.items.map((item) => item.id),
+    }).scrollId,
+    "a",
+  );
+  assert.equal(
+    planNewItemFollow({
+      sort: "newest",
+      nearStart: false,
+      prevIds: ["b", "c"],
+      nextIds: newest.items.map((item) => item.id),
+    }).scrollId,
+    null,
+  );
+
+  const oldestOpen = {
+    items: [
+      { id: "a", status: "queued" },
+      { id: "b", status: "queued" },
+    ],
+    nextCursor: "v2.oldest.2.62",
+    pagesLoaded: 1,
+  };
+  assert.equal(liveQueueFetchPlan(oldestOpen).extendEnd, false);
+  const untouched = applyLiveWindow([
+    {
+      items: [
+        { id: "a", status: "queued" },
+        { id: "b", status: "queued" },
+      ],
+      nextCursor: "v2.oldest.2.62",
+    },
+  ]);
+  assert.deepEqual(
+    untouched.items.map((item) => item.id),
+    ["a", "b"],
+  );
+  assert.equal(untouched.nextCursor, "v2.oldest.2.62");
+
+  const oldestEnd = {
+    items: [
+      { id: "a", status: "queued" },
+      { id: "b", status: "queued" },
+    ],
+    nextCursor: null,
+    pagesLoaded: 1,
+  };
+  assert.deepEqual(liveQueueFetchPlan(oldestEnd), {
+    pages: 1,
+    extendEnd: true,
+  });
+  const appended = applyLiveWindow([
+    {
+      items: [
+        { id: "a", status: "queued" },
+        { id: "b", status: "queued" },
+      ],
+      nextCursor: "v2.oldest.2.62",
+    },
+    {
+      items: [{ id: "n", status: "queued", title: "New" }],
+      nextCursor: null,
+    },
+  ]);
+  assert.deepEqual(
+    appended.items.map((item) => item.id),
+    ["a", "b", "n"],
+  );
+  assert.equal(appended.pagesLoaded, 2);
+  assert.equal(
+    planNewItemFollow({
+      sort: "oldest",
+      nearStart: true,
+      prevIds: ["a", "b"],
+      nextIds: appended.items.map((item) => item.id),
+    }).scrollId,
+    null,
+  );
+  assert.match(live, /liveQueueFetchPlan/);
+  assert.match(live, /extendEnd/);
+  assert.match(live, /applyLiveWindow/);
+  assert.match(live, /fetchLiveWindow/);
+});
+
+test("a status change patches the visible row without moving it", () => {
+  const patched = applyLiveWindow([
+    {
+      items: [{ id: "a", status: "queued", title: "Older" }],
+      nextCursor: "v2.oldest.1.61",
+    },
+    {
+      items: [{ id: "b", status: "copied", title: "Renamed" }],
+      nextCursor: null,
+    },
+  ]);
+  assert.equal(patched.items[1].id, "b");
+  assert.equal(patched.items[1].status, "copied");
+  assert.equal(patched.items[1].title, "Renamed");
+  assert.deepEqual(
+    patched.items.map((item) => item.id),
+    ["a", "b"],
+  );
+  assert.equal(queueSortFromEvent("oldest"), "oldest");
+  assert.equal(queueSortFromEvent({ sort: "newest" }), "newest");
+  assert.equal(queueSortFromEvent(null), null);
+  assert.match(live, /queueSortFromEvent/);
+  const copyAt = live.indexOf('action === "copy"');
+  const assignAt = live.indexOf("lastCopiedId = id", copyAt);
+  const invokeAt = live.indexOf("copy_queue_items", copyAt);
+  assert.ok(copyAt >= 0 && assignAt > copyAt && assignAt < invokeAt);
 });

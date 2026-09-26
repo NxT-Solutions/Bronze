@@ -340,7 +340,10 @@ test("last copied card keeps a ring that reduce motion holds still", () => {
   );
   assert.match(travel, /playQueueArrival/);
   assert.doesNotMatch(travel, /markLastCopied/);
-  assert.match(follow, /markLastCopied\(list, lastCopiedId\)/);
+  assert.match(
+    follow,
+    /markLastCopied\(list, lastCopiedId(?:, \{[\s\S]*pulse:)/,
+  );
   assert.match(live, /markLastCopied\(list, id, \{[\s\S]*pulse: motionAllowed/);
   assert.match(reveal, /queue_query/);
   assert.match(reveal, /itemId/);

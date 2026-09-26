@@ -34,6 +34,7 @@ import {
   listenQueueSortChanged,
   parseQueueSort,
   queueListArgs,
+  queueSortFromEvent,
 } from "./queue-sort.mjs";
 import { tauriInvoke } from "./tauri-bridge.mjs";
 
@@ -84,11 +85,13 @@ export function applyQueuePage(state, page, mode) {
   const items = state?.items ?? [];
   const incoming = Array.isArray(page?.items) ? page.items : [];
   const pageCursor = page?.nextCursor ?? null;
+  const pagesLoaded = state?.pagesLoaded ?? 1;
   if (mode === "more") {
     return {
       items: appendQueuePage(items, incoming),
       nextCursor: pageCursor,
       anchorCursor: state?.nextCursor ?? null,
+      pagesLoaded,
     };
   }
   if (mode === "tail") {
@@ -96,12 +99,57 @@ export function applyQueuePage(state, page, mode) {
       items: appendQueuePage(items, incoming),
       nextCursor: pageCursor ?? state?.nextCursor ?? null,
       anchorCursor: state?.anchorCursor ?? null,
+      pagesLoaded,
     };
   }
   return {
     items: mergeQueueHead(items, incoming),
     nextCursor: items.length === 0 ? pageCursor : (state?.nextCursor ?? null),
     anchorCursor: items.length === 0 ? null : (state?.anchorCursor ?? null),
+    pagesLoaded,
+  };
+}
+
+export function liveQueueFetchPlan(state) {
+  const items = state?.items ?? [];
+  const stored = state?.pagesLoaded;
+  const pages =
+    Number.isInteger(stored) && stored >= 1
+      ? stored
+      : Math.max(1, Math.ceil(items.length / QUEUE_PAGE_SIZE) || 1);
+  return {
+    pages,
+    extendEnd: items.length > 0 && (state?.nextCursor ?? null) == null,
+  };
+}
+
+export function applyLiveWindow(pages) {
+  let items = [];
+  let nextCursor = null;
+  let anchorCursor = null;
+  let cursor = null;
+  let used = 0;
+  for (const page of pages ?? []) {
+    const before = items.length;
+    items = appendQueuePage(items, page?.items ?? []);
+    const added = items.length > before;
+    if (added || used === 0) {
+      anchorCursor = cursor;
+      nextCursor = page?.nextCursor ?? null;
+      used += 1;
+    } else if ((page?.nextCursor ?? null) == null) {
+      nextCursor = null;
+    }
+    if (nextCursor == null || !added) {
+      break;
+    }
+    cursor = nextCursor;
+  }
+  return {
+    items,
+    nextCursor,
+    anchorCursor,
+    pagesLoaded: Math.max(used, 1),
   };
 }
 
@@ -110,6 +158,7 @@ export function removeQueueItem(state, id) {
     items: (state?.items ?? []).filter((item) => item.id !== id),
     nextCursor: state?.nextCursor ?? null,
     anchorCursor: state?.anchorCursor ?? null,
+    pagesLoaded: state?.pagesLoaded ?? 1,
   };
 }
 
@@ -678,7 +727,12 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   syncSubmitLabel();
 
   const moreStatus = root.querySelector("#queue-more-status");
-  let state = { items: [], nextCursor: null, anchorCursor: null };
+  let state = {
+    items: [],
+    nextCursor: null,
+    anchorCursor: null,
+    pagesLoaded: 1,
+  };
   let loadingMore = false;
   let refreshGen = 0;
   let activeSort = "newest";
@@ -719,8 +773,8 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     }
   }
 
-  async function queryPage(cursor) {
-    const paging = queueListArgs(activeSort, cursor);
+  async function queryPage(cursor, sort = activeSort) {
+    const paging = queueListArgs(sort, cursor);
     const args = {
       filter: "overview",
       limit: QUEUE_PAGE_SIZE,
@@ -745,34 +799,55 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     }
   }
 
-  async function syncHead() {
-    const head = await queryPage(null);
-    let next = applyQueuePage(state, head, "head");
-    if (next.nextCursor == null && next.anchorCursor) {
-      const tail = await queryPage(next.anchorCursor);
-      next = applyQueuePage(next, tail, "tail");
+  async function fetchLiveWindow(sort) {
+    const plan = liveQueueFetchPlan(state);
+    const pages = [];
+    let cursor = null;
+    for (let index = 0; index < plan.pages; index += 1) {
+      const page = await queryPage(cursor, sort);
+      pages.push(page ?? { items: [], nextCursor: null });
+      const next = page?.nextCursor ?? null;
+      if (!next) {
+        break;
+      }
+      cursor = next;
     }
-    state = next;
+    if (plan.extendEnd) {
+      const last = pages[pages.length - 1];
+      const tailCursor = last?.nextCursor ?? null;
+      if (tailCursor) {
+        const tail = await queryPage(tailCursor, sort);
+        pages.push(tail ?? { items: [], nextCursor: null });
+      }
+    }
+    return applyLiveWindow(pages);
   }
 
-  async function reloadWindow(count) {
+  async function reloadWindow(count, sort) {
     let cursor = null;
     let items = [];
     let nextCursor = null;
     let anchorCursor = null;
+    let pagesLoaded = 0;
     const target = Math.max(count, 1);
     while (items.length < target) {
-      const page = await queryPage(cursor);
+      const page = await queryPage(cursor, sort);
       const before = items.length;
       items = appendQueuePage(items, page?.items ?? []);
       anchorCursor = cursor;
       nextCursor = page?.nextCursor ?? null;
+      pagesLoaded += 1;
       if (!nextCursor || items.length === before) {
         break;
       }
       cursor = nextCursor;
     }
-    state = { items, nextCursor, anchorCursor };
+    return {
+      items,
+      nextCursor,
+      anchorCursor,
+      pagesLoaded: Math.max(pagesLoaded, 1),
+    };
   }
 
   async function ensureItemLoaded(id) {
@@ -793,6 +868,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       items,
       nextCursor: page?.nextCursor ?? null,
       anchorCursor: null,
+      pagesLoaded: 1,
     };
     await paint({ action: "replace" });
     if (lastCopiedId) {
@@ -823,33 +899,48 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     const prevIds = queueItemRows(list)
       .map((el) => el.dataset?.itemId)
       .filter(Boolean);
-    let sort = "newest";
+    let sort = opts.sort || activeSort;
     try {
       const settings = await invokeFn("load_settings_v1");
       sort = parseQueueSort(settings?.copy?.queueSort);
     } catch {
-      sort = "newest";
+      sort = opts.sort || activeSort;
     }
     if (opts.resetPage || sort !== activeSort) {
       activeSort = sort;
-      state = { items: [], nextCursor: null, anchorCursor: null };
+      state = {
+        items: [],
+        nextCursor: null,
+        anchorCursor: null,
+        pagesLoaded: 1,
+      };
+    } else {
+      activeSort = sort;
     }
     list.dataset.queueSort = activeSort;
     const action = opts.action;
     if (action === "complete" || action === "skip" || action === "trash") {
       state = removeQueueItem(state, opts.id);
-    } else if (action === "moveUp" || action === "moveDown") {
-      await reloadWindow(state.items.length);
-    } else if (!(action === "replace" && !opts.item)) {
-      if (opts.item?.id) {
-        state = {
-          ...state,
-          items: state.items.map((row) =>
-            row.id === opts.item.id ? { ...row, ...opts.item } : row,
-          ),
-        };
+    } else if (opts.item?.id) {
+      state = {
+        ...state,
+        items: state.items.map((row) =>
+          row.id === opts.item.id ? { ...row, ...opts.item } : row,
+        ),
+      };
+    }
+    if (action === "moveUp" || action === "moveDown") {
+      const next = await reloadWindow(state.items.length, activeSort);
+      if (gen !== refreshGen) {
+        return;
       }
-      await syncHead();
+      state = next;
+    } else if (!(action === "replace" && !opts.item)) {
+      const next = await fetchLiveWindow(activeSort);
+      if (gen !== refreshGen) {
+        return;
+      }
+      state = next;
     }
     if (gen !== refreshGen) {
       return;
@@ -876,7 +967,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       });
     }
     if (lastCopiedId) {
-      markLastCopied(list, lastCopiedId);
+      markLastCopied(list, lastCopiedId, {
+        pulse: Boolean(opts.pulseCopy) && motionAllowed(list.ownerDocument),
+      });
     }
   }
 
@@ -894,7 +987,14 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       if (gen !== refreshGen) {
         return;
       }
-      state = applyQueuePage(state, page, "more");
+      const beforeCount = state.items.length;
+      const loadedPages = state.pagesLoaded ?? 1;
+      const next = applyQueuePage(state, page, "more");
+      state = {
+        ...next,
+        pagesLoaded:
+          next.items.length > beforeCount ? loadedPages + 1 : loadedPages,
+      };
       await paint({ action: "insert" });
     } finally {
       loadingMore = false;
@@ -1033,12 +1133,13 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     }
     await runBusy(button, async () => {
       if (action === "copy") {
+        const previousCopied = lastCopiedId;
+        lastCopiedId = id;
         try {
           await invokeFn("copy_queue_items", {
             itemIds: [id],
             profile: profile?.value ?? "plain",
           });
-          lastCopiedId = id;
           markLastCopied(list, id, {
             pulse: motionAllowed(list.ownerDocument),
           });
@@ -1050,8 +1151,14 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
             id,
           );
         } catch {
+          lastCopiedId = previousCopied;
+          markLastCopied(list, previousCopied);
           applyActionStatus(root, "copy.announce.failed", button);
+          return;
         }
+        await refresh({
+          pulseCopy: motionAllowed(list.ownerDocument),
+        });
         return;
       }
       if (action === "edit") {
@@ -1098,12 +1205,22 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     );
     observer.observe(sentinel);
   }
-  listenQueueChanged(() => {
-    refresh();
+  listenQueueChanged((event) => {
+    const copiedId = event?.payload;
+    const copied = typeof copiedId === "string" && copiedId.length > 0;
+    if (copied) {
+      lastCopiedId = copiedId;
+    }
+    refresh({
+      pulseCopy: copied && motionAllowed(list.ownerDocument),
+    });
   });
   listenQueueSortChanged((payload) => {
-    noteQueueSort(payload?.sort);
-    refresh({ resetPage: true });
+    const announced = queueSortFromEvent(payload);
+    if (announced) {
+      noteQueueSort(announced);
+    }
+    refresh({ resetPage: true, sort: announced ?? undefined });
   });
   listenCaptureResult((event) => {
     const result = event?.payload ?? event;

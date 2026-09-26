@@ -582,11 +582,18 @@ fn handle_status_item_event(app: &tauri::AppHandle, event: &tauri::tray::TrayIco
 #[cfg(target_os = "macos")]
 fn copy_overview_item(app: &tauri::AppHandle, id: &str) {
     use tauri::Manager;
-    let session = app.state::<std::sync::Mutex<live_session::LiveSession>>();
-    let mut session = session
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    let _ = session.copy_items(&[id.to_string()], "plain", &mut live_session::MacPasteboard);
+    let copied = {
+        let session = app.state::<std::sync::Mutex<live_session::LiveSession>>();
+        let mut session = session
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        session
+            .copy_items(&[id.to_string()], "plain", &mut live_session::MacPasteboard)
+            .is_ok()
+    };
+    if copied {
+        live_session::emit_queue_copied(app, id);
+    }
 }
 
 #[cfg(target_os = "macos")]

@@ -1952,6 +1952,18 @@ pub fn list_overview_items(
 }
 
 #[cfg(target_os = "macos")]
+pub(crate) fn emit_queue_changed(app: &tauri::AppHandle) {
+    use tauri::Emitter;
+    let _ = app.emit("queue-changed", ());
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn emit_queue_copied(app: &tauri::AppHandle, id: &str) {
+    use tauri::Emitter;
+    let _ = app.emit("queue-changed", id);
+}
+
+#[cfg(target_os = "macos")]
 fn emit_queue_sort_if_changed(app: &tauri::AppHandle, previous: QueueSort, next: QueueSort) {
     use tauri::Emitter;
     if previous != next {
@@ -1987,17 +1999,21 @@ pub fn add_composer_item(
 ) -> Result<QueueItemDto, String> {
     let dto = lock_session(&session)?.add_composer(body.clone())?;
     crate::title_refine::schedule(&app, dto.id.clone(), body);
+    emit_queue_changed(&app);
     Ok(dto)
 }
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn apply_queue_item_action(
+    app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     id: String,
     action: String,
 ) -> Result<Vec<QueueItemDto>, String> {
-    lock_session(&session)?.apply_action(&id, &action)
+    let items = lock_session(&session)?.apply_action(&id, &action)?;
+    emit_queue_changed(&app);
+    Ok(items)
 }
 
 #[cfg(target_os = "macos")]
@@ -2010,6 +2026,7 @@ pub fn edit_queue_item(
 ) -> Result<QueueItemDto, String> {
     let dto = lock_session(&session)?.edit_item(&id, &body)?;
     crate::title_refine::schedule(&app, id, body);
+    emit_queue_changed(&app);
     Ok(dto)
 }
 
