@@ -6,6 +6,16 @@ export function parseQueueSort(raw) {
   return raw === "oldest" ? "oldest" : "newest";
 }
 
+export function queueSortFromEvent(payload) {
+  if (typeof payload === "string") {
+    return parseQueueSort(payload);
+  }
+  if (payload && typeof payload.sort === "string") {
+    return parseQueueSort(payload.sort);
+  }
+  return null;
+}
+
 // A v2 cursor belongs to one sort. A different sort starts again at the first page.
 export function queueListArgs(sort, cursor) {
   const next = parseQueueSort(sort);
