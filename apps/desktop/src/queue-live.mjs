@@ -19,10 +19,12 @@ import {
   createQueueRenderer,
 } from "./queue-motion.mjs";
 import {
+  ARRIVAL_MS,
   findQueueCard,
   isNearLoadedStart,
   markLastCopied,
   planNewItemFollow,
+  playQueueArrival,
   queueScrollParent,
   revealQueueItem,
   scrollQueueCard,
@@ -866,8 +868,11 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       nextIds,
     });
     if (plan.scrollId && plan.cursor === "stay" && !plan.prepend) {
+      const motion = motionAllowed(list.ownerDocument);
+      playQueueArrival(list, plan.scrollId, { motion });
       scrollQueueCard(findQueueCard(list, plan.scrollId), {
-        motion: motionAllowed(list.ownerDocument),
+        motion,
+        duration: ARRIVAL_MS,
       });
     }
     if (lastCopiedId) {
@@ -1034,7 +1039,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
             profile: profile?.value ?? "plain",
           });
           lastCopiedId = id;
-          markLastCopied(list, id);
+          markLastCopied(list, id, {
+            pulse: motionAllowed(list.ownerDocument),
+          });
           applyActionStatus(root, "copy.announce.copied", button);
           showChromeNotice(
             root,

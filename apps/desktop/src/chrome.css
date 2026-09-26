@@ -47,6 +47,7 @@
   --radius-pill: 999px;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration: 180ms;
+  --arrive: 280ms;
   --ease: 180ms var(--ease-out);
 
   --space-1: 4px;
@@ -821,12 +822,37 @@ pre {
 }
 
 @keyframes bronze-copy-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 2px var(--ring),
+      0 0 0 8px color-mix(in srgb, var(--ring) 35%, transparent);
+  }
+}
+
+@keyframes bronze-arrive {
   from {
-    box-shadow: 0 0 0 0 var(--ring);
+    opacity: 0;
+    transform: translateY(var(--arrive-shift, -100%));
   }
 
   to {
-    box-shadow: 0 0 0 2px var(--ring);
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bronze-make-room {
+  from {
+    transform: translateY(var(--arrive-shift, -100%));
+  }
+
+  to {
+    transform: none;
   }
 }
 
@@ -841,6 +867,15 @@ li.is-entering {
   animation-delay: var(--enter-delay, 0ms);
 }
 
+.queue-item.is-arriving {
+  z-index: 1;
+  animation: bronze-arrive var(--arrive) var(--ease-out) both;
+}
+
+.queue-item.is-arriving ~ .queue-item {
+  animation: bronze-make-room var(--arrive) var(--ease-out) both;
+}
+
 article {
   background: var(--card);
   color: var(--card-foreground);
@@ -852,8 +887,12 @@ article {
 }
 
 .queue-item.is-last-copied > article {
+  border-radius: var(--radius-card);
   box-shadow: 0 0 0 2px var(--ring);
-  animation: bronze-copy-ring var(--duration) var(--ease-out);
+}
+
+.queue-item.is-last-copied.is-ring-pulse > article {
+  animation: bronze-copy-ring var(--arrive) var(--ease-out) 3;
 }
 
 article p {
@@ -2225,14 +2264,27 @@ html[data-motion="reduce"] .queue-item.is-leaving-complete,
 html[data-motion="reduce"] .queue-item.is-leaving-skip,
 html[data-motion="reduce"] .queue-item.is-leaving-trash,
 html[data-motion="reduce"] li.is-entering,
-html[data-motion="reduce"] .queue-item.is-last-copied > article {
+html[data-motion="reduce"] .queue-item.is-arriving,
+html[data-motion="reduce"] .queue-item.is-arriving ~ .queue-item,
+html[data-motion="reduce"] .queue-item.is-last-copied > article,
+html[data-motion="reduce"] .queue-item.is-ring-pulse > article {
   transition: none !important;
   animation: none !important;
   scroll-behavior: auto !important;
 }
 
+html[data-motion="reduce"] .queue-item.is-arriving,
+html[data-motion="reduce"] .queue-item.is-arriving ~ .queue-item,
+[data-reduce-motion] .queue-item.is-arriving,
+[data-reduce-motion] .queue-item.is-arriving ~ .queue-item {
+  animation: none;
+  transform: none;
+}
+
 html[data-motion="reduce"] .queue-item.is-last-copied > article,
-[data-reduce-motion] .queue-item.is-last-copied > article {
+html[data-motion="reduce"] .queue-item.is-ring-pulse > article,
+[data-reduce-motion] .queue-item.is-last-copied > article,
+[data-reduce-motion] .queue-item.is-ring-pulse > article {
   animation: none;
   box-shadow: 0 0 0 2px var(--ring);
 }
