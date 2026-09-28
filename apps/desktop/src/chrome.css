@@ -1036,6 +1036,13 @@ li.is-entering {
 #library-queue.is-sort-reflow {
   animation: none;
   transform: none;
+  overflow: hidden;
+}
+
+#queue.is-sort-hold > .queue-item,
+#library-queue.is-sort-hold > .queue-item {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .queue-item.is-sort-collapse {
@@ -2648,10 +2655,14 @@ html[data-motion="reduce"] .queue-sort-toggle [data-sort-glyph],
 
 html[data-motion="reduce"] #queue.is-sort-reflow,
 html[data-motion="reduce"] #library-queue.is-sort-reflow,
+html[data-motion="reduce"] #queue.is-sort-hold > .queue-item,
+html[data-motion="reduce"] #library-queue.is-sort-hold > .queue-item,
 html[data-motion="reduce"] .queue-item.is-sort-collapse,
 html[data-motion="reduce"] .queue-item.is-sort-expand,
 [data-reduce-motion] #queue.is-sort-reflow,
 [data-reduce-motion] #library-queue.is-sort-reflow,
+[data-reduce-motion] #queue.is-sort-hold > .queue-item,
+[data-reduce-motion] #library-queue.is-sort-hold > .queue-item,
 [data-reduce-motion] .queue-item.is-sort-collapse,
 [data-reduce-motion] .queue-item.is-sort-expand {
   animation: none;

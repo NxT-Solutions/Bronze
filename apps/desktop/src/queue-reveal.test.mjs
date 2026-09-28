@@ -23,9 +23,12 @@ import {
   revealQueueItem,
   SORT_COLLAPSE_MS,
   SORT_EXPAND_MS,
+  SORT_STAGGER_MS,
   scrollDelta,
   shouldLoadNextOnKey,
+  sortCollapseWaitMs,
   sortReflowPlan,
+  swapSortPage,
   travelScroll,
 } from "./queue-reveal.mjs";
 
@@ -219,6 +222,7 @@ test("newest-first at the top slides the new card without moving the scrollport"
     /\.queue-sort-toggle\[data-queue-sort="newest"\] \[data-sort-glyph="oldest"\][\s\S]{0,80}display:\s*none/,
   );
   assert.match(chrome, /#queue\.is-sort-reflow/);
+  assert.match(chrome, /#queue\.is-sort-hold > \.queue-item/);
   assert.match(chrome, /@keyframes bronze-sort-collapse/);
   assert.match(chrome, /@keyframes bronze-sort-expand/);
   assert.match(chrome, /@keyframes bronze-sort-expand-lead/);
@@ -692,10 +696,12 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   const follow = live.slice(live.indexOf("const plan = planNewItemFollow"));
   assert.match(follow, /hasMore/);
   assert.match(live, /beginSortCollapse/);
-  assert.match(live, /beginSortExpand/);
+  assert.match(live, /swapSortPage/);
   assert.match(live, /sortReflowPlan/);
-  assert.match(live, /sortChanged/);
+  assert.match(live, /requestSortReload/);
   assert.match(reveal, /is-sort-reflow/);
+  assert.match(reveal, /is-sort-hold/);
+  assert.match(reveal, /swapSortPage/);
   assert.match(follow, /presentNewQueueCard/);
   assert.match(follow, /pulse: added\.length === 1/);
   assert.match(follow, /markLastCopied\(list, added\[0\]/);
@@ -721,6 +727,7 @@ test("the copied pulse is temporary and is not the focus ring", () => {
 
 test("sort reflow collapses then expands from the first card", () => {
   assert.equal(SORT_COLLAPSE_MS + SORT_EXPAND_MS, 500);
+  assert.equal(sortCollapseWaitMs(2), SORT_COLLAPSE_MS + SORT_STAGGER_MS);
   assert.deepEqual(sortReflowPlan(true, 3), { collapse: true, expand: true });
   assert.deepEqual(sortReflowPlan(false, 3), {
     collapse: false,
@@ -742,7 +749,7 @@ test("sort reflow collapses then expands from the first card", () => {
 
   const collapse = beginSortCollapse(list);
   assert.equal(collapse.played, true);
-  assert.equal(collapse.durationMs, SORT_COLLAPSE_MS);
+  assert.equal(collapse.durationMs, sortCollapseWaitMs(2));
   assert.equal(list.classList.has("is-sort-collapse"), true);
   assert.equal(list.classList.has("is-sort-expand"), false);
   assert.equal(first.classList.has("is-sort-collapse"), true);
@@ -755,8 +762,12 @@ test("sort reflow collapses then expands from the first card", () => {
   assert.equal(expand.durationMs, SORT_EXPAND_MS);
   assert.equal(list.classList.has("is-sort-collapse"), false);
   assert.equal(list.classList.has("is-sort-expand"), true);
+  assert.equal(list.classList.has("is-sort-hold"), false);
   assert.equal(first.classList.has("is-sort-lead"), true);
   assert.equal(first.classList.has("is-sort-collapse"), false);
+  const holdAt = order.indexOf("is-sort-hold");
+  const expandAt = order.indexOf("is-sort-expand");
+  assert.equal(holdAt >= 0 && holdAt < expandAt, true);
   assert.deepEqual(
     order.filter(
       (name) => name === "is-sort-collapse" || name === "is-sort-expand",
@@ -767,6 +778,47 @@ test("sort reflow collapses then expands from the first card", () => {
     chrome,
     /html\[data-motion="reduce"\] \.queue-item\.is-sort-collapse[\s\S]*animation:\s*none/,
   );
+  assert.match(
+    chrome,
+    /html\[data-motion="reduce"\] #queue\.is-sort-hold > \.queue-item/,
+  );
+});
+
+test("sort swap holds the list until expand classes are on", () => {
+  const first = slideCard(80);
+  first.dataset = { itemId: "old-first" };
+  const second = slideCard(80);
+  second.dataset = { itemId: "old-second" };
+  const list = attachRows(first, second);
+  list.classList = classNames();
+  const idsWhilePainting = [];
+
+  beginSortCollapse(list);
+  assert.deepEqual(
+    [first.dataset.itemId, second.dataset.itemId],
+    ["old-first", "old-second"],
+  );
+  assert.equal(first.classList.has("is-sort-collapse"), true);
+
+  const nextFirst = slideCard(80);
+  nextFirst.dataset = { itemId: "new-first" };
+  const nextSecond = slideCard(80);
+  nextSecond.dataset = { itemId: "new-second" };
+  const expand = swapSortPage(list, () => {
+    idsWhilePainting.push(first.dataset.itemId);
+    assert.equal(list.classList.has("is-sort-hold"), true);
+    list.children.length = 0;
+    list.children.push(nextFirst, nextSecond);
+    nextFirst.parentElement = list;
+    nextSecond.parentElement = list;
+  });
+  assert.equal(expand.played, true);
+  assert.deepEqual(idsWhilePainting, ["old-first"]);
+  assert.equal(nextFirst.classList.has("is-sort-expand"), true);
+  assert.equal(nextFirst.classList.has("is-sort-lead"), true);
+  assert.equal(nextSecond.classList.has("is-sort-expand"), true);
+  assert.equal(list.classList.has("is-sort-expand"), true);
+  assert.equal(list.classList.has("is-sort-hold"), false);
 });
 
 function classNames() {

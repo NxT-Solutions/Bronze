@@ -21,7 +21,6 @@ import {
 import {
   ARRIVE_SCROLL_MS,
   beginSortCollapse,
-  beginSortExpand,
   clearSortReflow,
   findQueueCard,
   isNearLoadedStart,
@@ -31,7 +30,9 @@ import {
   queueScrollParent,
   revealQueueItem,
   shouldLoadNextOnKey,
+  SORT_EXPAND_MS,
   sortReflowPlan,
+  swapSortPage,
   waitSortPhase,
 } from "./queue-reveal.mjs";
 import {
@@ -746,6 +747,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   let insertSlide = false;
   let activeSort = "newest";
   let lastCopiedId = "";
+  let sortReflow = null;
 
   function noteQueueSort(raw) {
     list.dataset.queueSort = parseQueueSort(raw);
@@ -914,7 +916,129 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     hideChromeNotice(root);
   }
 
+  function currentSortIntent() {
+    return sortReflow?.target ?? activeSort;
+  }
+
+  function requestSortReload(sort) {
+    const next = parseQueueSort(sort);
+    paintSortToggle(next);
+    noteQueueSort(next);
+    if (sortReflow) {
+      sortReflow.target = next;
+      return sortReflow.done;
+    }
+    const slot = {
+      target: next,
+      phase: "idle",
+      followUp: null,
+      done: null,
+    };
+    sortReflow = slot;
+    slot.done = runSortReload()
+      .catch(() => false)
+      .finally(() => {
+        if (sortReflow !== slot) {
+          return;
+        }
+        const follow = slot.followUp;
+        sortReflow = null;
+        if (follow) {
+          refresh(follow);
+        }
+      });
+    return slot.done;
+  }
+
+  async function runSortReload() {
+    const doc = list.ownerDocument;
+    const motion = motionAllowed(doc);
+    while (sortReflow) {
+      const target = sortReflow.target;
+      const prevIds = queueItemRows(list)
+        .map((el) => el.dataset?.itemId)
+        .filter(Boolean);
+      const plan = sortReflowPlan(motion, prevIds.length);
+      const fetchP = queryPage(null, target).then((page) => ({
+        items: page?.items ?? [],
+        nextCursor: page?.nextCursor ?? null,
+        anchorCursor: null,
+        pagesLoaded: 1,
+      }));
+      if (plan.collapse && sortReflow.phase !== "collapse") {
+        sortReflow.phase = "collapse";
+        const collapse = beginSortCollapse(list);
+        await waitSortPhase(doc, collapse.durationMs);
+      }
+      if (!sortReflow) {
+        return false;
+      }
+      if (sortReflow.target !== target) {
+        continue;
+      }
+      let nextState;
+      try {
+        nextState = await fetchP;
+      } catch {
+        clearSortReflow(list);
+        return false;
+      }
+      if (!sortReflow) {
+        return false;
+      }
+      if (sortReflow.target !== target) {
+        continue;
+      }
+      activeSort = target;
+      list.dataset.queueSort = activeSort;
+      state = nextState;
+      const saved = focusedQueueControl();
+      if (plan.expand) {
+        sortReflow.phase = "swap";
+        swapSortPage(list, () => {
+          queueRenderer.paintQueueItems(list, state.items, template);
+        });
+        restoreQueueFocus(saved);
+        if (empty) {
+          empty.hidden = state.items.length > 0;
+        }
+        sortReflow.phase = "expand";
+        await waitSortPhase(doc, SORT_EXPAND_MS);
+        if (!sortReflow) {
+          return true;
+        }
+        if (sortReflow.target !== target) {
+          sortReflow.phase = "idle";
+          continue;
+        }
+        clearSortReflow(list);
+      } else {
+        clearSortReflow(list);
+        queueRenderer.paintQueueItems(list, state.items, template);
+        restoreQueueFocus(saved);
+        if (empty) {
+          empty.hidden = state.items.length > 0;
+        }
+      }
+      if (lastCopiedId) {
+        markLastCopied(list, lastCopiedId);
+      }
+      break;
+    }
+    return true;
+  }
+
   async function refresh(opts = {}) {
+    if (opts.resetPage && opts.sort) {
+      return requestSortReload(opts.sort);
+    }
+    if (sortReflow) {
+      const follow = { ...opts };
+      delete follow.resetPage;
+      delete follow.sort;
+      sortReflow.followUp = follow;
+      return false;
+    }
     const gen = ++refreshGen;
     if (opts.action === "insert" || opts.slide === true) {
       insertSlide = true;
@@ -925,36 +1049,27 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       .map((el) => el.dataset?.itemId)
       .filter(Boolean);
     let sort = opts.sort || activeSort;
-    if (opts.resetPage && opts.sort) {
-      sort = parseQueueSort(opts.sort);
-    } else {
-      try {
-        const settings = await invokeFn("load_settings_v1");
-        sort = parseQueueSort(settings?.copy?.queueSort);
-      } catch {
-        sort = opts.sort || activeSort;
-      }
+    try {
+      const settings = await invokeFn("load_settings_v1");
+      sort = parseQueueSort(settings?.copy?.queueSort);
+    } catch {
+      sort = opts.sort || activeSort;
     }
-    const previousSort = activeSort;
-    if (opts.resetPage || sort !== activeSort) {
-      activeSort = sort;
+    if (activeSort !== sort) {
+      return requestSortReload(sort);
+    }
+    if (opts.resetPage) {
       state = {
         items: [],
         nextCursor: null,
         anchorCursor: null,
         pagesLoaded: 1,
       };
-    } else {
-      activeSort = sort;
     }
+    activeSort = sort;
     list.dataset.queueSort = activeSort;
     paintSortToggle(activeSort);
-    const sortChanged = previousSort !== sort;
     const motion = motionAllowed(list.ownerDocument);
-    const collapsing =
-      sortChanged && sortReflowPlan(motion, prevIds.length).collapse
-        ? waitSortPhase(list.ownerDocument, beginSortCollapse(list).durationMs)
-        : Promise.resolve();
     const action = opts.action;
     if (action === "complete" || action === "skip" || action === "trash") {
       state = removeQueueItem(state, opts.id);
@@ -984,16 +1099,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (gen !== refreshGen) {
       return false;
     }
-    await collapsing;
-    if (gen !== refreshGen) {
-      return false;
-    }
     const paintOpts = { ...opts };
     if (insertSlide) {
       paintOpts.slide = true;
-    }
-    if (sortChanged) {
-      paintOpts.action = "replace";
     }
     insertSlide = false;
     await paint(paintOpts);
@@ -1015,22 +1123,13 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       plan.scrollId && plan.cursor === "stay" && !plan.prepend
         ? plan.scrollId
         : null;
-    if (sortChanged) {
-      if (sortReflowPlan(motion, nextIds.length).expand) {
-        list.getBoundingClientRect?.();
-        beginSortExpand(list);
-      } else {
-        clearSortReflow(list);
-      }
-    } else {
-      for (const id of added) {
-        presentNewQueueCard(findQueueCard(list, id), scroller, {
-          motion,
-          followScroll: id === edgeId,
-          pulse: added.length === 1,
-          duration: ARRIVE_SCROLL_MS,
-        });
-      }
+    for (const id of added) {
+      presentNewQueueCard(findQueueCard(list, id), scroller, {
+        motion,
+        followScroll: id === edgeId,
+        pulse: added.length === 1,
+        duration: ARRIVE_SCROLL_MS,
+      });
     }
     if (added.length === 1) {
       lastCopiedId = added[0];
@@ -1319,27 +1418,18 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   listenQueueSortChanged((payload) => {
     const announced = queueSortFromEvent(payload);
     if (announced) {
-      noteQueueSort(announced);
-      paintSortToggle(announced);
+      requestSortReload(announced);
     }
-    refresh({ resetPage: true, sort: announced ?? undefined });
   });
   sortToggle?.addEventListener("click", () => {
     runBusy(sortToggle, async () => {
-      const next = nextQueueSort(activeSort);
+      const next = nextQueueSort(currentSortIntent());
       try {
         await persistQueueSort(invokeFn, null, next);
       } catch {
         return;
       }
-      if (activeSort === next) {
-        paintSortToggle(next);
-        return;
-      }
-      activeSort = next;
-      noteQueueSort(next);
-      paintSortToggle(next);
-      await refresh({ resetPage: true, sort: next });
+      requestSortReload(next);
     });
   });
   listenCaptureResult((event) => {
