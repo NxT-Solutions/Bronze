@@ -34,6 +34,7 @@ pub fn run() {
                 live_session::load_settings_v1,
                 live_session::login_item_status,
                 live_session::save_settings_v1,
+                live_session::set_queue_sort,
                 live_session::reset_settings_field,
                 live_session::reset_settings_group,
                 live_session::reset_settings_all,
@@ -943,6 +944,14 @@ mod tests {
                 assert!(
                     permission_block(&used, "allow-queue-live").contains("load_settings_v1"),
                     "allow-queue-live must include load_settings_v1"
+                );
+                assert!(
+                    permission_block(&used, "allow-queue-live").contains("set_queue_sort"),
+                    "allow-queue-live must include set_queue_sort"
+                );
+                assert!(
+                    !permission_block(&used, "allow-queue-live").contains("save_settings_v1"),
+                    "allow-queue-live must not grant save_settings_v1"
                 );
             } else if name == "library" {
                 assert!(permissions

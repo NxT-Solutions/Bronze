@@ -1187,6 +1187,16 @@ impl LiveSession {
         Ok(self.settings.clone())
     }
 
+    pub fn set_queue_sort(&mut self, raw: &str) -> Result<SettingsV1, String> {
+        let sort = QueueSort::parse(raw).map_err(|_| "queue_sort_invalid".to_string())?;
+        if self.settings.copy.queue_sort == sort {
+            return Ok(self.settings.clone());
+        }
+        let mut next = self.settings.clone();
+        next.copy.queue_sort = sort;
+        self.replace_settings(next)
+    }
+
     pub fn reset_field(&mut self, field_id: &str) -> Result<SettingsV1, String> {
         self.settings
             .reset_field(field_id)
@@ -2091,6 +2101,20 @@ pub fn save_settings_v1(
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
+pub fn set_queue_sort(
+    app: tauri::AppHandle,
+    session: tauri::State<std::sync::Mutex<LiveSession>>,
+    sort: String,
+) -> Result<SettingsV1, String> {
+    let mut session = lock_session(&session)?;
+    let previous = session.settings().copy.queue_sort;
+    let saved = session.set_queue_sort(&sort)?;
+    emit_queue_sort_if_changed(&app, previous, saved.copy.queue_sort);
+    Ok(saved)
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
 pub fn reset_settings_field(
     app: tauri::AppHandle,
     session: tauri::State<std::sync::Mutex<LiveSession>>,
@@ -2596,6 +2620,25 @@ mod live_session_tests {
         let mut reset = reopened;
         reset.reset_field("copy.queueSort").expect("reset");
         assert_eq!(reset.settings().copy.queue_sort, QueueSort::Newest);
+    }
+
+    #[test]
+    fn set_queue_sort_writes_only_the_sort_field() {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("bronze-set-queue-sort-{n}-{}", now_ms()));
+        let mut session = LiveSession::open(dir.clone()).expect("open");
+        let before = session.settings();
+        assert_eq!(before.copy.queue_sort, QueueSort::Newest);
+        let saved = session.set_queue_sort("oldest").expect("sort");
+        assert_eq!(saved.copy.queue_sort, QueueSort::Oldest);
+        assert_eq!(saved.general.locale, before.general.locale);
+        assert_eq!(
+            session.set_queue_sort("rank").unwrap_err(),
+            "queue_sort_invalid"
+        );
+        drop(session);
+        let reopened = LiveSession::open(dir).expect("reopen");
+        assert_eq!(reopened.settings().copy.queue_sort, QueueSort::Oldest);
     }
 
     #[test]

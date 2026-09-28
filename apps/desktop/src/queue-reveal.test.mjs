@@ -86,7 +86,12 @@ test("newest-first follows a card at the loaded start", () => {
     prevIds: prev,
     nextIds: ["n", "a", "b"],
   });
-  assert.deepEqual(atTop, { scrollId: "n", cursor: "stay", prepend: false });
+  assert.deepEqual(atTop, {
+    scrollId: "n",
+    cursor: "stay",
+    prepend: false,
+    room: "start",
+  });
   assert.equal(normalizeQueueSort("created-desc"), "newest");
   assert.equal(isNearLoadedStart({ scrollTop: 0 }), true);
   assert.equal(isNearLoadedStart({ scrollTop: 80 }), false);
@@ -121,6 +126,16 @@ test("oldest-first insert does not jump the cursor page", () => {
   assert.equal(plan.scrollId, null);
   assert.equal(plan.cursor, "stay");
   assert.equal(plan.prepend, false);
+  assert.equal(plan.room, "end");
+  assert.equal(
+    planNewItemFollow({
+      sort: "oldest",
+      prevIds: ["a", "b"],
+      nextIds: ["a", "b", "n"],
+      hasMore: true,
+    }).room,
+    null,
+  );
   assert.equal(normalizeQueueSort("rank"), "oldest");
   assert.equal(normalizeQueueSort(""), "oldest");
   const endNeighbor = insertionBeforeId(["a", "b"], ["a", "b", "n"], "n");
@@ -187,6 +202,16 @@ test("newest-first at the top slides the new card without moving the scrollport"
   assert.match(chrome, /--arrive:\s*380ms/);
   assert.match(chrome, /--arrive-room:\s*320ms/);
   assert.match(chrome, /--arrive-scroll:\s*340ms/);
+  assert.match(chrome, /--sort-flip:\s*200ms/);
+  assert.match(
+    chrome,
+    /\.queue-sort-toggle \[data-sort-glyph\][\s\S]*transition:[\s\S]*transform var\(--sort-flip\)/,
+  );
+  assert.doesNotMatch(
+    chrome,
+    /\.queue-sort-toggle\[data-queue-sort="newest"\] \[data-sort-glyph="oldest"\][\s\S]{0,80}display:\s*none/,
+  );
+  assert.match(chrome, /#queue\.is-sort-reflow[\s\S]*bronze-sort-reflow/);
   assert.match(chrome, /@keyframes bronze-slide-in/);
   assert.match(chrome, /translateX\(-100%\)/);
   assert.match(chrome, /@keyframes bronze-slide-in-rtl/);
@@ -323,6 +348,10 @@ test("play animations applies the slide and the pulse", () => {
   assert.equal(systemCard.classList.has("is-slide-in"), false);
   assert.equal(systemCard.classList.has("is-ring-pulse"), false);
   assert.equal(attrs.has("data-reduce-motion"), true);
+  assert.match(
+    chrome,
+    /html\[data-motion="reduce"\] \.queue-sort-toggle \[data-sort-glyph\][\s\S]*transition:\s*none/,
+  );
 });
 
 test("reduced motion inserts the card without motion classes", () => {
@@ -642,6 +671,9 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   assert.match(reveal, /is-slide-in/);
   assert.doesNotMatch(reveal, /primeStart:\s*true/);
   const follow = live.slice(live.indexOf("const plan = planNewItemFollow"));
+  assert.match(follow, /hasMore/);
+  assert.match(live, /is-sort-reflow/);
+  assert.match(live, /previousSort !== sort/);
   assert.match(follow, /presentNewQueueCard/);
   assert.match(follow, /pulse: added\.length === 1/);
   assert.match(follow, /markLastCopied\(list, added\[0\]/);
