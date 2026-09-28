@@ -471,6 +471,18 @@ impl MotionPref {
             }
         }
     }
+
+    pub const fn factory_for_build(local_dev: bool) -> Self {
+        if local_dev {
+            Self::Off
+        } else {
+            Self::System
+        }
+    }
+}
+
+pub const fn is_local_dev_build() -> bool {
+    cfg!(debug_assertions)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -968,6 +980,19 @@ impl SettingsV1 {
                 sounds: false,
                 haptics: false,
             },
+        }
+    }
+
+    pub fn defaults_for_build(local_dev: bool) -> Self {
+        let mut settings = Self::defaults();
+        settings.apply_play_animation_dev_default(local_dev);
+        settings
+    }
+
+    pub fn apply_play_animation_dev_default(&mut self, local_dev: bool) {
+        if local_dev && self.general.reduce_motion == MotionPref::System {
+            self.general.reduce_motion = MotionPref::Off;
+            self.sync_motion_fields();
         }
     }
 
@@ -1582,5 +1607,60 @@ mod tests {
         assert!(search_settings("motion")
             .iter()
             .any(|field| field.id == "general.reduceMotion"));
+    }
+
+    #[test]
+    fn reduce_motion_defaults_play_animation_in_local_dev() {
+        let settings = SettingsV1::defaults_for_build(true);
+        assert_eq!(settings.general.reduce_motion, MotionPref::Off);
+        assert_eq!(settings.accessibility.motion, MotionPref::Off);
+        assert_eq!(settings.general.reduce_motion.as_str(), "off");
+        assert_eq!(settings.general.reduce_motion.dataset_value(true), "full");
+        let json = settings.to_json().expect("json");
+        assert!(json.contains("\"reduceMotion\":\"off\""));
+        assert_eq!(
+            SettingsV1::from_json(&json)
+                .expect("parse")
+                .general
+                .reduce_motion,
+            MotionPref::Off
+        );
+        assert_eq!(
+            MotionPref::factory_for_build(true).dataset_value(true),
+            "full"
+        );
+    }
+
+    #[test]
+    fn reduce_motion_defaults_system_in_production_build() {
+        let settings = SettingsV1::defaults_for_build(false);
+        assert_eq!(settings, SettingsV1::defaults());
+        assert_eq!(settings.general.reduce_motion, MotionPref::System);
+        assert_eq!(settings.accessibility.motion, MotionPref::System);
+        assert_eq!(settings.general.reduce_motion.dataset_value(true), "reduce");
+        assert_eq!(MotionPref::factory_for_build(false), MotionPref::System);
+    }
+
+    #[test]
+    fn local_dev_play_animation_leaves_explicit_reduce_motion() {
+        let mut always = SettingsV1::defaults();
+        always.general.reduce_motion = MotionPref::On;
+        always.sync_motion_fields();
+        always.apply_play_animation_dev_default(true);
+        assert_eq!(always.general.reduce_motion, MotionPref::On);
+        assert_eq!(always.accessibility.motion, MotionPref::On);
+
+        let mut play = SettingsV1::defaults();
+        play.general.reduce_motion = MotionPref::Off;
+        play.sync_motion_fields();
+        play.apply_play_animation_dev_default(true);
+        assert_eq!(play.general.reduce_motion, MotionPref::Off);
+
+        let mut factory = SettingsV1::defaults();
+        factory.apply_play_animation_dev_default(false);
+        assert_eq!(factory.general.reduce_motion, MotionPref::System);
+        factory.apply_play_animation_dev_default(true);
+        assert_eq!(factory.general.reduce_motion, MotionPref::Off);
+        assert_eq!(factory.accessibility.motion, MotionPref::Off);
     }
 }
