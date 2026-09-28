@@ -1384,7 +1384,10 @@ test("clicking the sort toggle writes oldest and reloads the first page", async 
       sortToggle.getAttribute("data-i18n-aria-label"),
       "queue.sort.showNewest",
     );
-    assert.equal(sortToggle.getAttribute("aria-describedby"), "queue-sort-state");
+    assert.equal(
+      sortToggle.getAttribute("aria-describedby"),
+      "queue-sort-state",
+    );
     assert.equal(
       sortToggle.querySelector("[data-slot=sort-tip]").textContent,
       "Oldest first",
@@ -1425,6 +1428,7 @@ test("sort toggle with motion collapses then expands the loaded page", async () 
   try {
     await bindQueueLive(root, invoke);
     assert.deepEqual(paintedIds(list), ["new", "old"]);
+    timers.length = 0;
     sortToggle.click();
     await waitUntil(
       () => list.classList.contains("is-sort-collapse"),

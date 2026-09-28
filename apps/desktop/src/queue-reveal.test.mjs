@@ -21,10 +21,10 @@ import {
   planNewItemFollow,
   presentNewQueueCard,
   revealQueueItem,
-  scrollDelta,
-  shouldLoadNextOnKey,
   SORT_COLLAPSE_MS,
   SORT_EXPAND_MS,
+  scrollDelta,
+  shouldLoadNextOnKey,
   sortReflowPlan,
   travelScroll,
 } from "./queue-reveal.mjs";
@@ -230,10 +230,7 @@ test("newest-first at the top slides the new card without moving the scrollport"
     chrome,
     /\.queue-item\.is-sort-expand[\s\S]*bronze-sort-expand var\(--sort-expand\)/,
   );
-  assert.doesNotMatch(
-    chrome,
-    /#queue\.is-sort-reflow[\s\S]{0,120}translateX/,
-  );
+  assert.doesNotMatch(chrome, /#queue\.is-sort-reflow[\s\S]{0,120}translateX/);
   assert.match(chrome, /@keyframes bronze-slide-in/);
   assert.match(chrome, /translateX\(-100%\)/);
   assert.match(chrome, /@keyframes bronze-slide-in-rtl/);
@@ -694,11 +691,11 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   assert.doesNotMatch(reveal, /primeStart:\s*true/);
   const follow = live.slice(live.indexOf("const plan = planNewItemFollow"));
   assert.match(follow, /hasMore/);
-  assert.match(live, /is-sort-reflow/);
   assert.match(live, /beginSortCollapse/);
   assert.match(live, /beginSortExpand/);
   assert.match(live, /sortReflowPlan/);
   assert.match(live, /sortChanged/);
+  assert.match(reveal, /is-sort-reflow/);
   assert.match(follow, /presentNewQueueCard/);
   assert.match(follow, /pulse: added\.length === 1/);
   assert.match(follow, /markLastCopied\(list, added\[0\]/);
@@ -761,7 +758,9 @@ test("sort reflow collapses then expands from the first card", () => {
   assert.equal(first.classList.has("is-sort-lead"), true);
   assert.equal(first.classList.has("is-sort-collapse"), false);
   assert.deepEqual(
-    order.filter((name) => name === "is-sort-collapse" || name === "is-sort-expand"),
+    order.filter(
+      (name) => name === "is-sort-collapse" || name === "is-sort-expand",
+    ),
     ["is-sort-collapse", "is-sort-expand"],
   );
   assert.match(

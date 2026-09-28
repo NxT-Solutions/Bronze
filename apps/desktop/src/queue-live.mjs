@@ -953,10 +953,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     const motion = motionAllowed(list.ownerDocument);
     const collapsing =
       sortChanged && sortReflowPlan(motion, prevIds.length).collapse
-        ? waitSortPhase(
-            list.ownerDocument,
-            beginSortCollapse(list).durationMs,
-          )
+        ? waitSortPhase(list.ownerDocument, beginSortCollapse(list).durationMs)
         : Promise.resolve();
     const action = opts.action;
     if (action === "complete" || action === "skip" || action === "trash") {
