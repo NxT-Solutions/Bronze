@@ -7,6 +7,7 @@ import {
   applyNoticeAuthorization,
   applyPermissionResult,
   applyRunningBundle,
+  formatCodeIdentity,
   formatRunningCopy,
   loadNoticeAuthorization,
   NOTICE_REQUEST_COMMAND,
@@ -58,6 +59,7 @@ test("permission health lists independent rows and unused screen recording", () 
   assert.match(html, /data-permission-open-settings="notifications"/);
   assert.match(html, /data-permission-running-copy/);
   assert.match(html, /data-permission-bundle-path/);
+  assert.match(html, /data-permission-cdhash/);
   assert.match(html, /data-permission-stale-copy/);
   assert.equal(
     en["settings.permission.runningCopy"],
@@ -133,11 +135,14 @@ test("retest uses an injected request hook and never asks for screen recording",
   );
   assert.equal(pillStatusForState("granted_unverified"), "granted");
   assert.equal(pillStatusForState("denied"), "denied");
-  const pill = { dataset: {}, textContent: "Denied" };
+  assert.equal(pillStatusForState("not_requested"), "notRequested");
+  assert.equal(pillStatusForState("unknown"), "unavailable");
+  const pill = { dataset: {}, textContent: "Denied", setAttribute() {} };
   const card = { dataset: {}, querySelector: () => pill };
   const open = { hidden: true };
   const copy = { hidden: true, textContent: "" };
   const pathEl = { hidden: true, textContent: "" };
+  const identityEl = { hidden: true, textContent: "" };
   const stale = { hidden: true };
   const group = { hidden: true };
   applyPermissionResult(
@@ -148,6 +153,7 @@ test("retest uses an injected request hook and never asks for screen recording",
         if (query.includes("open-settings")) return open;
         if (query.includes("running-copy")) return copy;
         if (query.includes("bundle-path")) return pathEl;
+        if (query.includes("permission-cdhash")) return identityEl;
         if (query.includes("stale-copy")) return stale;
         if (query.includes("permission-copy")) return group;
         return null;
@@ -158,6 +164,8 @@ test("retest uses an injected request hook and never asks for screen recording",
       bundle_name: "Bronze",
       bundle_version: "0.1.1",
       bundle_path: "/Applications/Bronze.app",
+      signature_kind: "adhoc",
+      cdhash: "4356750bd341b36fe7f65ed5ecb29e994c25458b",
     },
   );
   assert.equal(card.dataset.status, "denied");
@@ -165,6 +173,10 @@ test("retest uses an injected request hook and never asks for screen recording",
   assert.equal(copy.hidden, false);
   assert.equal(copy.textContent, "This copy is Bronze 0.1.1.");
   assert.equal(pathEl.textContent, "/Applications/Bronze.app");
+  assert.equal(
+    identityEl.textContent,
+    "adhoc 4356750bd341b36fe7f65ed5ecb29e994c25458b",
+  );
   assert.equal(stale.hidden, false);
   assert.equal(group.hidden, false);
   assert.equal(shouldShowStaleCopyHint(denied), true);
@@ -190,6 +202,7 @@ test("retest uses an injected request hook and never asks for screen recording",
         if (query.includes("open-settings")) return open;
         if (query.includes("running-copy")) return copy;
         if (query.includes("bundle-path")) return pathEl;
+        if (query.includes("permission-cdhash")) return identityEl;
         if (query.includes("stale-copy")) return stale;
         if (query.includes("permission-copy")) return group;
         return null;
@@ -207,6 +220,41 @@ test("retest uses an injected request hook and never asks for screen recording",
     formatRunningCopy("This copy is {name} {version}.", "Bronze", "0.1.1"),
     "This copy is Bronze 0.1.1.",
   );
+  assert.equal(
+    formatCodeIdentity("adhoc", "4356750bd341b36fe7f65ed5ecb29e994c25458b"),
+    "adhoc 4356750bd341b36fe7f65ed5ecb29e994c25458b",
+  );
+  applyPermissionResult(
+    {
+      querySelector(sel) {
+        const query = String(sel);
+        if (query.includes("data-capability")) return card;
+        if (query.includes("open-settings")) return open;
+        if (query.includes("running-copy")) return copy;
+        if (query.includes("bundle-path")) return pathEl;
+        if (query.includes("permission-cdhash")) return identityEl;
+        if (query.includes("stale-copy")) return stale;
+        if (query.includes("permission-copy")) return group;
+        return null;
+      },
+    },
+    {
+      input_monitoring: "granted_unverified",
+      accessibility: "not_requested",
+      listen_requested: false,
+      accessibility_requested: false,
+      screen_recording_requested: false,
+      bundle_name: "Bronze",
+      bundle_version: "0.2.0",
+      bundle_path: "/Applications/Bronze.app",
+      signature_kind: "adhoc",
+      cdhash: "4356750bd341b36fe7f65ed5ecb29e994c25458b",
+    },
+  );
+  assert.equal(card.dataset.status, "notRequested");
+  assert.equal(pill.dataset.status, "notRequested");
+  assert.equal(pill.textContent, "Not requested");
+  assert.equal(open.hidden, false);
 });
 
 test("notice health loads status only and shows Allow while undetermined", async () => {

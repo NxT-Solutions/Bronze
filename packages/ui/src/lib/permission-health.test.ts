@@ -31,6 +31,9 @@ describe("permission health (SET-003, SET-004, CAP-003)", () => {
       "denied",
     );
     expect(
+      permissionStatusKind({ state: "not_requested", usage: "required" }),
+    ).toBe("notRequested");
+    expect(
       permissionStatusKind({
         state: "granted_unverified",
         usage: "required",

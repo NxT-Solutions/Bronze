@@ -280,6 +280,23 @@ fn ax_request_trusted_with_prompt() -> bool {
 }
 
 #[cfg(target_os = "macos")]
+fn ax_request_trusted_then_settle() -> bool {
+    if ax_request_trusted_with_prompt() {
+        return true;
+    }
+    // TCC can accept the running cdhash a few hundred milliseconds after
+    // the prompt or a System Settings toggle.
+    for delay_ms in [50_u64, 100, 200] {
+        std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+        // SAFETY: AXIsProcessTrusted is the no-prompt trusted-check.
+        if unsafe { sys::AXIsProcessTrusted() } != 0 {
+            return true;
+        }
+    }
+    false
+}
+
+#[cfg(target_os = "macos")]
 impl PreflightHost for MacosPreflightHost {
     fn listen_event_access(&self) -> Result<bool, PreflightError> {
         // SAFETY: listen-event preflight is a no-argument, no-prompt query.
@@ -303,7 +320,7 @@ impl PermissionRequestHost for MacosPreflightHost {
     fn request_accessibility_trusted(&self) -> Result<bool, PreflightError> {
         // SAFETY: AXIsProcessTrustedWithOptions with kAXTrustedCheckOptionPrompt
         // may show the system dialog. Must not run on the event-tap callback thread.
-        Ok(ax_request_trusted_with_prompt())
+        Ok(ax_request_trusted_then_settle())
     }
 }
 
@@ -707,6 +724,10 @@ mod tests {
         assert!(
             production.contains(&ax_prompt) && production.contains(&prompt_option),
             "production path must request Accessibility with prompt"
+        );
+        assert!(
+            production.contains("ax_request_trusted_then_settle"),
+            "request path must re-read AXIsProcessTrusted after the prompt"
         );
         assert!(
             !production.contains("CGRequestScreenCaptureAccess")

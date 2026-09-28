@@ -195,7 +195,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --filter desktop exec tauri build --target ${{ matrix.rust_target }} --bundles app --config '{"bundle":{"macOS":{"signingIdentity":"-","minimumSystemVersion":"14.0"}}}'
+          pnpm --filter desktop exec tauri build --target ${{ matrix.rust_target }} --bundles app --config '{"bundle":{"macOS":{"signingIdentity":"-","hardenedRuntime":false,"minimumSystemVersion":"14.0"}}}'
 
       - name: Package pkg
         shell: bash

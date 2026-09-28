@@ -255,7 +255,7 @@ Each row includes status, why needed, last test, Retest, Open System Settings/he
 - Automation: absent P0 unless a later feature requires it.
 - Screen Recording: explicitly “Not used.”
 
-Health statuses are not booleans: `unknown`, `not_requested`, `denied`, `granted_unverified`, `healthy`, `degraded`, `unavailable`, `requires_relaunch`. Self-test never captures unrelated content.
+Health statuses are not booleans: `unknown`, `not_requested`, `denied`, `granted_unverified`, `healthy`, `degraded`, `unavailable`, `requires_relaunch`. Settings pills use those labels: `not_requested` is Not requested, not Denied. Self-test never captures unrelated content.
 
 ## 9. Privacy settings
 

@@ -1957,6 +1957,18 @@ fn support_permission_rows() -> Vec<SupportNamedState> {
     {
         vec![
             SupportNamedState {
+                name: "running_path".into(),
+                state: "unavailable".into(),
+            },
+            SupportNamedState {
+                name: "running_cdhash".into(),
+                state: "unavailable".into(),
+            },
+            SupportNamedState {
+                name: "signature_kind".into(),
+                state: "unavailable".into(),
+            },
+            SupportNamedState {
                 name: "input_monitoring".into(),
                 state: "unavailable".into(),
             },
@@ -1973,7 +1985,20 @@ fn support_permission_rows() -> Vec<SupportNamedState> {
     #[cfg(not(test))]
     {
         let snapshot = snapshot_from_preflight(&MacosPreflightHost);
+        let bundle = crate::running_bundle::current_running_bundle();
         vec![
+            SupportNamedState {
+                name: "running_path".into(),
+                state: redact_home_path(&bundle.bundle_path),
+            },
+            SupportNamedState {
+                name: "running_cdhash".into(),
+                state: bundle.cdhash,
+            },
+            SupportNamedState {
+                name: "signature_kind".into(),
+                state: bundle.signature_kind,
+            },
             SupportNamedState {
                 name: "input_monitoring".into(),
                 state: snapshot.input_monitoring.as_str().into(),
@@ -3223,6 +3248,9 @@ mod live_session_tests {
             "arch=",
             "schema=",
             "path=",
+            "running_path=",
+            "running_cdhash=",
+            "signature_kind=",
             "input_monitoring=",
             "human_gates=",
             "Last-hour diagnostic events",

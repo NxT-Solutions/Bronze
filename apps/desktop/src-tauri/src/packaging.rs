@@ -148,6 +148,11 @@ mod packaging_tests {
             fs::read_to_string(manifest.join("../../../.github/workflows/release.yml")).unwrap();
         assert!(release.contains("differs from icon.icns"));
         assert!(release.contains("BronzeNotice AppIcon.icns was not produced"));
+        assert!(
+            release.contains("signingIdentity\":\"-\"")
+                && release.contains("hardenedRuntime\":false"),
+            "ad-hoc release builds must not set the hardened runtime flag"
+        );
         assert!(build.contains("NSUserNotificationsUsageDescription"));
         assert!(build.contains("NSUserNotificationAlertStyle"));
         assert!(build.contains("NSPrincipalClass"));

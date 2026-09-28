@@ -34,6 +34,22 @@ export function tauriInvoke(cmd, args) {
   return Promise.reject(new Error("invoke_unavailable"));
 }
 
+const PILL_STATUS_KEYS = {
+  granted: "settings.permission.status.granted",
+  denied: "settings.permission.status.denied",
+  notRequested: "settings.permission.status.notRequested",
+  unavailable: "settings.permission.status.unavailable",
+  notUsed: "settings.permission.screenRecording.notUsed",
+};
+
+const PILL_STATUS_FALLBACK = {
+  granted: "Granted",
+  denied: "Denied",
+  notRequested: "Not requested",
+  unavailable: "Unavailable",
+  notUsed: "Not used",
+};
+
 export function pillStatusForState(state) {
   if (state === "granted_unverified" || state === "healthy") {
     return "granted";
@@ -41,7 +57,26 @@ export function pillStatusForState(state) {
   if (state === "notUsed") {
     return "notUsed";
   }
+  if (state === "not_requested" || state === "requires_relaunch") {
+    return "notRequested";
+  }
+  if (
+    state === "unavailable" ||
+    state === "unknown" ||
+    state === "degraded"
+  ) {
+    return "unavailable";
+  }
   return "denied";
+}
+
+export function pillStatusLabel(status) {
+  const key = PILL_STATUS_KEYS[status] ?? PILL_STATUS_KEYS.denied;
+  return catalogMessage(key) || PILL_STATUS_FALLBACK[status] || "Denied";
+}
+
+export function formatCodeIdentity(kind, hash) {
+  return [kind, hash].filter(Boolean).join(" ");
 }
 
 const LAST_PERMISSION_RESULT = new WeakMap();
@@ -79,13 +114,19 @@ export function applyRunningBundle(root, result) {
     pathEl.hidden = !path;
     pathEl.textContent = path;
   }
+  const identity = formatCodeIdentity(result?.signature_kind, result?.cdhash);
+  const identityEl = root.querySelector("[data-permission-cdhash]");
+  if (identityEl) {
+    identityEl.hidden = !identity;
+    identityEl.textContent = identity;
+  }
   const stale = root.querySelector("[data-permission-stale-copy]");
   if (stale) {
     stale.hidden = !shouldShowStaleCopyHint(result);
   }
   const group = root.querySelector("[data-permission-copy]");
   if (group) {
-    group.hidden = !name && !path;
+    group.hidden = !name && !path && !identity;
   }
 }
 
@@ -108,11 +149,11 @@ export function applyPermissionResult(root, result) {
     const pill = card.querySelector(".pill");
     if (pill) {
       pill.dataset.status = status;
-      if (status === "granted") {
-        pill.textContent = "Granted";
-      } else if (status === "denied") {
-        pill.textContent = "Denied";
+      const key = PILL_STATUS_KEYS[status] ?? PILL_STATUS_KEYS.denied;
+      if (typeof pill.setAttribute === "function") {
+        pill.setAttribute("data-i18n", key);
       }
+      pill.textContent = pillStatusLabel(status);
     }
     const open = root.querySelector(
       `[data-permission-open-settings="${capability}"]`,
@@ -220,18 +261,37 @@ export async function retestUsedPermission(capability, invokeFn = tauriInvoke) {
   };
 }
 
+export async function refreshUsedPermissions(root, invokeFn = tauriInvoke) {
+  const result = await invokeFn(READ_COMMAND);
+  applyPermissionResult(root, result);
+  return result;
+}
+
 export function bindPermissionHealth(root = document, invokeFn = tauriInvoke) {
-  invokeFn(READ_COMMAND)
-    .then((result) => applyPermissionResult(root, result))
-    .catch(() => {});
+  refreshUsedPermissions(root, invokeFn).catch(() => {});
   loadNoticeAuthorization(root, invokeFn).catch(() => {
     applyNoticeAuthorization(root, "unavailable");
   });
+  const onVisible = () => {
+    refreshUsedPermissions(root, invokeFn).catch(() => {});
+    loadNoticeAuthorization(root, invokeFn).catch(() => {});
+  };
+  if (globalThis.document) {
+    globalThis.document.addEventListener("visibilitychange", () => {
+      if (globalThis.document.visibilityState === "visible") {
+        onVisible();
+      }
+    });
+  }
+  if (globalThis.window) {
+    globalThis.window.addEventListener("pageshow", onVisible);
+    globalThis.window.addEventListener("focus", onVisible);
+  }
   if (globalThis.document) {
     globalThis.document.addEventListener(LOCALE_APPLIED_EVENT, () => {
       const remembered = LAST_PERMISSION_RESULT.get(root);
       if (remembered) {
-        applyRunningBundle(root, remembered);
+        applyPermissionResult(root, remembered);
       }
       const status = root.querySelector('[data-capability="notifications"]')
         ?.dataset?.status;

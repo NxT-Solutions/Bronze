@@ -13,6 +13,8 @@ export const PERMISSION_KEYS = {
   retest: "settings.permission.retest",
   granted: "settings.permission.status.granted",
   denied: "settings.permission.status.denied",
+  notRequested: "settings.permission.status.notRequested",
+  unavailable: "settings.permission.status.unavailable",
   notUsed: "settings.permission.screenRecording.notUsed",
   composer: "settings.permission.composer.available",
   openSystemSettings: "settings.permission.openSystemSettings",
@@ -50,7 +52,11 @@ export function PermissionHealth({
               ? labels.granted
               : status === "notUsed"
                 ? labels.notUsed
-                : labels.denied;
+                : status === "notRequested"
+                  ? labels.notRequested
+                  : status === "unavailable"
+                    ? labels.unavailable
+                    : labels.denied;
           return (
             <li
               key={row.capability}
