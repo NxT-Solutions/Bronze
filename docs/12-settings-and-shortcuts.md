@@ -246,7 +246,7 @@ Show Input Monitoring state and Secure Input limitation. Reset FSM after setting
 
 ## 8. Permission health settings
 
-Each row includes status, why needed, last test, Retest, Open System Settings/help, and alternative.
+Each row includes status, why needed, last test, Retest, Open System Settings/help, and alternative. The section names the running copy, path, and code identity. Retest re-queries trust and updates the closed-enum pills. It does not auto-open Privacy.
 
 - Input Monitoring: global modifier event tap.
 - Accessibility: AX selection and synthetic fallback.
@@ -255,7 +255,7 @@ Each row includes status, why needed, last test, Retest, Open System Settings/he
 - Automation: absent P0 unless a later feature requires it.
 - Screen Recording: explicitly “Not used.”
 
-Health statuses are not booleans: `unknown`, `not_requested`, `denied`, `granted_unverified`, `healthy`, `degraded`, `unavailable`, `requires_relaunch`. Self-test never captures unrelated content.
+Health statuses are not booleans: `unknown`, `not_requested`, `denied`, `granted_unverified`, `healthy`, `degraded`, `unavailable`, `requires_relaunch`. Settings pills use those labels: `not_requested` is Not requested, not Denied. Self-test never captures unrelated content.
 
 ## 9. Privacy settings
 

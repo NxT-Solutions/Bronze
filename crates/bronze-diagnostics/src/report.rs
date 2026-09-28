@@ -55,6 +55,11 @@ pub struct SupportReport {
     pub login_item_status: String,
     pub title_engine_tier: String,
     pub title_engine_phase: String,
+    pub running_name: String,
+    pub running_version: String,
+    pub running_path: String,
+    pub running_cdhash: String,
+    pub signature_kind: String,
     pub permissions: Vec<SupportNamedState>,
     pub queue: SupportQueueCounts,
     pub excluded_bundle_ids: Vec<String>,
@@ -170,6 +175,41 @@ fn format_support_report(report: &SupportReport) -> String {
     push(&mut out, &format!("  path={}", report.data_path));
     push(&mut out, "");
     push(&mut out, "Permissions");
+    push(
+        &mut out,
+        &format!(
+            "  running_name={}",
+            empty_as_unavailable(&report.running_name)
+        ),
+    );
+    push(
+        &mut out,
+        &format!(
+            "  running_version={}",
+            empty_as_unavailable(&report.running_version)
+        ),
+    );
+    push(
+        &mut out,
+        &format!(
+            "  running_path={}",
+            empty_as_unavailable(&report.running_path)
+        ),
+    );
+    push(
+        &mut out,
+        &format!(
+            "  running_cdhash={}",
+            empty_as_unavailable(&report.running_cdhash)
+        ),
+    );
+    push(
+        &mut out,
+        &format!(
+            "  signature_kind={}",
+            empty_as_unavailable(&report.signature_kind)
+        ),
+    );
     for row in &report.permissions {
         if contains_forbidden_payload(&row.name) || contains_forbidden_payload(&row.state) {
             continue;
@@ -329,6 +369,11 @@ fn sample_report() -> SupportReport {
         login_item_status: "unavailable".into(),
         title_engine_tier: "extractive".into(),
         title_engine_phase: "idle".into(),
+        running_name: "Bronze".into(),
+        running_version: "0.2.0".into(),
+        running_path: "/Applications/Bronze.app".into(),
+        running_cdhash: "4356750bd341b36fe7f65ed5ecb29e994c25458b".into(),
+        signature_kind: "adhoc".into(),
         permissions: vec![
             SupportNamedState {
                 name: "input_monitoring".into(),
@@ -389,6 +434,11 @@ mod report_tests {
             "schema=",
             "/Users/[redacted]",
             "input_monitoring=",
+            "running_name=Bronze",
+            "running_version=0.2.0",
+            "running_path=/Applications/Bronze.app",
+            "running_cdhash=4356750bd341b36fe7f65ed5ecb29e994c25458b",
+            "signature_kind=adhoc",
             "human_gates=3.9, 3.10, 5.5, 9.3",
             "Last-hour diagnostic events",
             "Last-hour copy attempts",

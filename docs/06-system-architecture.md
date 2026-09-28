@@ -552,9 +552,9 @@ Controls:
 - Content-free diagnostics and user-previewed support bundle.
 - Database backups and transactional recovery.
 
-App Sandbox is not enabled for v1 because required assistive/accessibility APIs conflict with sandbox constraints and PRD excludes Mac App Store distribution. Direct build still uses Hardened Runtime and minimal entitlements. [Apple App Sandbox guidance](https://developer.apple.com/documentation/security/protecting-user-data-with-app-sandbox)
+App Sandbox is not enabled for v1 because required assistive/accessibility APIs conflict with sandbox constraints and PRD excludes Mac App Store distribution. A Developer ID build uses Hardened Runtime and minimal entitlements. An ad-hoc identity (`signingIdentity: "-"`, including the current GitHub Release pkg) must not set the hardened-runtime flag: that pairing leaves `AXIsProcessTrusted` false after the user adds the app. [Apple App Sandbox guidance](https://developer.apple.com/documentation/security/protecting-user-data-with-app-sandbox)
 
-Production must not carry get-task-allow, JIT, unsigned executable memory, disabled library validation, Screen Recording, microphone, or camera entitlement. Ad-hoc signatures are development-only. The title worker uses CPU inference (`n_gpu_layers=0`) and does not add JIT or unsigned-executable-memory entitlements. `llama-cpp-2` may still compile Metal on Apple Silicon.
+Production must not carry get-task-allow, JIT, unsigned executable memory, disabled library validation, Screen Recording, microphone, or camera entitlement. Ad-hoc signatures are not a Developer ID identity. The title worker uses CPU inference (`n_gpu_layers=0`) and does not add JIT or unsigned-executable-memory entitlements. `llama-cpp-2` may still compile Metal on Apple Silicon.
 
 ## 15. Performance and reliability gates
 

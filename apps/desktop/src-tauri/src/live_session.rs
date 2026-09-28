@@ -1615,6 +1615,7 @@ impl LiveSession {
             .collect();
         let counts = self.store.queue_status_counts().unwrap_or_default();
         let engine = bronze_title_model::current_status();
+        let bundle = crate::running_bundle::current_running_bundle();
         SupportReport {
             generated_at_ms: now as u64,
             app_version: env!("CARGO_PKG_VERSION").into(),
@@ -1641,6 +1642,11 @@ impl LiveSession {
             login_item_status: bronze_platform_macos::login_item_status().as_str().into(),
             title_engine_tier: engine.tier.as_str().into(),
             title_engine_phase: engine.phase.as_str().into(),
+            running_name: bundle.name,
+            running_version: bundle.version,
+            running_path: redact_home_path(&bundle.bundle_path),
+            running_cdhash: bundle.cdhash,
+            signature_kind: bundle.signature_kind,
             permissions: support_permission_rows(),
             queue: SupportQueueCounts {
                 queued: counts.queued,
@@ -3224,6 +3230,11 @@ mod live_session_tests {
             "schema=",
             "path=",
             "input_monitoring=",
+            "running_name=",
+            "running_version=",
+            "running_path=",
+            "running_cdhash=",
+            "signature_kind=",
             "human_gates=",
             "Last-hour diagnostic events",
             "Last-hour copy attempts",

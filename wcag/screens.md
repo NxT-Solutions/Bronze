@@ -58,7 +58,9 @@ Purpose: data, privacy, permission truth, shortcut inventory.
 - Every field has a label. Reset sits beside the field, not as the
   only name.
 - Permission status is a text pill plus why-text. Color is not the
-  only signal (1.4.1).
+  only signal (1.4.1). The pill text names the closed-enum state
+  (`Not requested` is not `Denied`). Retest writes a visible
+  `role="status"` line when the grant is still denied.
 - Help opener is a trailing outlined button, not a second primary. One Help
   surface (3.2.6 stays N/A).
 
