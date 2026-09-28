@@ -32,8 +32,9 @@ Purpose: capture in, act on the current item.
   1.4.1). This is not a WCAG claim.
 - A new card may ease existing cards down to make room, then slide in
   from the inline-start edge and show a temporary `--ring` pulse
-  (three cycles in 1s, then gone). The pulse is not the focus
-  indicator. The sort button is a real control whose accessible name
+  (three cycles in 1s, then gone). A copied-notification reveal can
+  pulse the same way. A click on Copy does not. The pulse is not the
+  focus indicator. The sort button is a real control whose accessible name
   is the next order and whose description is the current order
   (`settings.field.queueSort.newest` / `.oldest`) via the owned tip
   (1.4.13). Changing sort collapses the loaded page into the first

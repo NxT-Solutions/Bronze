@@ -925,9 +925,10 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       list,
       doc: list.ownerDocument,
     });
-    if (lastCopiedId) {
-      markLastCopied(list, lastCopiedId);
-    }
+    lastCopiedId = id;
+    markLastCopied(list, id, {
+      pulse: motionAllowed(list.ownerDocument),
+    });
     hideChromeNotice(root);
   }
 
@@ -1365,15 +1366,10 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     }
     await runBusy(button, async () => {
       if (action === "copy") {
-        const previousCopied = lastCopiedId;
-        lastCopiedId = id;
         try {
           await invokeFn("copy_queue_items", {
             itemIds: [id],
             profile: profile?.value ?? "plain",
-          });
-          markLastCopied(list, id, {
-            pulse: motionAllowed(list.ownerDocument),
           });
           applyActionStatus(root, "copy.announce.copied", button);
           showChromeNotice(
@@ -1383,14 +1379,10 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
             id,
           );
         } catch {
-          lastCopiedId = previousCopied;
-          markLastCopied(list, previousCopied);
           applyActionStatus(root, "copy.announce.failed", button);
           return;
         }
-        await refresh({
-          pulseCopy: motionAllowed(list.ownerDocument),
-        });
+        await refresh();
         return;
       }
       if (action === "edit") {
@@ -1443,9 +1435,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (copied) {
       lastCopiedId = copiedId;
     }
-    refresh({
-      pulseCopy: copied && motionAllowed(list.ownerDocument),
-    });
+    refresh();
   });
   listenQueueSortChanged((payload) => {
     const announced = queueSortFromEvent(payload);

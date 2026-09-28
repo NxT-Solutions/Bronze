@@ -63,12 +63,13 @@ Purpose: capture in, act on the current item.
   rest unfurl (`is-sort-expand`, `--sort-expand` 480ms). The list does
   not side-slide as one block. Reduce Motion swaps the icon and the
   list instantly. The pulse is under 3Hz.
-- The new card, and a card just copied, can show a temporary 2px
-  `--ring` outline at low opacity, offset just outside `--radius-card`.
-  The outline fades three times (`bronze-copy-ring`, `--ring-pulse`
-  1000ms) and is gone when the pulse ends. It is not the keyboard focus
-  ring. `:focus-visible` stays on the focused control. Visible copy
-  feedback is the action tip.
+- The new card, and a card revealed from a copied notification, can
+  show a temporary 2px `--ring` outline at low opacity, offset just
+  outside `--radius-card`. The outline fades three times
+  (`bronze-copy-ring`, `--ring-pulse` 1000ms) and is gone when the
+  pulse ends. It is not the keyboard focus ring. `:focus-visible`
+  stays on the focused control. Visible copy feedback is the action
+  tip. A click on Copy does not add the pulse or last-copied ring.
 - Complete / Skip / Trash leave the list: height collapse
   (`grid-template-rows` 1fr→0fr) plus fade, then the node is removed.
   Complete slides slightly up. Skip fades. Trash shrinks. Tokens are

@@ -635,9 +635,16 @@ test("a status change patches the visible row without moving it", () => {
   assert.match(sortSrc, /set_queue_sort/);
   assert.match(live, /#queue-sort-toggle/);
   const copyAt = live.indexOf('action === "copy"');
-  const assignAt = live.indexOf("lastCopiedId = id", copyAt);
+  const copyBlock = live.slice(
+    copyAt,
+    live.indexOf('if (action === "edit"', copyAt),
+  );
   const invokeAt = live.indexOf("copy_queue_items", copyAt);
-  assert.ok(copyAt >= 0 && assignAt > copyAt && assignAt < invokeAt);
+  assert.ok(copyAt >= 0 && invokeAt > copyAt);
+  assert.match(copyBlock, /copy\.announce\.copied/);
+  assert.doesNotMatch(copyBlock, /lastCopiedId = id/);
+  assert.doesNotMatch(copyBlock, /markLastCopied/);
+  assert.doesNotMatch(copyBlock, /pulseCopy/);
 });
 
 test("queue sort toggle writes newest then oldest and reloads the list", async () => {
@@ -785,6 +792,9 @@ test("queue sort toggle writes newest then oldest and reloads the list", async (
 });
 
 function createMountDocument() {
+  if (typeof globalThis.HTMLButtonElement !== "function") {
+    globalThis.HTMLButtonElement = class HTMLButtonElement {};
+  }
   function walk(node, visit) {
     for (const child of node.children ?? []) {
       visit(child);
@@ -793,6 +803,12 @@ function createMountDocument() {
   }
 
   function matches(node, sel) {
+    if (sel.includes("][")) {
+      return sel
+        .split(/(?<=\])/)
+        .filter(Boolean)
+        .every((part) => matches(node, part));
+    }
     if (sel.startsWith("#")) {
       return node.id === sel.slice(1);
     }
@@ -1027,6 +1043,9 @@ function createMountDocument() {
         el.dispatchEvent({ type: "click", target: el });
       },
     };
+    if (tagName.toLowerCase() === "button") {
+      Object.setPrototypeOf(el, HTMLButtonElement.prototype);
+    }
     Object.defineProperty(el, "textContent", {
       get() {
         if (children.length === 0) {
@@ -1100,10 +1119,21 @@ function createCard(doc) {
   const expand = doc.createElement("button");
   expand.dataset.slot = "expand";
   expand.textContent = "Show more";
+  const actions = doc.createElement("div");
+  actions.className = "row-actions";
+  const copy = doc.createElement("button");
+  copy.dataset.queueAction = "copy";
+  copy.textContent = "Copy";
+  const tip = doc.createElement("span");
+  tip.dataset.slot = "action-tip";
+  tip.hidden = true;
+  actions.appendChild(copy);
+  actions.appendChild(tip);
   article.appendChild(title);
   article.appendChild(body);
   article.appendChild(source);
   article.appendChild(expand);
+  article.appendChild(actions);
   li.appendChild(article);
   return li;
 }
@@ -1161,13 +1191,30 @@ function mountQueueRoot() {
   const profile = doc.createElement("select");
   profile.id = "output-profile";
   profile.value = "plain";
+  const actionStatus = doc.createElement("p");
+  actionStatus.id = "action-status";
+  const copiedMsg = doc.createElement("p");
+  copiedMsg.dataset.actionMessage = "";
+  copiedMsg.setAttribute("data-action-message", "");
+  copiedMsg.setAttribute("data-i18n", "copy.announce.copied");
+  copiedMsg.textContent = "Copied.";
+  const notice = doc.createElement("div");
+  notice.id = "chrome-notice";
+  notice.hidden = true;
+  const noticeText = doc.createElement("button");
+  noticeText.id = "chrome-notice-text";
+  noticeText.setAttribute("data-notice-reveal", "");
+  notice.appendChild(noticeText);
   root.appendChild(form);
   root.appendChild(sortToggle);
   root.appendChild(empty);
   root.appendChild(list);
   root.appendChild(template);
   root.appendChild(profile);
-  return { root, list, empty, sortToggle, doc };
+  root.appendChild(actionStatus);
+  root.appendChild(copiedMsg);
+  root.appendChild(notice);
+  return { root, list, empty, sortToggle, doc, actionStatus, notice };
 }
 
 function stubQueueInvoke(page, settings = { copy: { queueSort: "newest" } }) {
@@ -1185,6 +1232,9 @@ function stubQueueInvoke(page, settings = { copy: { queueSort: "newest" } }) {
     }
     if (cmd === "take_notice_activation") {
       return null;
+    }
+    if (cmd === "copy_queue_items") {
+      return "copied-text";
     }
     if (cmd === "queue_query") {
       if (typeof current === "function") {
@@ -1263,6 +1313,7 @@ function enableQueueMotion(doc) {
     timers.push(fn);
     return timers.length;
   };
+  doc.defaultView.clearTimeout = () => {};
   return {
     flush() {
       const queued = timers.splice(0, timers.length);
@@ -1402,6 +1453,52 @@ test("a later single insert still makes room after startup expand", async () => 
     assert.equal(rowHas(list, "old", "is-make-room"), true);
     assert.equal(rowHas(list, "old", "is-slide-in"), false);
     assert.equal(list.classList.contains("is-sort-expand"), false);
+    clock.flush();
+    assert.equal(rowHas(list, "fresh", "is-ring-pulse"), true);
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("Copy does not add is-ring-pulse; a new capture still can", async () => {
+  const tauri = listenStub();
+  const { root, list, doc, actionStatus, notice } = mountQueueRoot();
+  const clock = enableQueueMotion(doc);
+  const invoke = stubQueueInvoke({
+    items: [{ id: "kept", title: "that from Cursor", body: "older" }],
+    nextCursor: null,
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    clock.flush();
+    const copy = list.querySelector('[data-queue-action="copy"]');
+    assert.equal(copy instanceof HTMLButtonElement, true);
+    list.dispatchEvent({ type: "click", target: copy });
+    await waitUntil(
+      () => invoke.calls.some((call) => call.cmd === "copy_queue_items"),
+      "Copy did not invoke copy_queue_items",
+    );
+    assert.equal(actionStatus.textContent, "Copied.");
+    assert.equal(notice.hidden, false);
+    clock.flush();
+    assert.equal(rowHas(list, "kept", "is-ring-pulse"), false);
+    assert.equal(rowHas(list, "kept", "is-last-copied"), false);
+    invoke.setPage({
+      items: [
+        { id: "fresh", title: "just captured", body: "fresh" },
+        { id: "kept", title: "that from Cursor", body: "older" },
+      ],
+      nextCursor: null,
+    });
+    tauri.handlers["capture-result"]({ payload: { terminal: "saved" } });
+    await waitUntil(
+      () => paintedIds(list).join() === "fresh,kept",
+      "saved capture did not insert the new card",
+    );
+    assert.equal(rowHas(list, "fresh", "is-slide-in"), true);
+    clock.flush();
+    assert.equal(rowHas(list, "fresh", "is-ring-pulse"), true);
+    assert.equal(rowHas(list, "kept", "is-ring-pulse"), false);
   } finally {
     tauri.restore();
   }
