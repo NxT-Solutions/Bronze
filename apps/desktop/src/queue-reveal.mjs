@@ -1,6 +1,8 @@
 import { MOTION, motionAllowed } from "./control.mjs";
 
 export const ARRIVE_SLIDE_MS = 380;
+export const ARRIVE_ROOM_MS = 320;
+export const ARRIVE_SLIDE_DELAY_MS = 80;
 export const ARRIVE_SCROLL_MS = 340;
 export const RING_PULSE_MS = 1000;
 export const ARRIVAL_MS = ARRIVE_SCROLL_MS;
@@ -237,40 +239,172 @@ function isQueueList(node) {
   return node?.id === "queue" || node?.id === "library-queue";
 }
 
-export function armNewCardSlide(card) {
-  if (!card || isQueueList(card) || card.dataset?.slideParked === "1") {
+function listChildren(list) {
+  if (!list) {
+    return [];
+  }
+  const kids = list.children;
+  if (Array.isArray(kids)) {
+    return kids;
+  }
+  if (kids && typeof kids.length === "number") {
+    return Array.from(kids);
+  }
+  return [];
+}
+
+export function insertNeighbor(card) {
+  const parent = card?.parentElement;
+  if (!parent || isQueueList(card)) {
+    return { neighbor: null, atStart: false };
+  }
+  const kids = listChildren(parent);
+  const index = kids.indexOf(card);
+  if (index === 0 && kids.length > 1) {
+    return { neighbor: kids[1], atStart: true };
+  }
+  if (index > 0 && index === kids.length - 1) {
+    return { neighbor: kids[index - 1], atStart: false };
+  }
+  if (index >= 0) {
+    return { neighbor: null, atStart: index === 0 };
+  }
+  if (parent.firstElementChild === card) {
+    return {
+      neighbor: card.nextElementSibling ?? kids[1] ?? null,
+      atStart: true,
+    };
+  }
+  if (parent.lastElementChild === card) {
+    return {
+      neighbor: card.previousElementSibling ?? null,
+      atStart: false,
+    };
+  }
+  return { neighbor: null, atStart: false };
+}
+
+function slideDelayMs(neighbor, atStart) {
+  if (!neighbor) {
+    return 0;
+  }
+  return atStart ? ARRIVE_SLIDE_DELAY_MS : ARRIVE_ROOM_MS;
+}
+
+function clearMotionInline(el) {
+  if (!el?.style) {
     return;
   }
+  el.style.removeProperty?.("transform");
+  el.style.removeProperty?.("margin");
+  el.style.removeProperty?.("margin-block-start");
+  el.style.removeProperty?.("margin-block-end");
+  el.style.removeProperty?.("--arrive-block");
+  el.style.removeProperty?.("--arrive-slide-delay");
+}
+
+function clearInsertMotion(card, neighbor, list) {
+  card?.classList?.remove?.("is-slide-in");
+  card?.classList?.remove?.("is-slot-pending");
+  card?.classList?.remove?.("is-slide-docked");
+  neighbor?.classList?.remove?.("is-make-room");
+  neighbor?.classList?.remove?.("is-make-room-end");
+  clearMotionInline(card);
+  clearMotionInline(neighbor);
+  list?.style?.removeProperty?.("--arrive-block");
+}
+
+function insertTiming(card) {
+  const { neighbor, atStart } = insertNeighbor(card);
+  const delayMs = slideDelayMs(neighbor, atStart);
+  return {
+    neighbor,
+    atStart,
+    delayMs,
+    roomMs: neighbor ? ARRIVE_ROOM_MS : 0,
+    slideMs: delayMs + ARRIVE_SLIDE_MS,
+  };
+}
+
+export function armNewCardSlide(card) {
+  if (!card || isQueueList(card)) {
+    return { delayMs: 0, roomMs: 0, slideMs: 0 };
+  }
+  if (card.dataset?.slideParked === "1") {
+    return insertTiming(card);
+  }
   const height = Number(card.getBoundingClientRect?.().height);
-  const gap = rowGapPx(card.parentElement);
-  if (card.style?.setProperty && Number.isFinite(height) && height > 0) {
-    card.style.setProperty("--arrive-block", `${height + gap}px`);
+  const list = card.parentElement;
+  const gap = rowGapPx(list);
+  const block = Number.isFinite(height) && height > 0 ? height + gap : 0;
+  const timing = insertTiming(card);
+  const { neighbor, atStart, delayMs, roomMs, slideMs } = timing;
+  if (list?.style?.setProperty && block > 0) {
+    list.style.setProperty("--arrive-block", `${block}px`);
+  }
+  if (card.style?.setProperty) {
+    card.style.setProperty("--arrive-slide-delay", `${delayMs}ms`);
   }
   if (card.dataset) {
     card.dataset.slideParked = "1";
   }
-  const dock = () => {
-    card.classList?.add?.("is-slide-docked");
-  };
+  if (neighbor && block > 0) {
+    neighbor.classList?.add?.("is-make-room");
+    if (!atStart) {
+      neighbor.classList?.add?.("is-make-room-end");
+      card.classList?.add?.("is-slot-pending");
+    }
+  }
+  card.classList?.add?.("is-slide-in");
   const view = card.ownerDocument?.defaultView;
-  if (typeof view?.setTimeout === "function") {
-    view.setTimeout(dock, ARRIVE_SLIDE_MS);
-  }
-  if (typeof card.addEventListener !== "function") {
-    return;
-  }
-  const onEnd = (event) => {
-    if (event?.target && event.target !== card) {
+  let roomDone = !neighbor || block <= 0;
+  let slideDone = false;
+  const finishRoom = () => {
+    if (roomDone) {
       return;
     }
-    const name = event?.animationName;
-    if (name && name !== "bronze-slide-in" && name !== "bronze-slide-in-rtl") {
-      return;
-    }
-    card.removeEventListener("animationend", onEnd);
-    dock();
+    roomDone = true;
+    card.classList?.remove?.("is-slot-pending");
+    neighbor?.classList?.remove?.("is-make-room");
+    neighbor?.classList?.remove?.("is-make-room-end");
+    clearMotionInline(neighbor);
   };
-  card.addEventListener("animationend", onEnd);
+  const finishSlide = () => {
+    if (slideDone) {
+      return;
+    }
+    slideDone = true;
+    finishRoom();
+    card.classList?.remove?.("is-slide-in");
+    card.classList?.remove?.("is-slide-docked");
+    clearMotionInline(card);
+    list?.style?.removeProperty?.("--arrive-block");
+  };
+  if (typeof view?.setTimeout === "function") {
+    if (!roomDone) {
+      view.setTimeout(finishRoom, roomMs);
+    }
+    view.setTimeout(finishSlide, slideMs);
+  }
+  if (typeof card.addEventListener === "function") {
+    const onEnd = (event) => {
+      if (event?.target && event.target !== card) {
+        return;
+      }
+      const name = event?.animationName;
+      if (
+        name &&
+        name !== "bronze-slide-in" &&
+        name !== "bronze-slide-in-rtl"
+      ) {
+        return;
+      }
+      card.removeEventListener("animationend", onEnd);
+      finishSlide();
+    };
+    card.addEventListener("animationend", onEnd);
+  }
+  return { delayMs, roomMs, slideMs };
 }
 
 export function insertionBeforeId(loadedIds, pageIds, itemId) {
@@ -305,16 +439,24 @@ export function presentNewQueueCard(
   card.classList.remove("is-entering");
   card.classList.remove("is-arriving");
   if (!motion) {
-    card.classList.remove("is-slide-in");
+    const { neighbor } = insertNeighbor(card);
+    clearInsertMotion(card, neighbor, card.parentElement);
     card.classList.remove("is-ring-pulse");
     return { behavior: "auto", scrolled: false, from: null, to: null };
   }
-  armNewCardSlide(card);
+  const plan = armNewCardSlide(card);
   if (!card.classList.contains("is-slide-in")) {
     card.classList.add("is-slide-in");
   }
   if (pulse) {
-    armArrivalRing(card);
+    const view = card.ownerDocument?.defaultView;
+    if (typeof view?.setTimeout === "function") {
+      if (plan.slideMs > 0) {
+        view.setTimeout(() => armArrivalRing(card), plan.slideMs);
+      } else {
+        armArrivalRing(card);
+      }
+    }
   } else {
     card.classList.remove("is-ring-pulse");
   }

@@ -16,14 +16,18 @@ Purpose: capture in, act on the current item.
 - The queue title sits in a reserved two-line slot (`min-height` 2lh,
   clamp + ellipsis). A later generated title swaps in place without
   changing card height. Reduce Motion adds no title motion.
-- A new card inserted into the loaded pages slides in from the
-  inline-start edge (`is-slide-in`, `--arrive` 380ms, short fade).
-  RTL slides from that same inline-start edge. Newest-first eases the
-  scrollport to the top of the loaded page over `--arrive-scroll`
-  (340ms) across animation frames. Oldest-first leaves the scrollport
-  where it is. A later refresh updates the same row. Cards already in
-  the list do not slide or shift while that card moves. The list
-  itself does not take `is-slide-in`.
+- A new card inserted at the loaded edge first makes room: the current
+  first card (newest-first) or last card (oldest-first) takes
+  `is-make-room` and the existing stack eases one card height over
+  `--arrive-room` (320ms). Then the new card slides in from the
+  inline-start edge (`is-slide-in`, `--arrive` 380ms, opacity 0 on the
+  first frame). RTL slides from that same inline-start edge. Only the
+  new card takes the side-slide. Newest-first eases the scrollport to
+  the top of the loaded page over `--arrive-scroll` (340ms) across
+  animation frames. Oldest-first leaves the scrollport where it is. A
+  later refresh updates the same row. After both shots, motion classes
+  are gone and no transform or margin remains. The list itself does
+  not take `is-slide-in`.
 - The new card, and a card just copied, can show a temporary 2px
   `--ring` outline at low opacity, offset just outside `--radius-card`.
   The outline fades three times (`bronze-copy-ring`, `--ring-pulse`
@@ -38,11 +42,11 @@ Purpose: capture in, act on the current item.
   neighbors (`--duration`, `--ease-out`). Copy, Edit, and icon hover
   do not move.
 - Reduce Motion (`prefers-reduced-motion: reduce`,
-  `data-reduce-motion`, or `data-motion="reduce"`) skips the slide, the
-  scroll ease, the pulse, and collapse. The card appears in its final
-  place with no arrival outline. Motion is never required to understand
-  the action. `data-motion="full"` plays the entrance when Play
-  animations is on.
+  `data-reduce-motion`, or `data-motion="reduce"`) skips the make-room
+  translate, the slide, the scroll ease, the pulse, and collapse. The
+  card appears in its final place with no arrival outline. Motion is
+  never required to understand the action. `data-motion="full"` plays
+  the entrance when Play animations is on.
 
 ## Settings — `apps/desktop/src/settings.html`
 
