@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "tauri": "tauri",
-    "test": "node --test src/*.test.mjs visual/config.test.mjs",
+    "test": "node --test --test-timeout=30000 --test-force-exit src/*.test.mjs visual/config.test.mjs",
     "visual": "playwright test -c visual/playwright.config.mjs",
     "visual:update": "playwright test -c visual/playwright.config.mjs --update-snapshots"
   },
