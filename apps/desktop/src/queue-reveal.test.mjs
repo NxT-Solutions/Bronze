@@ -75,7 +75,7 @@ test("keyboard at the loaded end requests the next cursor page", () => {
   assert.match(live, /shouldLoadNextOnKey/);
 });
 
-test("auto-scroll only when newest-first and already at the top", () => {
+test("newest-first follows a card at the loaded start", () => {
   const prev = ["a", "b"];
   const atTop = planNewItemFollow({
     sort: "newest",
@@ -94,7 +94,7 @@ test("auto-scroll only when newest-first and already at the top", () => {
     prevIds: prev,
     nextIds: ["n", "a", "b"],
   });
-  assert.equal(scrolledAway.scrollId, null);
+  assert.equal(scrolledAway.scrollId, "n");
   assert.equal(scrolledAway.cursor, "stay");
   assert.equal(scrolledAway.prepend, false);
 
@@ -144,39 +144,31 @@ test("oldest-first insert does not jump the cursor page", () => {
   assert.equal(trailing.classList.has("is-ring-pulse"), true);
 });
 
-test("newest-first at the top slides in and eases scroll", () => {
+test("newest-first at the top slides the new card without moving the scrollport", () => {
   const writes = [];
-  const frames = [];
   const scroller = scrollProbe(0, writes);
   const card = slideCard(96);
+  const older = slideCard(96);
   const played = presentNewQueueCard(card, scroller, {
     motion: true,
     followScroll: true,
     pulse: true,
     duration: 340,
-    frame(fn) {
-      frames.push(fn);
-      return 1;
+    frame() {
+      throw new Error("already at the top");
     },
     now: () => 0,
   });
   assert.equal(card.classList.has("is-slide-in"), true);
   assert.equal(card.classList.has("is-ring-pulse"), true);
   assert.equal(card.classList.has("is-last-copied"), false);
-  assert.equal(played.scrolled, true);
-  assert.equal(played.from, 96);
+  assert.equal(older.classList.has("is-slide-in"), false);
+  assert.equal(older.classList.has("is-ring-pulse"), false);
+  assert.equal(played.scrolled, false);
+  assert.equal(played.from, 0);
   assert.equal(played.to, 0);
-  assert.equal(scroller.scrollTop, 96);
-  assert.deepEqual(writes, [96]);
-  assert.equal(frames.length, 1);
-  frames[0](0);
-  assert.equal(scroller.scrollTop, 96);
-  const mid = frames[frames.length - 1];
-  mid(170);
-  assert.ok(scroller.scrollTop > 0 && scroller.scrollTop < 96);
-  frames[frames.length - 1](340);
   assert.equal(scroller.scrollTop, 0);
-  assert.ok(writes.indexOf(0) > 0);
+  assert.equal(writes.length, 0);
   assert.match(chrome, /--arrive:\s*380ms/);
   assert.match(chrome, /--arrive-scroll:\s*340ms/);
   assert.match(chrome, /@keyframes bronze-slide-in/);
@@ -220,7 +212,7 @@ test("play animations applies the slide and the pulse", () => {
   const writes = [];
   const frames = [];
   const card = slideCard(80);
-  const played = presentNewQueueCard(card, scrollProbe(0, writes), {
+  const played = presentNewQueueCard(card, scrollProbe(80, writes), {
     motion: motionAllowed(doc),
     followScroll: true,
     pulse: true,
@@ -234,8 +226,9 @@ test("play animations applies the slide and the pulse", () => {
   assert.equal(card.classList.has("is-slide-in"), true);
   assert.equal(card.classList.has("is-ring-pulse"), true);
   assert.equal(played.behavior, "smooth");
-  assert.deepEqual(writes, [80]);
+  assert.equal(writes.length, 0);
   frames[0](0);
+  assert.equal(writes[0], 80);
   frames[frames.length - 1](170);
   assert.ok(writes.length > 1);
   assert.ok(writes.some((value) => value > 0 && value < 80));
@@ -506,14 +499,17 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   assert.equal(rows[0].classList.has("is-ring-pulse"), true);
   assert.match(chrome, /@keyframes bronze-copy-ring/);
   assert.match(chrome, /outline-color:\s*transparent/);
-  assert.match(chrome, /outline-color:\s*var\(--ring\)/);
+  assert.match(
+    chrome,
+    /outline-color:\s*color-mix\(in srgb, var\(--ring\) 40%, transparent\)/,
+  );
   assert.match(chrome, /outline-offset:\s*2px/);
   assert.match(chrome, /--ring-pulse:\s*1000ms/);
   assert.match(
     chrome,
     /\.queue-item\.is-ring-pulse > article\s*\{[^}]*animation:\s*bronze-copy-ring calc\(var\(--ring-pulse\) \/ 3\) var\(--ease-out\) 3 both/,
   );
-  assert.match(chrome, /outline-offset:\s*8px/);
+  assert.match(chrome, /outline-offset:\s*4px/);
   assert.match(chrome, /\.is-ring-pulse > article/);
   assert.match(chrome, /border-radius:\s*var\(--radius-card\)/);
   assert.doesNotMatch(
@@ -541,7 +537,7 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   assert.match(live, /presentNewQueueCard/);
   assert.match(live, /followScroll: id === edgeId/);
   assert.match(reveal, /is-slide-in/);
-  assert.match(reveal, /primeStart: true/);
+  assert.doesNotMatch(reveal, /primeStart:\s*true/);
   const follow = live.slice(live.indexOf("const plan = planNewItemFollow"));
   assert.match(follow, /presentNewQueueCard/);
   assert.match(follow, /pulse: added\.length === 1/);

@@ -10,10 +10,10 @@ updated in the same change.
   No npm motion library, no Vite CDN, no remote `@font-face`.
 - Motion is CSS + WAAPI in existing modules (`control.mjs`), 180ms,
   `cubic-bezier(0.22, 1, 0.36, 1)`. A new queue card slides from the
-  inline-start edge over `--arrive` (380ms). Newest-first at the top
-  eases scroll over `--arrive-scroll` (340ms). The arrival ring uses
-  `--ring` and pulses three times over `--ring-pulse` (1000ms), then
-  the outline is gone. Reduce Motion skips those three and leaves no
+  inline-start edge over `--arrive` (380ms). Newest-first eases the
+  scrollport to the top of the loaded page over `--arrive-scroll`
+  (340ms). The arrival ring uses `--ring` at low opacity and pulses
+  three times over `--ring-pulse` (1000ms), then the outline is gone. Reduce Motion skips those three and leaves no
   arrival outline. `:focus-visible` is a separate ring.
 - Event-tap callbacks never touch AX, DB, windows, clipboard, icons,
   or models.

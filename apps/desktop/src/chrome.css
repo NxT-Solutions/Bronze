@@ -831,8 +831,8 @@ pre {
   }
 
   50% {
-    outline-color: var(--ring);
-    outline-offset: 8px;
+    outline-color: color-mix(in srgb, var(--ring) 40%, transparent);
+    outline-offset: 4px;
   }
 }
 

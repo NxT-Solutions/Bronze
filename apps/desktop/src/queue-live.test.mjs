@@ -500,7 +500,7 @@ test("a live insert updates the loaded edge and leaves a later page alone", () =
       prevIds: ["b", "c"],
       nextIds: newest.items.map((item) => item.id),
     }).scrollId,
-    null,
+    "a",
   );
 
   const oldestOpen = {

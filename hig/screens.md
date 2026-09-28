@@ -15,16 +15,17 @@ Purpose: capture in, act on the current item.
 - Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
 - A new card inserted into the loaded pages slides in from the
   inline-start edge (`is-slide-in`, `--arrive` 380ms, short fade).
-  RTL slides from that same inline-start edge. Newest-first, already
-  within 24px of the top, eases the scrollport to that card over
-  `--arrive-scroll` (340ms) across animation frames. Oldest-first
-  leaves the scrollport where it is. A later refresh updates the same
-  row. Cards already in the list do not slide.
+  RTL slides from that same inline-start edge. Newest-first eases the
+  scrollport to the top of the loaded page over `--arrive-scroll`
+  (340ms) across animation frames. Oldest-first leaves the scrollport
+  where it is. A later refresh updates the same row. Cards already in
+  the list do not slide.
 - The new card, and a card just copied, can show a temporary 2px
-  `--ring` outline outside `--radius-card`. The outline fades three
-  times (`bronze-copy-ring`, `--ring-pulse` 1000ms) and is gone when
-  the pulse ends. It is not the keyboard focus ring. `:focus-visible`
-  stays on the focused control. Visible copy feedback is the action tip.
+  `--ring` outline at low opacity, offset just outside `--radius-card`.
+  The outline fades three times (`bronze-copy-ring`, `--ring-pulse`
+  1000ms) and is gone when the pulse ends. It is not the keyboard focus
+  ring. `:focus-visible` stays on the focused control. Visible copy
+  feedback is the action tip.
 - Complete / Skip / Trash leave the list: height collapse
   (`grid-template-rows` 1fr→0fr) plus fade, then the node is removed.
   Complete slides slightly up. Skip fades. Trash shrinks. Tokens are
