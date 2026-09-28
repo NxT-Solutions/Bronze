@@ -1204,7 +1204,9 @@ article [data-slot="title"] {
   opacity: 1;
 }
 
-#queue article.is-title-revealing:not(.is-title-pending) [data-slot="title-text"] {
+#queue
+  article.is-title-revealing:not(.is-title-pending)
+  [data-slot="title-text"] {
   animation: bronze-title-in var(--title-fade) var(--ease-out);
 }
 
