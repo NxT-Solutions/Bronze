@@ -211,8 +211,8 @@ test("newest-first at the top slides the new card without moving the scrollport"
   assert.match(chrome, /--arrive-room:\s*320ms/);
   assert.match(chrome, /--arrive-scroll:\s*340ms/);
   assert.match(chrome, /--sort-flip:\s*200ms/);
-  assert.match(chrome, /--sort-collapse:\s*220ms/);
-  assert.match(chrome, /--sort-expand:\s*280ms/);
+  assert.match(chrome, /--sort-collapse:\s*380ms/);
+  assert.match(chrome, /--sort-expand:\s*480ms/);
   assert.match(
     chrome,
     /\.queue-sort-toggle \[data-sort-glyph\][\s\S]*transition:[\s\S]*transform var\(--sort-flip\)/,
@@ -726,7 +726,7 @@ test("the copied pulse is temporary and is not the focus ring", () => {
 });
 
 test("sort reflow collapses then expands from the first card", () => {
-  assert.equal(SORT_COLLAPSE_MS + SORT_EXPAND_MS, 500);
+  assert.equal(SORT_COLLAPSE_MS + SORT_EXPAND_MS, 860);
   assert.equal(sortCollapseWaitMs(2), SORT_COLLAPSE_MS + SORT_STAGGER_MS);
   assert.deepEqual(sortReflowPlan(true, 3), { collapse: true, expand: true });
   assert.deepEqual(sortReflowPlan(false, 3), {

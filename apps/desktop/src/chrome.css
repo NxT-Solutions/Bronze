@@ -52,8 +52,8 @@
   --arrive-room: 320ms;
   --arrive-scroll: 340ms;
   --sort-flip: 200ms;
-  --sort-collapse: 220ms;
-  --sort-expand: 280ms;
+  --sort-collapse: 380ms;
+  --sort-expand: 480ms;
   --ring-pulse: 1000ms;
   --ease: 180ms var(--ease-out);
 
