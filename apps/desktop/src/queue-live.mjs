@@ -20,6 +20,9 @@ import {
 } from "./queue-motion.mjs";
 import {
   ARRIVE_SCROLL_MS,
+  beginSortCollapse,
+  beginSortExpand,
+  clearSortReflow,
   findQueueCard,
   isNearLoadedStart,
   markLastCopied,
@@ -28,6 +31,8 @@ import {
   queueScrollParent,
   revealQueueItem,
   shouldLoadNextOnKey,
+  sortReflowPlan,
+  waitSortPhase,
 } from "./queue-reveal.mjs";
 import {
   applyQueueSortControl,
@@ -752,6 +757,10 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
         catalogMessage("queue.sort.showOldest") || "Show oldest first",
       "queue.sort.showNewest":
         catalogMessage("queue.sort.showNewest") || "Show newest first",
+      "settings.field.queueSort.newest":
+        catalogMessage("settings.field.queueSort.newest") || "Newest first",
+      "settings.field.queueSort.oldest":
+        catalogMessage("settings.field.queueSort.oldest") || "Oldest first",
     });
   }
 
@@ -940,6 +949,15 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     }
     list.dataset.queueSort = activeSort;
     paintSortToggle(activeSort);
+    const sortChanged = previousSort !== sort;
+    const motion = motionAllowed(list.ownerDocument);
+    const collapsing =
+      sortChanged && sortReflowPlan(motion, prevIds.length).collapse
+        ? waitSortPhase(
+            list.ownerDocument,
+            beginSortCollapse(list).durationMs,
+          )
+        : Promise.resolve();
     const action = opts.action;
     if (action === "complete" || action === "skip" || action === "trash") {
       state = removeQueueItem(state, opts.id);
@@ -969,11 +987,15 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (gen !== refreshGen) {
       return false;
     }
+    await collapsing;
+    if (gen !== refreshGen) {
+      return false;
+    }
     const paintOpts = { ...opts };
     if (insertSlide) {
       paintOpts.slide = true;
     }
-    if (previousSort !== sort) {
+    if (sortChanged) {
       paintOpts.action = "replace";
     }
     insertSlide = false;
@@ -991,26 +1013,27 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       nextIds,
       hasMore: Boolean(state.nextCursor),
     });
-    const motion = motionAllowed(list.ownerDocument);
     const added = nextIds.filter((id) => id && !prevIds.includes(id));
     const edgeId =
       plan.scrollId && plan.cursor === "stay" && !plan.prepend
         ? plan.scrollId
         : null;
-    if (previousSort !== sort) {
-      list.classList?.remove?.("is-sort-reflow");
-      if (motion && nextIds.length > 0) {
+    if (sortChanged) {
+      if (sortReflowPlan(motion, nextIds.length).expand) {
         list.getBoundingClientRect?.();
-        list.classList?.add?.("is-sort-reflow");
+        beginSortExpand(list);
+      } else {
+        clearSortReflow(list);
       }
-    }
-    for (const id of added) {
-      presentNewQueueCard(findQueueCard(list, id), scroller, {
-        motion,
-        followScroll: id === edgeId,
-        pulse: added.length === 1,
-        duration: ARRIVE_SCROLL_MS,
-      });
+    } else {
+      for (const id of added) {
+        presentNewQueueCard(findQueueCard(list, id), scroller, {
+          motion,
+          followScroll: id === edgeId,
+          pulse: added.length === 1,
+          duration: ARRIVE_SCROLL_MS,
+        });
+      }
     }
     if (added.length === 1) {
       lastCopiedId = added[0];
@@ -1310,6 +1333,10 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       try {
         await persistQueueSort(invokeFn, null, next);
       } catch {
+        return;
+      }
+      if (activeSort === next) {
+        paintSortToggle(next);
         return;
       }
       activeSort = next;

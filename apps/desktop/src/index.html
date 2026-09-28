@@ -131,8 +131,7 @@
           data-queue-sort="newest"
           aria-label="Show oldest first"
           data-i18n-aria-label="queue.sort.showOldest"
-          title="Show oldest first"
-          data-i18n-title="queue.sort.showOldest"
+          aria-describedby="queue-sort-state"
         >
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
             <g data-sort-glyph="newest">
@@ -166,6 +165,18 @@
               />
             </g>
           </svg>
+          <span
+            id="queue-sort-state"
+            class="visually-hidden"
+            data-slot="sort-tip"
+            data-i18n="settings.field.queueSort.newest"
+            >Newest first</span>
+          <span
+            class="icon-tip"
+            data-slot="sort-tip-visual"
+            aria-hidden="true"
+            data-i18n="settings.field.queueSort.newest"
+            >Newest first</span>
         </button>
       </div>
       <p id="queue-empty" class="empty-state" data-i18n="panel.empty">

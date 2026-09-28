@@ -35,6 +35,11 @@ test("queue action accessible names contain visible labels", () => {
   assert.match(html, /data-i18n="queue.item.title">\s*Item\s*</);
   assert.match(html, /data-i18n-aria-label="queue.sort.showOldest"/);
   assert.match(html, /aria-label="Show oldest first"/);
+  assert.match(html, /aria-describedby="queue-sort-state"/);
+  assert.match(
+    html,
+    /id="queue-sort-state"[\s\S]*data-i18n="settings.field.queueSort.newest"/,
+  );
   assert.match(html, /<button\b[^>]*type="button"[^>]*id="queue-sort-toggle"/);
 });
 

@@ -6,6 +6,8 @@ export const ARRIVE_SLIDE_DELAY_MS = 80;
 export const ARRIVE_SCROLL_MS = 340;
 export const RING_PULSE_MS = 1000;
 export const ARRIVAL_MS = ARRIVE_SCROLL_MS;
+export const SORT_COLLAPSE_MS = 220;
+export const SORT_EXPAND_MS = 280;
 
 function armArrivalRing(card) {
   if (!card?.classList) {
@@ -65,6 +67,113 @@ export function readQueueSort(list) {
     return "oldest";
   }
   return normalizeQueueSort(explicit);
+}
+
+export function sortReflowPlan(motion, loadedCount) {
+  const play = Boolean(motion && loadedCount > 0);
+  return { collapse: play, expand: play };
+}
+
+function sortRows(list) {
+  if (!list) {
+    return [];
+  }
+  if (list.children && typeof list.children.length === "number") {
+    return Array.from(list.children).filter((row) => row?.classList);
+  }
+  if (typeof list.querySelectorAll === "function") {
+    return Array.from(list.querySelectorAll(".queue-item"));
+  }
+  return [];
+}
+
+function clearSortInline(el) {
+  el?.style?.removeProperty?.("--sort-shift");
+  el?.style?.removeProperty?.("--sort-stagger");
+}
+
+export function clearSortReflow(list) {
+  list?.classList?.remove?.("is-sort-reflow");
+  list?.classList?.remove?.("is-sort-collapse");
+  list?.classList?.remove?.("is-sort-expand");
+  for (const row of sortRows(list)) {
+    row.classList?.remove?.("is-sort-collapse");
+    row.classList?.remove?.("is-sort-expand");
+    row.classList?.remove?.("is-sort-anchor");
+    row.classList?.remove?.("is-sort-lead");
+    clearSortInline(row);
+  }
+}
+
+function measureSortShift(rows) {
+  const firstTop = rows[0]?.getBoundingClientRect?.()?.top;
+  const usable = Number.isFinite(firstTop);
+  rows.forEach((row, index) => {
+    const top = row.getBoundingClientRect?.()?.top;
+    const shift =
+      usable && Number.isFinite(top) ? Math.max(0, top - firstTop) : 0;
+    row.style?.setProperty?.("--sort-shift", `${shift}px`);
+    row.style?.setProperty?.("--sort-stagger", `${Math.min(index, 5) * 18}ms`);
+  });
+}
+
+export function beginSortCollapse(list) {
+  const rows = sortRows(list);
+  if (!list?.classList || rows.length === 0) {
+    return { played: false, durationMs: 0 };
+  }
+  clearSortReflow(list);
+  measureSortShift(rows);
+  list.classList.add("is-sort-reflow");
+  list.classList.add("is-sort-collapse");
+  rows.forEach((row, index) => {
+    row.classList.add("is-sort-collapse");
+    if (index === 0) {
+      row.classList.add("is-sort-anchor");
+    }
+  });
+  return { played: true, durationMs: SORT_COLLAPSE_MS };
+}
+
+export function beginSortExpand(list) {
+  const rows = sortRows(list);
+  if (!list?.classList || rows.length === 0) {
+    clearSortReflow(list);
+    return { played: false, durationMs: 0 };
+  }
+  list.classList.remove("is-sort-collapse");
+  for (const row of rows) {
+    row.classList.remove("is-sort-collapse");
+    row.classList.remove("is-sort-anchor");
+  }
+  measureSortShift(rows);
+  list.classList.add("is-sort-reflow");
+  list.classList.add("is-sort-expand");
+  rows.forEach((row, index) => {
+    row.classList.add("is-sort-expand");
+    if (index === 0) {
+      row.classList.add("is-sort-lead");
+    }
+  });
+  const view = list.ownerDocument?.defaultView;
+  if (typeof view?.setTimeout === "function") {
+    view.setTimeout(() => {
+      if (list.classList?.contains?.("is-sort-expand")) {
+        clearSortReflow(list);
+      }
+    }, SORT_EXPAND_MS + 90);
+  }
+  return { played: true, durationMs: SORT_EXPAND_MS };
+}
+
+export function waitSortPhase(doc, durationMs) {
+  const view = doc?.defaultView;
+  if (!durationMs || typeof view?.setTimeout !== "function") {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    view.setTimeout(resolve, durationMs);
+  });
 }
 
 export function isNearLoadedStart(scroller, threshold = 24) {

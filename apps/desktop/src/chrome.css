@@ -51,6 +51,8 @@
   --arrive-room: 320ms;
   --arrive-scroll: 340ms;
   --sort-flip: 200ms;
+  --sort-collapse: 220ms;
+  --sort-expand: 280ms;
   --ring-pulse: 1000ms;
   --ease: 180ms var(--ease-out);
 
@@ -772,9 +774,11 @@ pre {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  overflow: visible;
 }
 
 .queue-sort-toggle {
+  position: relative;
   width: var(--control-h);
   height: var(--control-h);
   min-width: var(--control-h);
@@ -782,6 +786,7 @@ pre {
   padding: 0;
   border-radius: var(--radius-control);
   color: var(--muted-foreground);
+  overflow: visible;
 }
 
 .queue-sort-toggle svg {
@@ -814,6 +819,51 @@ pre {
 .queue-sort-toggle[data-queue-sort="oldest"] [data-sort-glyph="oldest"] {
   opacity: 1;
   transform: none;
+}
+
+.queue-sort-toggle .icon-tip {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  bottom: calc(100% + 5px);
+  transform: translateX(-50%);
+  min-width: max-content;
+  max-width: min(12rem, 70vw);
+  padding: 0.22rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow);
+  font-size: var(--text-micro);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0;
+  word-spacing: normal;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.queue-sort-toggle .icon-tip::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 7px;
+}
+
+.queue-sort-toggle:hover:not(:disabled) .icon-tip,
+.queue-sort-toggle:focus-visible:not(:disabled) .icon-tip,
+.queue-sort-toggle:not(:disabled):has(.icon-tip:hover) .icon-tip {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.queue-sort-toggle[data-tips-dismissed] .icon-tip {
+  opacity: 0;
+  pointer-events: none;
 }
 
 #queue,
@@ -983,15 +1033,68 @@ li.is-entering {
 
 #queue.is-sort-reflow,
 #library-queue.is-sort-reflow {
-  animation: bronze-sort-reflow var(--sort-flip) var(--ease-out);
+  animation: none;
+  transform: none;
 }
 
-@keyframes bronze-sort-reflow {
+.queue-item.is-sort-collapse {
+  z-index: 1;
+  pointer-events: none;
+  animation: bronze-sort-collapse var(--sort-collapse) var(--ease-out) both;
+  animation-delay: var(--sort-stagger, 0ms);
+}
+
+.queue-item.is-sort-anchor.is-sort-collapse {
+  z-index: 2;
+}
+
+.queue-item.is-sort-expand {
+  transform-origin: top center;
+  animation: bronze-sort-expand var(--sort-expand) var(--ease-out) both;
+  animation-delay: var(--sort-stagger, 0ms);
+}
+
+.queue-item.is-sort-lead.is-sort-expand {
+  animation-name: bronze-sort-expand-lead;
+}
+
+@keyframes bronze-sort-collapse {
+  0% {
+    transform: none;
+    opacity: 1;
+  }
+
+  60% {
+    transform: translateY(calc(-1 * var(--sort-shift, 0px)));
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(calc(-1 * var(--sort-shift, 0px)));
+    opacity: 0;
+  }
+}
+
+@keyframes bronze-sort-expand {
   from {
-    opacity: 0.4;
+    transform: translateY(calc(-1 * var(--sort-shift, 0px)));
+    opacity: 0;
   }
 
   to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes bronze-sort-expand-lead {
+  from {
+    transform: scaleY(0.92);
+    opacity: 0;
+  }
+
+  to {
+    transform: none;
     opacity: 1;
   }
 }
@@ -2435,9 +2538,15 @@ html[data-motion="reduce"] .queue-sort-toggle [data-sort-glyph],
 
 html[data-motion="reduce"] #queue.is-sort-reflow,
 html[data-motion="reduce"] #library-queue.is-sort-reflow,
+html[data-motion="reduce"] .queue-item.is-sort-collapse,
+html[data-motion="reduce"] .queue-item.is-sort-expand,
 [data-reduce-motion] #queue.is-sort-reflow,
-[data-reduce-motion] #library-queue.is-sort-reflow {
+[data-reduce-motion] #library-queue.is-sort-reflow,
+[data-reduce-motion] .queue-item.is-sort-collapse,
+[data-reduce-motion] .queue-item.is-sort-expand {
   animation: none;
+  transform: none;
+  opacity: 1;
 }
 
 @media (prefers-contrast: more) {

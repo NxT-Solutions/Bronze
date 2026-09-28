@@ -46,6 +46,12 @@ export function queueSortActionKey(raw) {
     : "queue.sort.showNewest";
 }
 
+export function queueSortStateKey(raw) {
+  return parseQueueSort(raw) === "newest"
+    ? "settings.field.queueSort.newest"
+    : "settings.field.queueSort.oldest";
+}
+
 export function patchSettingsQueueSort(settings, sort) {
   const queueSort = parseQueueSort(sort);
   return {
@@ -54,21 +60,40 @@ export function patchSettingsQueueSort(settings, sort) {
   };
 }
 
+function applySortTip(node, stateKey, stateLabel) {
+  if (!node) {
+    return;
+  }
+  node.setAttribute?.("data-i18n", stateKey);
+  if (typeof stateLabel === "string" && stateLabel) {
+    node.textContent = stateLabel;
+  }
+}
+
 export function applyQueueSortControl(button, sort, messages = {}) {
   const current = parseQueueSort(sort);
   if (!button) {
     return current;
   }
-  const key = queueSortActionKey(current);
-  const label = messages[key];
+  const actionKey = queueSortActionKey(current);
+  const stateKey = queueSortStateKey(current);
+  const actionLabel = messages[actionKey];
+  const stateLabel = messages[stateKey];
   if (button.dataset) {
     button.dataset.queueSort = current;
   }
-  button.setAttribute?.("data-i18n-aria-label", key);
-  button.setAttribute?.("data-i18n-title", key);
-  if (typeof label === "string" && label) {
-    button.setAttribute?.("aria-label", label);
-    button.setAttribute?.("title", label);
+  button.setAttribute?.("data-i18n-aria-label", actionKey);
+  button.removeAttribute?.("title");
+  button.removeAttribute?.("data-i18n-title");
+  if (typeof actionLabel === "string" && actionLabel) {
+    button.setAttribute?.("aria-label", actionLabel);
+  }
+  const tip = button.querySelector?.("[data-slot=sort-tip]");
+  const visual = button.querySelector?.("[data-slot=sort-tip-visual]");
+  applySortTip(tip, stateKey, stateLabel);
+  applySortTip(visual, stateKey, stateLabel);
+  if (tip?.id) {
+    button.setAttribute?.("aria-describedby", tip.id);
   }
   return current;
 }

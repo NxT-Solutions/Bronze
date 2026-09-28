@@ -12,6 +12,8 @@ import {
   ARRIVE_ROOM_MS,
   ARRIVE_SLIDE_DELAY_MS,
   ARRIVE_SLIDE_MS,
+  beginSortCollapse,
+  beginSortExpand,
   insertionBeforeId,
   isNearLoadedStart,
   markLastCopied,
@@ -21,6 +23,9 @@ import {
   revealQueueItem,
   scrollDelta,
   shouldLoadNextOnKey,
+  SORT_COLLAPSE_MS,
+  SORT_EXPAND_MS,
+  sortReflowPlan,
   travelScroll,
 } from "./queue-reveal.mjs";
 
@@ -203,6 +208,8 @@ test("newest-first at the top slides the new card without moving the scrollport"
   assert.match(chrome, /--arrive-room:\s*320ms/);
   assert.match(chrome, /--arrive-scroll:\s*340ms/);
   assert.match(chrome, /--sort-flip:\s*200ms/);
+  assert.match(chrome, /--sort-collapse:\s*220ms/);
+  assert.match(chrome, /--sort-expand:\s*280ms/);
   assert.match(
     chrome,
     /\.queue-sort-toggle \[data-sort-glyph\][\s\S]*transition:[\s\S]*transform var\(--sort-flip\)/,
@@ -211,7 +218,22 @@ test("newest-first at the top slides the new card without moving the scrollport"
     chrome,
     /\.queue-sort-toggle\[data-queue-sort="newest"\] \[data-sort-glyph="oldest"\][\s\S]{0,80}display:\s*none/,
   );
-  assert.match(chrome, /#queue\.is-sort-reflow[\s\S]*bronze-sort-reflow/);
+  assert.match(chrome, /#queue\.is-sort-reflow/);
+  assert.match(chrome, /@keyframes bronze-sort-collapse/);
+  assert.match(chrome, /@keyframes bronze-sort-expand/);
+  assert.match(chrome, /@keyframes bronze-sort-expand-lead/);
+  assert.match(
+    chrome,
+    /\.queue-item\.is-sort-collapse[\s\S]*bronze-sort-collapse var\(--sort-collapse\)/,
+  );
+  assert.match(
+    chrome,
+    /\.queue-item\.is-sort-expand[\s\S]*bronze-sort-expand var\(--sort-expand\)/,
+  );
+  assert.doesNotMatch(
+    chrome,
+    /#queue\.is-sort-reflow[\s\S]{0,120}translateX/,
+  );
   assert.match(chrome, /@keyframes bronze-slide-in/);
   assert.match(chrome, /translateX\(-100%\)/);
   assert.match(chrome, /@keyframes bronze-slide-in-rtl/);
@@ -673,7 +695,10 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   const follow = live.slice(live.indexOf("const plan = planNewItemFollow"));
   assert.match(follow, /hasMore/);
   assert.match(live, /is-sort-reflow/);
-  assert.match(live, /previousSort !== sort/);
+  assert.match(live, /beginSortCollapse/);
+  assert.match(live, /beginSortExpand/);
+  assert.match(live, /sortReflowPlan/);
+  assert.match(live, /sortChanged/);
   assert.match(follow, /presentNewQueueCard/);
   assert.match(follow, /pulse: added\.length === 1/);
   assert.match(follow, /markLastCopied\(list, added\[0\]/);
@@ -695,6 +720,54 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   assert.doesNotMatch(live, /queue_page_for_item/);
   assert.doesNotMatch(live, /list_overview_items/);
   assert.doesNotMatch(live, /loadNextPage|advanceCursor|prependPage/);
+});
+
+test("sort reflow collapses then expands from the first card", () => {
+  assert.equal(SORT_COLLAPSE_MS + SORT_EXPAND_MS, 500);
+  assert.deepEqual(sortReflowPlan(true, 3), { collapse: true, expand: true });
+  assert.deepEqual(sortReflowPlan(false, 3), {
+    collapse: false,
+    expand: false,
+  });
+  assert.deepEqual(sortReflowPlan(true, 0), { collapse: false, expand: false });
+
+  const first = slideCard(80);
+  const second = slideCard(80);
+  second.getBoundingClientRect = () => ({ height: 80, top: 96, bottom: 176 });
+  const list = attachRows(first, second);
+  list.classList = classNames();
+  const order = [];
+  const add = list.classList.add.bind(list.classList);
+  list.classList.add = (name) => {
+    order.push(name);
+    add(name);
+  };
+
+  const collapse = beginSortCollapse(list);
+  assert.equal(collapse.played, true);
+  assert.equal(collapse.durationMs, SORT_COLLAPSE_MS);
+  assert.equal(list.classList.has("is-sort-collapse"), true);
+  assert.equal(list.classList.has("is-sort-expand"), false);
+  assert.equal(first.classList.has("is-sort-collapse"), true);
+  assert.equal(first.classList.has("is-sort-anchor"), true);
+  assert.equal(second.classList.has("is-sort-collapse"), true);
+  assert.equal(second.style.getPropertyValue("--sort-shift"), "96px");
+
+  const expand = beginSortExpand(list);
+  assert.equal(expand.played, true);
+  assert.equal(expand.durationMs, SORT_EXPAND_MS);
+  assert.equal(list.classList.has("is-sort-collapse"), false);
+  assert.equal(list.classList.has("is-sort-expand"), true);
+  assert.equal(first.classList.has("is-sort-lead"), true);
+  assert.equal(first.classList.has("is-sort-collapse"), false);
+  assert.deepEqual(
+    order.filter((name) => name === "is-sort-collapse" || name === "is-sort-expand"),
+    ["is-sort-collapse", "is-sort-expand"],
+  );
+  assert.match(
+    chrome,
+    /html\[data-motion="reduce"\] \.queue-item\.is-sort-collapse[\s\S]*animation:\s*none/,
+  );
 });
 
 function classNames() {
