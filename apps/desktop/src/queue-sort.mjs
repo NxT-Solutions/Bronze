@@ -75,10 +75,9 @@ export function applyQueueSortControl(button, sort, messages = {}) {
 
 export async function persistQueueSort(invokeFn, settings, sort) {
   const queueSort = parseQueueSort(sort);
-  const next = patchSettingsQueueSort(settings, queueSort);
-  const saved = await invokeFn("save_settings_v1", { settings: next });
+  const saved = await invokeFn("set_queue_sort", { sort: queueSort });
   await emitQueueSortChanged({ sort: queueSort });
-  return saved ?? next;
+  return saved ?? patchSettingsQueueSort(settings, queueSort);
 }
 
 export function emitQueueSortChanged(payload) {

@@ -916,12 +916,17 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       .map((el) => el.dataset?.itemId)
       .filter(Boolean);
     let sort = opts.sort || activeSort;
-    try {
-      const settings = await invokeFn("load_settings_v1");
-      sort = parseQueueSort(settings?.copy?.queueSort);
-    } catch {
-      sort = opts.sort || activeSort;
+    if (opts.resetPage && opts.sort) {
+      sort = parseQueueSort(opts.sort);
+    } else {
+      try {
+        const settings = await invokeFn("load_settings_v1");
+        sort = parseQueueSort(settings?.copy?.queueSort);
+      } catch {
+        sort = opts.sort || activeSort;
+      }
     }
+    const previousSort = activeSort;
     if (opts.resetPage || sort !== activeSort) {
       activeSort = sort;
       state = {
@@ -981,6 +986,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       nearStart,
       prevIds,
       nextIds,
+      hasMore: Boolean(state.nextCursor),
     });
     const motion = motionAllowed(list.ownerDocument);
     const added = nextIds.filter((id) => id && !prevIds.includes(id));
@@ -988,6 +994,13 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       plan.scrollId && plan.cursor === "stay" && !plan.prepend
         ? plan.scrollId
         : null;
+    if (previousSort !== sort) {
+      list.classList?.remove?.("is-sort-reflow");
+      if (motion && nextIds.length > 0) {
+        list.getBoundingClientRect?.();
+        list.classList?.add?.("is-sort-reflow");
+      }
+    }
     for (const id of added) {
       presentNewQueueCard(findQueueCard(list, id), scroller, {
         motion,
@@ -1291,13 +1304,11 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   sortToggle?.addEventListener("click", () => {
     runBusy(sortToggle, async () => {
       const next = nextQueueSort(activeSort);
-      let current;
       try {
-        current = await invokeFn("load_settings_v1");
+        await persistQueueSort(invokeFn, null, next);
       } catch {
         return;
       }
-      await persistQueueSort(invokeFn, current, next);
       activeSort = next;
       noteQueueSort(next);
       paintSortToggle(next);

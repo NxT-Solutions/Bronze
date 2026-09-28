@@ -83,15 +83,25 @@ export function shouldLoadNextOnKey({ key, onLastCard, hasCursor } = {}) {
   return Boolean(atEnd && onLastCard && hasCursor);
 }
 
-export function planNewItemFollow({ sort, prevIds = [], nextIds = [] } = {}) {
+export function planNewItemFollow({
+  sort,
+  prevIds = [],
+  nextIds = [],
+  hasMore = false,
+} = {}) {
   const mode = typeof sort === "string" ? normalizeQueueSort(sort) : "oldest";
   const prev = new Set(prevIds);
   const added = nextIds.filter((id) => id && !prev.has(id));
   const atLoadedStart = added.length === 1 && nextIds[0] === added[0];
+  const atLoadedEnd =
+    added.length === 1 && nextIds[nextIds.length - 1] === added[0];
   if (mode === "newest" && atLoadedStart) {
-    return { scrollId: added[0], cursor: "stay", prepend: false };
+    return { scrollId: added[0], cursor: "stay", prepend: false, room: "start" };
   }
-  return { scrollId: null, cursor: "stay", prepend: false };
+  if (mode === "oldest" && atLoadedEnd && !hasMore) {
+    return { scrollId: null, cursor: "stay", prepend: false, room: "end" };
+  }
+  return { scrollId: null, cursor: "stay", prepend: false, room: null };
 }
 
 export function scrollDelta(cardRect, viewRect) {

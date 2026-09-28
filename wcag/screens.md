@@ -26,10 +26,12 @@ Purpose: capture in, act on the current item.
 - A new card may ease existing cards down to make room, then slide in
   from the inline-start edge and show a temporary `--ring` pulse
   (three cycles in 1s, then gone). The pulse is not the focus
-  indicator. Reduce Motion, `data-reduce-motion`, and
-  `data-motion="reduce"` skip the make-room translate, the slide, the
-  eased scroll, and the pulse. The card is in the list either way
-  (2.2.2, 2.3.1, 2.3.3). This is not a WCAG claim.
+  indicator. The sort button is a real control whose accessible name
+  tracks newest vs oldest. Changing sort fades the first page once.
+  Reduce Motion, `data-reduce-motion`, and `data-motion="reduce"` skip
+  the make-room translate, the slide, the eased scroll, the pulse,
+  the icon transform, and the sort fade. The card is in the list
+  either way (2.2.2, 2.3.1, 2.3.3). This is not a WCAG claim.
 
 ## Settings — `apps/desktop/src/settings.html`
 

@@ -26,6 +26,7 @@ import {
 import { planNewItemFollow } from "./queue-reveal.mjs";
 import {
   applyQueueSortControl,
+  patchSettingsQueueSort,
   persistQueueSort,
   queueListArgs,
   queueSortFromEvent,
@@ -576,6 +577,23 @@ test("a live insert updates the loaded edge and leaves a later page alone", () =
     }).scrollId,
     null,
   );
+  assert.equal(
+    planNewItemFollow({
+      sort: "oldest",
+      prevIds: ["a", "b"],
+      nextIds: appended.items.map((item) => item.id),
+    }).room,
+    "end",
+  );
+  assert.equal(
+    planNewItemFollow({
+      sort: "oldest",
+      prevIds: ["a", "b"],
+      nextIds: appended.items.map((item) => item.id),
+      hasMore: true,
+    }).room,
+    null,
+  );
   assert.match(live, /liveQueueFetchPlan/);
   assert.match(live, /extendEnd/);
   assert.match(live, /applyLiveWindow/);
@@ -605,6 +623,7 @@ test("a status change patches the visible row without moving it", () => {
   assert.equal(queueSortFromEvent(null), null);
   assert.match(live, /queueSortFromEvent/);
   assert.match(live, /persistQueueSort/);
+  assert.match(live, /set_queue_sort/);
   assert.match(live, /#queue-sort-toggle/);
   const copyAt = live.indexOf('action === "copy"');
   const assignAt = live.indexOf("lastCopiedId = id", copyAt);
@@ -632,6 +651,11 @@ test("queue sort toggle writes newest then oldest and reloads the list", async (
   assert.match(chrome, /\.queue-sort-bar[\s\S]*justify-content:\s*flex-end/);
   assert.match(chrome, /\.queue-sort-toggle[\s\S]*--control-h/);
   assert.match(chrome, /\.queue-sort-toggle[\s\S]*--radius-control/);
+  assert.match(chrome, /--sort-flip:\s*200ms/);
+  assert.match(
+    chrome,
+    /html\[data-motion="reduce"\] \.queue-sort-toggle \[data-sort-glyph\][\s\S]*transition:\s*none/,
+  );
   assert.doesNotMatch(
     chrome,
     /\.queue-sort-toggle[\s\S]{0,240}outline:\s*none/,
@@ -669,8 +693,8 @@ test("queue sort toggle writes newest then oldest and reloads the list", async (
     if (cmd === "load_settings_v1") {
       return structuredClone(store);
     }
-    if (cmd === "save_settings_v1") {
-      store = structuredClone(args.settings);
+    if (cmd === "set_queue_sort") {
+      store = patchSettingsQueueSort(store, args.sort);
       saved.push(store.copy.queueSort);
       return store;
     }
@@ -909,6 +933,12 @@ function createMountDocument() {
         }
         return true;
       },
+      click() {
+        if (el.disabled) {
+          return;
+        }
+        el.dispatchEvent({ type: "click", target: el });
+      },
     };
     Object.defineProperty(el, "textContent", {
       get() {
@@ -1003,6 +1033,12 @@ function mountQueueRoot() {
   submit.type = "submit";
   form.appendChild(editor);
   form.appendChild(submit);
+  const sortToggle = doc.createElement("button");
+  sortToggle.type = "button";
+  sortToggle.id = "queue-sort-toggle";
+  sortToggle.className = "queue-sort-toggle";
+  sortToggle.dataset.queueSort = "newest";
+  sortToggle.setAttribute("aria-label", "Show oldest first");
   const empty = doc.createElement("p");
   empty.id = "queue-empty";
   empty.hidden = false;
@@ -1027,33 +1063,43 @@ function mountQueueRoot() {
   profile.id = "output-profile";
   profile.value = "plain";
   root.appendChild(form);
+  root.appendChild(sortToggle);
   root.appendChild(empty);
   root.appendChild(list);
   root.appendChild(template);
   root.appendChild(profile);
-  return { root, list, empty, doc };
+  return { root, list, empty, sortToggle, doc };
 }
 
-function stubQueueInvoke(page) {
+function stubQueueInvoke(page, settings = { copy: { queueSort: "newest" } }) {
   const calls = [];
   let current = page;
+  const store = settings;
   const invoke = async (cmd, args) => {
     calls.push({ cmd, args });
     if (cmd === "load_settings_v1") {
-      return { copy: { queueSort: "newest" } };
+      return structuredClone(store);
+    }
+    if (cmd === "set_queue_sort") {
+      store.copy = { ...(store.copy ?? {}), queueSort: args.sort };
+      return structuredClone(store);
     }
     if (cmd === "take_notice_activation") {
       return null;
     }
     if (cmd === "queue_query") {
       if (typeof current === "function") {
-        return current();
+        return current(args);
+      }
+      if (current?.[args?.sort] && current.newest) {
+        return current[args.sort];
       }
       return current;
     }
     throw new Error(`unexpected ${cmd}`);
   };
   invoke.calls = calls;
+  invoke.store = store;
   invoke.setPage = (next) => {
     current = next;
   };
@@ -1075,6 +1121,10 @@ function listenStub() {
         return Promise.resolve(() => {
           delete handlers[name];
         });
+      },
+      emit(name, payload) {
+        handlers[name]?.({ payload });
+        return Promise.resolve();
       },
     },
   };
@@ -1204,6 +1254,65 @@ test("a failed first query retries when locale is applied", async () => {
     );
     assert.deepEqual(paintedIds(list), ["stored"]);
     assert.equal(empty.hidden, true);
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("clicking the sort toggle writes oldest and reloads the first page", async () => {
+  const tauri = listenStub();
+  const { root, list, sortToggle } = mountQueueRoot();
+  const invoke = stubQueueInvoke({
+    newest: {
+      items: [
+        { id: "new", title: "just copied", body: "fresh" },
+        { id: "old", title: "that from Cursor", body: "older" },
+      ],
+      nextCursor: null,
+    },
+    oldest: {
+      items: [
+        { id: "old", title: "that from Cursor", body: "older" },
+        { id: "new", title: "just copied", body: "fresh" },
+      ],
+      nextCursor: null,
+    },
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    assert.equal(sortToggle.dataset.queueSort, "newest");
+    assert.equal(sortToggle.getAttribute("aria-label"), "Show oldest first");
+    sortToggle.click();
+    await waitUntil(
+      () =>
+        paintedIds(list).join() === "old,new" &&
+        sortToggle.dataset.queueSort === "oldest",
+      "sort toggle did not persist oldest and reload",
+    );
+    assert.deepEqual(paintedIds(list), ["old", "new"]);
+    assert.equal(invoke.store.copy.queueSort, "oldest");
+    assert.equal(
+      invoke.calls.some(
+        (call) => call.cmd === "set_queue_sort" && call.args.sort === "oldest",
+      ),
+      true,
+    );
+    assert.equal(
+      invoke.calls.some((call) => call.cmd === "save_settings_v1"),
+      false,
+    );
+    assert.equal(
+      invoke.calls.filter(
+        (call) => call.cmd === "queue_query" && call.args?.sort === "oldest",
+      ).length > 0,
+      true,
+    );
+    assert.equal(sortToggle.getAttribute("aria-label"), "Show newest first");
+    assert.equal(
+      sortToggle.getAttribute("data-i18n-aria-label"),
+      "queue.sort.showNewest",
+    );
   } finally {
     tauri.restore();
   }
