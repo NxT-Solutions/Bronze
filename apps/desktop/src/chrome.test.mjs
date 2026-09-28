@@ -187,6 +187,19 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     chrome,
     /\.row-action-icons \.icon-tip[\s\S]*position:\s*absolute/,
   );
+  assert.match(
+    chrome,
+    /\.queue-sort-toggle \.icon-tip[\s\S]*position:\s*absolute/,
+  );
+  assert.match(
+    chrome,
+    /\.queue-sort-toggle:hover:not\(:disabled\) \.icon-tip[\s\S]*pointer-events:\s*auto/,
+  );
+  assert.match(
+    chrome,
+    /\.queue-sort-toggle:focus-visible:not\(:disabled\) \.icon-tip[\s\S]*pointer-events:\s*auto/,
+  );
+  assert.match(chrome, /\.queue-sort-toggle\[data-tips-dismissed\] \.icon-tip/);
   assert.match(chrome, /#queue[\s\S]*isolation:\s*isolate/);
   assert.match(chrome, /\.queue-item[\s\S]*z-index:\s*0/);
   assert.match(

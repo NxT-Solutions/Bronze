@@ -175,6 +175,17 @@ test("icon tips dismiss on Escape and return on the next pointer", () => {
       },
     });
   assert.equal(host.dataset.tipsDismissed, undefined);
+
+  const sort = { dataset: {} };
+  listeners
+    .find((row) => row.type === "keydown")
+    .fn({
+      key: "Escape",
+      target: {
+        closest: (sel) => (sel === "#queue-sort-toggle" ? sort : null),
+      },
+    });
+  assert.equal(sort.dataset.tipsDismissed, "true");
 });
 
 test("chrome notice is viewport chrome and dismisses", () => {

@@ -27,10 +27,13 @@ Purpose: capture in, act on the current item.
   from the inline-start edge and show a temporary `--ring` pulse
   (three cycles in 1s, then gone). The pulse is not the focus
   indicator. The sort button is a real control whose accessible name
-  tracks newest vs oldest. Changing sort fades the first page once.
-  Reduce Motion, `data-reduce-motion`, and `data-motion="reduce"` skip
-  the make-room translate, the slide, the eased scroll, the pulse,
-  the icon transform, and the sort fade. The card is in the list
+  is the next order and whose description is the current order
+  (`settings.field.queueSort.newest` / `.oldest`) via the owned tip
+  (1.4.13). Changing sort collapses the loaded page into the first
+  card, then expands the new first page. Reduce Motion,
+  `data-reduce-motion`, and `data-motion="reduce"` skip the make-room
+  translate, the slide, the eased scroll, the pulse, the icon
+  transform, and the sort collapse/expand. The card is in the list
   either way (2.2.2, 2.3.1, 2.3.3). This is not a WCAG claim.
 
 ## Settings — `apps/desktop/src/settings.html`

@@ -20,8 +20,9 @@ must be updated in the same change.
   No axe-in-browser runtime, no remote audit service.
 - Motion is CSS + WAAPI. Controls use ≤200ms. A queue arrival slide
   is `--arrive` (380ms), the scroll ease is `--arrive-scroll` (340ms),
-  the sort-icon flip and first-page sort fade are `--sort-flip`
-  (200ms), and the temporary `--ring` pulse is `--ring-pulse`
+  the sort-icon flip is `--sort-flip` (200ms), a sort reload uses
+  `--sort-collapse` (220ms) then `--sort-expand` (280ms), and the
+  temporary `--ring` pulse is `--ring-pulse`
   (1000ms), three cycles, then gone. Reduce Motion wins. The pulse
   is not `:focus-visible`.
 - Event-tap callbacks never touch AX, DB, windows, clipboard, icons,

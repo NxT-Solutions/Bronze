@@ -30,6 +30,7 @@ import {
   persistQueueSort,
   queueListArgs,
   queueSortFromEvent,
+  queueSortStateKey,
 } from "./queue-sort.mjs";
 import { applySettingsForm } from "./settings-live.mjs";
 
@@ -646,6 +647,13 @@ test("queue sort toggle writes newest then oldest and reloads the list", async (
   assert.match(html, /<button\b[^>]*type="button"[^>]*id="queue-sort-toggle"/);
   assert.match(html, /data-i18n-aria-label="queue.sort.showOldest"/);
   assert.match(html, /aria-label="Show oldest first"/);
+  assert.match(html, /aria-describedby="queue-sort-state"/);
+  assert.match(
+    html,
+    /id="queue-sort-state"[\s\S]*data-i18n="settings.field.queueSort.newest"[\s\S]*>Newest first</,
+  );
+  assert.match(html, /data-slot="sort-tip-visual"/);
+  assert.doesNotMatch(html, /id="queue-sort-toggle"[\s\S]{0,240}title=/);
   const composerEnd = html.indexOf("</form>");
   const sortBar = html.indexOf("queue-sort-bar");
   const queueId = html.indexOf('id="queue"');
@@ -663,6 +671,14 @@ test("queue sort toggle writes newest then oldest and reloads the list", async (
     /\.queue-sort-toggle[\s\S]{0,240}outline:\s*none/,
   );
 
+  const tip = { id: "queue-sort-state", textContent: "", _attr: {} };
+  tip.setAttribute = (name, value) => {
+    tip._attr[name] = String(value);
+  };
+  const visual = { textContent: "", _attr: {} };
+  visual.setAttribute = (name, value) => {
+    visual._attr[name] = String(value);
+  };
   const button = {
     dataset: {},
     _attr: {},
@@ -672,7 +688,21 @@ test("queue sort toggle writes newest then oldest and reloads the list", async (
     setAttribute(name, value) {
       this._attr[name] = String(value);
     },
+    removeAttribute(name) {
+      delete this._attr[name];
+    },
+    querySelector(sel) {
+      if (sel === "[data-slot=sort-tip]") {
+        return tip;
+      }
+      if (sel === "[data-slot=sort-tip-visual]") {
+        return visual;
+      }
+      return null;
+    },
   };
+  assert.equal(queueSortStateKey("newest"), "settings.field.queueSort.newest");
+  assert.equal(queueSortStateKey("oldest"), "settings.field.queueSort.oldest");
   applyQueueSortControl(button, "newest", en);
   assert.equal(button.dataset.queueSort, "newest");
   assert.equal(button.getAttribute("aria-label"), en["queue.sort.showOldest"]);
@@ -680,8 +710,14 @@ test("queue sort toggle writes newest then oldest and reloads the list", async (
     button.getAttribute("data-i18n-aria-label"),
     "queue.sort.showOldest",
   );
+  assert.equal(button.getAttribute("aria-describedby"), "queue-sort-state");
+  assert.equal(tip.textContent, en["settings.field.queueSort.newest"]);
+  assert.equal(visual.textContent, en["settings.field.queueSort.newest"]);
+  assert.equal(button.getAttribute("title"), null);
   applyQueueSortControl(button, "oldest", en);
   assert.equal(button.getAttribute("aria-label"), en["queue.sort.showNewest"]);
+  assert.equal(tip.textContent, en["settings.field.queueSort.oldest"]);
+  assert.equal(visual.textContent, en["settings.field.queueSort.oldest"]);
 
   let store = {
     general: {},
@@ -1061,6 +1097,18 @@ function mountQueueRoot() {
   sortToggle.className = "queue-sort-toggle";
   sortToggle.dataset.queueSort = "newest";
   sortToggle.setAttribute("aria-label", "Show oldest first");
+  sortToggle.setAttribute("aria-describedby", "queue-sort-state");
+  const sortTip = doc.createElement("span");
+  sortTip.id = "queue-sort-state";
+  sortTip.setAttribute("data-slot", "sort-tip");
+  sortTip.textContent = "Newest first";
+  const sortVisual = doc.createElement("span");
+  sortVisual.className = "icon-tip";
+  sortVisual.setAttribute("data-slot", "sort-tip-visual");
+  sortVisual.setAttribute("aria-hidden", "true");
+  sortVisual.textContent = "Newest first";
+  sortToggle.appendChild(sortTip);
+  sortToggle.appendChild(sortVisual);
   const empty = doc.createElement("p");
   empty.id = "queue-empty";
   empty.hidden = false;
@@ -1335,6 +1383,72 @@ test("clicking the sort toggle writes oldest and reloads the first page", async 
     assert.equal(
       sortToggle.getAttribute("data-i18n-aria-label"),
       "queue.sort.showNewest",
+    );
+    assert.equal(
+      sortToggle.getAttribute("aria-describedby"),
+      "queue-sort-state",
+    );
+    assert.equal(
+      sortToggle.querySelector("[data-slot=sort-tip]").textContent,
+      "Oldest first",
+    );
+    assert.equal(list.classList.contains("is-sort-collapse"), false);
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("sort toggle with motion collapses then expands the loaded page", async () => {
+  const tauri = listenStub();
+  const { root, list, sortToggle, doc } = mountQueueRoot();
+  doc.documentElement.dataset.motion = "full";
+  doc.defaultView.matchMedia = () => ({ matches: false });
+  const timers = [];
+  doc.defaultView.setTimeout = (fn) => {
+    timers.push(fn);
+    return timers.length;
+  };
+  const invoke = stubQueueInvoke({
+    newest: {
+      items: [
+        { id: "new", title: "just copied", body: "fresh" },
+        { id: "old", title: "that from Cursor", body: "older" },
+      ],
+      nextCursor: null,
+    },
+    oldest: {
+      items: [
+        { id: "old", title: "that from Cursor", body: "older" },
+        { id: "new", title: "just copied", body: "fresh" },
+      ],
+      nextCursor: null,
+    },
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    timers.length = 0;
+    sortToggle.click();
+    await waitUntil(
+      () => list.classList.contains("is-sort-collapse"),
+      "sort collapse did not start",
+    );
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+    const collapseTimer = timers.shift();
+    collapseTimer?.();
+    await waitUntil(
+      () =>
+        paintedIds(list).join() === "old,new" &&
+        list.classList.contains("is-sort-expand"),
+      "sort expand did not follow collapse",
+    );
+    assert.equal(list.classList.contains("is-sort-collapse"), false);
+    assert.equal(list.classList.contains("is-sort-expand"), true);
+    assert.equal(sortToggle.dataset.queueSort, "oldest");
+    assert.equal(
+      sortToggle.querySelector("[data-slot=sort-tip]").textContent,
+      "Oldest first",
     );
   } finally {
     tauri.restore();

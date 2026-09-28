@@ -198,8 +198,12 @@ export function bindIconTips(root) {
   if (!root?.addEventListener) {
     return;
   }
+  const tipHost = (event) =>
+    event.target?.closest?.("[data-slot=action-icons]") ??
+    event.target?.closest?.("#queue-sort-toggle") ??
+    event.target?.closest?.(".queue-sort-toggle");
   const clearDismiss = (event) => {
-    const host = event.target?.closest?.("[data-slot=action-icons]");
+    const host = tipHost(event);
     if (!host?.dataset) {
       return;
     }
@@ -211,7 +215,7 @@ export function bindIconTips(root) {
     if (event.key !== "Escape") {
       return;
     }
-    const host = event.target?.closest?.("[data-slot=action-icons]");
+    const host = tipHost(event);
     if (!host?.dataset) {
       return;
     }

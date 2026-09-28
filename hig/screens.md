@@ -32,9 +32,15 @@ Purpose: capture in, act on the current item.
   does not take `is-slide-in`.
 - `#queue-sort-toggle` is a real button between the composer and the
   first card, inline-end. Its glyphs flip with `--sort-flip` (200ms)
-  so newest vs oldest is visible. Changing sort reloads the first page
-  and fades that page with `is-sort-reflow` (same 200ms). Reduce
-  Motion swaps the icon and the list instantly. The pulse is under 3Hz.
+  so newest vs oldest is visible. Hover and `:focus-visible` show the
+  current order (`settings.field.queueSort.newest` / `.oldest`) on the
+  owned `icon-tip`; `aria-describedby` carries the same key. Changing
+  sort reloads the first page: loaded cards collapse on the block axis
+  into the current first card (`is-sort-collapse`, `--sort-collapse`
+  220ms), hide, then the new first card expands from that slot and the
+  rest unfurl (`is-sort-expand`, `--sort-expand` 280ms). The list does
+  not side-slide as one block. Reduce Motion swaps the icon and the
+  list instantly. The pulse is under 3Hz.
 - The new card, and a card just copied, can show a temporary 2px
   `--ring` outline at low opacity, offset just outside `--radius-card`.
   The outline fades three times (`bronze-copy-ring`, `--ring-pulse`
@@ -51,7 +57,7 @@ Purpose: capture in, act on the current item.
 - Reduce Motion (`prefers-reduced-motion: reduce`,
   `data-reduce-motion`, or `data-motion="reduce"`) skips the make-room
   translate, the slide, the scroll ease, the pulse, the sort-icon
-  transform, the first-page sort fade, and collapse. The card appears
+  transform, the sort collapse/expand, and collapse. The card appears
   in its final place with no arrival outline. Motion is never required
   to understand the action. `data-motion="full"` plays the entrance
   when Play animations is on.
