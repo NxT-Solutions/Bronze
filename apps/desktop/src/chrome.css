@@ -1362,10 +1362,12 @@ article.is-expanded [data-slot="expand"]::after {
   clip-path: polygon(0 85%, 50% 15%, 100% 85%);
 }
 
-article [data-slot="expand"]:hover:not(:disabled):not(.btn-primary):not(
+article
+  [data-slot="expand"]:hover:not(:disabled):not(.btn-primary):not(
     [type="submit"]
   ),
-article [data-slot="expand"]:active:not(:disabled):not(.btn-primary):not(
+article
+  [data-slot="expand"]:active:not(:disabled):not(.btn-primary):not(
     [type="submit"]
   ) {
   background: transparent;

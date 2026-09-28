@@ -58,10 +58,10 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   );
   assert.match(
     chrome,
-    /article \[data-slot="expand"\]:hover:not\(:disabled\):not\(\.btn-primary\):not\(/,
+    /article\s+\[data-slot="expand"\]:hover:not\(:disabled\):not\(\.btn-primary\):not\(/,
   );
   const expandHover = chrome.match(
-    /article \[data-slot="expand"\]:hover:not\(:disabled\):not\(\.btn-primary\):not\(\s*\[type="submit"\]\s*\)[\s\S]*?\{[^}]+\}/,
+    /article\s+\[data-slot="expand"\]:hover:not\(:disabled\):not\(\.btn-primary\):not\(\s*\[type="submit"\]\s*\)[\s\S]*?\{[^}]+\}/,
   );
   assert.ok(expandHover, "expand hover override");
   assert.match(expandHover[0], /background:\s*transparent/);
