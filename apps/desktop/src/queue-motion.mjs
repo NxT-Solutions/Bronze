@@ -152,6 +152,21 @@ function placeQueueNode(list, node) {
   syncExpandVisibility(node.querySelector("article"));
 }
 
+function connectQueueNode(list, node, index) {
+  const current = list.children?.[index] ?? null;
+  // Moving an attached element restarts its CSS animation in WebKit.
+  if (current === node) {
+    syncExpandVisibility(node.querySelector("article"));
+    return;
+  }
+  if (current && typeof list.insertBefore === "function") {
+    list.insertBefore(node, current);
+  } else {
+    list.append(node);
+  }
+  syncExpandVisibility(node.querySelector("article"));
+}
+
 export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
   function listItemIds(list) {
     return queueItemRows(list)
@@ -185,6 +200,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
       }
     }
     const seen = new Set();
+    const ordered = [];
     for (const item of items) {
       if (!item?.id || seen.has(item.id)) {
         continue;
@@ -200,11 +216,14 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
         node.classList.remove("is-entering");
         node.classList.add("is-slide-in");
       }
-      placeQueueNode(list, node);
+      ordered.push(node);
       byId.delete(item.id);
     }
     for (const node of byId.values()) {
       node.remove();
+    }
+    for (let index = 0; index < ordered.length; index += 1) {
+      connectQueueNode(list, ordered[index], index);
     }
     syncMoveAvailability(list);
   }
@@ -311,8 +330,12 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
     const addedIds = nextIds.filter((id) => !prevIds.includes(id));
     const slideFresh =
       allow &&
+      options.slide !== false &&
       addedIds.length > 0 &&
-      (prevIds.length > 0 || options.action === "insert");
+      (addedIds.length === 1 || prevIds.length > 0) &&
+      (options.slide === true ||
+        prevIds.length > 0 ||
+        options.action === "insert");
     reconcileQueueNodes(list, items, template, {
       slideIds: slideFresh ? new Set(addedIds) : new Set(),
     });

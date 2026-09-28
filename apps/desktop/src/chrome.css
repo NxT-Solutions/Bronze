@@ -825,16 +825,11 @@ pre {
 
 @keyframes bronze-copy-ring {
   0%,
-  18%,
-  36%,
-  54%,
   100% {
     outline-offset: 2px;
   }
 
-  9%,
-  27%,
-  45% {
+  50% {
     outline-offset: 8px;
   }
 }
@@ -910,7 +905,7 @@ article {
 }
 
 .queue-item.is-ring-pulse > article {
-  animation: bronze-copy-ring var(--ring-pulse) var(--ease-out);
+  animation: bronze-copy-ring calc(var(--ring-pulse) / 3) var(--ease-out) 3;
 }
 
 article p {
