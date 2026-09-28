@@ -33,12 +33,13 @@ use bronze_platform_macos::{snapshot_from_preflight, MacosPreflightHost};
 use bronze_settings::ClipboardFallback;
 use bronze_settings::{
     apply_recorded_double_tap_timing, default_shortcut_binding, effective_tap_count,
-    export_settings_document, is_default_binding, logical_key_allowed, parse_settings_import,
-    recorded_double_tap_allowed, search_settings, shortcut_scope, skip_test_marks_untested,
-    CaptureAlternatives, Modifier, NativeRegistrar, QueueSort, RegisterError,
-    SettingsExportPreview, SettingsGroup, SettingsImportError, SettingsV1, ShortcutActionId,
-    ShortcutBinding, ShortcutRegistry, ShortcutScope, TestedState, TitleModelId, TriggerKind,
-    MAX_MODIFIER_TAPS, SCHEMA_VERSION, SETTINGS_EXPORT_FORMAT, SETTINGS_EXPORT_VERSION,
+    export_settings_document, is_default_binding, is_local_dev_build, logical_key_allowed,
+    parse_settings_import, recorded_double_tap_allowed, search_settings, shortcut_scope,
+    skip_test_marks_untested, CaptureAlternatives, Modifier, NativeRegistrar, QueueSort,
+    RegisterError, SettingsExportPreview, SettingsGroup, SettingsImportError, SettingsV1,
+    ShortcutActionId, ShortcutBinding, ShortcutRegistry, ShortcutScope, TestedState, TitleModelId,
+    TriggerKind, MAX_MODIFIER_TAPS, SCHEMA_VERSION, SETTINGS_EXPORT_FORMAT,
+    SETTINGS_EXPORT_VERSION,
 };
 use bronze_storage::{
     ComposerDraft, DiagnosticEventRow, ImportStrategy, NoopBackup, Overwrite, PathLocator,
@@ -680,6 +681,7 @@ impl LiveSession {
         if resolve_title_model(&mut settings) {
             persist_settings_file(&data_dir, &settings)?;
         }
+        settings.apply_play_animation_dev_default(is_local_dev_build());
         apply_title_engine(&settings, &data_dir);
         apply_login_item(&settings);
         let shortcuts = store
@@ -1189,6 +1191,8 @@ impl LiveSession {
         self.settings
             .reset_field(field_id)
             .map_err(|_| "settings_unknown_field")?;
+        self.settings
+            .apply_play_animation_dev_default(is_local_dev_build());
         if field_id == "capture.standardChord" {
             self.shortcuts
                 .restore_default(
@@ -1210,6 +1214,8 @@ impl LiveSession {
     pub fn reset_group(&mut self, group: &str) -> Result<SettingsV1, String> {
         let parsed = parse_group(group)?;
         self.settings.reset_group(parsed);
+        self.settings
+            .apply_play_animation_dev_default(is_local_dev_build());
         if parsed == SettingsGroup::Capture {
             self.shortcuts
                 .restore_default(
@@ -1230,6 +1236,8 @@ impl LiveSession {
 
     pub fn reset_all(&mut self) -> Result<SettingsV1, String> {
         self.settings.reset_all_preserving_content();
+        self.settings
+            .apply_play_animation_dev_default(is_local_dev_build());
         let _ = resolve_title_model(&mut self.settings);
         apply_title_engine(&self.settings, &self.data_dir);
         apply_login_item(&self.settings);
@@ -2371,6 +2379,7 @@ fn lock_session(
 mod live_session_tests {
     use super::*;
     use crate::copy::FakePasteboard;
+    use bronze_settings::MotionPref;
     use bronze_storage::QUE_007_COMPLETE;
     use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -2587,6 +2596,30 @@ mod live_session_tests {
         let mut reset = reopened;
         reset.reset_field("copy.queueSort").expect("reset");
         assert_eq!(reset.settings().copy.queue_sort, QueueSort::Newest);
+    }
+
+    #[test]
+    fn local_dev_plays_animation_without_writing_factory_off() {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("bronze-dev-motion-{n}-{}", now_ms()));
+        let session = LiveSession::open(dir.clone()).expect("open");
+        assert_eq!(
+            session.settings().general.reduce_motion,
+            MotionPref::factory_for_build(is_local_dev_build())
+        );
+        drop(session);
+        let raw = fs::read_to_string(dir.join("settings.json")).expect("settings");
+        assert!(
+            raw.contains("\"reduceMotion\":\"system\""),
+            "debug must not persist play-animation over the shared factory: {raw}"
+        );
+
+        let mut written = SettingsV1::from_json(&raw).expect("parse");
+        written.general.reduce_motion = MotionPref::On;
+        written.sync_motion_fields();
+        fs::write(dir.join("settings.json"), written.to_json().expect("json")).expect("persist");
+        let again = LiveSession::open(dir).expect("reopen");
+        assert_eq!(again.settings().general.reduce_motion, MotionPref::On);
     }
 
     #[test]
