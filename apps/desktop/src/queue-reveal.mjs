@@ -81,17 +81,12 @@ export function shouldLoadNextOnKey({ key, onLastCard, hasCursor } = {}) {
   return Boolean(atEnd && onLastCard && hasCursor);
 }
 
-export function planNewItemFollow({
-  sort,
-  nearStart = false,
-  prevIds = [],
-  nextIds = [],
-} = {}) {
+export function planNewItemFollow({ sort, prevIds = [], nextIds = [] } = {}) {
   const mode = typeof sort === "string" ? normalizeQueueSort(sort) : "oldest";
   const prev = new Set(prevIds);
   const added = nextIds.filter((id) => id && !prev.has(id));
   const atLoadedStart = added.length === 1 && nextIds[0] === added[0];
-  if (mode === "newest" && nearStart && atLoadedStart) {
+  if (mode === "newest" && atLoadedStart) {
     return { scrollId: added[0], cursor: "stay", prepend: false };
   }
   return { scrollId: null, cursor: "stay", prepend: false };
@@ -243,26 +238,6 @@ export function insertionBeforeId(loadedIds, pageIds, itemId) {
   return null;
 }
 
-function rowGapPx(list) {
-  const view = list?.ownerDocument?.defaultView;
-  const style = view?.getComputedStyle?.(list);
-  const raw =
-    style?.rowGap && style.rowGap !== "normal" ? style.rowGap : style?.gap;
-  const parsed = parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : 16;
-}
-
-function arrivalDistance(card) {
-  const height = Number(card?.getBoundingClientRect?.().height);
-  if (!Number.isFinite(height) || height <= 0) {
-    return 0;
-  }
-  const parent = card.parentElement;
-  const gap =
-    parent?.children && parent.children.length > 1 ? rowGapPx(parent) : 0;
-  return height + gap;
-}
-
 export function presentNewQueueCard(
   card,
   scroller,
@@ -296,19 +271,16 @@ export function presentNewQueueCard(
   if (!followScroll || !scroller) {
     return { behavior: "auto", scrolled: false, from: null, to: null };
   }
-  const distance = arrivalDistance(card);
-  const top = Number(scroller.scrollTop ?? 0);
-  if (!(distance > 0) || !Number.isFinite(top)) {
-    return { behavior: "auto", scrolled: false, from: top, to: top };
+  const from = Number(scroller.scrollTop ?? 0);
+  if (!Number.isFinite(from)) {
+    return { behavior: "auto", scrolled: false, from: null, to: null };
   }
-  const from = top + distance;
-  const to = top;
+  const to = 0;
   const travel = travelScroll(scroller, from, to, {
     motion: true,
     duration,
     frame,
     now,
-    primeStart: true,
   });
   return { ...travel, from, to, scrolled: travel.behavior === "smooth" };
 }
