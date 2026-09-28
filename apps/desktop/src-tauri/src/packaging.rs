@@ -121,7 +121,7 @@ mod packaging_tests {
         );
         let checker = manifest.join("../../../tooling/dock-icon-fill.py");
         let fill_src = fs::read_to_string(&checker).unwrap();
-        assert!(fill_src.contains("every pixel"));
+        assert!(fill_src.contains("Every pixel"));
         assert!(fill_src.contains("flat opaque plate"));
         assert!(fill_src.contains("--write-master"));
         assert!(fill_src.contains("self-test: rounded inset plate must fail"));
