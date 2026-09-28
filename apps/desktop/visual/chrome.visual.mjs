@@ -21,6 +21,7 @@ test.describe("queue", () => {
     await openSurface(page, "/index.html", "empty");
     await expect(page.locator("#queue-empty")).toBeVisible();
     await expect(page.locator("#queue .queue-item")).toHaveCount(0);
+    await expect(page.locator("#queue-sort-toggle")).toBeVisible();
     await expect(page.locator("#quick-panel")).toHaveScreenshot(
       shot("queue-empty"),
     );
@@ -30,6 +31,7 @@ test.describe("queue", () => {
     await openSurface(page, "/index.html", "populated");
     await expect(page.locator("#queue .queue-item")).toHaveCount(2);
     await expect(page.locator("#queue-empty")).toBeHidden();
+    await expect(page.locator("#queue-sort-toggle")).toBeVisible();
     await expect(page.locator("#quick-panel")).toHaveScreenshot(
       shot("queue-populated"),
     );
