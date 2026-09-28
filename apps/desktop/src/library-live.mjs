@@ -5,9 +5,7 @@ import {
 } from "./apply-locale.mjs";
 import { runBusy } from "./control.mjs";
 import {
-  applySourceRow,
   fillItemChrome,
-  formatCaptureSource,
   readExpandLabels,
   syncExpandVisibility,
 } from "./item-view.mjs";
@@ -132,14 +130,6 @@ export async function bindLibraryLive(root = document, invokeFn = tauriInvoke) {
         node.style.setProperty("--enter-delay", `${Math.min(index, 8) * 24}ms`);
         const article = node.querySelector("article");
         fillItemChrome(article, item, labels);
-        const source = node.querySelector("[data-slot=source]");
-        const labelNode =
-          source?.querySelector("[data-slot=source-label]") ?? source;
-        const label = formatCaptureSource(
-          labelNode?.textContent,
-          item.sourceAppName,
-        );
-        applySourceRow(article, label, item.sourceAppIcon);
         list.append(node);
         syncExpandVisibility(article);
       }

@@ -405,6 +405,157 @@ test("a title update keeps the row and the reserved title-box height", async () 
   assert.equal(firstHeight, 2);
 });
 
+test("a later queue-changed keeps From app and icon on the same row", async () => {
+  const list = fakeQueueList();
+  const template = sourceQueueTemplate();
+  const renderer = createQueueRenderer({
+    queueItemRows(target) {
+      return target.children;
+    },
+    syncMoveAvailability() {},
+  });
+  const icon = "data:image/png;base64,abc";
+  await renderer.renderQueueItems(
+    list,
+    [
+      {
+        id: "wa",
+        title: "Aftrekker",
+        body: "body",
+        sourceAppName: "WhatsApp",
+        sourceAppIcon: icon,
+      },
+    ],
+    template,
+    { action: "insert" },
+  );
+  const card = list.children[0];
+  assert.equal(card.source.hidden, false);
+  assert.equal(card.label.textContent, "From WhatsApp");
+  assert.equal(card.icon.hidden, false);
+  assert.equal(card.icon.src, icon);
+  await renderer.renderQueueItems(
+    list,
+    [
+      {
+        id: "wa",
+        title: "Aftrekker",
+        body: "body",
+        sourceAppName: "WhatsApp",
+        sourceAppIcon: icon,
+      },
+    ],
+    template,
+    { action: "replace" },
+  );
+  assert.equal(list.children[0], card);
+  assert.equal(card.source.hidden, false);
+  assert.equal(card.label.textContent, "From WhatsApp");
+  assert.equal(card.icon.src, icon);
+  await renderer.renderQueueItems(
+    list,
+    [
+      {
+        id: "cu",
+        title: "Sort button",
+        body: "from cursor",
+        sourceAppName: "Cursor",
+        sourceAppIcon: icon,
+      },
+      {
+        id: "wa",
+        title: "Aftrekker",
+        body: "body",
+        sourceAppName: "WhatsApp",
+        sourceAppIcon: icon,
+      },
+    ],
+    template,
+    { action: "insert" },
+  );
+  assert.equal(list.children[1], card);
+  assert.equal(card.source.hidden, false);
+  assert.equal(card.label.textContent, "From WhatsApp");
+  assert.equal(card.icon.src, icon);
+  const newest = list.children[0];
+  assert.equal(newest.source.hidden, false);
+  assert.equal(newest.label.textContent, "From Cursor");
+  assert.equal(newest.icon.src, icon);
+});
+
+test("a queue patch that omits source does not strip the row", async () => {
+  const list = fakeQueueList();
+  const template = sourceQueueTemplate();
+  const renderer = createQueueRenderer({
+    queueItemRows(target) {
+      return target.children;
+    },
+    syncMoveAvailability() {},
+  });
+  const icon = "data:image/png;base64,abc";
+  await renderer.renderQueueItems(
+    list,
+    [
+      {
+        id: "wa",
+        title: "Aftrekker",
+        body: "body",
+        sourceAppName: "WhatsApp",
+        sourceAppIcon: icon,
+      },
+    ],
+    template,
+    { action: "insert" },
+  );
+  const card = list.children[0];
+  await renderer.renderQueueItems(
+    list,
+    [{ id: "wa", title: "Refined title", body: "body" }],
+    template,
+    { action: "replace" },
+  );
+  assert.equal(list.children[0], card);
+  assert.equal(card.source.hidden, false);
+  assert.equal(card.label.textContent, "From WhatsApp");
+  assert.equal(card.icon.src, icon);
+});
+
+test("composer queue items stay without a source row", async () => {
+  const list = fakeQueueList();
+  const template = sourceQueueTemplate();
+  const renderer = createQueueRenderer({
+    queueItemRows(target) {
+      return target.children;
+    },
+    syncMoveAvailability() {},
+  });
+  await renderer.renderQueueItems(
+    list,
+    [
+      {
+        id: "typed",
+        title: "Typed note",
+        body: "from the composer",
+        sourceAppName: null,
+        sourceAppIcon: null,
+      },
+    ],
+    template,
+    { action: "insert" },
+  );
+  const card = list.children[0];
+  assert.equal(card.source.hidden, true);
+  assert.equal(card.label.textContent, "From {appName}");
+  await renderer.renderQueueItems(
+    list,
+    [{ id: "typed", title: "Typed note", body: "from the composer" }],
+    template,
+    { action: "replace" },
+  );
+  assert.equal(list.children[0], card);
+  assert.equal(card.source.hidden, true);
+});
+
 function queueTitleSlotRule(css) {
   const match = css.match(
     /#queue article \[data-slot="title"\]:not\(\[hidden\]\)\s*\{([^}]+)\}/,
@@ -538,6 +689,103 @@ function fakeQueueTemplate() {
   };
 }
 
+function sourceQueueClone() {
+  const icon = {
+    dataset: { slot: "source-icon" },
+    hidden: true,
+    src: "",
+    removeAttribute() {
+      icon.src = "";
+    },
+  };
+  const label = {
+    dataset: { slot: "source-label" },
+    textContent: "From {appName}",
+  };
+  const source = {
+    dataset: { slot: "source" },
+    hidden: true,
+    querySelector(sel) {
+      const key = String(sel);
+      if (key.includes("source-label")) {
+        return label;
+      }
+      if (key.includes("source-icon")) {
+        return icon;
+      }
+      return null;
+    },
+  };
+  const title = {
+    dataset: { slot: "title" },
+    hidden: true,
+    textContent: "",
+  };
+  const article = {
+    lang: "",
+    dir: "",
+    classList: classBag(),
+    querySelector(sel) {
+      const key = String(sel);
+      if (key.includes("source-label")) {
+        return label;
+      }
+      if (key.includes("source-icon")) {
+        return icon;
+      }
+      if (key.includes("source")) {
+        return source;
+      }
+      if (key.includes("title")) {
+        return title;
+      }
+      return null;
+    },
+  };
+  return {
+    dataset: {},
+    classList: classBag(),
+    style: styleBag(),
+    parentElement: null,
+    nextElementSibling: null,
+    previousElementSibling: null,
+    article,
+    source,
+    label,
+    icon,
+    title,
+    querySelector(sel) {
+      if (sel === "article") {
+        return article;
+      }
+      return article.querySelector(sel);
+    },
+    querySelectorAll() {
+      return [];
+    },
+    getBoundingClientRect() {
+      return { height: 96, top: 0, bottom: 96 };
+    },
+    remove() {},
+  };
+}
+
+function sourceQueueTemplate() {
+  const sample = sourceQueueClone();
+  return {
+    content: {
+      querySelector(sel) {
+        return sample.querySelector(sel);
+      },
+      firstElementChild: {
+        cloneNode() {
+          return sourceQueueClone();
+        },
+      },
+    },
+  };
+}
+
 function classBag() {
   const names = new Set();
   return {
@@ -549,6 +797,18 @@ function classBag() {
     },
     has(name) {
       return names.has(name);
+    },
+    contains(name) {
+      return names.has(name);
+    },
+    toggle(name, force) {
+      const on = force ?? !names.has(name);
+      if (on) {
+        names.add(name);
+      } else {
+        names.delete(name);
+      }
+      return on;
     },
   };
 }
