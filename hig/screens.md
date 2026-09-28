@@ -13,7 +13,14 @@ Purpose: capture in, act on the current item.
   more disclosure when the body overflows → source + official
   icon → Copy (filled) + compact icon row (Complete, Skip, Edit, Move
   up, Move down, Trash).
-- Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
+- Collapse is max-height + pre-wrap, not `-webkit-line-clamp`. The
+  clamp stays `calc(3 * 1.45em)` so a later line does not leak a
+  hairline. Play animations eases that preview to the measured body
+  height over `--body-expand` (320ms, ease-out) and rotates the
+  disclosure chevron. Neighbors move in normal flow with the card.
+  The control stays the compact catalog Show more / Show less
+  `button`. Reduce Motion and `data-motion="reduce"` snap the clamp
+  and the chevron. Do not reuse `is-sort-expand` here.
 - The queue title sits in a reserved two-line slot (`min-height` 2lh,
   clamp + ellipsis). While an on-this-Mac engine is still writing the
   title, the slot stays 2lh and shows a small spinner plus
@@ -37,6 +44,14 @@ Purpose: capture in, act on the current item.
   is. A later refresh updates the same row. After both shots, motion
   classes are gone and no transform or margin remains. The list itself
   does not take `is-slide-in`.
+- The first successful first-page load (window open, tauri dev reload,
+  or empty → stored items) holds the painted cards (`is-sort-hold`)
+  and then plays only the sort expand (`is-sort-expand`, `--sort-expand`
+  480ms, 31ms stagger) from the first card. There is no previous list
+  to collapse. Those rows do not take insert make-room or per-card
+  side-slide. An empty first page shows the empty state with no expand.
+  A later new capture still uses make-room + slide-in. A title refine
+  after first paint does not replay expand on the list.
 - `#queue-sort-toggle` is a real button between the composer and the
   first card, inline-end. Its glyphs flip with `--sort-flip` (200ms)
   so newest vs oldest is visible. Hover and `:focus-visible` show the
@@ -64,10 +79,11 @@ Purpose: capture in, act on the current item.
 - Reduce Motion (`prefers-reduced-motion: reduce`,
   `data-reduce-motion`, or `data-motion="reduce"`) skips the make-room
   translate, the slide, the scroll ease, the pulse, the sort-icon
-  transform, the sort collapse/expand, and collapse. The card appears
-  in its final place with no arrival outline. Motion is never required
-  to understand the action. `data-motion="full"` plays the entrance
-  when Play animations is on.
+  transform, the sort collapse/expand, the first-page expand, the body
+  Show more open/close, and collapse. The first page and a new card
+  appear in their final place with no arrival outline. Motion is never
+  required to understand the action. `data-motion="full"` plays the
+  entrance when Play animations is on.
 
 ## Settings — `apps/desktop/src/settings.html`
 

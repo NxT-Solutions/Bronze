@@ -170,11 +170,68 @@ export function readExpandLabels(root) {
   };
 }
 
-export function applyExpandState(article, expanded, labels) {
-  if (!article) {
+export const BODY_CLAMP_LINES = 3;
+export const BODY_LINE_HEIGHT_EM = 1.45;
+export const BODY_EXPAND_MS = 320;
+export const BODY_CLAMP_MAX_HEIGHT = `calc(${BODY_CLAMP_LINES} * ${BODY_LINE_HEIGHT_EM}em)`;
+
+function easeOutCubic(t) {
+  return 1 - (1 - t) ** 3;
+}
+
+export function collapsedBodyMaxHeightPx(body) {
+  const view = body?.ownerDocument?.defaultView;
+  const style = view?.getComputedStyle?.(body);
+  if (style) {
+    const fontSize = Number.parseFloat(style.fontSize);
+    if (Number.isFinite(fontSize) && fontSize > 0) {
+      return BODY_CLAMP_LINES * BODY_LINE_HEIGHT_EM * fontSize;
+    }
+    const lineHeight = Number.parseFloat(style.lineHeight);
+    if (Number.isFinite(lineHeight) && lineHeight > 0) {
+      return BODY_CLAMP_LINES * lineHeight;
+    }
+  }
+  if (typeof body?.clientHeight === "number" && body.clientHeight > 0) {
+    return body.clientHeight;
+  }
+  return 0;
+}
+
+function parseInlineMaxHeightPx(body) {
+  const raw = body?.style?.maxHeight;
+  if (typeof raw !== "string" || raw.length === 0 || raw === "none") {
+    return null;
+  }
+  const value = Number.parseFloat(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function clearInlineBodyMaxHeight(body) {
+  if (!body?.style) {
     return;
   }
-  article.classList.toggle("is-expanded", expanded);
+  if (typeof body.style.removeProperty === "function") {
+    body.style.removeProperty("max-height");
+    body.style.removeProperty("overflow");
+    return;
+  }
+  body.style.maxHeight = "";
+  body.style.overflow = "";
+}
+
+function cancelBodyExpandFrame(article) {
+  const view = article?.ownerDocument?.defaultView;
+  const id = article?.dataset?.bodyExpandFrame;
+  if (view && id && typeof view.cancelAnimationFrame === "function") {
+    view.cancelAnimationFrame(Number(id));
+  }
+  if (article?.dataset) {
+    delete article.dataset.bodyExpandFrame;
+  }
+}
+
+function applyExpandChrome(article, expanded, labels) {
   const button = article.querySelector("[data-slot=expand]");
   if (!button) {
     return;
@@ -183,10 +240,95 @@ export function applyExpandState(article, expanded, labels) {
   button.dataset.i18n = expanded
     ? "queue.item.showLess"
     : "queue.item.showMore";
-  const text = expanded ? labels.showLess : labels.showMore;
+  const text = expanded ? labels?.showLess : labels?.showMore;
   if (text) {
     button.textContent = text;
   }
+}
+
+function finishBodyExpand(article, body, expanded) {
+  cancelBodyExpandFrame(article);
+  article.classList.remove("is-body-opening", "is-body-closing");
+  article.classList.toggle("is-expanded", expanded);
+  clearInlineBodyMaxHeight(body);
+}
+
+function startBodyExpand(article, body, expanded, labels) {
+  const view = article.ownerDocument?.defaultView;
+  const clampPx = collapsedBodyMaxHeightPx(body);
+  const inlinePx = parseInlineMaxHeightPx(body);
+  const from = expanded
+    ? (inlinePx ??
+      (typeof body.clientHeight === "number" && body.clientHeight > 0
+        ? body.clientHeight
+        : clampPx))
+    : (inlinePx ??
+      (typeof body.scrollHeight === "number" && body.scrollHeight > 0
+        ? body.scrollHeight
+        : clampPx));
+  const to = expanded
+    ? typeof body.scrollHeight === "number"
+      ? body.scrollHeight
+      : from
+    : clampPx;
+  const canAnimate =
+    Boolean(view) &&
+    typeof view.requestAnimationFrame === "function" &&
+    Number.isFinite(from) &&
+    Number.isFinite(to) &&
+    from !== to;
+
+  if (!canAnimate) {
+    finishBodyExpand(article, body, expanded);
+    applyExpandChrome(article, expanded, labels);
+    return;
+  }
+
+  if (!body.style) {
+    body.style = {};
+  }
+  body.style.maxHeight = `${from}px`;
+  body.style.overflow = "hidden";
+  article.classList.remove("is-body-opening", "is-body-closing");
+  article.classList.add(expanded ? "is-body-opening" : "is-body-closing");
+  article.classList.toggle("is-expanded", expanded);
+  applyExpandChrome(article, expanded, labels);
+
+  let origin = null;
+  const tick = (now) => {
+    const clock = typeof now === "number" ? now : 0;
+    if (origin == null) {
+      origin = clock;
+    }
+    const t = Math.min(1, Math.max(0, (clock - origin) / BODY_EXPAND_MS));
+    body.style.maxHeight = `${from + (to - from) * easeOutCubic(t)}px`;
+    if (t < 1) {
+      article.dataset.bodyExpandFrame = String(
+        view.requestAnimationFrame(tick),
+      );
+      return;
+    }
+    finishBodyExpand(article, body, expanded);
+  };
+  article.dataset.bodyExpandFrame = String(view.requestAnimationFrame(tick));
+}
+
+export function applyExpandState(article, expanded, labels, options = {}) {
+  if (!article) {
+    return;
+  }
+  const body = article.querySelector("[data-slot=body]");
+  const motion = options.motion ?? motionAllowed(article.ownerDocument);
+  const animate = options.animate === true && motion;
+  cancelBodyExpandFrame(article);
+  if (animate && body) {
+    startBodyExpand(article, body, expanded, labels);
+    return;
+  }
+  article.classList.remove("is-body-opening", "is-body-closing");
+  clearInlineBodyMaxHeight(body);
+  article.classList.toggle("is-expanded", expanded);
+  applyExpandChrome(article, expanded, labels);
 }
 
 export function syncExpandVisibility(article) {
@@ -195,7 +337,10 @@ export function syncExpandVisibility(article) {
   if (!body || !button) {
     return;
   }
-  if (article.classList.contains("is-expanded")) {
+  if (
+    article.classList.contains("is-expanded") ||
+    article.classList.contains("is-body-closing")
+  ) {
     button.hidden = false;
     return;
   }
@@ -218,7 +363,7 @@ export function wireExpandReader(article, labels) {
   button.dataset.expandWired = "1";
   button.addEventListener("click", () => {
     const next = !article.classList.contains("is-expanded");
-    applyExpandState(article, next, labels);
+    applyExpandState(article, next, labels, { animate: true });
     syncExpandVisibility(article);
   });
 }

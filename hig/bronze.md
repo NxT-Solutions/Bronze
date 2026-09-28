@@ -17,7 +17,9 @@ updated in the same change.
   `--arrive-scroll` (340ms). The sort-toggle glyphs use `--sort-flip`
   (200ms). A sort reload collapses the loaded page into the first card
   over `--sort-collapse` (380ms), then expands the new first page over
-  `--sort-expand` (480ms). The arrival ring uses `--ring`
+  `--sort-expand` (480ms). Show more eases the 3-line body clamp to
+  the measured height over `--body-expand` (320ms) and rotates the
+  chevron. The arrival ring uses `--ring`
   at low opacity and pulses three times over `--ring-pulse` (1000ms)
   after the card has landed, then the outline is gone. Reduce Motion
   skips those shots and leaves no arrival outline. `:focus-visible` is

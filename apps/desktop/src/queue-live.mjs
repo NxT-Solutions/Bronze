@@ -23,6 +23,7 @@ import {
   beginSortCollapse,
   clearSortReflow,
   findQueueCard,
+  firstPageExpandPlan,
   isNearLoadedStart,
   markLastCopied,
   planNewItemFollow,
@@ -748,6 +749,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   let activeSort = "newest";
   let lastCopiedId = "";
   let sortReflow = null;
+  let firstPageReady = false;
+  let firstPageInFlight = false;
+  let firstPagePending = false;
 
   function noteQueueSort(raw) {
     list.dataset.queueSort = parseQueueSort(raw);
@@ -817,6 +821,17 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     } catch {
       queueRenderer.paintQueueItems(list, state.items, template);
     }
+    restoreQueueFocus(saved);
+    if (empty) {
+      empty.hidden = state.items.length > 0;
+    }
+  }
+
+  function paintFirstPageExpand() {
+    const saved = focusedQueueControl();
+    swapSortPage(list, () => {
+      queueRenderer.paintQueueItems(list, state.items, template);
+    });
     restoreQueueFocus(saved);
     if (empty) {
       empty.hidden = state.items.length > 0;
@@ -1012,6 +1027,11 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
           continue;
         }
         clearSortReflow(list);
+      } else if (
+        !firstPageReady &&
+        firstPageExpandPlan(motion, state.items.length)
+      ) {
+        paintFirstPageExpand();
       } else {
         clearSortReflow(list);
         queueRenderer.paintQueueItems(list, state.items, template);
@@ -1099,14 +1119,30 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (gen !== refreshGen) {
       return false;
     }
+    const revealFirstPage = !firstPageReady;
     const paintOpts = { ...opts };
     if (insertSlide) {
       paintOpts.slide = true;
     }
     insertSlide = false;
-    await paint(paintOpts);
+    if (revealFirstPage) {
+      paintOpts.slide = false;
+    }
+    const expandFirstPage =
+      revealFirstPage && firstPageExpandPlan(motion, state.items.length);
+    if (expandFirstPage) {
+      paintFirstPageExpand();
+    } else {
+      if (!revealFirstPage && list.classList?.contains?.("is-sort-expand")) {
+        clearSortReflow(list);
+      }
+      await paint(paintOpts);
+    }
     if (gen !== refreshGen) {
       return false;
+    }
+    if (revealFirstPage) {
+      return true;
     }
     const nextIds = queueItemRows(list)
       .map((el) => el.dataset?.itemId)
@@ -1141,10 +1177,6 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     }
     return true;
   }
-
-  let firstPageReady = false;
-  let firstPageInFlight = false;
-  let firstPagePending = false;
 
   async function loadFirstPage() {
     if (firstPageReady) {
