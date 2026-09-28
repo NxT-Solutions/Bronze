@@ -713,7 +713,22 @@ test("the copied pulse is temporary and is not the focus ring", () => {
     follow,
     /markLastCopied\(list, lastCopiedId(?:, \{[\s\S]*pulse:)/,
   );
-  assert.match(live, /markLastCopied\(list, id, \{[\s\S]*pulse: motionAllowed/);
+  const copyAt = live.indexOf('action === "copy"');
+  const copyBlock = live.slice(
+    copyAt,
+    live.indexOf('if (action === "edit"', copyAt),
+  );
+  assert.doesNotMatch(copyBlock, /markLastCopied/);
+  assert.doesNotMatch(copyBlock, /pulseCopy/);
+  const revealAt = live.indexOf("async function revealNoticeItem");
+  const revealBlock = live.slice(
+    revealAt,
+    live.indexOf("function currentSortIntent", revealAt),
+  );
+  assert.match(
+    revealBlock,
+    /markLastCopied\(list, id, \{[\s\S]*pulse: motionAllowed/,
+  );
   assert.match(reveal, /queue_query/);
   assert.match(reveal, /itemId/);
   assert.match(live, /itemId/);
