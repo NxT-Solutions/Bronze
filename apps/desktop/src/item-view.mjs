@@ -110,7 +110,11 @@ export function wireExpandReader(article, labels) {
   if (!button) {
     return;
   }
-  applyExpandState(article, false, labels);
+  applyExpandState(article, article.classList.contains("is-expanded"), labels);
+  if (button.dataset.expandWired === "1") {
+    return;
+  }
+  button.dataset.expandWired = "1";
   button.addEventListener("click", () => {
     const next = !article.classList.contains("is-expanded");
     applyExpandState(article, next, labels);

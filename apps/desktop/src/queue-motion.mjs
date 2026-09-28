@@ -175,6 +175,40 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
     syncMoveAvailability(list);
   }
 
+  function reconcileQueueNodes(list, items, template, { slideIds } = {}) {
+    const labels = readExpandLabels(template.content);
+    const slide = slideIds ?? new Set();
+    const byId = new Map();
+    for (const el of queueItemRows(list)) {
+      if (el.dataset?.itemId && !byId.has(el.dataset.itemId)) {
+        byId.set(el.dataset.itemId, el);
+      }
+    }
+    const seen = new Set();
+    for (const item of items) {
+      if (!item?.id || seen.has(item.id)) {
+        continue;
+      }
+      seen.add(item.id);
+      let node = byId.get(item.id);
+      const fresh = !node;
+      if (!node) {
+        node = template.content.firstElementChild.cloneNode(true);
+      }
+      fillQueueNode(node, item, labels);
+      if (fresh && slide.has(item.id)) {
+        node.classList.remove("is-entering");
+        node.classList.add("is-slide-in");
+      }
+      placeQueueNode(list, node);
+      byId.delete(item.id);
+    }
+    for (const node of byId.values()) {
+      node.remove();
+    }
+    syncMoveAvailability(list);
+  }
+
   function reorderQueueNodes(list, items, template) {
     const labels = readExpandLabels(template.content);
     const byId = new Map();
@@ -274,15 +308,14 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
       return;
     }
 
-    const enteringIds =
-      kind === "enter"
-        ? new Set(
-            nextIds.filter(
-              (id) => prevIds.length === 0 || !prevIds.includes(id),
-            ),
-          )
-        : new Set();
-    paintQueueItems(list, items, template, { enteringIds });
+    const addedIds = nextIds.filter((id) => !prevIds.includes(id));
+    const slideFresh =
+      allow &&
+      addedIds.length > 0 &&
+      (prevIds.length > 0 || options.action === "insert");
+    reconcileQueueNodes(list, items, template, {
+      slideIds: slideFresh ? new Set(addedIds) : new Set(),
+    });
   }
 
   function findItemNode(list, id) {

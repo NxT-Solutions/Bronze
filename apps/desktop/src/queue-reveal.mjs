@@ -1,6 +1,8 @@
 import { MOTION, motionAllowed } from "./control.mjs";
 
-export const ARRIVAL_MS = 280;
+export const ARRIVE_SLIDE_MS = 380;
+export const ARRIVE_SCROLL_MS = 340;
+export const ARRIVAL_MS = ARRIVE_SCROLL_MS;
 
 const NEWEST = new Set(["newest", "created-desc", "createddesc"]);
 
@@ -92,13 +94,21 @@ export function travelScroll(
   scroller,
   from,
   to,
-  { motion = false, duration = MOTION.duration, frame, now } = {},
+  {
+    motion = false,
+    duration = MOTION.duration,
+    frame,
+    now,
+    primeStart = false,
+  } = {},
 ) {
   if (!scroller) {
     return { behavior: "auto" };
   }
   if (!motion || from === to) {
-    scroller.scrollTop = to;
+    if (!motion && from !== to) {
+      scroller.scrollTop = to;
+    }
     return { behavior: "auto" };
   }
   const schedule =
@@ -109,8 +119,14 @@ export function travelScroll(
       scroller.ownerDocument.defaultView.performance,
     );
   if (typeof schedule !== "function" || typeof clock !== "function") {
-    scroller.scrollTop = to;
-    return { behavior: "smooth" };
+    if (!primeStart) {
+      scroller.scrollTop = to;
+    }
+    return { behavior: primeStart ? "auto" : "smooth" };
+  }
+  if (primeStart) {
+    // Park the pre-insert offset before paint. Later frames ease to `to`.
+    scroller.scrollTop = from;
   }
   const start = clock();
   const step = (time) => {
@@ -200,46 +216,69 @@ function rowGapPx(list) {
   return Number.isFinite(parsed) ? parsed : 16;
 }
 
-function clearArrival(list, card) {
-  card?.classList?.remove?.("is-arriving");
-  list?.style?.removeProperty?.("--arrive-shift");
+function arrivalDistance(card) {
+  const height = Number(card?.getBoundingClientRect?.().height);
+  if (!Number.isFinite(height) || height <= 0) {
+    return 0;
+  }
+  const parent = card.parentElement;
+  const gap =
+    parent?.children && parent.children.length > 1 ? rowGapPx(parent) : 0;
+  return height + gap;
 }
 
-export function playQueueArrival(list, id, { motion = false } = {}) {
-  if (!motion || !list) {
-    return { traveled: false, duration: ARRIVAL_MS };
-  }
-  const card = findQueueCard(list, id);
+export function presentNewQueueCard(
+  card,
+  scroller,
+  {
+    motion = false,
+    followScroll = false,
+    pulse = false,
+    frame,
+    now,
+    duration = ARRIVE_SCROLL_MS,
+  } = {},
+) {
   if (!card?.classList) {
-    return { traveled: false, duration: ARRIVAL_MS };
+    return { behavior: "auto", scrolled: false, from: null, to: null };
   }
-  const rows = list.children
-    ? Array.from(list.children)
-    : Array.from(list.querySelectorAll?.(".queue-item") ?? []);
-  if (rows[0] !== card) {
-    return { traveled: false, duration: ARRIVAL_MS };
-  }
-  const height = Number(card.getBoundingClientRect?.().height);
-  if (Number.isFinite(height) && height > 0) {
-    const shift = -(height + rowGapPx(list));
-    list.style?.setProperty?.("--arrive-shift", `${shift}px`);
-  }
-  card.classList.add("is-arriving");
-  const finish = (event) => {
-    if (event && event.target !== card) {
-      return;
+  card.classList.remove("is-entering");
+  card.classList.remove("is-arriving");
+  if (!motion) {
+    card.classList.remove("is-slide-in");
+    card.classList.remove("is-ring-pulse");
+    if (pulse) {
+      card.classList.add("is-last-copied");
     }
-    card.removeEventListener?.("animationend", finish);
-    clearArrival(list, card);
-  };
-  if (typeof card.addEventListener === "function") {
-    card.addEventListener("animationend", finish);
+    return { behavior: "auto", scrolled: false, from: null, to: null };
   }
-  const view = list.ownerDocument?.defaultView;
-  if (typeof view?.setTimeout === "function") {
-    view.setTimeout(() => finish(), ARRIVAL_MS + 48);
+  if (!card.classList.contains("is-slide-in")) {
+    card.classList.add("is-slide-in");
   }
-  return { traveled: true, duration: ARRIVAL_MS };
+  if (pulse) {
+    card.classList.add("is-last-copied");
+    if (!card.classList.contains("is-ring-pulse")) {
+      card.classList.add("is-ring-pulse");
+    }
+  }
+  if (!followScroll || !scroller) {
+    return { behavior: "auto", scrolled: false, from: null, to: null };
+  }
+  const distance = arrivalDistance(card);
+  const top = Number(scroller.scrollTop ?? 0);
+  if (!(distance > 0) || !Number.isFinite(top)) {
+    return { behavior: "auto", scrolled: false, from: top, to: top };
+  }
+  const from = top + distance;
+  const to = top;
+  const travel = travelScroll(scroller, from, to, {
+    motion: true,
+    duration,
+    frame,
+    now,
+    primeStart: true,
+  });
+  return { ...travel, from, to, scrolled: travel.behavior === "smooth" };
 }
 
 export function markLastCopied(list, id, { pulse = false } = {}) {
@@ -252,7 +291,11 @@ export function markLastCopied(list, id, { pulse = false } = {}) {
     }
     const copied = Boolean(id) && row.dataset?.itemId === id;
     row.classList.toggle("is-last-copied", copied);
-    row.classList.toggle("is-ring-pulse", Boolean(pulse) && copied);
+    if (!copied) {
+      row.classList.remove("is-ring-pulse");
+    } else if (pulse && !row.classList.contains("is-ring-pulse")) {
+      row.classList.add("is-ring-pulse");
+    }
   }
 }
 

@@ -47,7 +47,9 @@
   --radius-pill: 999px;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration: 180ms;
-  --arrive: 280ms;
+  --arrive: 380ms;
+  --arrive-scroll: 340ms;
+  --ring-pulse: 1200ms;
   --ease: 180ms var(--ease-out);
 
   --space-1: 4px;
@@ -823,35 +825,48 @@ pre {
 
 @keyframes bronze-copy-ring {
   0%,
+  18%,
+  36%,
+  54%,
   100% {
-    box-shadow: 0 0 0 2px var(--ring);
+    outline-offset: 2px;
   }
 
-  50% {
-    box-shadow:
-      0 0 0 2px var(--ring),
-      0 0 0 8px color-mix(in srgb, var(--ring) 35%, transparent);
+  9%,
+  27%,
+  45% {
+    outline-offset: 8px;
   }
 }
 
-@keyframes bronze-arrive {
-  from {
+@keyframes bronze-slide-in {
+  0% {
     opacity: 0;
-    transform: translateY(var(--arrive-shift, -100%));
+    transform: translateX(-100%);
   }
 
-  to {
+  35% {
+    opacity: 1;
+  }
+
+  100% {
     opacity: 1;
     transform: none;
   }
 }
 
-@keyframes bronze-make-room {
-  from {
-    transform: translateY(var(--arrive-shift, -100%));
+@keyframes bronze-slide-in-rtl {
+  0% {
+    opacity: 0;
+    transform: translateX(100%);
   }
 
-  to {
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 1;
     transform: none;
   }
 }
@@ -867,13 +882,14 @@ li.is-entering {
   animation-delay: var(--enter-delay, 0ms);
 }
 
-.queue-item.is-arriving {
+.queue-item.is-slide-in {
   z-index: 1;
-  animation: bronze-arrive var(--arrive) var(--ease-out) both;
+  animation: bronze-slide-in var(--arrive) var(--ease-out) both;
 }
 
-.queue-item.is-arriving ~ .queue-item {
-  animation: bronze-make-room var(--arrive) var(--ease-out) both;
+[dir="rtl"] .queue-item.is-slide-in,
+:dir(rtl) .queue-item.is-slide-in {
+  animation-name: bronze-slide-in-rtl;
 }
 
 article {
@@ -886,13 +902,15 @@ article {
   overflow: visible;
 }
 
-.queue-item.is-last-copied > article {
+.queue-item.is-last-copied > article,
+.queue-item.is-ring-pulse > article {
   border-radius: var(--radius-card);
-  box-shadow: 0 0 0 2px var(--ring);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
-.queue-item.is-last-copied.is-ring-pulse > article {
-  animation: bronze-copy-ring var(--arrive) var(--ease-out) 3;
+.queue-item.is-ring-pulse > article {
+  animation: bronze-copy-ring var(--ring-pulse) var(--ease-out);
 }
 
 article p {
@@ -2264,8 +2282,7 @@ html[data-motion="reduce"] .queue-item.is-leaving-complete,
 html[data-motion="reduce"] .queue-item.is-leaving-skip,
 html[data-motion="reduce"] .queue-item.is-leaving-trash,
 html[data-motion="reduce"] li.is-entering,
-html[data-motion="reduce"] .queue-item.is-arriving,
-html[data-motion="reduce"] .queue-item.is-arriving ~ .queue-item,
+html[data-motion="reduce"] .queue-item.is-slide-in,
 html[data-motion="reduce"] .queue-item.is-last-copied > article,
 html[data-motion="reduce"] .queue-item.is-ring-pulse > article {
   transition: none !important;
@@ -2273,10 +2290,8 @@ html[data-motion="reduce"] .queue-item.is-ring-pulse > article {
   scroll-behavior: auto !important;
 }
 
-html[data-motion="reduce"] .queue-item.is-arriving,
-html[data-motion="reduce"] .queue-item.is-arriving ~ .queue-item,
-[data-reduce-motion] .queue-item.is-arriving,
-[data-reduce-motion] .queue-item.is-arriving ~ .queue-item {
+html[data-motion="reduce"] .queue-item.is-slide-in,
+[data-reduce-motion] .queue-item.is-slide-in {
   animation: none;
   transform: none;
 }
@@ -2286,7 +2301,8 @@ html[data-motion="reduce"] .queue-item.is-ring-pulse > article,
 [data-reduce-motion] .queue-item.is-last-copied > article,
 [data-reduce-motion] .queue-item.is-ring-pulse > article {
   animation: none;
-  box-shadow: 0 0 0 2px var(--ring);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 @media (prefers-contrast: more) {

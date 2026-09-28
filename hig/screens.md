@@ -13,14 +13,15 @@ Purpose: capture in, act on the current item.
   icon → Copy (filled) + compact icon row (Complete, Skip, Edit, Move
   up, Move down, Trash).
 - Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
-- A new card at the loaded start slides into place when the queue is
-  newest-first and the scrollport is already within 24px of the top
-  (`is-arriving`, `--arrive` 280ms). Rows below ease down by the same
-  distance. Oldest-first does not scroll. Other inserts fade with
-  `bronze-enter`.
-- The last copied card pulses a 2px `--ring` on `--radius-card` three
-  times (`bronze-copy-ring`), then holds that ring. The ring is
-  independent of the slide.
+- A new card inserted into the loaded pages slides in from the
+  inline-start edge (`is-slide-in`, `--arrive` 380ms, short fade).
+  RTL uses the trailing edge. Newest-first, already within 24px of the
+  top, eases the scrollport to that card over `--arrive-scroll` (340ms)
+  across animation frames. Oldest-first leaves the scrollport where it
+  is. A later refresh updates the same row.
+- The arriving card and the last copied card hold a 2px `--ring`
+  outline, offset outside `--radius-card`. Motion pulses that outline
+  three times (`bronze-copy-ring`, `--ring-pulse` 1200ms), then it rests.
 - Complete / Skip / Trash leave the list: height collapse
   (`grid-template-rows` 1fr→0fr) plus fade, then the node is removed.
   Complete slides slightly up. Skip fades. Trash shrinks. Tokens are
@@ -28,10 +29,11 @@ Purpose: capture in, act on the current item.
 - Move up / down is one FLIP `translateY` shot on the card and
   neighbors (`--duration`, `--ease-out`). Copy, Edit, and icon hover
   do not move.
-- Reduce Motion (`prefers-reduced-motion: reduce` or
-  `data-reduce-motion`) skips the slide, the pulse, and collapse. The
-  list updates immediately. The last copied card keeps a static ring.
-  Motion is never required to understand the action.
+- Reduce Motion (`prefers-reduced-motion: reduce`,
+  `data-reduce-motion`, or `data-motion="reduce"`) skips the slide, the
+  scroll ease, the pulse, and collapse. The card appears in its final
+  place. The ring stays a static outline. Motion is never required to
+  understand the action.
 
 ## Settings — `apps/desktop/src/settings.html`
 

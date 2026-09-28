@@ -9,8 +9,10 @@ updated in the same change.
 - Tauri 2 WebView, `frontendDist` is unbundled `apps/desktop/src`.
   No npm motion library, no Vite CDN, no remote `@font-face`.
 - Motion is CSS + WAAPI in existing modules (`control.mjs`), 180ms,
-  `cubic-bezier(0.22, 1, 0.36, 1)`. Queue arrival and the copied-card
-  ring use `--arrive` (280ms) in `chrome.css`.
+  `cubic-bezier(0.22, 1, 0.36, 1)`. A new queue card slides from the
+  inline-start edge over `--arrive` (380ms). Newest-first at the top
+  eases scroll over `--arrive-scroll` (340ms). The copied ring pulses
+  for `--ring-pulse` (1200ms). Reduce Motion skips those three.
 - Event-tap callbacks never touch AX, DB, windows, clipboard, icons,
   or models.
 
