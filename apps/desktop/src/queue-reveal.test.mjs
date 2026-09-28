@@ -14,6 +14,7 @@ import {
   ARRIVE_SLIDE_MS,
   beginSortCollapse,
   beginSortExpand,
+  firstPageExpandPlan,
   insertionBeforeId,
   isNearLoadedStart,
   markLastCopied,
@@ -698,6 +699,8 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   assert.match(live, /beginSortCollapse/);
   assert.match(live, /swapSortPage/);
   assert.match(live, /sortReflowPlan/);
+  assert.match(live, /firstPageExpandPlan/);
+  assert.match(live, /paintFirstPageExpand/);
   assert.match(live, /requestSortReload/);
   assert.match(reveal, /is-sort-reflow/);
   assert.match(reveal, /is-sort-hold/);
@@ -734,6 +737,9 @@ test("sort reflow collapses then expands from the first card", () => {
     expand: false,
   });
   assert.deepEqual(sortReflowPlan(true, 0), { collapse: false, expand: false });
+  assert.equal(firstPageExpandPlan(true, 3), true);
+  assert.equal(firstPageExpandPlan(true, 0), false);
+  assert.equal(firstPageExpandPlan(false, 3), false);
 
   const first = slideCard(80);
   const second = slideCard(80);

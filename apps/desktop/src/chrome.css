@@ -54,6 +54,7 @@
   --sort-flip: 200ms;
   --sort-collapse: 380ms;
   --sort-expand: 480ms;
+  --body-expand: 320ms;
   --ring-pulse: 1000ms;
   --ease: 180ms var(--ease-out);
 
@@ -1334,6 +1335,11 @@ article.is-expanded [data-slot="body"] {
   overflow: visible;
 }
 
+article.is-body-opening [data-slot="body"],
+article.is-body-closing [data-slot="body"] {
+  overflow: hidden;
+}
+
 article [data-slot="expand"] {
   align-self: start;
   width: max-content;
@@ -1363,10 +1369,13 @@ article [data-slot="expand"]::after {
   flex-shrink: 0;
   background: currentColor;
   clip-path: polygon(0 15%, 50% 85%, 100% 15%);
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform var(--body-expand) var(--ease-out);
 }
 
 article.is-expanded [data-slot="expand"]::after {
-  clip-path: polygon(0 85%, 50% 15%, 100% 85%);
+  transform: rotate(180deg);
 }
 
 article
@@ -2649,7 +2658,9 @@ html[data-motion="reduce"] .queue-item.is-ring-pulse > article,
 }
 
 html[data-motion="reduce"] .queue-sort-toggle [data-sort-glyph],
-[data-reduce-motion] .queue-sort-toggle [data-sort-glyph] {
+[data-reduce-motion] .queue-sort-toggle [data-sort-glyph],
+html[data-motion="reduce"] article [data-slot="expand"]::after,
+[data-reduce-motion] article [data-slot="expand"]::after {
   transition: none;
 }
 
