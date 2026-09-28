@@ -47,6 +47,7 @@
   "queue.item.showMore": "Показать ещё",
   "queue.item.showLess": "Свернуть",
   "queue.item.title": "Элемент",
+  "queue.item.writingTitle": "Пишу заголовок…",
   "queue.sort.showOldest": "Показать сначала старые",
   "queue.sort.showNewest": "Показать сначала новые",
   "panel.section.active": "Входящие",

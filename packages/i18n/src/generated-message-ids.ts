@@ -50,6 +50,7 @@ export const MessageIds = {
   "queue.item.showMore": "queue.item.showMore",
   "queue.item.showLess": "queue.item.showLess",
   "queue.item.title": "queue.item.title",
+  "queue.item.writingTitle": "queue.item.writingTitle",
   "queue.sort.showOldest": "queue.sort.showOldest",
   "queue.sort.showNewest": "queue.sort.showNewest",
   "panel.section.active": "panel.section.active",

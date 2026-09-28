@@ -47,6 +47,7 @@
   "queue.item.showMore": "Meer tonen",
   "queue.item.showLess": "Minder tonen",
   "queue.item.title": "Item",
+  "queue.item.writingTitle": "Titel wordt geschreven…",
   "queue.sort.showOldest": "Toon oudste eerst",
   "queue.sort.showNewest": "Toon nieuwste eerst",
   "panel.section.active": "Inbox",

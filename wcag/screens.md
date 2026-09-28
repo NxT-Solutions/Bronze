@@ -23,6 +23,11 @@ Purpose: capture in, act on the current item.
 - Complete, Skip, Move, and Trash do not require motion to understand.
   Reduce Motion / `data-reduce-motion` updates the list immediately
   (2.3.3). This is not a WCAG claim.
+- A pending title uses the catalog string “Writing title…” as the
+  accessible name. The spinner is decorative (`aria-hidden`). Reduce
+  Motion shows that string with no fade and no spinner animation
+  (2.2.2, 2.3.1, 2.3.3). Information is not the spinner alone (1.1.1,
+  1.4.1). This is not a WCAG claim.
 - A new card may ease existing cards down to make room, then slide in
   from the inline-start edge and show a temporary `--ring` pulse
   (three cycles in 1s, then gone). The pulse is not the focus

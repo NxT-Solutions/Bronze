@@ -140,7 +140,11 @@ function applyCatalogMessages(scope, messages) {
     return;
   }
   for (const el of scope.querySelectorAll("[data-i18n]")) {
-    if (el.closest?.("[data-slot=title],[data-slot=body]")) {
+    if (el.closest?.("[data-slot=body]")) {
+      continue;
+    }
+    const slot = el.dataset?.slot;
+    if (slot === "title" || slot === "title-text") {
       continue;
     }
     const key = el.getAttribute("data-i18n");
@@ -236,7 +240,11 @@ export function emitUiLocaleChanged(payload = {}) {
   try {
     const channel = new BroadcastChannel(UI_LOCALE_EVENT);
     channel.postMessage(payload);
-    channel.close();
+    if (typeof setTimeout === "function") {
+      setTimeout(() => channel.close(), 0);
+    } else {
+      channel.close();
+    }
   } catch {
     // BroadcastChannel is absent in some test runtimes.
   }

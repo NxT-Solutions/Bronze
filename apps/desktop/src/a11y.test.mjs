@@ -33,6 +33,10 @@ test("queue action accessible names contain visible labels", () => {
   assert.match(html, /data-i18n="queue.item.showMore">\s*Show more\s*</);
   assert.match(html, /data-i18n="queue.item.showLess">\s*Show less\s*</);
   assert.match(html, /data-i18n="queue.item.title">\s*Item\s*</);
+  assert.match(
+    html,
+    /data-i18n="queue.item.writingTitle">\s*Writing title…\s*</,
+  );
   assert.match(html, /data-i18n-aria-label="queue.sort.showOldest"/);
   assert.match(html, /aria-label="Show oldest first"/);
   assert.match(html, /aria-describedby="queue-sort-state"/);

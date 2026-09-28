@@ -47,6 +47,7 @@
   "queue.item.showMore": "Show more",
   "queue.item.showLess": "Show less",
   "queue.item.title": "Item",
+  "queue.item.writingTitle": "Writing title…",
   "queue.sort.showOldest": "Show oldest first",
   "queue.sort.showNewest": "Show newest first",
   "panel.section.active": "Inbox",

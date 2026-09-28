@@ -124,7 +124,14 @@ test("applyHandTestLocale sets html lang and catalog chrome", () => {
     textContent: "Settings",
     getAttribute: () => "settings.title",
   };
-  const nodes = [heading];
+  const writing = {
+    textContent: "Writing title…",
+    dataset: { slot: "title-writing-label" },
+    getAttribute: (name) =>
+      name === "data-i18n" ? "queue.item.writingTitle" : null,
+    closest: () => null,
+  };
+  const nodes = [heading, writing];
   const root = {
     documentElement: { lang: "en", dir: "ltr" },
     getElementById(id) {
@@ -146,12 +153,21 @@ test("applyHandTestLocale sets html lang and catalog chrome", () => {
     htmlLang: "nl",
     dir: "ltr",
     catalogAvailable: true,
-    messages: { "settings.title": "Instellingen" },
+    messages: {
+      "settings.title": "Instellingen",
+      "queue.item.writingTitle": "Titel schrijven…",
+    },
   });
   assert.equal(resolved, "nl");
   assert.equal(root.documentElement.lang, "nl");
   assert.equal(heading.textContent, "Instellingen");
+  assert.equal(writing.textContent, "Titel schrijven…");
   assert.equal(title.textContent, "Instellingen");
+  assert.match(applyLocaleSource, /closest\?\.\("\[data-slot=body\]"\)/);
+  assert.match(
+    applyLocaleSource,
+    /slot === "title" \|\| slot === "title-text"/,
+  );
   assert.match(applyLocaleSource, /setAttribute\("aria-placeholder", value\)/);
   assert.match(applyLocaleSource, /setAttribute\("title", value\)/);
   assert.match(applyLocaleSource, /setAttribute\("aria-label", value\)/);
@@ -187,7 +203,13 @@ test("locale change is broadcast so every open window can reapply", async () => 
     seen.push(payload);
   });
   await emitUiLocaleChanged({ locale: "nl" });
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  const deadline = Date.now() + 1000;
+  while (
+    !seen.some((payload) => payload?.locale === "nl") &&
+    Date.now() < deadline
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
   assert.equal(
     seen.some((payload) => payload?.locale === "nl"),
     true,

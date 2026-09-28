@@ -47,6 +47,7 @@
   "queue.item.showMore": "Prikaži više",
   "queue.item.showLess": "Prikaži manje",
   "queue.item.title": "Stavka",
+  "queue.item.writingTitle": "Pišem naslov…",
   "queue.sort.showOldest": "Prikaži najstarije prvo",
   "queue.sort.showNewest": "Prikaži najnovije prvo",
   "panel.section.active": "Ulaz",

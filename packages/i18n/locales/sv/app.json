@@ -47,6 +47,7 @@
   "queue.item.showMore": "Visa mer",
   "queue.item.showLess": "Visa mindre",
   "queue.item.title": "Objekt",
+  "queue.item.writingTitle": "Skriver titel…",
   "queue.sort.showOldest": "Visa äldst först",
   "queue.sort.showNewest": "Visa nyast först",
   "panel.section.active": "Inkorg",

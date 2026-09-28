@@ -55,6 +55,7 @@ export const PANEL_CHROME_KEYS = [
   "queue.item.showMore",
   "queue.item.showLess",
   "queue.item.title",
+  "queue.item.writingTitle",
   "queue.sort.showOldest",
   "queue.sort.showNewest",
   "library.heading.items",

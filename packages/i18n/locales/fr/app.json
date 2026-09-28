@@ -47,6 +47,7 @@
   "queue.item.showMore": "Afficher plus",
   "queue.item.showLess": "Afficher moins",
   "queue.item.title": "Élément",
+  "queue.item.writingTitle": "Rédaction du titre…",
   "queue.sort.showOldest": "Afficher les plus anciennes d’abord",
   "queue.sort.showNewest": "Afficher les plus récentes d’abord",
   "panel.section.active": "Boîte de réception",

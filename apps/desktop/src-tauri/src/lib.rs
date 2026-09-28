@@ -791,6 +791,9 @@ fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::Ow
             None
         }
     });
+    if let Some((id, body)) = &refine {
+        session.schedule_title_refine(id, body);
+    }
     drop(session);
     if let Ok(outcome) = persisted {
         let saved = outcome.terminal == Terminal::Saved;

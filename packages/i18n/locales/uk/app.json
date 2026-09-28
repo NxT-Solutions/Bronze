@@ -47,6 +47,7 @@
   "queue.item.showMore": "Показати ще",
   "queue.item.showLess": "Згорнути",
   "queue.item.title": "Елемент",
+  "queue.item.writingTitle": "Пишу заголовок…",
   "queue.sort.showOldest": "Показати спочатку старі",
   "queue.sort.showNewest": "Показати спочатку нові",
   "panel.section.active": "Вхідні",

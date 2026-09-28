@@ -48,6 +48,16 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(queueTitleSlot[0], /min-height:\s*calc\(2 \* 1lh\)/);
   assert.match(queueTitleSlot[0], /text-overflow:\s*ellipsis/);
   assert.match(queueTitleSlot[0], /overflow:\s*hidden/);
+  assert.match(chrome, /--title-fade:\s*200ms/);
+  assert.match(chrome, /\.queue-title-spinner\s*\{/);
+  assert.match(
+    chrome,
+    /#queue article\.is-title-pending \[data-slot="title-writing"\]/,
+  );
+  assert.match(
+    chrome,
+    /#queue article \[data-slot="title-text"\],\s*#queue article \[data-slot="title-writing"\]\s*\{[^}]*transition:\s*opacity var\(--title-fade\)/,
+  );
   const chromeWithoutQueueTitle = chrome.replace(queueTitleSlot[0], "");
   assert.doesNotMatch(chromeWithoutQueueTitle, /-webkit-line-clamp/);
   assert.doesNotMatch(chromeWithoutQueueTitle, /-webkit-box-orient/);

@@ -47,6 +47,7 @@
   "queue.item.showMore": "Näytä lisää",
   "queue.item.showLess": "Näytä vähemmän",
   "queue.item.title": "Kohde",
+  "queue.item.writingTitle": "Kirjoitetaan otsikkoa…",
   "queue.sort.showOldest": "Näytä vanhimmat ensin",
   "queue.sort.showNewest": "Näytä uusimmat ensin",
   "panel.section.active": "Saapuneet",
