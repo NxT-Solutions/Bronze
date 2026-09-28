@@ -47,6 +47,8 @@
   "queue.item.showMore": "Vis mer",
   "queue.item.showLess": "Vis mindre",
   "queue.item.title": "Element",
+  "queue.sort.showOldest": "Vis eldste først",
+  "queue.sort.showNewest": "Vis nyeste først",
   "panel.section.active": "Innboks",
   "library.heading.items": "Elementer",
   "library.title": "Bibliotek",

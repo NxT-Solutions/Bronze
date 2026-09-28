@@ -47,6 +47,8 @@
   "queue.item.showMore": "Daha fazla göster",
   "queue.item.showLess": "Daha az göster",
   "queue.item.title": "Öğe",
+  "queue.sort.showOldest": "Önce en eskileri göster",
+  "queue.sort.showNewest": "Önce en yenileri göster",
   "panel.section.active": "Gelen kutusu",
   "library.heading.items": "Öğeler",
   "library.title": "Kitaplık",

@@ -47,6 +47,8 @@
   "queue.item.showMore": "Meer tonen",
   "queue.item.showLess": "Minder tonen",
   "queue.item.title": "Item",
+  "queue.sort.showOldest": "Toon oudste eerst",
+  "queue.sort.showNewest": "Toon nieuwste eerst",
   "panel.section.active": "Inbox",
   "library.heading.items": "Items",
   "library.title": "Bibliotheek",

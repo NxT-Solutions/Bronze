@@ -47,6 +47,8 @@
   "queue.item.showMore": "Показать ещё",
   "queue.item.showLess": "Свернуть",
   "queue.item.title": "Элемент",
+  "queue.sort.showOldest": "Показать сначала старые",
+  "queue.sort.showNewest": "Показать сначала новые",
   "panel.section.active": "Входящие",
   "library.heading.items": "Элементы",
   "library.title": "Библиотека",

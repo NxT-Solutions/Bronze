@@ -17,8 +17,11 @@ import { runBusy } from "./control.mjs";
 import { sourceIconSrc } from "./item-view.mjs";
 import {
   emitQueueSortChanged,
+  listenQueueSortChanged,
   parseQueueSort,
+  patchSettingsQueueSort,
   queueSortChange,
+  queueSortFromEvent,
 } from "./queue-sort.mjs";
 import { bindShortcutRegistry } from "./shortcuts.mjs";
 import { showChromeWindow, tauriInvoke, tauriListen } from "./tauri-bridge.mjs";
@@ -1954,6 +1957,18 @@ export async function bindSettingsLive(
     refreshLoginItemStatus(root, invokeFn).catch(() => {});
   });
   await refreshExportPreview();
+
+  listenQueueSortChanged((payload) => {
+    const sort = queueSortFromEvent(payload);
+    if (!sort) {
+      return;
+    }
+    settings = patchSettingsQueueSort(settings, sort);
+    const select = root.querySelector("#queue-sort");
+    if (select) {
+      select.value = sort;
+    }
+  });
 
   root.querySelector("#backup-schedule")?.addEventListener("change", persist);
   root.querySelector("#queue-sort")?.addEventListener("change", persist);

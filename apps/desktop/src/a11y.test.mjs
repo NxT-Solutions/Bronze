@@ -33,6 +33,9 @@ test("queue action accessible names contain visible labels", () => {
   assert.match(html, /data-i18n="queue.item.showMore">\s*Show more\s*</);
   assert.match(html, /data-i18n="queue.item.showLess">\s*Show less\s*</);
   assert.match(html, /data-i18n="queue.item.title">\s*Item\s*</);
+  assert.match(html, /data-i18n-aria-label="queue.sort.showOldest"/);
+  assert.match(html, /aria-label="Show oldest first"/);
+  assert.match(html, /<button\b[^>]*type="button"[^>]*id="queue-sort-toggle"/);
 });
 
 test("four surfaces expose a skip link and section headings", () => {

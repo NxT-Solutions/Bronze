@@ -47,6 +47,8 @@
   "queue.item.showMore": "Pokaži več",
   "queue.item.showLess": "Pokaži manj",
   "queue.item.title": "Element",
+  "queue.sort.showOldest": "Prikaži najstarejše najprej",
+  "queue.sort.showNewest": "Prikaži najnovejše najprej",
   "panel.section.active": "Prejeto",
   "library.heading.items": "Elementi",
   "library.title": "Knjižnica",

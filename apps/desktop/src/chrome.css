@@ -766,6 +766,38 @@ pre {
   white-space: pre-wrap;
 }
 
+.queue-sort-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.queue-sort-toggle {
+  width: var(--control-h);
+  height: var(--control-h);
+  min-width: var(--control-h);
+  min-height: var(--control-h);
+  padding: 0;
+  border-radius: var(--radius-control);
+  color: var(--muted-foreground);
+}
+
+.queue-sort-toggle svg {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+}
+
+.queue-sort-toggle:hover:not(:disabled),
+.queue-sort-toggle:focus-visible {
+  color: var(--foreground);
+}
+
+.queue-sort-toggle[data-queue-sort="newest"] [data-sort-glyph="oldest"],
+.queue-sort-toggle[data-queue-sort="oldest"] [data-sort-glyph="newest"] {
+  display: none;
+}
+
 #queue,
 #library-queue,
 [data-slot="item-list"] {

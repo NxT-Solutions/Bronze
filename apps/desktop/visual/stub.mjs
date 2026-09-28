@@ -28,6 +28,9 @@ export function installVisualStub(scenario) {
     if (cmd === "queue_query") {
       return Promise.resolve({ items, nextCursor: null });
     }
+    if (cmd === "load_settings_v1") {
+      return Promise.resolve({ copy: { queueSort: "newest" } });
+    }
     if (cmd === "search_library_items") {
       return Promise.resolve([]);
     }
