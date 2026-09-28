@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   applyQueueExitMotion,
   applyQueueItemMutation,
@@ -8,6 +11,11 @@ import {
   queueMotionKind,
   shouldAnimateQueue,
 } from "./queue-motion.mjs";
+
+const chrome = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "chrome.css"),
+  "utf8",
+);
 
 test("queue motion kind maps actions and list diffs", () => {
   assert.equal(
@@ -281,12 +289,66 @@ test("a new card is inserted once and neighbors stay attached", async () => {
   );
 });
 
+test("a title update keeps the row and the reserved title-box height", async () => {
+  const list = fakeQueueList();
+  const template = fakeQueueTemplate();
+  const renderer = createQueueRenderer({
+    queueItemRows(target) {
+      return target.children;
+    },
+    syncMoveAvailability() {},
+  });
+  const slot = queueTitleSlotRule(chrome);
+  const oneLine = "Thanks.";
+  const twoLine =
+    "The generated title wraps onto a second line of this queue card";
+  await renderer.renderQueueItems(
+    list,
+    [{ id: "n", title: oneLine, body: "body" }],
+    template,
+    { action: "insert" },
+  );
+  assert.equal(list.children.length, 1);
+  const card = list.children[0];
+  const firstHeight = reservedTitleBoxHeight(oneLine, slot);
+  const replacesAfterInsert = list.replaceCount;
+  await renderer.renderQueueItems(
+    list,
+    [{ id: "n", title: twoLine, body: "body" }],
+    template,
+    { action: "replace" },
+  );
+  assert.equal(list.children[0], card);
+  assert.equal(list.replaceCount, replacesAfterInsert);
+  assert.equal(reservedTitleBoxHeight(twoLine, slot), firstHeight);
+  assert.equal(reservedTitleBoxHeight("Hi", slot), firstHeight);
+  assert.equal(firstHeight, 2);
+});
+
+function queueTitleSlotRule(css) {
+  const match = css.match(
+    /#queue article \[data-slot="title"\]:not\(\[hidden\]\)\s*\{([^}]+)\}/,
+  );
+  assert.ok(match, "queue title reserved slot");
+  return match[1];
+}
+
+function reservedTitleBoxHeight(text, rule) {
+  const clampMatch = rule.match(/-webkit-line-clamp:\s*(\d+)/);
+  const clamp = Number(clampMatch?.[1] ?? Number.POSITIVE_INFINITY);
+  const minMatch = rule.match(/min-height:\s*calc\(\s*(\d+)\s*\*\s*1lh\s*\)/);
+  const minLines = Number(minMatch?.[1] ?? 0);
+  const natural = Math.max(1, Math.ceil(String(text).length / 24));
+  return Math.max(Math.min(natural, clamp), minLines);
+}
+
 function fakeQueueList() {
   const children = [];
   const list = {
     children,
     relocations: 0,
     classList: classBag(),
+    replaceCount: 0,
     ownerDocument: {
       documentElement: {
         dataset: { motion: "full" },
@@ -311,6 +373,7 @@ function fakeQueueList() {
       own(node);
     },
     replaceChildren() {
+      list.replaceCount += 1;
       children.length = 0;
     },
   };

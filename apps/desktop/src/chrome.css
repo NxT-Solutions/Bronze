@@ -997,6 +997,15 @@ article [data-slot="title"] {
   overflow-wrap: break-word;
 }
 
+#queue article [data-slot="title"]:not([hidden]) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: calc(2 * 1lh);
+}
+
 article [data-slot="body"] {
   margin: 0;
   font-size: var(--text-caption);
