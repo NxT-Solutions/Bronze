@@ -50,6 +50,7 @@
   --arrive: 380ms;
   --arrive-room: 320ms;
   --arrive-scroll: 340ms;
+  --sort-flip: 200ms;
   --ring-pulse: 1000ms;
   --ease: 180ms var(--ease-out);
 
@@ -787,6 +788,15 @@ pre {
   display: block;
   width: 1rem;
   height: 1rem;
+  overflow: visible;
+}
+
+.queue-sort-toggle [data-sort-glyph] {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform var(--sort-flip) var(--ease-out),
+    opacity var(--sort-flip) var(--ease-out);
 }
 
 .queue-sort-toggle:hover:not(:disabled),
@@ -796,7 +806,14 @@ pre {
 
 .queue-sort-toggle[data-queue-sort="newest"] [data-sort-glyph="oldest"],
 .queue-sort-toggle[data-queue-sort="oldest"] [data-sort-glyph="newest"] {
-  display: none;
+  opacity: 0;
+  transform: scaleY(-1);
+}
+
+.queue-sort-toggle[data-queue-sort="newest"] [data-sort-glyph="newest"],
+.queue-sort-toggle[data-queue-sort="oldest"] [data-sort-glyph="oldest"] {
+  opacity: 1;
+  transform: none;
 }
 
 #queue,
@@ -962,6 +979,21 @@ li.is-entering {
 [data-slot="item-list"].is-slide-in {
   animation: none;
   transform: none;
+}
+
+#queue.is-sort-reflow,
+#library-queue.is-sort-reflow {
+  animation: bronze-sort-reflow var(--sort-flip) var(--ease-out);
+}
+
+@keyframes bronze-sort-reflow {
+  from {
+    opacity: 0.4;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 [dir="rtl"] .queue-item.is-slide-in,
@@ -2394,6 +2426,18 @@ html[data-motion="reduce"] .queue-item.is-ring-pulse > article,
 [data-reduce-motion] .queue-item.is-ring-pulse > article {
   animation: none;
   outline: none;
+}
+
+html[data-motion="reduce"] .queue-sort-toggle [data-sort-glyph],
+[data-reduce-motion] .queue-sort-toggle [data-sort-glyph] {
+  transition: none;
+}
+
+html[data-motion="reduce"] #queue.is-sort-reflow,
+html[data-motion="reduce"] #library-queue.is-sort-reflow,
+[data-reduce-motion] #queue.is-sort-reflow,
+[data-reduce-motion] #library-queue.is-sort-reflow {
+  animation: none;
 }
 
 @media (prefers-contrast: more) {

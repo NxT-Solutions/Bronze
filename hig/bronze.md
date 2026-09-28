@@ -13,11 +13,12 @@ updated in the same change.
   existing stack one card height over `--arrive-room` (320ms), then
   slides from the inline-start edge over `--arrive` (380ms).
   Newest-first eases the scrollport to the top of the loaded page over
-  `--arrive-scroll` (340ms). The arrival ring uses `--ring` at low
-  opacity and pulses three times over `--ring-pulse` (1000ms) after
-  the card has landed, then the outline is gone. Reduce Motion skips
-  those shots and leaves no arrival outline. `:focus-visible` is a
-  separate ring.
+  `--arrive-scroll` (340ms). The sort-toggle glyphs and a first-page
+  sort reload use `--sort-flip` (200ms). The arrival ring uses `--ring`
+  at low opacity and pulses three times over `--ring-pulse` (1000ms)
+  after the card has landed, then the outline is gone. Reduce Motion
+  skips those shots and leaves no arrival outline. `:focus-visible` is
+  a separate ring.
 - Event-tap callbacks never touch AX, DB, windows, clipboard, icons,
   or models.
 
