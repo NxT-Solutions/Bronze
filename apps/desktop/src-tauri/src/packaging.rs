@@ -120,6 +120,11 @@ mod packaging_tests {
             "icon.icns must include the 1024px image, found {sizes:?}"
         );
         let checker = manifest.join("../../../tooling/dock-icon-fill.py");
+        let fill_src = fs::read_to_string(&checker).unwrap();
+        assert!(fill_src.contains("every pixel"));
+        assert!(fill_src.contains("flat opaque plate"));
+        assert!(fill_src.contains("--write-master"));
+        assert!(fill_src.contains("self-test: rounded inset plate must fail"));
         let fill = std::process::Command::new("python3")
             .arg(&checker)
             .arg(manifest.join("icons/icon.icns"))
@@ -130,7 +135,7 @@ mod packaging_tests {
             .expect("dock icon fill check");
         assert!(
             fill.success(),
-            "Dock icon artwork must cover the canvas edge"
+            "Dock icon artwork must be a flat opaque plate"
         );
         let icns_at = conf.find("\"icons/icon.icns\"").unwrap();
         let template_at = conf.find("\"icons/32x32.png\"").unwrap();
