@@ -78,9 +78,9 @@ export function retestFeedbackFallback(kind) {
     return "Checked for this running copy.";
   }
   if (kind === "failed") {
-    return "Retest could not run. Open System Settings and add the exact app at the path above.";
+    return "Retest could not run: open System Settings and add the exact app at the path above.";
   }
-  return "Still denied. Add the exact app at the path above in Privacy & Security, then quit and reopen Bronze.";
+  return "Still denied for this running copy: add the exact app at the path above in Privacy & Security, then quit and reopen Bronze.";
 }
 
 export function applyRetestFeedback(root, kind) {

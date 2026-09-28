@@ -7,7 +7,6 @@ import {
   applyNoticeAuthorization,
   applyPermissionResult,
   applyRetestFeedback,
-  applyRunningBundle,
   formatRunningCopy,
   loadNoticeAuthorization,
   NOTICE_REQUEST_COMMAND,
@@ -74,11 +73,11 @@ test("permission health lists independent rows and unused screen recording", () 
   );
   assert.equal(
     en["settings.permission.exactApp"],
-    "Add that exact file. Another Bronze.app, bronze-desktop, or older copy will not grant this running app.",
+    "Add the exact file at the path above; another Bronze.app, bronze-desktop, or older copy will not grant this running app.",
   );
   assert.equal(
     en["settings.permission.retestStillDenied"],
-    "Still denied. Add the exact app at the path above in Privacy & Security, then quit and reopen Bronze.",
+    "Still denied for this running copy: add the exact app at the path above in Privacy & Security, then quit and reopen Bronze.",
   );
   assert.equal(
     en["settings.permission.retestChecked"],
@@ -86,7 +85,7 @@ test("permission health lists independent rows and unused screen recording", () 
   );
   assert.equal(
     en["settings.permission.retestFailed"],
-    "Retest could not run. Open System Settings and add the exact app at the path above.",
+    "Retest could not run: open System Settings and add the exact app at the path above.",
   );
   assert.doesNotMatch(html, /data-permission-retest="notifications"/);
   assert.doesNotMatch(html, /data-permission-retest="screenRecording"/);
@@ -357,7 +356,10 @@ test("retest of a denied snapshot updates pills and opens Privacy when the promp
   assert.equal(pathEl.textContent, "/Applications/Bronze.app");
   assert.equal(exact.hidden, false);
   assert.equal(feedback.hidden, false);
-  assert.equal(feedback.textContent, en["settings.permission.retestStillDenied"]);
+  assert.equal(
+    feedback.textContent,
+    en["settings.permission.retestStillDenied"],
+  );
   assert.equal(
     retestFeedbackKey("stillDenied"),
     "settings.permission.retestStillDenied",
