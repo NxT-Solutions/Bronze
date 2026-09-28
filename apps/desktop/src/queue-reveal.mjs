@@ -96,7 +96,12 @@ export function planNewItemFollow({
   const atLoadedEnd =
     added.length === 1 && nextIds[nextIds.length - 1] === added[0];
   if (mode === "newest" && atLoadedStart) {
-    return { scrollId: added[0], cursor: "stay", prepend: false, room: "start" };
+    return {
+      scrollId: added[0],
+      cursor: "stay",
+      prepend: false,
+      room: "start",
+    };
   }
   if (mode === "oldest" && atLoadedEnd && !hasMore) {
     return { scrollId: null, cursor: "stay", prepend: false, room: "end" };
