@@ -87,6 +87,10 @@ export function sortReflowPlan(motion, loadedCount) {
   return { collapse: play, expand: play };
 }
 
+export function firstPageExpandPlan(motion, itemCount) {
+  return Boolean(motion && itemCount > 0);
+}
+
 export function sortCollapseWaitMs(rowCount) {
   const extra =
     Math.max(0, Math.min(Math.max(rowCount, 0) - 1, SORT_STAGGER_MAX)) *
