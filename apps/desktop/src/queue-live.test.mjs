@@ -3,10 +3,12 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { LOCALE_APPLIED_EVENT } from "./apply-locale.mjs";
 import {
   applyCaptureResult,
   applyLiveWindow,
   applyQueuePage,
+  bindQueueLive,
   captureFeedbackKey,
   composerFormatAction,
   composerHotkey,
@@ -110,6 +112,8 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   });
   assert.match(live, /capture-result/);
   assert.match(live, /LOCALE_APPLIED_EVENT/);
+  assert.match(live, /loadFirstPage/);
+  assert.match(live, /firstPageReady/);
   assert.match(html, /id="capture-status"[^>]*visually-hidden/);
   assert.match(html, /id="chrome-notice"/);
   assert.match(html, /data-notice-dismiss/);
@@ -710,4 +714,497 @@ test("queue sort toggle writes newest then oldest and reloads the list", async (
     settings,
   );
   assert.equal(queueSort.value, "oldest");
+});
+
+function createMountDocument() {
+  function walk(node, visit) {
+    for (const child of node.children ?? []) {
+      visit(child);
+      walk(child, visit);
+    }
+  }
+
+  function matches(node, sel) {
+    if (sel.startsWith("#")) {
+      return node.id === sel.slice(1);
+    }
+    if (sel.startsWith(".")) {
+      return node.className.split(/\s+/).includes(sel.slice(1));
+    }
+    const data = sel.match(/^\[([a-z0-9-]+)(?:=(?:"([^"]*)"|([^\]]+)))?\]$/i);
+    if (data) {
+      const name = data[1];
+      const value = data[2] ?? data[3];
+      if (name.startsWith("data-")) {
+        const key = name
+          .slice(5)
+          .replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+        const actual = node.dataset?.[key];
+        return value == null ? actual != null : String(actual) === value;
+      }
+      if (name === "type") {
+        return node.type === value;
+      }
+      return false;
+    }
+    return node.tagName === sel.toUpperCase();
+  }
+
+  function queryAll(rootEl, sel) {
+    const found = [];
+    walk(rootEl, (node) => {
+      if (node.nodeType === 1 && matches(node, sel)) {
+        found.push(node);
+      }
+    });
+    if (rootEl.nodeType === 1 && matches(rootEl, sel)) {
+      found.unshift(rootEl);
+    }
+    return found;
+  }
+
+  function createElement(tagName) {
+    const children = [];
+    const attrs = {};
+    const listeners = new Map();
+    const el = {
+      nodeType: 1,
+      tagName: tagName.toUpperCase(),
+      children,
+      childNodes: children,
+      hidden: false,
+      dataset: {},
+      className: "",
+      id: "",
+      lang: "",
+      dir: "",
+      type: "",
+      disabled: false,
+      parentNode: null,
+      ownerDocument: doc,
+      style: { setProperty() {} },
+      scrollHeight: 0,
+      clientHeight: 0,
+      get classList() {
+        return {
+          contains: (name) => el.className.split(/\s+/).includes(name),
+          add(name) {
+            if (!this.contains(name)) {
+              el.className = `${el.className} ${name}`.trim();
+            }
+          },
+          remove(name) {
+            el.className = el.className
+              .split(/\s+/)
+              .filter((part) => part && part !== name)
+              .join(" ");
+          },
+          toggle(name, force) {
+            const on = force ?? !this.contains(name);
+            if (on) {
+              this.add(name);
+            } else {
+              this.remove(name);
+            }
+            return on;
+          },
+        };
+      },
+      appendChild(child) {
+        child.parentNode = el;
+        children.push(child);
+        return child;
+      },
+      append(...nodes) {
+        for (const node of nodes) {
+          el.appendChild(node);
+        }
+      },
+      replaceChildren(...nodes) {
+        for (const child of children) {
+          child.parentNode = null;
+        }
+        children.length = 0;
+        for (const node of nodes) {
+          el.appendChild(node);
+        }
+      },
+      insertBefore(node, before) {
+        node.parentNode = el;
+        const index = children.indexOf(before);
+        if (index < 0) {
+          children.push(node);
+        } else {
+          children.splice(index, 0, node);
+        }
+        return node;
+      },
+      remove() {
+        const parent = el.parentNode;
+        if (!parent?.children) {
+          return;
+        }
+        const index = parent.children.indexOf(el);
+        if (index >= 0) {
+          parent.children.splice(index, 1);
+        }
+        el.parentNode = null;
+      },
+      setAttribute(name, value) {
+        attrs[name] = String(value);
+        if (name === "id") {
+          el.id = String(value);
+        }
+        if (name === "type") {
+          el.type = String(value);
+        }
+        if (name.startsWith("data-")) {
+          const key = name
+            .slice(5)
+            .replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+          el.dataset[key] = String(value);
+        }
+      },
+      getAttribute(name) {
+        if (name === "id") {
+          return el.id || null;
+        }
+        return Object.hasOwn(attrs, name) ? attrs[name] : null;
+      },
+      querySelector(sel) {
+        return queryAll(el, sel)[0] ?? null;
+      },
+      querySelectorAll(sel) {
+        return queryAll(el, sel);
+      },
+      closest(sel) {
+        let node = el;
+        while (node) {
+          if (node.nodeType === 1 && matches(node, sel)) {
+            return node;
+          }
+          node = node.parentNode;
+        }
+        return null;
+      },
+      contains(node) {
+        let current = node;
+        while (current) {
+          if (current === el) {
+            return true;
+          }
+          current = current.parentNode;
+        }
+        return false;
+      },
+      addEventListener(type, handler) {
+        const list = listeners.get(type) ?? [];
+        list.push(handler);
+        listeners.set(type, list);
+      },
+      dispatchEvent(event) {
+        const list = listeners.get(event.type) ?? [];
+        for (const handler of list) {
+          handler(event);
+        }
+        return true;
+      },
+    };
+    Object.defineProperty(el, "textContent", {
+      get() {
+        if (children.length === 0) {
+          return el._text ?? "";
+        }
+        return children.map((child) => child.textContent ?? "").join("");
+      },
+      set(value) {
+        children.length = 0;
+        el._text = String(value);
+        if (value) {
+          children.push(doc.createTextNode(String(value)));
+        }
+      },
+    });
+    Object.defineProperty(el, "firstElementChild", {
+      get() {
+        return children.find((child) => child.nodeType === 1) ?? null;
+      },
+    });
+    return el;
+  }
+
+  const doc = {
+    documentElement: {
+      dataset: { motion: "reduce" },
+      hasAttribute: () => false,
+    },
+    defaultView: {
+      matchMedia: () => ({ matches: true }),
+    },
+    activeElement: null,
+    createElement,
+    createTextNode(text) {
+      return {
+        nodeType: 3,
+        nodeName: "#text",
+        data: String(text),
+        get textContent() {
+          return this.data;
+        },
+        children: [],
+      };
+    },
+    addEventListener() {},
+    getSelection() {
+      return null;
+    },
+  };
+  doc.documentElement.ownerDocument = doc;
+  return doc;
+}
+
+function createCard(doc) {
+  const li = doc.createElement("li");
+  li.className = "queue-item";
+  const article = doc.createElement("article");
+  const title = doc.createElement("h3");
+  title.dataset.slot = "title";
+  const body = doc.createElement("div");
+  body.dataset.slot = "body";
+  const source = doc.createElement("p");
+  source.dataset.slot = "source";
+  const sourceLabel = doc.createElement("span");
+  sourceLabel.dataset.slot = "source-label";
+  sourceLabel.textContent = "From {appName}";
+  const sourceIcon = doc.createElement("img");
+  sourceIcon.dataset.slot = "source-icon";
+  source.appendChild(sourceLabel);
+  source.appendChild(sourceIcon);
+  const expand = doc.createElement("button");
+  expand.dataset.slot = "expand";
+  expand.textContent = "Show more";
+  article.appendChild(title);
+  article.appendChild(body);
+  article.appendChild(source);
+  article.appendChild(expand);
+  li.appendChild(article);
+  return li;
+}
+
+function mountQueueRoot() {
+  const doc = createMountDocument();
+  const root = doc.createElement("main");
+  root.id = "quick-panel";
+  const form = doc.createElement("form");
+  form.id = "composer";
+  const editor = doc.createElement("div");
+  editor.id = "composer-body";
+  const submit = doc.createElement("button");
+  submit.type = "submit";
+  form.appendChild(editor);
+  form.appendChild(submit);
+  const empty = doc.createElement("p");
+  empty.id = "queue-empty";
+  empty.hidden = false;
+  empty.textContent = "Select text and Capture, or type here.";
+  const list = doc.createElement("ul");
+  list.id = "queue";
+  const template = doc.createElement("template");
+  template.id = "queue-item-template";
+  const proto = createCard(doc);
+  template.content = {
+    firstElementChild: {
+      cloneNode() {
+        return createCard(doc);
+      },
+      querySelector: proto.querySelector.bind(proto),
+      querySelectorAll: proto.querySelectorAll.bind(proto),
+    },
+    querySelector: proto.querySelector.bind(proto),
+    querySelectorAll: proto.querySelectorAll.bind(proto),
+  };
+  const profile = doc.createElement("select");
+  profile.id = "output-profile";
+  profile.value = "plain";
+  root.appendChild(form);
+  root.appendChild(empty);
+  root.appendChild(list);
+  root.appendChild(template);
+  root.appendChild(profile);
+  return { root, list, empty, doc };
+}
+
+function stubQueueInvoke(page) {
+  const calls = [];
+  let current = page;
+  const invoke = async (cmd, args) => {
+    calls.push({ cmd, args });
+    if (cmd === "load_settings_v1") {
+      return { copy: { queueSort: "newest" } };
+    }
+    if (cmd === "take_notice_activation") {
+      return null;
+    }
+    if (cmd === "queue_query") {
+      if (typeof current === "function") {
+        return current();
+      }
+      return current;
+    }
+    throw new Error(`unexpected ${cmd}`);
+  };
+  invoke.calls = calls;
+  invoke.setPage = (next) => {
+    current = next;
+  };
+  return invoke;
+}
+
+function listenStub() {
+  const handlers = {};
+  const previousTauri = globalThis.__TAURI__;
+  const PreviousChannel = globalThis.BroadcastChannel;
+  globalThis.BroadcastChannel = class {
+    close() {}
+    set onmessage(_handler) {}
+  };
+  globalThis.__TAURI__ = {
+    event: {
+      listen(name, handler) {
+        handlers[name] = handler;
+        return Promise.resolve(() => {
+          delete handlers[name];
+        });
+      },
+    },
+  };
+  return {
+    handlers,
+    restore() {
+      globalThis.__TAURI__ = previousTauri;
+      globalThis.BroadcastChannel = PreviousChannel;
+    },
+  };
+}
+
+async function waitUntil(probe, label) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (probe()) {
+      return;
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  }
+  throw new Error(label);
+}
+
+function paintedIds(list) {
+  return Array.from(list.children)
+    .map((row) => row.dataset?.itemId)
+    .filter(Boolean);
+}
+
+test("mounting the queue paints the first page without queue-changed", async () => {
+  const tauri = listenStub();
+  const { root, list, empty } = mountQueueRoot();
+  const invoke = stubQueueInvoke({
+    items: [
+      {
+        id: "cursor-1",
+        title: "that from Cursor",
+        body: "older card",
+        contentLanguage: "en",
+      },
+    ],
+    nextCursor: null,
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.equal(
+      invoke.calls.some((call) => call.cmd === "queue_query"),
+      true,
+    );
+    assert.deepEqual(paintedIds(list), ["cursor-1"]);
+    assert.equal(empty.hidden, true);
+    assert.equal(tauri.handlers["queue-changed"] == null, false);
+    assert.equal(
+      invoke.calls.filter((call) => call.cmd === "queue_query").length,
+      1,
+    );
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("an empty first page keeps the empty state", async () => {
+  const tauri = listenStub();
+  const { root, list, empty } = mountQueueRoot();
+  const invoke = stubQueueInvoke({ items: [], nextCursor: null });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), []);
+    assert.equal(empty.hidden, false);
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("a later capture still live-updates the loaded page", async () => {
+  const tauri = listenStub();
+  const { root, list, empty } = mountQueueRoot();
+  const invoke = stubQueueInvoke({
+    items: [{ id: "old", title: "that from Cursor", body: "older" }],
+    nextCursor: null,
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), ["old"]);
+    invoke.setPage({
+      items: [
+        { id: "new", title: "just copied", body: "fresh" },
+        { id: "old", title: "that from Cursor", body: "older" },
+      ],
+      nextCursor: null,
+    });
+    tauri.handlers["queue-changed"]({ payload: "new" });
+    await waitUntil(
+      () => paintedIds(list).join() === "new,old",
+      "queue-changed did not paint the live page",
+    );
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    assert.equal(empty.hidden, true);
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("a failed first query retries when locale is applied", async () => {
+  const tauri = listenStub();
+  const { root, list, empty } = mountQueueRoot();
+  let attempts = 0;
+  const invoke = stubQueueInvoke(() => {
+    attempts += 1;
+    if (attempts === 1) {
+      throw new Error("invoke_unavailable");
+    }
+    return {
+      items: [{ id: "stored", title: "that from Cursor", body: "older" }],
+      nextCursor: null,
+    };
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), []);
+    assert.equal(empty.hidden, false);
+    root.dispatchEvent({ type: LOCALE_APPLIED_EVENT });
+    await waitUntil(
+      () => paintedIds(list).join() === "stored",
+      "locale retry did not paint the first page",
+    );
+    assert.deepEqual(paintedIds(list), ["stored"]);
+    assert.equal(empty.hidden, true);
+  } finally {
+    tauri.restore();
+  }
 });
