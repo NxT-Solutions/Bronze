@@ -9,12 +9,15 @@ updated in the same change.
 - Tauri 2 WebView, `frontendDist` is unbundled `apps/desktop/src`.
   No npm motion library, no Vite CDN, no remote `@font-face`.
 - Motion is CSS + WAAPI in existing modules (`control.mjs`), 180ms,
-  `cubic-bezier(0.22, 1, 0.36, 1)`. A new queue card slides from the
-  inline-start edge over `--arrive` (380ms). Newest-first eases the
-  scrollport to the top of the loaded page over `--arrive-scroll`
-  (340ms). The arrival ring uses `--ring` at low opacity and pulses
-  three times over `--ring-pulse` (1000ms), then the outline is gone. Reduce Motion skips those three and leaves no
-  arrival outline. `:focus-visible` is a separate ring.
+  `cubic-bezier(0.22, 1, 0.36, 1)`. A new queue card first eases the
+  existing stack one card height over `--arrive-room` (320ms), then
+  slides from the inline-start edge over `--arrive` (380ms).
+  Newest-first eases the scrollport to the top of the loaded page over
+  `--arrive-scroll` (340ms). The arrival ring uses `--ring` at low
+  opacity and pulses three times over `--ring-pulse` (1000ms) after
+  the card has landed, then the outline is gone. Reduce Motion skips
+  those shots and leaves no arrival outline. `:focus-visible` is a
+  separate ring.
 - Event-tap callbacks never touch AX, DB, windows, clipboard, icons,
   or models.
 

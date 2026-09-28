@@ -9,6 +9,9 @@ import {
 } from "./apply-motion.mjs";
 import { motionAllowed } from "./control.mjs";
 import {
+  ARRIVE_ROOM_MS,
+  ARRIVE_SLIDE_DELAY_MS,
+  ARRIVE_SLIDE_MS,
   insertionBeforeId,
   isNearLoadedStart,
   markLastCopied,
@@ -125,7 +128,10 @@ test("oldest-first insert does not jump the cursor page", () => {
   assert.equal(insertionBeforeId(["b"], ["n", "b"], "n"), "b");
   const writes = [];
   const scroller = scrollProbe(40, writes);
+  const list = attachRows(slideCard(96), slideCard(96));
+  const last = list.children[1];
   const trailing = slideCard(96);
+  list.append(trailing);
   const stayed = presentNewQueueCard(trailing, scroller, {
     motion: true,
     followScroll: false,
@@ -141,7 +147,10 @@ test("oldest-first insert does not jump the cursor page", () => {
   assert.equal(scroller.scrollTop, 40);
   assert.equal(writes.filter((entry) => typeof entry === "number").length, 0);
   assert.equal(trailing.classList.has("is-slide-in"), true);
-  assert.equal(trailing.classList.has("is-ring-pulse"), true);
+  assert.equal(trailing.classList.has("is-slot-pending"), true);
+  assert.equal(last.classList.has("is-make-room"), true);
+  assert.equal(last.classList.has("is-make-room-end"), true);
+  assert.equal(trailing.classList.has("is-ring-pulse"), false);
 });
 
 test("newest-first at the top slides the new card without moving the scrollport", () => {
@@ -149,6 +158,7 @@ test("newest-first at the top slides the new card without moving the scrollport"
   const scroller = scrollProbe(0, writes);
   const card = slideCard(96);
   const older = slideCard(96);
+  attachRows(card, older);
   const played = presentNewQueueCard(card, scroller, {
     motion: true,
     followScroll: true,
@@ -160,8 +170,10 @@ test("newest-first at the top slides the new card without moving the scrollport"
     now: () => 0,
   });
   assert.equal(card.classList.has("is-slide-in"), true);
-  assert.equal(card.classList.has("is-ring-pulse"), true);
+  assert.equal(card.classList.has("is-ring-pulse"), false);
   assert.equal(card.classList.has("is-last-copied"), false);
+  assert.equal(older.classList.has("is-make-room"), true);
+  assert.equal(older.classList.has("is-make-room-end"), false);
   assert.equal(older.classList.has("is-slide-in"), false);
   assert.equal(older.classList.has("is-ring-pulse"), false);
   assert.equal(played.scrolled, false);
@@ -169,25 +181,43 @@ test("newest-first at the top slides the new card without moving the scrollport"
   assert.equal(played.to, 0);
   assert.equal(scroller.scrollTop, 0);
   assert.equal(writes.length, 0);
+  assert.equal(ARRIVE_ROOM_MS, 320);
+  assert.equal(ARRIVE_SLIDE_DELAY_MS, 80);
+  assert.equal(ARRIVE_SLIDE_MS, 380);
   assert.match(chrome, /--arrive:\s*380ms/);
+  assert.match(chrome, /--arrive-room:\s*320ms/);
   assert.match(chrome, /--arrive-scroll:\s*340ms/);
   assert.match(chrome, /@keyframes bronze-slide-in/);
   assert.match(chrome, /translateX\(-100%\)/);
   assert.match(chrome, /@keyframes bronze-slide-in-rtl/);
   assert.match(chrome, /translateX\(100%\)/);
+  assert.match(chrome, /@keyframes bronze-make-room/);
+  assert.match(
+    chrome,
+    /translateY\(calc\(-1 \* var\(--arrive-block, 0px\)\)\)/,
+  );
+  assert.match(chrome, /@keyframes bronze-make-room-end/);
   assert.match(
     chrome,
     /\.queue-item\.is-slide-in\s*\{[^}]*animation:\s*bronze-slide-in var\(--arrive\)/,
   );
-  assert.match(
+  assert.doesNotMatch(
     chrome,
-    /\.queue-item\.is-slide-in:not\(\.is-slide-docked\)\s*\{[^}]*margin-block-end:\s*calc\(-1 \* var\(--arrive-block, 0px\)\)/,
+    /\.queue-item\.is-slide-in:not\(\.is-slide-docked\)/,
+  );
+  assert.doesNotMatch(
+    chrome,
+    /margin-block-end:\s*calc\(-1 \* var\(--arrive-block/,
   );
   assert.match(chrome, /#queue\.is-slide-in[\s\S]*animation:\s*none/);
   assert.doesNotMatch(chrome, /@keyframes bronze-arrive/);
   assert.match(
     chrome,
     /\[data-reduce-motion\] \.queue-item\.is-slide-in[\s\S]*animation:\s*none/,
+  );
+  assert.match(
+    chrome,
+    /\[data-reduce-motion\] \.queue-item\.is-make-room[\s\S]*animation:\s*none/,
   );
 });
 
@@ -246,7 +276,7 @@ test("play animations applies the slide and the pulse", () => {
     now: () => 0,
   });
   assert.equal(card.classList.has("is-slide-in"), true);
-  assert.equal(card.classList.has("is-ring-pulse"), true);
+  assert.equal(card.classList.has("is-ring-pulse"), false);
   assert.equal(played.behavior, "smooth");
   assert.equal(writes.length, 0);
   frames[0](0);
@@ -299,6 +329,8 @@ test("reduced motion inserts the card without motion classes", () => {
   const writes = [];
   const scroller = scrollProbe(0, writes);
   const card = slideCard(96);
+  const older = slideCard(96);
+  attachRows(card, older);
   const still = presentNewQueueCard(card, scroller, {
     motion: false,
     followScroll: true,
@@ -313,6 +345,9 @@ test("reduced motion inserts the card without motion classes", () => {
   assert.equal(scroller.scrollTop, 0);
   assert.equal(writes.length, 0);
   assert.equal(card.classList.has("is-slide-in"), false);
+  assert.equal(card.classList.has("is-make-room"), false);
+  assert.equal(older.classList.has("is-make-room"), false);
+  assert.equal(older.classList.has("is-slide-in"), false);
   assert.equal(card.classList.has("is-ring-pulse"), false);
   assert.equal(card.classList.has("is-entering"), false);
   assert.equal(card.classList.has("is-last-copied"), false);
@@ -338,17 +373,18 @@ test("the arrival ring class leaves when the pulse ends", () => {
   };
   presentNewQueueCard(card, null, { motion: true, pulse: true });
   assert.equal(card.classList.has("is-slide-in"), true);
-  assert.equal(card.classList.has("is-ring-pulse"), true);
+  assert.equal(card.classList.has("is-ring-pulse"), false);
   assert.equal(card.classList.has("is-last-copied"), false);
+  const landTimers = timers.filter((timer) => timer.ms === ARRIVE_SLIDE_MS);
+  assert.ok(landTimers.length > 0);
+  for (const timer of landTimers) {
+    timer.fn();
+  }
+  assert.equal(card.classList.has("is-slide-in"), false);
+  assert.equal(card.classList.has("is-slide-docked"), false);
+  assert.equal(card.classList.has("is-ring-pulse"), true);
   const ringTimer = timers.find((timer) => timer.ms === 1000);
-  const slideTimer = timers.find((timer) => timer.ms === 380);
   assert.ok(ringTimer);
-  assert.ok(slideTimer);
-  events[0].fn({ animationName: "bronze-slide-in" });
-  assert.equal(card.classList.has("is-ring-pulse"), true);
-  slideTimer.fn();
-  assert.equal(card.classList.has("is-slide-docked"), true);
-  assert.equal(card.classList.has("is-ring-pulse"), true);
   events[0].fn({ animationName: "bronze-copy-ring" });
   assert.equal(card.classList.has("is-ring-pulse"), false);
 
@@ -363,10 +399,50 @@ test("the arrival ring class leaves when the pulse ends", () => {
     },
   };
   presentNewQueueCard(held, null, { motion: true, pulse: true });
+  assert.equal(held.classList.has("is-ring-pulse"), false);
+  for (const timer of later.filter((entry) => entry.ms === ARRIVE_SLIDE_MS)) {
+    timer.fn();
+  }
   assert.equal(held.classList.has("is-ring-pulse"), true);
   later.find((timer) => timer.ms === 1000).fn();
   assert.equal(held.classList.has("is-ring-pulse"), false);
-  assert.equal(held.classList.has("is-slide-in"), true);
+  assert.equal(held.classList.has("is-slide-in"), false);
+});
+
+test("make-room and slide classes leave no leftover transform or margin", () => {
+  const timers = [];
+  const older = slideCard(96);
+  const card = slideCard(96);
+  const list = attachRows(card, older);
+  list.ownerDocument = {
+    defaultView: {
+      setTimeout(fn, ms) {
+        timers.push({ fn, ms });
+        return 1;
+      },
+    },
+  };
+  card.ownerDocument = list.ownerDocument;
+  older.ownerDocument = list.ownerDocument;
+  presentNewQueueCard(card, null, { motion: true, pulse: true });
+  assert.equal(card.classList.has("is-slide-in"), true);
+  assert.equal(older.classList.has("is-make-room"), true);
+  assert.equal(list.style.getPropertyValue("--arrive-block"), "112px");
+  for (const timer of timers.filter((entry) => entry.ms === ARRIVE_ROOM_MS)) {
+    timer.fn();
+  }
+  assert.equal(older.classList.has("is-make-room"), false);
+  assert.equal(older.style.transform, "");
+  assert.equal(older.style.margin, "");
+  const slideAt = ARRIVE_SLIDE_DELAY_MS + ARRIVE_SLIDE_MS;
+  for (const timer of timers.filter((entry) => entry.ms === slideAt)) {
+    timer.fn();
+  }
+  assert.equal(card.classList.has("is-slide-in"), false);
+  assert.equal(card.style.transform, "");
+  assert.equal(card.style.margin, "");
+  assert.equal(card.style.getPropertyValue("--arrive-slide-delay"), "");
+  assert.equal(list.style.getPropertyValue("--arrive-block"), "");
 });
 
 test("notification click reveals a loaded card and loads a missing page by id", async () => {
@@ -614,12 +690,82 @@ function classNames() {
   };
 }
 
+function styleBag() {
+  const props = new Map();
+  const style = {
+    transform: "",
+    margin: "",
+    marginBlockStart: "",
+    marginBlockEnd: "",
+    setProperty(name, value) {
+      props.set(name, String(value));
+    },
+    removeProperty(name) {
+      props.delete(name);
+      if (name === "transform") {
+        style.transform = "";
+      }
+      if (
+        name === "margin" ||
+        name === "margin-block-start" ||
+        name === "margin-block-end"
+      ) {
+        style.margin = "";
+        style.marginBlockStart = "";
+        style.marginBlockEnd = "";
+      }
+    },
+    getPropertyValue(name) {
+      return props.get(name) ?? "";
+    },
+  };
+  return style;
+}
+
 function slideCard(height) {
   return {
     dataset: {},
     classList: classNames(),
+    style: styleBag(),
+    parentElement: null,
+    nextElementSibling: null,
+    previousElementSibling: null,
     getBoundingClientRect: () => ({ height, top: 0, bottom: height }),
   };
+}
+
+function attachRows(...cards) {
+  const children = [];
+  const list = {
+    children,
+    style: styleBag(),
+    get firstElementChild() {
+      return children[0] ?? null;
+    },
+    get lastElementChild() {
+      return children[children.length - 1] ?? null;
+    },
+    append(node) {
+      const index = children.indexOf(node);
+      if (index >= 0) {
+        children.splice(index, 1);
+      }
+      children.push(node);
+      relink();
+    },
+  };
+  function relink() {
+    for (let index = 0; index < children.length; index += 1) {
+      const node = children[index];
+      node.parentElement = list;
+      node.nextElementSibling = children[index + 1] ?? null;
+      node.previousElementSibling = children[index - 1] ?? null;
+    }
+  }
+  for (const card of cards) {
+    list.append(card);
+  }
+  return list;
 }
 
 function scrollProbe(start, writes) {

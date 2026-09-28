@@ -228,7 +228,6 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
     }
     for (const node of arriving) {
       armNewCardSlide(node);
-      node.classList.add("is-slide-in");
     }
     list.classList?.remove?.("is-slide-in");
     list.classList?.remove?.("is-arriving");

@@ -998,7 +998,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     }
     if (added.length === 1) {
       lastCopiedId = added[0];
-      markLastCopied(list, added[0], { pulse: motion });
+      markLastCopied(list, added[0]);
     } else if (lastCopiedId) {
       markLastCopied(list, lastCopiedId, {
         pulse: Boolean(opts.pulseCopy) && motion,

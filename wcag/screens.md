@@ -23,12 +23,13 @@ Purpose: capture in, act on the current item.
 - Complete, Skip, Move, and Trash do not require motion to understand.
   Reduce Motion / `data-reduce-motion` updates the list immediately
   (2.3.3). This is not a WCAG claim.
-- A new card may slide in from the inline-start edge and show a
-  temporary `--ring` pulse (three cycles in 1s, then gone). The pulse
-  is not the focus indicator. Reduce Motion, `data-reduce-motion`, and
-  `data-motion="reduce"` skip the slide, the eased scroll, and the
-  pulse. The card is in the list either way (2.2.2, 2.3.1, 2.3.3).
-  This is not a WCAG claim.
+- A new card may ease existing cards down to make room, then slide in
+  from the inline-start edge and show a temporary `--ring` pulse
+  (three cycles in 1s, then gone). The pulse is not the focus
+  indicator. Reduce Motion, `data-reduce-motion`, and
+  `data-motion="reduce"` skip the make-room translate, the slide, the
+  eased scroll, and the pulse. The card is in the list either way
+  (2.2.2, 2.3.1, 2.3.3). This is not a WCAG claim.
 
 ## Settings — `apps/desktop/src/settings.html`
 

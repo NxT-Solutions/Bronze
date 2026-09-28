@@ -263,8 +263,11 @@ test("a new card is inserted once and neighbors stay attached", async () => {
   );
   assert.equal(list.children[0].dataset.itemId, "n");
   assert.equal(list.children[0].classList.has("is-slide-in"), true);
+  assert.equal(old.classList.has("is-make-room"), true);
+  assert.equal(old.classList.has("is-make-room-end"), false);
   assert.equal(old.classList.has("is-slide-in"), false);
   assert.equal(older.classList.has("is-slide-in"), false);
+  assert.equal(older.classList.has("is-make-room"), false);
   assert.equal(old.classList.has("is-ring-pulse"), false);
   assert.equal(older.classList.has("is-ring-pulse"), false);
   assert.equal(list.classList.has("is-slide-in"), false);
@@ -287,6 +290,83 @@ test("a new card is inserted once and neighbors stay attached", async () => {
     paged.some((node) => node.classList.has("is-slide-in")),
     false,
   );
+});
+
+test("reduced motion applies neither make-room nor slide-in", async () => {
+  const list = fakeQueueList();
+  list.ownerDocument.documentElement.dataset.motion = "reduce";
+  list.ownerDocument.documentElement.hasAttribute = () => true;
+  const template = fakeQueueTemplate();
+  const renderer = createQueueRenderer({
+    queueItemRows(target) {
+      return target.children;
+    },
+    syncMoveAvailability() {},
+  });
+  await renderer.renderQueueItems(
+    list,
+    [
+      { id: "a", body: "old" },
+      { id: "b", body: "older" },
+    ],
+    template,
+  );
+  const old = list.children[0];
+  await renderer.renderQueueItems(
+    list,
+    [
+      { id: "n", body: "new" },
+      { id: "a", body: "old" },
+      { id: "b", body: "older" },
+    ],
+    template,
+    { action: "insert", slide: true },
+  );
+  assert.equal(list.children[0].classList.has("is-slide-in"), false);
+  assert.equal(old.classList.has("is-make-room"), false);
+  assert.equal(old.classList.has("is-slide-in"), false);
+  assert.equal(
+    list.children.some((node) => node.classList.has("is-slide-in")),
+    false,
+  );
+});
+
+test("oldest-first append makes room below the last card", async () => {
+  const list = fakeQueueList();
+  const template = fakeQueueTemplate();
+  const renderer = createQueueRenderer({
+    queueItemRows(target) {
+      return target.children;
+    },
+    syncMoveAvailability() {},
+  });
+  await renderer.renderQueueItems(
+    list,
+    [
+      { id: "a", body: "old" },
+      { id: "b", body: "older" },
+    ],
+    template,
+  );
+  const last = list.children[1];
+  await renderer.renderQueueItems(
+    list,
+    [
+      { id: "a", body: "old" },
+      { id: "b", body: "older" },
+      { id: "n", body: "new" },
+    ],
+    template,
+    { action: "insert", slide: true },
+  );
+  const incoming = list.children[2];
+  assert.equal(incoming.dataset.itemId, "n");
+  assert.equal(incoming.classList.has("is-slide-in"), true);
+  assert.equal(incoming.classList.has("is-slot-pending"), true);
+  assert.equal(last.classList.has("is-make-room"), true);
+  assert.equal(last.classList.has("is-make-room-end"), true);
+  assert.equal(list.children[0].classList.has("is-slide-in"), false);
+  assert.equal(list.children[0].classList.has("is-make-room"), false);
 });
 
 test("a title update keeps the row and the reserved title-box height", async () => {
@@ -349,6 +429,13 @@ function fakeQueueList() {
     relocations: 0,
     classList: classBag(),
     replaceCount: 0,
+    style: styleBag(),
+    get firstElementChild() {
+      return children[0] ?? null;
+    },
+    get lastElementChild() {
+      return children[children.length - 1] ?? null;
+    },
     ownerDocument: {
       documentElement: {
         dataset: { motion: "full" },
@@ -377,6 +464,14 @@ function fakeQueueList() {
       children.length = 0;
     },
   };
+  function relink() {
+    for (let index = 0; index < children.length; index += 1) {
+      const node = children[index];
+      node.parentElement = list;
+      node.nextElementSibling = children[index + 1] ?? null;
+      node.previousElementSibling = children[index - 1] ?? null;
+    }
+  }
   function detach(node) {
     const index = children.indexOf(node);
     if (index < 0) {
@@ -384,14 +479,29 @@ function fakeQueueList() {
     }
     children.splice(index, 1);
     list.relocations += 1;
+    node.parentElement = null;
+    node.nextElementSibling = null;
+    node.previousElementSibling = null;
+    relink();
   }
   function own(node) {
     node.remove = () => {
       const index = children.indexOf(node);
       if (index >= 0) {
         children.splice(index, 1);
+        relink();
       }
     };
+    if (!node.style) {
+      node.style = styleBag();
+    }
+    if (!node.getBoundingClientRect) {
+      node.getBoundingClientRect = () => ({ height: 96, top: 0, bottom: 96 });
+    }
+    if (!node.ownerDocument) {
+      node.ownerDocument = list.ownerDocument;
+    }
+    relink();
   }
   return list;
 }
@@ -407,6 +517,13 @@ function fakeQueueTemplate() {
           return {
             dataset: {},
             classList: classBag(),
+            style: styleBag(),
+            parentElement: null,
+            nextElementSibling: null,
+            previousElementSibling: null,
+            getBoundingClientRect() {
+              return { height: 96, top: 0, bottom: 96 };
+            },
             querySelector() {
               return null;
             },
@@ -434,4 +551,36 @@ function classBag() {
       return names.has(name);
     },
   };
+}
+
+function styleBag() {
+  const props = new Map();
+  const style = {
+    transform: "",
+    margin: "",
+    marginBlockStart: "",
+    marginBlockEnd: "",
+    setProperty(name, value) {
+      props.set(name, String(value));
+    },
+    removeProperty(name) {
+      props.delete(name);
+      if (name === "transform") {
+        style.transform = "";
+      }
+      if (
+        name === "margin" ||
+        name === "margin-block-start" ||
+        name === "margin-block-end"
+      ) {
+        style.margin = "";
+        style.marginBlockStart = "";
+        style.marginBlockEnd = "";
+      }
+    },
+    getPropertyValue(name) {
+      return props.get(name) ?? "";
+    },
+  };
+  return style;
 }
