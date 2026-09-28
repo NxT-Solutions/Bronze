@@ -110,11 +110,7 @@ export function wireExpandReader(article, labels) {
   if (!button) {
     return;
   }
-  applyExpandState(
-    article,
-    article.classList.contains("is-expanded"),
-    labels,
-  );
+  applyExpandState(article, article.classList.contains("is-expanded"), labels);
   if (button.dataset.expandWired === "1") {
     return;
   }

@@ -94,7 +94,13 @@ export function travelScroll(
   scroller,
   from,
   to,
-  { motion = false, duration = MOTION.duration, frame, now, primeStart = false } = {},
+  {
+    motion = false,
+    duration = MOTION.duration,
+    frame,
+    now,
+    primeStart = false,
+  } = {},
 ) {
   if (!scroller) {
     return { behavior: "auto" };

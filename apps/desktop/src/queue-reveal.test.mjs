@@ -134,10 +134,7 @@ test("oldest-first insert does not jump the cursor page", () => {
   });
   assert.equal(stayed.scrolled, false);
   assert.equal(scroller.scrollTop, 40);
-  assert.equal(
-    writes.filter((entry) => typeof entry === "number").length,
-    0,
-  );
+  assert.equal(writes.filter((entry) => typeof entry === "number").length, 0);
   assert.equal(trailing.classList.has("is-slide-in"), true);
   assert.equal(trailing.classList.has("is-ring-pulse"), true);
 });

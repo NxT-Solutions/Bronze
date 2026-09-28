@@ -185,12 +185,9 @@ test("a later refresh keeps the sliding row instead of replacing it", async () =
     },
     syncMoveAvailability() {},
   });
-  await renderer.renderQueueItems(
-    list,
-    [{ id: "n", body: "new" }],
-    template,
-    { action: "insert" },
-  );
+  await renderer.renderQueueItems(list, [{ id: "n", body: "new" }], template, {
+    action: "insert",
+  });
   assert.equal(list.children.length, 1);
   const card = list.children[0];
   assert.equal(card.classList.has("is-slide-in"), true);
