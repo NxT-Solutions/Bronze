@@ -949,18 +949,20 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (action === "moveUp" || action === "moveDown") {
       const next = await reloadWindow(state.items.length, activeSort);
       if (gen !== refreshGen) {
-        return;
+        return false;
       }
       state = next;
-    } else if (!(action === "replace" && !opts.item)) {
+    } else if (
+      !(action === "replace" && !opts.item && state.items.length > 0)
+    ) {
       const next = await fetchLiveWindow(activeSort);
       if (gen !== refreshGen) {
-        return;
+        return false;
       }
       state = next;
     }
     if (gen !== refreshGen) {
-      return;
+      return false;
     }
     const paintOpts = { ...opts };
     if (insertSlide) {
@@ -969,7 +971,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     insertSlide = false;
     await paint(paintOpts);
     if (gen !== refreshGen) {
-      return;
+      return false;
     }
     const nextIds = queueItemRows(list)
       .map((el) => el.dataset?.itemId)
@@ -1001,6 +1003,38 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       markLastCopied(list, lastCopiedId, {
         pulse: Boolean(opts.pulseCopy) && motion,
       });
+    }
+    return true;
+  }
+
+  let firstPageReady = false;
+  let firstPageInFlight = false;
+  let firstPagePending = false;
+
+  async function loadFirstPage() {
+    if (firstPageReady) {
+      return;
+    }
+    if (firstPageInFlight) {
+      firstPagePending = true;
+      return;
+    }
+    firstPageInFlight = true;
+    firstPagePending = false;
+    try {
+      const painted = await refresh({ resetPage: true });
+      if (painted) {
+        firstPageReady = true;
+      }
+    } catch {
+      if (empty) {
+        empty.hidden = false;
+      }
+    } finally {
+      firstPageInFlight = false;
+    }
+    if (!firstPageReady && firstPagePending) {
+      await loadFirstPage();
     }
   }
 
@@ -1295,16 +1329,16 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     revealNoticeItem(id);
   });
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
-    refresh({ action: "replace" });
+    if (!firstPageReady) {
+      loadFirstPage();
+    } else {
+      refresh({ action: "replace" });
+    }
     syncSubmitLabel();
     paintSortToggle();
   });
 
-  try {
-    await refresh();
-  } catch {
-    list.replaceChildren();
-  }
+  await loadFirstPage();
   try {
     const pendingId = await invokeFn("take_notice_activation");
     if (pendingId) {
