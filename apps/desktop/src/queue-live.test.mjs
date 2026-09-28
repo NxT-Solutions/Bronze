@@ -37,6 +37,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
 const chrome = readFileSync(join(root, "chrome.css"), "utf8");
 const live = readFileSync(join(root, "queue-live.mjs"), "utf8");
+const sortSrc = readFileSync(join(root, "queue-sort.mjs"), "utf8");
 const motion = readFileSync(join(root, "queue-motion.mjs"), "utf8");
 const itemView = readFileSync(join(root, "item-view.mjs"), "utf8");
 
@@ -623,7 +624,7 @@ test("a status change patches the visible row without moving it", () => {
   assert.equal(queueSortFromEvent(null), null);
   assert.match(live, /queueSortFromEvent/);
   assert.match(live, /persistQueueSort/);
-  assert.match(live, /set_queue_sort/);
+  assert.match(sortSrc, /set_queue_sort/);
   assert.match(live, /#queue-sort-toggle/);
   const copyAt = live.indexOf('action === "copy"');
   const assignAt = live.indexOf("lastCopiedId = id", copyAt);
@@ -835,6 +836,13 @@ function createMountDocument() {
         };
       },
       appendChild(child) {
+        const from = child.parentNode?.children;
+        if (from) {
+          const at = from.indexOf(child);
+          if (at >= 0) {
+            from.splice(at, 1);
+          }
+        }
         child.parentNode = el;
         children.push(child);
         return child;
@@ -854,6 +862,13 @@ function createMountDocument() {
         }
       },
       insertBefore(node, before) {
+        const from = node.parentNode?.children;
+        if (from) {
+          const at = from.indexOf(node);
+          if (at >= 0) {
+            from.splice(at, 1);
+          }
+        }
         node.parentNode = el;
         const index = children.indexOf(before);
         if (index < 0) {
@@ -894,6 +909,12 @@ function createMountDocument() {
           return el.id || null;
         }
         return Object.hasOwn(attrs, name) ? attrs[name] : null;
+      },
+      removeAttribute(name) {
+        delete attrs[name];
+        if (name === "disabled") {
+          el.disabled = false;
+        }
       },
       querySelector(sel) {
         return queryAll(el, sel)[0] ?? null;
@@ -1111,6 +1132,7 @@ function listenStub() {
   const previousTauri = globalThis.__TAURI__;
   const PreviousChannel = globalThis.BroadcastChannel;
   globalThis.BroadcastChannel = class {
+    postMessage() {}
     close() {}
     set onmessage(_handler) {}
   };

@@ -973,6 +973,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (insertSlide) {
       paintOpts.slide = true;
     }
+    if (previousSort !== sort) {
+      paintOpts.action = "replace";
+    }
     insertSlide = false;
     await paint(paintOpts);
     if (gen !== refreshGen) {

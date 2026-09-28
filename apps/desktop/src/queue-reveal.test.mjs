@@ -673,6 +673,7 @@ test("the copied pulse is temporary and is not the focus ring", () => {
   const follow = live.slice(live.indexOf("const plan = planNewItemFollow"));
   assert.match(follow, /hasMore/);
   assert.match(live, /is-sort-reflow/);
+  assert.match(live, /previousSort !== sort/);
   assert.match(follow, /presentNewQueueCard/);
   assert.match(follow, /pulse: added\.length === 1/);
   assert.match(follow, /markLastCopied\(list, added\[0\]/);
