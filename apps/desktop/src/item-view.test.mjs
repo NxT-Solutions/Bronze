@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   applyExpandState,
+  applyItemSource,
   applySourceRow,
   fillItemChrome,
   formatCaptureSource,
@@ -308,5 +309,121 @@ test("source row shows catalog name and optional official icon", () => {
   assert.equal(icon.hidden, true);
   assert.equal(icon.src, "");
   applySourceRow(article, null, "data:image/png;base64,abc");
+  assert.equal(source.hidden, true);
+});
+
+test("source row stays after a later title refine and a later insert patch", () => {
+  const doc = createDocument();
+  const article = articleFixture(doc);
+  const labels = readExpandLabels(article);
+  const icon = "data:image/png;base64,abc";
+  fillItemChrome(
+    article,
+    {
+      id: "whatsapp",
+      title: "Aftrekker en dwijl",
+      body: "Aftrekker en dwijl",
+      sourceAppName: "WhatsApp",
+      sourceAppIcon: icon,
+    },
+    labels,
+  );
+  const source = article.querySelector("[data-slot=source]");
+  const img = article.querySelector("[data-slot=source-icon]");
+  assert.equal(source.hidden, false);
+  assert.equal(
+    source.querySelector("[data-slot=source-label]").textContent,
+    "From WhatsApp",
+  );
+  assert.equal(img.hidden, false);
+  assert.equal(img.src, icon);
+  fillItemChrome(
+    article,
+    {
+      id: "whatsapp",
+      title: "Aftrekker en dwijl",
+      body: "Aftrekker en dwijl",
+      sourceAppName: "WhatsApp",
+      sourceAppIcon: icon,
+    },
+    labels,
+  );
+  assert.equal(source.hidden, false);
+  assert.equal(
+    source.querySelector("[data-slot=source-label]").textContent,
+    "From WhatsApp",
+  );
+  assert.equal(img.src, icon);
+  fillItemChrome(
+    article,
+    {
+      id: "cursor",
+      title: "Sort button on main",
+      body: "later capture",
+      sourceAppName: "Cursor",
+      sourceAppIcon: icon,
+    },
+    labels,
+  );
+  assert.equal(source.hidden, false);
+  assert.equal(
+    source.querySelector("[data-slot=source-label]").textContent,
+    "From Cursor",
+  );
+  assert.equal(img.hidden, false);
+});
+
+test("a patch that omits source keeps an existing source row", () => {
+  const doc = createDocument();
+  const article = articleFixture(doc);
+  const labels = readExpandLabels(article);
+  const icon = "data:image/png;base64,abc";
+  applyItemSource(
+    article,
+    { sourceAppName: "WhatsApp", sourceAppIcon: icon },
+    labels.sourceTemplate,
+  );
+  const source = article.querySelector("[data-slot=source]");
+  const img = article.querySelector("[data-slot=source-icon]");
+  fillItemChrome(
+    article,
+    { id: "whatsapp", title: "Refined title", body: "same body" },
+    labels,
+  );
+  assert.equal(source.hidden, false);
+  assert.equal(
+    source.querySelector("[data-slot=source-label]").textContent,
+    "From WhatsApp",
+  );
+  assert.equal(img.hidden, false);
+  assert.equal(img.src, icon);
+});
+
+test("composer-only items stay without a source row", () => {
+  const doc = createDocument();
+  const article = articleFixture(doc);
+  const labels = readExpandLabels(article);
+  fillItemChrome(
+    article,
+    {
+      id: "typed",
+      title: "Typed note",
+      body: "from the composer",
+      sourceAppName: null,
+      sourceAppIcon: null,
+    },
+    labels,
+  );
+  const source = article.querySelector("[data-slot=source]");
+  assert.equal(source.hidden, true);
+  assert.equal(
+    source.querySelector("[data-slot=source-label]").textContent,
+    "From {appName}",
+  );
+  fillItemChrome(
+    article,
+    { id: "typed", title: "Typed note", body: "from the composer" },
+    labels,
+  );
   assert.equal(source.hidden, true);
 });

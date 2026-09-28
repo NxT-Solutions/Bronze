@@ -37,8 +37,8 @@ test("library items sanitize markdown and keep a title plus expand reader", () =
   assert.match(html, /data-i18n="queue.item.showLess"/);
   assert.match(html, /data-slot="source"/);
   assert.match(html, /data-slot="source-icon"/);
-  assert.match(live, /applySourceRow/);
-  assert.match(live, /sourceAppIcon/);
+  assert.match(live, /fillItemChrome/);
+  assert.doesNotMatch(live, /labelNode\?\.textContent/);
   assert.match(live, /runBusy/);
   assert.match(live, /is-entering/);
   assert.match(live, /hashchange/);

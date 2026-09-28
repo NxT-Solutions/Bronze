@@ -1,8 +1,6 @@
 import { animateElement, MOTION, motionAllowed } from "./control.mjs";
 import {
-  applySourceRow,
   fillItemChrome,
-  formatCaptureSource,
   readExpandLabels,
   syncExpandVisibility,
 } from "./item-view.mjs";
@@ -138,10 +136,6 @@ function fillQueueNode(node, item, labels) {
   node.dataset.body = typeof item.body === "string" ? item.body : "";
   const article = node.querySelector("article");
   fillItemChrome(article, item, labels);
-  const source = node.querySelector("[data-slot=source]");
-  const labelNode = source?.querySelector("[data-slot=source-label]") ?? source;
-  const label = formatCaptureSource(labelNode?.textContent, item.sourceAppName);
-  applySourceRow(article, label, item.sourceAppIcon);
   node.querySelectorAll("[data-queue-action]").forEach((button) => {
     button.dataset.itemId = item.id;
   });

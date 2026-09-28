@@ -160,9 +160,10 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(html, /data-slot="expand"/);
   assert.match(html, /data-i18n="queue.item.showMore"/);
   assert.match(html, /data-i18n="queue.item.showLess"/);
-  assert.match(motion, /sourceAppName/);
-  assert.match(motion, /sourceAppIcon/);
-  assert.match(motion, /applySourceRow/);
+  assert.match(itemView, /sourceAppName/);
+  assert.match(itemView, /sourceAppIcon/);
+  assert.match(itemView, /applyItemSource/);
+  assert.match(itemView, /applySourceRow/);
   assert.match(motion, /fillItemChrome/);
   assert.match(
     motion,

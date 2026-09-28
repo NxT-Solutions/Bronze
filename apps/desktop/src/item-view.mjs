@@ -33,13 +33,16 @@ export function sourceIconSrc(value) {
   return value;
 }
 
-export function applySourceRow(article, formattedLabel, iconSrc) {
+export function applySourceRow(article, formattedLabel, iconSrc, options = {}) {
   const source = article?.querySelector("[data-slot=source]");
   if (!source) {
     return;
   }
   const labelEl = source.querySelector("[data-slot=source-label]") ?? source;
   if (!formattedLabel) {
+    if (options.preserve) {
+      return;
+    }
     source.hidden = true;
     return;
   }
@@ -47,6 +50,9 @@ export function applySourceRow(article, formattedLabel, iconSrc) {
   source.hidden = false;
   const img = source.querySelector("[data-slot=source-icon]");
   if (!img) {
+    return;
+  }
+  if (iconSrc === undefined) {
     return;
   }
   const safe = sourceIconSrc(iconSrc);
@@ -60,12 +66,67 @@ export function applySourceRow(article, formattedLabel, iconSrc) {
   }
 }
 
+export function itemOmitsSource(item) {
+  return (
+    !item ||
+    (!Object.hasOwn(item, "sourceAppName") &&
+      !Object.hasOwn(item, "sourceBundleId") &&
+      !Object.hasOwn(item, "sourceAppIcon"))
+  );
+}
+
+export function sourceAppDisplayName(item) {
+  if (typeof item?.sourceAppName === "string" && item.sourceAppName.trim()) {
+    return item.sourceAppName.trim();
+  }
+  if (typeof item?.sourceBundleId === "string" && item.sourceBundleId.trim()) {
+    return item.sourceBundleId.trim();
+  }
+  return "";
+}
+
+export function sourceLabelTemplate(source, catalogTemplate) {
+  const labelEl = source?.querySelector("[data-slot=source-label]") ?? source;
+  const candidates = [
+    labelEl?.dataset?.sourceTemplate,
+    catalogTemplate,
+    labelEl?.textContent,
+  ];
+  for (const value of candidates) {
+    if (typeof value === "string" && value.includes("{appName}")) {
+      if (labelEl?.dataset) {
+        labelEl.dataset.sourceTemplate = value;
+      }
+      return value;
+    }
+  }
+  return typeof catalogTemplate === "string" ? catalogTemplate : "";
+}
+
+export function applyItemSource(article, item, catalogTemplate) {
+  if (itemOmitsSource(item)) {
+    applySourceRow(article, null, undefined, { preserve: true });
+    return;
+  }
+  const name = sourceAppDisplayName(item);
+  if (!name) {
+    applySourceRow(article, null, item.sourceAppIcon);
+    return;
+  }
+  const source = article?.querySelector("[data-slot=source]");
+  const template = sourceLabelTemplate(source, catalogTemplate);
+  const label = formatCaptureSource(template, name);
+  applySourceRow(article, label, item.sourceAppIcon, { preserve: !label });
+}
+
 export function readExpandLabels(root) {
   const more = root?.querySelector("[data-slot=expand]");
   const less = root?.querySelector("[data-slot=show-less]");
+  const sourceLabel = root?.querySelector("[data-slot=source-label]");
   return {
     showMore: more?.textContent?.trim() ?? "",
     showLess: less?.textContent?.trim() ?? "",
+    sourceTemplate: sourceLabel?.textContent?.trim() ?? "",
   };
 }
 
@@ -146,5 +207,6 @@ export function fillItemChrome(article, item, labels) {
     renderMarkdownBody(body, typeof item.body === "string" ? item.body : "");
   }
 
+  applyItemSource(article, item, labels?.sourceTemplate);
   wireExpandReader(article, labels);
 }
