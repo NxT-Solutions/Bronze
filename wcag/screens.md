@@ -37,13 +37,14 @@ Purpose: capture in, act on the current item.
   is the next order and whose description is the current order
   (`settings.field.queueSort.newest` / `.oldest`) via the owned tip
   (1.4.13). Changing sort collapses the loaded page into the first
-  card, then expands the new first page. Reduce Motion,
+  card, then expands the new first page. The first successful
+  first-page load expands only, with no insert slide. Reduce Motion,
   `data-reduce-motion`, and `data-motion="reduce"` skip the make-room
   translate, the slide, the eased scroll, the pulse, the icon
-  transform, the sort collapse/expand, and the body Show more
-  open/close. The label and `aria-expanded` still change. The card is
-  in the list either way (2.2.2, 2.3.1, 2.3.3). This is not a WCAG
-  claim.
+  transform, the sort collapse/expand, the first-page expand, and the
+  body Show more open/close. The label and `aria-expanded` still
+  change. The card is in the list either way (2.2.2, 2.3.1, 2.3.3).
+  This is not a WCAG claim.
 
 ## Settings — `apps/desktop/src/settings.html`
 

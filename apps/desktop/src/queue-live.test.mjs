@@ -119,6 +119,8 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(live, /LOCALE_APPLIED_EVENT/);
   assert.match(live, /loadFirstPage/);
   assert.match(live, /firstPageReady/);
+  assert.match(live, /firstPageExpandPlan/);
+  assert.match(live, /paintFirstPageExpand/);
   assert.match(html, /id="capture-status"[^>]*visually-hidden/);
   assert.match(html, /id="chrome-notice"/);
   assert.match(html, /data-notice-dismiss/);
@@ -847,8 +849,31 @@ function createMountDocument() {
       type: "",
       disabled: false,
       parentNode: null,
+      get parentElement() {
+        return el.parentNode;
+      },
       ownerDocument: doc,
-      style: { setProperty() {} },
+      style: {
+        setProperty(name, value) {
+          this[name] = value;
+        },
+        getPropertyValue(name) {
+          return this[name] ?? "";
+        },
+        removeProperty(name) {
+          delete this[name];
+        },
+      },
+      getBoundingClientRect() {
+        return {
+          top: 0,
+          bottom: 80,
+          height: 80,
+          width: 320,
+          left: 0,
+          right: 320,
+        };
+      },
       scrollHeight: 0,
       clientHeight: 0,
       get classList() {
@@ -1230,6 +1255,31 @@ function paintedIds(list) {
     .filter(Boolean);
 }
 
+function enableQueueMotion(doc) {
+  doc.documentElement.dataset.motion = "full";
+  doc.defaultView.matchMedia = () => ({ matches: false });
+  const timers = [];
+  doc.defaultView.setTimeout = (fn) => {
+    timers.push(fn);
+    return timers.length;
+  };
+  return {
+    flush() {
+      const queued = timers.splice(0, timers.length);
+      for (const fn of queued) {
+        fn?.();
+      }
+    },
+  };
+}
+
+function rowHas(list, id, className) {
+  const row = Array.from(list.children).find(
+    (node) => node.dataset?.itemId === id,
+  );
+  return Boolean(row?.classList.contains(className));
+}
+
 test("mounting the queue paints the first page without queue-changed", async () => {
   const tauri = listenStub();
   const { root, list, empty } = mountQueueRoot();
@@ -1270,6 +1320,144 @@ test("an empty first page keeps the empty state", async () => {
     await bindQueueLive(root, invoke);
     assert.deepEqual(paintedIds(list), []);
     assert.equal(empty.hidden, false);
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("mounting with items expands the first page once, not slide-in", async () => {
+  const tauri = listenStub();
+  const { root, list, doc } = mountQueueRoot();
+  enableQueueMotion(doc);
+  const invoke = stubQueueInvoke({
+    items: [
+      { id: "new", title: "just copied", body: "fresh" },
+      { id: "old", title: "that from Cursor", body: "older" },
+    ],
+    nextCursor: null,
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    assert.equal(list.classList.contains("is-sort-expand"), true);
+    assert.equal(list.classList.contains("is-sort-hold"), false);
+    assert.equal(list.classList.contains("is-sort-collapse"), false);
+    assert.equal(rowHas(list, "new", "is-sort-lead"), true);
+    for (const row of list.children) {
+      assert.equal(row.classList.contains("is-sort-expand"), true);
+      assert.equal(row.classList.contains("is-slide-in"), false);
+      assert.equal(row.classList.contains("is-make-room"), false);
+      assert.equal(row.classList.contains("is-arriving"), false);
+    }
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("an empty mount with motion does not expand", async () => {
+  const tauri = listenStub();
+  const { root, list, empty, doc } = mountQueueRoot();
+  enableQueueMotion(doc);
+  const invoke = stubQueueInvoke({ items: [], nextCursor: null });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), []);
+    assert.equal(empty.hidden, false);
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+    assert.equal(list.classList.contains("is-sort-hold"), false);
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("a later single insert still makes room after startup expand", async () => {
+  const tauri = listenStub();
+  const { root, list, doc } = mountQueueRoot();
+  const clock = enableQueueMotion(doc);
+  const invoke = stubQueueInvoke({
+    items: [{ id: "old", title: "that from Cursor", body: "older" }],
+    nextCursor: null,
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), ["old"]);
+    assert.equal(list.classList.contains("is-sort-expand"), true);
+    assert.equal(rowHas(list, "old", "is-slide-in"), false);
+    clock.flush();
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+    invoke.setPage({
+      items: [
+        { id: "fresh", title: "just copied", body: "fresh" },
+        { id: "old", title: "that from Cursor", body: "older" },
+      ],
+      nextCursor: null,
+    });
+    tauri.handlers["capture-result"]({ payload: { terminal: "saved" } });
+    await waitUntil(
+      () => paintedIds(list).join() === "fresh,old",
+      "saved capture did not insert the new card",
+    );
+    assert.equal(rowHas(list, "fresh", "is-slide-in"), true);
+    assert.equal(rowHas(list, "fresh", "is-sort-expand"), false);
+    assert.equal(rowHas(list, "old", "is-make-room"), true);
+    assert.equal(rowHas(list, "old", "is-slide-in"), false);
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("reduced motion first page appears without expand", async () => {
+  const tauri = listenStub();
+  const { root, list } = mountQueueRoot();
+  const invoke = stubQueueInvoke({
+    items: [
+      { id: "new", title: "just copied", body: "fresh" },
+      { id: "old", title: "that from Cursor", body: "older" },
+    ],
+    nextCursor: null,
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+    assert.equal(list.classList.contains("is-sort-hold"), false);
+    for (const row of list.children) {
+      assert.equal(row.classList.contains("is-sort-expand"), false);
+      assert.equal(row.classList.contains("is-slide-in"), false);
+      assert.equal(row.classList.contains("is-make-room"), false);
+    }
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("title refine after first paint does not replay expand", async () => {
+  const tauri = listenStub();
+  const { root, list, doc } = mountQueueRoot();
+  const clock = enableQueueMotion(doc);
+  const invoke = stubQueueInvoke({
+    items: [{ id: "kept", title: "draft title", body: "body" }],
+    nextCursor: null,
+  });
+  try {
+    await bindQueueLive(root, invoke);
+    assert.equal(list.classList.contains("is-sort-expand"), true);
+    clock.flush();
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+    invoke.setPage({
+      items: [{ id: "kept", title: "refined title", body: "body" }],
+      nextCursor: null,
+    });
+    tauri.handlers["queue-changed"]({ payload: "" });
+    await waitUntil(() => {
+      const title = list.querySelector("[data-slot=title]");
+      return title?.textContent === "refined title";
+    }, "title refine did not update the painted row");
+    assert.deepEqual(paintedIds(list), ["kept"]);
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+    assert.equal(rowHas(list, "kept", "is-sort-expand"), false);
+    assert.equal(rowHas(list, "kept", "is-slide-in"), false);
   } finally {
     tauri.restore();
   }

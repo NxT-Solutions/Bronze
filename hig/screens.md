@@ -44,6 +44,14 @@ Purpose: capture in, act on the current item.
   is. A later refresh updates the same row. After both shots, motion
   classes are gone and no transform or margin remains. The list itself
   does not take `is-slide-in`.
+- The first successful first-page load (window open, tauri dev reload,
+  or empty → stored items) holds the painted cards (`is-sort-hold`)
+  and then plays only the sort expand (`is-sort-expand`, `--sort-expand`
+  480ms, 31ms stagger) from the first card. There is no previous list
+  to collapse. Those rows do not take insert make-room or per-card
+  side-slide. An empty first page shows the empty state with no expand.
+  A later new capture still uses make-room + slide-in. A title refine
+  after first paint does not replay expand on the list.
 - `#queue-sort-toggle` is a real button between the composer and the
   first card, inline-end. Its glyphs flip with `--sort-flip` (200ms)
   so newest vs oldest is visible. Hover and `:focus-visible` show the
@@ -71,10 +79,11 @@ Purpose: capture in, act on the current item.
 - Reduce Motion (`prefers-reduced-motion: reduce`,
   `data-reduce-motion`, or `data-motion="reduce"`) skips the make-room
   translate, the slide, the scroll ease, the pulse, the sort-icon
-  transform, the sort collapse/expand, the body Show more open/close,
-  and collapse. The card appears in its final place with no arrival
-  outline. Motion is never required to understand the action.
-  `data-motion="full"` plays the entrance when Play animations is on.
+  transform, the sort collapse/expand, the first-page expand, the body
+  Show more open/close, and collapse. The first page and a new card
+  appear in their final place with no arrival outline. Motion is never
+  required to understand the action. `data-motion="full"` plays the
+  entrance when Play animations is on.
 
 ## Settings — `apps/desktop/src/settings.html`
 
