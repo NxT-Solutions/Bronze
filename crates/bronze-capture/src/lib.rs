@@ -20,8 +20,9 @@ pub use coordinator::{
     PersistError, PersistHook, Terminal,
 };
 pub use focus_policy::{
-    apply_capture_success, escape_restores_prior_focus, hidden_webview_live_region_is_sufficient,
-    Announcer, CaptureMode, FakeAnnouncer, FocusOwner, FocusSnapshot, CAPTURE_ONLY_ANNOUNCE_KEY,
+    apply_capture_success, capture_target_bundle_id, escape_restores_prior_focus,
+    hidden_webview_live_region_is_sufficient, Announcer, CaptureMode, FakeAnnouncer, FocusOwner,
+    FocusSnapshot, CAPTURE_ONLY_ANNOUNCE_KEY,
 };
 pub use ingress::{
     CaptureIngressContext, IngressError, IngressSeqlock, INGRESS_ROUTE_CHORD,

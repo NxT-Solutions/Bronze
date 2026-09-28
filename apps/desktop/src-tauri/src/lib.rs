@@ -770,6 +770,11 @@ fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::Ow
                 {
                     Some(probe.offer_clipboard_markup())
                 }
+                (
+                    bronze_capture::AxOutcome::NoSelection
+                    | bronze_capture::AxOutcome::FocusedElementMissing,
+                    _,
+                ) => Some(probe.offer_clipboard_markup()),
                 _ => Some(ClipboardMarkupOffer::None),
             }
         }
@@ -1202,6 +1207,8 @@ mod tests {
         assert!(persist[..persist_end].contains("isMainThread"));
         assert!(persist[..persist_end].contains("bronze-capture-persist"));
         assert!(persist[..persist_end].contains("offer_clipboard_markup"));
+        assert!(persist[..persist_end].contains("AxOutcome::NoSelection"));
+        assert!(persist[..persist_end].contains("AxOutcome::FocusedElementMissing"));
         let hop_at = persist[..persist_end]
             .find("isMainThread")
             .expect("main hop");

@@ -65,6 +65,14 @@ pub fn escape_restores_prior_focus(prior: FocusSnapshot, restore_safe: bool) -> 
     }
 }
 
+pub fn capture_target_bundle_id(
+    last_external: Option<String>,
+    bronze_frontmost: bool,
+    own_bundle: Option<String>,
+) -> Option<String> {
+    last_external.or_else(|| bronze_frontmost.then_some(own_bundle).flatten())
+}
+
 #[cfg(test)]
 mod focus_policy_tests {
     use super::*;
@@ -114,5 +122,26 @@ mod focus_policy_tests {
             escape_restores_prior_focus(prior, false),
             FocusOwner::Bronze
         );
+    }
+
+    #[test]
+    fn focus_policy_peek_prefers_last_external_over_own_webview() {
+        assert_eq!(
+            capture_target_bundle_id(
+                Some("net.whatsapp.WhatsApp".into()),
+                true,
+                Some("dev.bronze.app".into()),
+            ),
+            Some("net.whatsapp.WhatsApp".into())
+        );
+        assert_eq!(
+            capture_target_bundle_id(None, true, Some("dev.bronze.app".into())),
+            Some("dev.bronze.app".into())
+        );
+        assert_eq!(
+            capture_target_bundle_id(Some("net.whatsapp.WhatsApp".into()), false, None),
+            Some("net.whatsapp.WhatsApp".into())
+        );
+        assert_eq!(capture_target_bundle_id(None, false, None), None);
     }
 }

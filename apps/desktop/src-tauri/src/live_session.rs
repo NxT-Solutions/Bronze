@@ -7,9 +7,9 @@ use crate::copy::{copy_items, CopyError, Pasteboard};
 use crate::portability::{accept_native_path, PathSource};
 use crate::window_edge::{TextDirection, CAPTURE_ONLY_REVEALS_PANEL};
 use bronze_capture::{
-    apply_capture_success, clipboard_restore_generation_matches, Announcer, AxOutcome,
-    CaptureCoordinator, CaptureIngressContext, CaptureMode, CapturedText, FocusOwner,
-    FocusSnapshot, PersistError, PersistHook, Terminal, INGRESS_ROUTE_MENU,
+    apply_capture_success, capture_target_bundle_id, clipboard_restore_generation_matches,
+    Announcer, AxOutcome, CaptureCoordinator, CaptureIngressContext, CaptureMode, CapturedText,
+    FocusOwner, FocusSnapshot, PersistError, PersistHook, Terminal, INGRESS_ROUTE_MENU,
 };
 #[cfg(test)]
 use bronze_capture::{ax_capture, FakeAxTree};
@@ -81,6 +81,22 @@ fn clipboard_offer_should_restore(offer: &ClipboardMarkupOffer) -> bool {
     }
 }
 
+fn clipboard_offer_markdown(offer: &ClipboardMarkupOffer) -> Option<String> {
+    match offer {
+        ClipboardMarkupOffer::Types {
+            html, rtf, plain, ..
+        } => markdown_from_clipboard_types(html.as_deref(), rtf.as_deref(), plain.as_deref()),
+        ClipboardMarkupOffer::None | ClipboardMarkupOffer::Failed => None,
+    }
+}
+
+struct CapturedPersist {
+    body: String,
+    source_app_name: Option<String>,
+    source_bundle_id: Option<String>,
+    offer: ClipboardMarkupOffer,
+}
+
 #[derive(Clone)]
 pub enum ClipboardMarkupOffer {
     None,
@@ -148,11 +164,24 @@ impl SelectionHost for FakeSelectionHost {
         let (outcome, text) = ax_capture(&self.tree);
         (
             outcome,
-            text.map(|mut captured| {
-                captured.source_app_name = self.source_app_name.clone();
-                captured.source_bundle_id = self.source_bundle_id.clone();
-                captured
-            }),
+            match text {
+                Some(mut captured) => {
+                    captured.source_app_name = self.source_app_name.clone();
+                    captured.source_bundle_id = self.source_bundle_id.clone();
+                    Some(captured)
+                }
+                None => {
+                    if self.source_app_name.is_some() || self.source_bundle_id.is_some() {
+                        Some(CapturedText {
+                            text: String::new(),
+                            source_app_name: self.source_app_name.clone(),
+                            source_bundle_id: self.source_bundle_id.clone(),
+                        })
+                    } else {
+                        None
+                    }
+                }
+            },
         )
     }
 
@@ -299,12 +328,13 @@ impl SelectionHost for LiveCaptureHost {
 
 impl SelectionHost for LiveAxHost {
     fn peek_bundle_id(&self) -> Option<String> {
-        if bronze_platform_macos::bronze_is_frontmost() {
-            bronze_platform_macos::native_bundle_id_for_pid(std::process::id() as i32)
-        } else {
-            bronze_platform_macos::last_external_pid()
-                .and_then(bronze_platform_macos::native_bundle_id_for_pid)
-        }
+        let last = bronze_platform_macos::last_external_pid()
+            .and_then(bronze_platform_macos::native_bundle_id_for_pid);
+        let frontmost = bronze_platform_macos::bronze_is_frontmost();
+        let own = frontmost
+            .then(|| bronze_platform_macos::native_bundle_id_for_pid(std::process::id() as i32))
+            .flatten();
+        capture_target_bundle_id(last, frontmost, own)
     }
 
     fn read(&self) -> (AxOutcome, Option<CapturedText>) {
@@ -336,11 +366,21 @@ impl SelectionHost for LiveAxHost {
         };
         (
             mapped,
-            text.map(|body| CapturedText {
-                text: body,
-                source_app_name,
-                source_bundle_id,
-            }),
+            match text {
+                Some(body) => Some(CapturedText {
+                    text: body,
+                    source_app_name,
+                    source_bundle_id,
+                }),
+                None if source_app_name.is_some() || source_bundle_id.is_some() => {
+                    Some(CapturedText {
+                        text: String::new(),
+                        source_app_name,
+                        source_bundle_id,
+                    })
+                }
+                None => None,
+            },
         )
     }
 }
@@ -925,73 +965,25 @@ impl LiveSession {
                 }
                 let mut body = captured.text;
                 let mut offer = ClipboardMarkupOffer::None;
-                if !markdown_has_style_marks(&body)
-                    && self.settings.capture.allows_unstyled_clipboard_markup()
-                    && !self
-                        .settings
-                        .privacy
-                        .denies_synthetic_fallback(captured.source_bundle_id.as_deref())
+                if self.allows_clipboard_fallback(captured.source_bundle_id.as_deref())
+                    && !markdown_has_style_marks(&body)
                 {
                     offer = host.offer_clipboard_markup();
-                    if let ClipboardMarkupOffer::Types {
-                        html, rtf, plain, ..
-                    } = &offer
-                    {
-                        let md = markdown_from_clipboard_types(
-                            html.as_deref(),
-                            rtf.as_deref(),
-                            plain.as_deref(),
-                        );
-                        body = capture_body_preferring_ax_marks(&body, md.as_deref());
+                    if let Some(md) = clipboard_offer_markdown(&offer) {
+                        body = capture_body_preferring_ax_marks(&body, Some(md.as_str()));
                     }
                 }
-                let mut saved_id = None;
-                let mut coordinator = CaptureCoordinator::with_hooks(
-                    8,
-                    SessionPersist {
-                        session: self,
+                self.commit_captured_body(
+                    host,
+                    announcer,
+                    webview_visible,
+                    CapturedPersist {
                         body,
                         source_app_name: captured.source_app_name,
                         source_bundle_id: captured.source_bundle_id,
-                        saved_id: &mut saved_id,
+                        offer,
                     },
-                    bronze_capture::NoFeedback,
-                );
-                let mut ingress = CaptureIngressContext::empty();
-                ingress.route = INGRESS_ROUTE_MENU;
-                coordinator.submit(ingress);
-                coordinator.drain();
-                let terminal = coordinator
-                    .receipt(1)
-                    .map(|receipt| receipt.terminal)
-                    .unwrap_or(Terminal::Failed);
-                drop(coordinator);
-                if clipboard_offer_should_restore(&offer) {
-                    host.restore_clipboard_markup(&offer);
-                }
-                if terminal == Terminal::Saved {
-                    let prior = FocusSnapshot {
-                        owner: FocusOwner::Source,
-                        source_token: 0,
-                    };
-                    let owner = apply_capture_success(
-                        CaptureMode::CaptureOnly,
-                        prior,
-                        announcer,
-                        webview_visible,
-                    );
-                    debug_assert_eq!(owner, FocusOwner::Source);
-                    let _ = CAPTURE_ONLY_REVEALS_PANEL;
-                }
-                Ok(CapturePersistOutcome {
-                    terminal,
-                    reason: if terminal == Terminal::Saved {
-                        "ok"
-                    } else {
-                        "failed"
-                    },
-                    item_id: saved_id,
-                })
+                )
             }
             (AxOutcome::ProtectedContent | AxOutcome::ProtectionUnknown, _) => {
                 Ok(CapturePersistOutcome {
@@ -1000,12 +992,54 @@ impl LiveSession {
                     item_id: None,
                 })
             }
-            (AxOutcome::NoSelection | AxOutcome::FocusedElementMissing, _) => {
-                Ok(CapturePersistOutcome {
-                    terminal: Terminal::Rejected,
-                    reason: "no_selection",
-                    item_id: None,
-                })
+            (AxOutcome::NoSelection | AxOutcome::FocusedElementMissing, source) => {
+                let bundle = source
+                    .as_ref()
+                    .and_then(|captured| captured.source_bundle_id.clone())
+                    .or_else(|| host.peek_bundle_id());
+                if bundle
+                    .as_deref()
+                    .is_some_and(|id| self.settings.privacy.excludes_bundle(id))
+                {
+                    return Ok(CapturePersistOutcome {
+                        terminal: Terminal::Rejected,
+                        reason: "app_excluded",
+                        item_id: None,
+                    });
+                }
+                if !self.allows_clipboard_fallback(bundle.as_deref()) {
+                    return Ok(CapturePersistOutcome {
+                        terminal: Terminal::Rejected,
+                        reason: "no_selection",
+                        item_id: None,
+                    });
+                }
+                let offer = host.offer_clipboard_markup();
+                match clipboard_offer_markdown(&offer) {
+                    Some(body) => self.commit_captured_body(
+                        host,
+                        announcer,
+                        webview_visible,
+                        CapturedPersist {
+                            body,
+                            source_app_name: source
+                                .as_ref()
+                                .and_then(|captured| captured.source_app_name.clone()),
+                            source_bundle_id: bundle,
+                            offer,
+                        },
+                    ),
+                    None => {
+                        if clipboard_offer_should_restore(&offer) {
+                            host.restore_clipboard_markup(&offer);
+                        }
+                        Ok(CapturePersistOutcome {
+                            terminal: Terminal::Rejected,
+                            reason: "no_selection",
+                            item_id: None,
+                        })
+                    }
+                }
             }
             (AxOutcome::AppExcluded, _) => Ok(CapturePersistOutcome {
                 terminal: Terminal::Rejected,
@@ -1030,6 +1064,63 @@ impl LiveSession {
                 item_id: None,
             }),
         }
+    }
+
+    fn allows_clipboard_fallback(&self, bundle: Option<&str>) -> bool {
+        self.settings.capture.allows_unstyled_clipboard_markup()
+            && !self.settings.privacy.denies_synthetic_fallback(bundle)
+    }
+
+    fn commit_captured_body(
+        &mut self,
+        host: &dyn SelectionHost,
+        announcer: &mut dyn Announcer,
+        webview_visible: bool,
+        persist: CapturedPersist,
+    ) -> Result<CapturePersistOutcome, String> {
+        let mut saved_id = None;
+        let mut coordinator = CaptureCoordinator::with_hooks(
+            8,
+            SessionPersist {
+                session: self,
+                body: persist.body,
+                source_app_name: persist.source_app_name,
+                source_bundle_id: persist.source_bundle_id,
+                saved_id: &mut saved_id,
+            },
+            bronze_capture::NoFeedback,
+        );
+        let mut ingress = CaptureIngressContext::empty();
+        ingress.route = INGRESS_ROUTE_MENU;
+        coordinator.submit(ingress);
+        coordinator.drain();
+        let terminal = coordinator
+            .receipt(1)
+            .map(|receipt| receipt.terminal)
+            .unwrap_or(Terminal::Failed);
+        drop(coordinator);
+        if clipboard_offer_should_restore(&persist.offer) {
+            host.restore_clipboard_markup(&persist.offer);
+        }
+        if terminal == Terminal::Saved {
+            let prior = FocusSnapshot {
+                owner: FocusOwner::Source,
+                source_token: 0,
+            };
+            let owner =
+                apply_capture_success(CaptureMode::CaptureOnly, prior, announcer, webview_visible);
+            debug_assert_eq!(owner, FocusOwner::Source);
+            let _ = CAPTURE_ONLY_REVEALS_PANEL;
+        }
+        Ok(CapturePersistOutcome {
+            terminal,
+            reason: if terminal == Terminal::Saved {
+                "ok"
+            } else {
+                "failed"
+            },
+            item_id: saved_id,
+        })
     }
 
     pub fn add_composer(&mut self, body: String) -> Result<QueueItemDto, String> {
@@ -3840,5 +3931,138 @@ mod live_session_tests {
             assert!(!tap.contains(needle), "engine has {needle}");
         }
         assert!(tap.contains("0x42524E5A434F5059"));
+    }
+
+    #[test]
+    fn empty_ax_uses_clipboard_fallback_then_no_selection() {
+        use bronze_capture::{AxRole, FakeAnnouncer, FakeAxNode, FakeAxTree, FakeSelection};
+        use bronze_settings::{
+            AppPolicy, InheritAllowDeny, InheritAllowDenyAsk, InheritProvenance,
+        };
+        fn empty_host(clipboard: ClipboardMarkupOffer) -> FakeSelectionHost {
+            FakeSelectionHost {
+                tree: FakeAxTree {
+                    nodes: vec![FakeAxNode::new(
+                        AxRole::TextArea,
+                        None,
+                        FakeSelection::Empty,
+                        None,
+                    )],
+                    focused: Some(0),
+                    excluded: false,
+                    accessibility_granted: true,
+                },
+                source_app_name: Some("WhatsApp".into()),
+                source_bundle_id: Some("net.whatsapp.WhatsApp".into()),
+                clipboard,
+                clipboard_restored: std::cell::Cell::new(false),
+            }
+        }
+        let plain = ClipboardMarkupOffer::Types {
+            html: None,
+            rtf: None,
+            plain: Some("ja ik ging daar vanavond proberen".into()),
+            post_copy_generation: 6,
+            current_generation: 6,
+            snapshot: vec![2],
+        };
+        let mut session = open_session();
+        let saved = empty_host(plain);
+        let mut announce = FakeAnnouncer::default();
+        let persisted = session
+            .persist_selection(&saved, &mut announce, false)
+            .expect("fallback");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert_eq!(
+            session
+                .item_body(persisted.item_id.as_deref().expect("id"))
+                .as_deref(),
+            Some("ja ik ging daar vanavond proberen")
+        );
+        assert_eq!(
+            session.list_overview().expect("overview")[0]
+                .source_app_name
+                .as_deref(),
+            Some("WhatsApp")
+        );
+        assert!(saved.clipboard_restored.get());
+
+        let failed = empty_host(ClipboardMarkupOffer::Failed);
+        let persisted = session
+            .persist_selection(&failed, &mut announce, false)
+            .expect("failed copy");
+        assert_eq!(persisted.terminal, Terminal::Rejected);
+        assert_eq!(persisted.reason, "no_selection");
+        assert!(!failed.clipboard_restored.get());
+
+        let none = empty_host(ClipboardMarkupOffer::None);
+        let persisted = session
+            .persist_selection(&none, &mut announce, false)
+            .expect("none");
+        assert_eq!(persisted.terminal, Terminal::Rejected);
+        assert_eq!(persisted.reason, "no_selection");
+        assert!(!none.clipboard_restored.get());
+
+        let mut denied = session.settings();
+        denied.privacy.app_policies.insert(
+            "net.whatsapp.WhatsApp".into(),
+            AppPolicy {
+                capture: InheritAllowDeny::Inherit,
+                synthetic_fallback: InheritAllowDenyAsk::Deny,
+                provenance: InheritProvenance::Inherit,
+            },
+        );
+        session.replace_settings(denied).expect("deny");
+        let blocked = empty_host(ClipboardMarkupOffer::Types {
+            html: None,
+            rtf: None,
+            plain: Some("blocked".into()),
+            post_copy_generation: 7,
+            current_generation: 7,
+            snapshot: vec![3],
+        });
+        let persisted = session
+            .persist_selection(&blocked, &mut announce, false)
+            .expect("denied");
+        assert_eq!(persisted.terminal, Terminal::Rejected);
+        assert_eq!(persisted.reason, "no_selection");
+        assert!(!blocked.clipboard_restored.get());
+
+        let mut off = session.settings();
+        off.capture.clipboard_fallback = ClipboardFallback::Off;
+        off.privacy.app_policies.clear();
+        session.replace_settings(off).expect("off");
+        let ignored = empty_host(ClipboardMarkupOffer::Types {
+            html: None,
+            rtf: None,
+            plain: Some("ignored".into()),
+            post_copy_generation: 8,
+            current_generation: 8,
+            snapshot: vec![4],
+        });
+        let persisted = session
+            .persist_selection(&ignored, &mut announce, false)
+            .expect("off empty");
+        assert_eq!(persisted.terminal, Terminal::Rejected);
+        assert_eq!(persisted.reason, "no_selection");
+        assert!(!ignored.clipboard_restored.get());
+        assert!(session
+            .list_overview()
+            .expect("one saved")
+            .iter()
+            .all(|item| item.source_app_name.as_deref() == Some("WhatsApp")));
+        assert_eq!(session.list_overview().expect("count").len(), 1);
+
+        let lib = include_str!("lib.rs");
+        let persist = lib
+            .split("fn persist_capture_request")
+            .nth(1)
+            .expect("persist");
+        assert!(persist.contains("AxOutcome::NoSelection"));
+        assert!(persist.contains("AxOutcome::FocusedElementMissing"));
+        assert!(persist.contains("offer_clipboard_markup"));
+        let peek = include_str!("live_session.rs");
+        assert!(peek.contains("capture_target_bundle_id"));
+        assert!(peek.contains("last_external_pid"));
     }
 }
