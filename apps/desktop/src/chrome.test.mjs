@@ -38,7 +38,35 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   const expandSlot = chrome.match(/article \[data-slot="expand"\]\s*\{[^}]+\}/);
   assert.ok(expandSlot, "queue expand slot");
   assert.match(expandSlot[0], /margin-block-start:\s*var\(--space-1\)/);
+  assert.match(expandSlot[0], /min-height:\s*1\.5rem/);
+  assert.match(expandSlot[0], /min-width:\s*1\.5rem/);
+  assert.match(expandSlot[0], /width:\s*max-content/);
+  assert.match(expandSlot[0], /border:\s*none/);
+  assert.match(expandSlot[0], /background:\s*transparent/);
+  assert.match(expandSlot[0], /font-weight:\s*400/);
+  assert.match(expandSlot[0], /color:\s*var\(--muted-foreground\)/);
+  assert.doesNotMatch(expandSlot[0], /min-height:\s*var\(--control-h\)/);
+  assert.doesNotMatch(expandSlot[0], /padding-inline:\s*0\.9rem/);
   assert.doesNotMatch(expandSlot[0], /border-(?:top|block-start)/);
+  assert.match(
+    chrome,
+    /article \[data-slot="expand"\]::after\s*\{[^}]*currentColor/,
+  );
+  assert.match(
+    chrome,
+    /article\.is-expanded \[data-slot="expand"\]::after\s*\{[^}]*clip-path/,
+  );
+  assert.match(
+    chrome,
+    /article\s+\[data-slot="expand"\]:hover:not\(:disabled\):not\(\.btn-primary\):not\(/,
+  );
+  const expandHover = chrome.match(
+    /article\s+\[data-slot="expand"\]:hover:not\(:disabled\):not\(\.btn-primary\):not\(\s*\[type="submit"\]\s*\)[\s\S]*?\{[^}]+\}/,
+  );
+  assert.ok(expandHover, "expand hover override");
+  assert.match(expandHover[0], /background:\s*transparent/);
+  assert.match(expandHover[0], /color:\s*var\(--foreground\)/);
+  assert.doesNotMatch(expandHover[0], /color-mix/);
   const queueTitleSlot = chrome.match(
     /#queue article \[data-slot="title"\]:not\(\[hidden\]\)\s*\{[^}]+\}/,
   );
@@ -416,6 +444,22 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(pages[2].html, /data-status="notUsed"/);
   assert.match(pages[0].html, /class="queue-item"/);
   assert.match(pages[1].html, /class="queue-item"/);
+  assert.match(
+    pages[0].html,
+    /<button\b[^>]*class="item-expand"[^>]*data-slot="expand"/,
+  );
+  assert.match(
+    pages[1].html,
+    /<button\b[^>]*class="item-expand"[^>]*data-slot="expand"/,
+  );
+  assert.doesNotMatch(
+    pages[0].html,
+    /class="btn-ghost"[^>]*data-slot="expand"/,
+  );
+  assert.doesNotMatch(
+    pages[1].html,
+    /class="btn-ghost"[^>]*data-slot="expand"/,
+  );
   assert.match(pages[2].html, /class="help-launch"/);
   assert.match(pages[0].html, /id="edit-sheet"/);
   assert.match(chrome, /\.sheet-card[\s\S]*background:\s*var\(--card\)/);

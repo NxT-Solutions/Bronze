@@ -27,6 +27,11 @@ test("library window paginates and archives; quick cannot import export backup",
   assert.match(library, /id="library"/);
   assert.match(library, /id="library-item-template"/);
   assert.match(library, /data-slot="expand"/);
+  assert.match(
+    library,
+    /<button\b[^>]*class="item-expand"[^>]*data-slot="expand"/,
+  );
+  assert.doesNotMatch(library, /class="btn-ghost"[^>]*data-slot="expand"/);
   assert.match(library, /data-library-state="ready"/);
   assert.match(library, /data-i18n="library.archive"/);
   assert.match(library, /data-i18n="library.paginate"/);
