@@ -179,11 +179,33 @@ test("newest-first at the top slides the new card without moving the scrollport"
     chrome,
     /\.queue-item\.is-slide-in\s*\{[^}]*animation:\s*bronze-slide-in var\(--arrive\)/,
   );
+  assert.match(
+    chrome,
+    /\.queue-item\.is-slide-in:not\(\.is-slide-docked\)\s*\{[^}]*margin-block-end:\s*calc\(-1 \* var\(--arrive-block, 0px\)\)/,
+  );
+  assert.match(chrome, /#queue\.is-slide-in[\s\S]*animation:\s*none/);
   assert.doesNotMatch(chrome, /@keyframes bronze-arrive/);
   assert.match(
     chrome,
     /\[data-reduce-motion\] \.queue-item\.is-slide-in[\s\S]*animation:\s*none/,
   );
+});
+
+test("the queue list element does not receive the slide class", () => {
+  const list = {
+    id: "queue",
+    dataset: {},
+    classList: classNames(),
+  };
+  const played = presentNewQueueCard(list, null, {
+    motion: true,
+    followScroll: true,
+    pulse: true,
+  });
+  assert.equal(list.classList.has("is-slide-in"), false);
+  assert.equal(list.classList.has("is-arriving"), false);
+  assert.equal(list.classList.has("is-ring-pulse"), false);
+  assert.equal(played.scrolled, false);
 });
 
 test("play animations applies the slide and the pulse", () => {
@@ -318,9 +340,14 @@ test("the arrival ring class leaves when the pulse ends", () => {
   assert.equal(card.classList.has("is-slide-in"), true);
   assert.equal(card.classList.has("is-ring-pulse"), true);
   assert.equal(card.classList.has("is-last-copied"), false);
-  assert.equal(timers.length, 1);
-  assert.equal(timers[0].ms, 1000);
+  const ringTimer = timers.find((timer) => timer.ms === 1000);
+  const slideTimer = timers.find((timer) => timer.ms === 380);
+  assert.ok(ringTimer);
+  assert.ok(slideTimer);
   events[0].fn({ animationName: "bronze-slide-in" });
+  assert.equal(card.classList.has("is-ring-pulse"), true);
+  slideTimer.fn();
+  assert.equal(card.classList.has("is-slide-docked"), true);
   assert.equal(card.classList.has("is-ring-pulse"), true);
   events[0].fn({ animationName: "bronze-copy-ring" });
   assert.equal(card.classList.has("is-ring-pulse"), false);
@@ -337,7 +364,7 @@ test("the arrival ring class leaves when the pulse ends", () => {
   };
   presentNewQueueCard(held, null, { motion: true, pulse: true });
   assert.equal(held.classList.has("is-ring-pulse"), true);
-  later[0].fn();
+  later.find((timer) => timer.ms === 1000).fn();
   assert.equal(held.classList.has("is-ring-pulse"), false);
   assert.equal(held.classList.has("is-slide-in"), true);
 });

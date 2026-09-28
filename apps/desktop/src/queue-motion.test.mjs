@@ -232,14 +232,23 @@ test("a new card is inserted once and neighbors stay attached", async () => {
     },
     syncMoveAvailability() {},
   });
-  await renderer.renderQueueItems(list, [{ id: "a", body: "old" }], template);
+  await renderer.renderQueueItems(
+    list,
+    [
+      { id: "a", body: "old" },
+      { id: "b", body: "older" },
+    ],
+    template,
+  );
   const old = list.children[0];
+  const older = list.children[1];
   const parked = list.relocations;
   await renderer.renderQueueItems(
     list,
     [
       { id: "n", body: "new" },
       { id: "a", body: "old" },
+      { id: "b", body: "older" },
     ],
     template,
     { action: "insert", slide: true },
@@ -247,8 +256,13 @@ test("a new card is inserted once and neighbors stay attached", async () => {
   assert.equal(list.children[0].dataset.itemId, "n");
   assert.equal(list.children[0].classList.has("is-slide-in"), true);
   assert.equal(old.classList.has("is-slide-in"), false);
+  assert.equal(older.classList.has("is-slide-in"), false);
   assert.equal(old.classList.has("is-ring-pulse"), false);
+  assert.equal(older.classList.has("is-ring-pulse"), false);
+  assert.equal(list.classList.has("is-slide-in"), false);
+  assert.equal(list.classList.has("is-arriving"), false);
   assert.equal(list.children[1], old);
+  assert.equal(list.children[2], older);
   assert.equal(list.relocations, parked);
   await renderer.renderQueueItems(
     list,
@@ -272,6 +286,7 @@ function fakeQueueList() {
   const list = {
     children,
     relocations: 0,
+    classList: classBag(),
     ownerDocument: {
       documentElement: {
         dataset: { motion: "full" },

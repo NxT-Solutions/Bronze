@@ -19,7 +19,8 @@ Purpose: capture in, act on the current item.
   scrollport to the top of the loaded page over `--arrive-scroll`
   (340ms) across animation frames. Oldest-first leaves the scrollport
   where it is. A later refresh updates the same row. Cards already in
-  the list do not slide.
+  the list do not slide or shift while that card moves. The list
+  itself does not take `is-slide-in`.
 - The new card, and a card just copied, can show a temporary 2px
   `--ring` outline at low opacity, offset just outside `--radius-card`.
   The outline fades three times (`bronze-copy-ring`, `--ring-pulse`
