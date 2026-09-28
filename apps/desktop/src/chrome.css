@@ -916,6 +916,24 @@ li.is-entering {
   animation: bronze-slide-in var(--arrive) var(--ease-out) both;
 }
 
+/* Transform leaves the row in flow. Cancel that gap until the slide ends. */
+.queue-item.is-slide-in:not(.is-slide-docked) {
+  margin-block-end: calc(-1 * var(--arrive-block, 0px));
+  transition-property: grid-template-rows, height, opacity, transform;
+}
+
+.queue-item.is-slide-in.is-slide-docked {
+  margin-block-end: 0;
+  transition-property: grid-template-rows, height, opacity, transform;
+}
+
+#queue.is-slide-in,
+#library-queue.is-slide-in,
+[data-slot="item-list"].is-slide-in {
+  animation: none;
+  transform: none;
+}
+
 [dir="rtl"] .queue-item.is-slide-in,
 :dir(rtl) .queue-item.is-slide-in {
   animation-name: bronze-slide-in-rtl;
@@ -2318,6 +2336,7 @@ html[data-motion="reduce"] .queue-item.is-slide-in,
 [data-reduce-motion] .queue-item.is-slide-in {
   animation: none;
   transform: none;
+  margin-block-end: 0;
 }
 
 html[data-motion="reduce"] .queue-item.is-ring-pulse > article,

@@ -224,6 +224,55 @@ export function findQueueCard(list, id) {
   return list.querySelector(`[data-item-id="${id}"]`);
 }
 
+function rowGapPx(list) {
+  const view = list?.ownerDocument?.defaultView;
+  const style = view?.getComputedStyle?.(list);
+  const raw =
+    style?.rowGap && style.rowGap !== "normal" ? style.rowGap : style?.gap;
+  const parsed = parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : 16;
+}
+
+function isQueueList(node) {
+  return node?.id === "queue" || node?.id === "library-queue";
+}
+
+export function armNewCardSlide(card) {
+  if (!card || isQueueList(card) || card.dataset?.slideParked === "1") {
+    return;
+  }
+  const height = Number(card.getBoundingClientRect?.().height);
+  const gap = rowGapPx(card.parentElement);
+  if (card.style?.setProperty && Number.isFinite(height) && height > 0) {
+    card.style.setProperty("--arrive-block", `${height + gap}px`);
+  }
+  if (card.dataset) {
+    card.dataset.slideParked = "1";
+  }
+  const dock = () => {
+    card.classList?.add?.("is-slide-docked");
+  };
+  const view = card.ownerDocument?.defaultView;
+  if (typeof view?.setTimeout === "function") {
+    view.setTimeout(dock, ARRIVE_SLIDE_MS);
+  }
+  if (typeof card.addEventListener !== "function") {
+    return;
+  }
+  const onEnd = (event) => {
+    if (event?.target && event.target !== card) {
+      return;
+    }
+    const name = event?.animationName;
+    if (name && name !== "bronze-slide-in" && name !== "bronze-slide-in-rtl") {
+      return;
+    }
+    card.removeEventListener("animationend", onEnd);
+    dock();
+  };
+  card.addEventListener("animationend", onEnd);
+}
+
 export function insertionBeforeId(loadedIds, pageIds, itemId) {
   const loaded = new Set(loadedIds);
   const index = pageIds.indexOf(itemId);
@@ -250,7 +299,7 @@ export function presentNewQueueCard(
     duration = ARRIVE_SCROLL_MS,
   } = {},
 ) {
-  if (!card?.classList) {
+  if (!card?.classList || isQueueList(card)) {
     return { behavior: "auto", scrolled: false, from: null, to: null };
   }
   card.classList.remove("is-entering");
@@ -260,6 +309,7 @@ export function presentNewQueueCard(
     card.classList.remove("is-ring-pulse");
     return { behavior: "auto", scrolled: false, from: null, to: null };
   }
+  armNewCardSlide(card);
   if (!card.classList.contains("is-slide-in")) {
     card.classList.add("is-slide-in");
   }

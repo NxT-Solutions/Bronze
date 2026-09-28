@@ -6,7 +6,7 @@ import {
   readExpandLabels,
   syncExpandVisibility,
 } from "./item-view.mjs";
-import { insertionBeforeId } from "./queue-reveal.mjs";
+import { armNewCardSlide, insertionBeforeId } from "./queue-reveal.mjs";
 
 const EXIT_ACTIONS = new Set(["complete", "skip", "trash"]);
 const MOVE_ACTIONS = new Set(["moveUp", "moveDown"]);
@@ -201,6 +201,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
     }
     const seen = new Set();
     const ordered = [];
+    const arriving = [];
     for (const item of items) {
       if (!item?.id || seen.has(item.id)) {
         continue;
@@ -214,7 +215,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
       fillQueueNode(node, item, labels);
       if (fresh && slide.has(item.id)) {
         node.classList.remove("is-entering");
-        node.classList.add("is-slide-in");
+        arriving.push(node);
       }
       ordered.push(node);
       byId.delete(item.id);
@@ -225,6 +226,12 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
     for (let index = 0; index < ordered.length; index += 1) {
       connectQueueNode(list, ordered[index], index);
     }
+    for (const node of arriving) {
+      armNewCardSlide(node);
+      node.classList.add("is-slide-in");
+    }
+    list.classList?.remove?.("is-slide-in");
+    list.classList?.remove?.("is-arriving");
     syncMoveAvailability(list);
   }
 
