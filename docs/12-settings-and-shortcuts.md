@@ -246,7 +246,7 @@ Show Input Monitoring state and Secure Input limitation. Reset FSM after setting
 
 ## 8. Permission health settings
 
-Each row includes status, why needed, last test, Retest, Open System Settings/help, and alternative.
+Each row includes status, why needed, last test, Retest, Open System Settings/help, and alternative. The section names the running copy and its path. Retest re-queries trust, updates Granted/Denied, and when still denied opens Privacy for that exact file.
 
 - Input Monitoring: global modifier event tap.
 - Accessibility: AX selection and synthetic fallback.

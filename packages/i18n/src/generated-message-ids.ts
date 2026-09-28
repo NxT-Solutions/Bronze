@@ -448,6 +448,11 @@ export const MessageIds = {
     "settings.permission.openSystemSettings",
   "settings.permission.runningCopy": "settings.permission.runningCopy",
   "settings.permission.staleCopy": "settings.permission.staleCopy",
+  "settings.permission.exactApp": "settings.permission.exactApp",
+  "settings.permission.retestStillDenied":
+    "settings.permission.retestStillDenied",
+  "settings.permission.retestChecked": "settings.permission.retestChecked",
+  "settings.permission.retestFailed": "settings.permission.retestFailed",
   "settings.permission.notifications.why":
     "settings.permission.notifications.why",
   "settings.permission.notifications.alternative":

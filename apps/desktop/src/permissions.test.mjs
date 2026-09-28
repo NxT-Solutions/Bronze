@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   applyNoticeAuthorization,
   applyPermissionResult,
+  applyRetestFeedback,
   applyRunningBundle,
   formatRunningCopy,
   loadNoticeAuthorization,
@@ -17,7 +18,9 @@ import {
   READ_COMMAND,
   RETEST_COMMAND,
   requestNoticeAuthorization,
+  retestFeedbackKey,
   retestUsedPermission,
+  runPermissionRetest,
   shouldRevealNoticeAllow,
   shouldRevealNoticeSettings,
   shouldShowStaleCopyHint,
@@ -59,6 +62,8 @@ test("permission health lists independent rows and unused screen recording", () 
   assert.match(html, /data-permission-running-copy/);
   assert.match(html, /data-permission-bundle-path/);
   assert.match(html, /data-permission-stale-copy/);
+  assert.match(html, /data-permission-exact-app/);
+  assert.match(html, /data-permission-retest-feedback/);
   assert.equal(
     en["settings.permission.runningCopy"],
     "This copy is {name} {version}.",
@@ -66,6 +71,22 @@ test("permission health lists independent rows and unused screen recording", () 
   assert.equal(
     en["settings.permission.staleCopy"],
     "If System Settings already shows this app as on, turn that switch off, click Add, and choose the app revealed in Finder, then quit and reopen Bronze.",
+  );
+  assert.equal(
+    en["settings.permission.exactApp"],
+    "Add that exact file. Another Bronze.app, bronze-desktop, or older copy will not grant this running app.",
+  );
+  assert.equal(
+    en["settings.permission.retestStillDenied"],
+    "Still denied. Add the exact app at the path above in Privacy & Security, then quit and reopen Bronze.",
+  );
+  assert.equal(
+    en["settings.permission.retestChecked"],
+    "Checked for this running copy.",
+  );
+  assert.equal(
+    en["settings.permission.retestFailed"],
+    "Retest could not run. Open System Settings and add the exact app at the path above.",
   );
   assert.doesNotMatch(html, /data-permission-retest="notifications"/);
   assert.doesNotMatch(html, /data-permission-retest="screenRecording"/);
@@ -133,12 +154,13 @@ test("retest uses an injected request hook and never asks for screen recording",
   );
   assert.equal(pillStatusForState("granted_unverified"), "granted");
   assert.equal(pillStatusForState("denied"), "denied");
-  const pill = { dataset: {}, textContent: "Denied" };
+  const pill = { dataset: {}, textContent: "Denied", setAttribute() {} };
   const card = { dataset: {}, querySelector: () => pill };
   const open = { hidden: true };
   const copy = { hidden: true, textContent: "" };
   const pathEl = { hidden: true, textContent: "" };
   const stale = { hidden: true };
+  const exact = { hidden: true };
   const group = { hidden: true };
   applyPermissionResult(
     {
@@ -149,6 +171,7 @@ test("retest uses an injected request hook and never asks for screen recording",
         if (query.includes("running-copy")) return copy;
         if (query.includes("bundle-path")) return pathEl;
         if (query.includes("stale-copy")) return stale;
+        if (query.includes("exact-app")) return exact;
         if (query.includes("permission-copy")) return group;
         return null;
       },
@@ -166,6 +189,7 @@ test("retest uses an injected request hook and never asks for screen recording",
   assert.equal(copy.textContent, "This copy is Bronze 0.1.1.");
   assert.equal(pathEl.textContent, "/Applications/Bronze.app");
   assert.equal(stale.hidden, false);
+  assert.equal(exact.hidden, false);
   assert.equal(group.hidden, false);
   assert.equal(shouldShowStaleCopyHint(denied), true);
   const granted = {
@@ -191,6 +215,7 @@ test("retest uses an injected request hook and never asks for screen recording",
         if (query.includes("running-copy")) return copy;
         if (query.includes("bundle-path")) return pathEl;
         if (query.includes("stale-copy")) return stale;
+        if (query.includes("exact-app")) return exact;
         if (query.includes("permission-copy")) return group;
         return null;
       },
@@ -202,6 +227,7 @@ test("retest uses an injected request hook and never asks for screen recording",
   assert.equal(pill.textContent, "Granted");
   assert.equal(open.hidden, true);
   assert.equal(stale.hidden, true);
+  assert.equal(exact.hidden, true);
   assert.equal(commands.filter((cmd) => cmd === RETEST_COMMAND).length, 2);
   assert.equal(
     formatRunningCopy("This copy is {name} {version}.", "Bronze", "0.1.1"),
@@ -277,4 +303,154 @@ test("opening permission health reads trust and does not prompt", async () => {
   assert.ok(commands.includes(READ_COMMAND));
   assert.equal(commands.includes(RETEST_COMMAND), false);
   assert.equal(commands.includes(NOTICE_REQUEST_COMMAND), false);
+});
+
+test("retest of a denied snapshot updates pills and opens Privacy when the prompt returns false", async () => {
+  const commands = [];
+  const pill = { dataset: {}, textContent: "Denied", setAttribute() {} };
+  const card = { dataset: {}, querySelector: () => pill };
+  const open = { hidden: true };
+  const copy = { hidden: true, textContent: "" };
+  const pathEl = { hidden: true, textContent: "" };
+  const stale = { hidden: true };
+  const exact = { hidden: true };
+  const group = { hidden: true };
+  const feedback = { hidden: true, textContent: "", setAttribute() {} };
+  const root = {
+    querySelector(sel) {
+      const query = String(sel);
+      if (query.includes("retest-feedback")) return feedback;
+      if (query.includes("data-capability")) return card;
+      if (query.includes("open-settings")) return open;
+      if (query.includes("running-copy")) return copy;
+      if (query.includes("bundle-path")) return pathEl;
+      if (query.includes("stale-copy")) return stale;
+      if (query.includes("exact-app")) return exact;
+      if (query.includes("permission-copy")) return group;
+      return null;
+    },
+  };
+  const denied = {
+    input_monitoring: "denied",
+    accessibility: "denied",
+    listen_requested: true,
+    accessibility_requested: true,
+    screen_recording_requested: false,
+    bundle_name: "Bronze",
+    bundle_version: "0.2.0",
+    bundle_path: "/Applications/Bronze.app",
+  };
+  const { result, revealSettings } = await runPermissionRetest(
+    root,
+    "accessibility",
+    async (cmd, args) => {
+      commands.push({ cmd, args });
+      if (cmd === RETEST_COMMAND) {
+        return denied;
+      }
+      return undefined;
+    },
+  );
+  assert.equal(revealSettings, true);
+  assert.equal(result.accessibility, "denied");
+  assert.equal(card.dataset.status, "denied");
+  assert.equal(pathEl.textContent, "/Applications/Bronze.app");
+  assert.equal(exact.hidden, false);
+  assert.equal(feedback.hidden, false);
+  assert.equal(feedback.textContent, en["settings.permission.retestStillDenied"]);
+  assert.equal(
+    retestFeedbackKey("stillDenied"),
+    "settings.permission.retestStillDenied",
+  );
+  applyRetestFeedback(root, "failed");
+  assert.equal(feedback.textContent, en["settings.permission.retestFailed"]);
+  assert.deepEqual(
+    commands.map((row) => row.cmd),
+    [RETEST_COMMAND, OPEN_SETTINGS_COMMAND],
+  );
+  assert.deepEqual(commands[1].args, { capability: "accessibility" });
+});
+
+test("bind retest applies a denied snapshot and does not swallow the click", async () => {
+  const { bindPermissionHealth } = await import("./permission-health.mjs");
+  const commands = [];
+  const clicks = [];
+  const button = {
+    getAttribute() {
+      return "accessibility";
+    },
+    addEventListener(name, fn) {
+      if (name === "click") {
+        clicks.push(fn);
+      }
+    },
+  };
+  const pill = { dataset: {}, textContent: "Denied", setAttribute() {} };
+  const card = { dataset: {}, querySelector: () => pill };
+  const open = { hidden: true };
+  const copy = { hidden: true, textContent: "" };
+  const pathEl = { hidden: true, textContent: "" };
+  const stale = { hidden: true };
+  const exact = { hidden: true };
+  const group = { hidden: true };
+  const feedback = { hidden: true, textContent: "", setAttribute() {} };
+  const root = {
+    querySelector(sel) {
+      const query = String(sel);
+      if (query.includes("retest-feedback")) return feedback;
+      if (query.includes("data-capability")) return card;
+      if (query.includes("open-settings")) return open;
+      if (query.includes("running-copy")) return copy;
+      if (query.includes("bundle-path")) return pathEl;
+      if (query.includes("stale-copy")) return stale;
+      if (query.includes("exact-app")) return exact;
+      if (query.includes("permission-copy")) return group;
+      return null;
+    },
+    querySelectorAll(sel) {
+      if (String(sel).includes("data-permission-retest")) {
+        return [button];
+      }
+      return [];
+    },
+  };
+  bindPermissionHealth(root, async (cmd, args) => {
+    commands.push(cmd);
+    if (cmd === NOTICE_STATUS_COMMAND) {
+      return "not_requested";
+    }
+    if (cmd === RETEST_COMMAND) {
+      return {
+        input_monitoring: "denied",
+        accessibility: "denied",
+        listen_requested: true,
+        accessibility_requested: true,
+        screen_recording_requested: false,
+        bundle_name: "Bronze",
+        bundle_version: "0.2.0",
+        bundle_path: "/Applications/Bronze.app",
+      };
+    }
+    if (cmd === OPEN_SETTINGS_COMMAND) {
+      assert.equal(args.capability, "accessibility");
+    }
+    return {
+      input_monitoring: "not_requested",
+      accessibility: "not_requested",
+      listen_requested: false,
+      accessibility_requested: false,
+      screen_recording_requested: false,
+      bundle_name: "Bronze",
+      bundle_version: "0.2.0",
+      bundle_path: "/Applications/Bronze.app",
+    };
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(clicks.length, 1);
+  await clicks[0]();
+  assert.ok(commands.includes(RETEST_COMMAND));
+  assert.ok(commands.includes(OPEN_SETTINGS_COMMAND));
+  assert.equal(card.dataset.status, "denied");
+  assert.equal(pathEl.textContent, "/Applications/Bronze.app");
+  assert.equal(feedback.hidden, false);
 });

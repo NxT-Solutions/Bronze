@@ -5,7 +5,7 @@ This file is auto-updated by the release workflow.
 
 ## Unreleased
 
-- Work in progress.
+- Retest in Permission health refreshes Granted/Denied, names the running app path, and opens Privacy when the grant still belongs to another copy.
 
 ## v0.2.0 - 2026-09-28
 

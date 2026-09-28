@@ -59,6 +59,8 @@ describe("permission health (SET-003, SET-004, CAP-003)", () => {
     );
     expect(commands).toEqual([USED_PERMISSION_COMMANDS.retest]);
     expect(result.revealSettings).toBe(true);
+    expect(result.result.accessibility).toBe("denied");
+    expect(shouldRevealSystemSettings("accessibility", denied)).toBe(true);
     expect(shouldRevealSystemSettings("screenRecording", denied)).toBe(false);
     await expect(
       retestUsedPermission("screenRecording", async () => denied),

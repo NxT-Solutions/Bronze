@@ -52,12 +52,46 @@ export function formatRunningCopy(template, name, version) {
     .replaceAll("{version}", version);
 }
 
+export function ungrantedPermissionState(state) {
+  return state !== "granted_unverified" && state !== "healthy";
+}
+
 export function shouldShowStaleCopyHint(result) {
-  const ungranted = (state) =>
-    state !== "granted_unverified" && state !== "healthy";
   return (
-    ungranted(result?.input_monitoring) || ungranted(result?.accessibility)
+    ungrantedPermissionState(result?.input_monitoring) ||
+    ungrantedPermissionState(result?.accessibility)
   );
+}
+
+export function retestFeedbackKey(kind) {
+  if (kind === "checked") {
+    return "settings.permission.retestChecked";
+  }
+  if (kind === "failed") {
+    return "settings.permission.retestFailed";
+  }
+  return "settings.permission.retestStillDenied";
+}
+
+export function retestFeedbackFallback(kind) {
+  if (kind === "checked") {
+    return "Checked for this running copy.";
+  }
+  if (kind === "failed") {
+    return "Retest could not run. Open System Settings and add the exact app at the path above.";
+  }
+  return "Still denied. Add the exact app at the path above in Privacy & Security, then quit and reopen Bronze.";
+}
+
+export function applyRetestFeedback(root, kind) {
+  const feedback = root.querySelector("[data-permission-retest-feedback]");
+  if (!feedback) {
+    return;
+  }
+  const key = retestFeedbackKey(kind);
+  feedback.hidden = false;
+  feedback.setAttribute("data-i18n", key);
+  feedback.textContent = catalogMessage(key) || retestFeedbackFallback(kind);
 }
 
 export function applyRunningBundle(root, result) {
@@ -82,6 +116,10 @@ export function applyRunningBundle(root, result) {
   const stale = root.querySelector("[data-permission-stale-copy]");
   if (stale) {
     stale.hidden = !shouldShowStaleCopyHint(result);
+  }
+  const exact = root.querySelector("[data-permission-exact-app]");
+  if (exact) {
+    exact.hidden = !shouldShowStaleCopyHint(result);
   }
   const group = root.querySelector("[data-permission-copy]");
   if (group) {
@@ -109,9 +147,13 @@ export function applyPermissionResult(root, result) {
     if (pill) {
       pill.dataset.status = status;
       if (status === "granted") {
-        pill.textContent = "Granted";
+        const key = "settings.permission.status.granted";
+        pill.setAttribute("data-i18n", key);
+        pill.textContent = catalogMessage(key) || "Granted";
       } else if (status === "denied") {
-        pill.textContent = "Denied";
+        const key = "settings.permission.status.denied";
+        pill.setAttribute("data-i18n", key);
+        pill.textContent = catalogMessage(key) || "Denied";
       }
     }
     const open = root.querySelector(
@@ -220,18 +262,60 @@ export async function retestUsedPermission(capability, invokeFn = tauriInvoke) {
   };
 }
 
+export async function refreshUsedPermissions(root, invokeFn = tauriInvoke) {
+  const result = await invokeFn(READ_COMMAND);
+  applyPermissionResult(root, result);
+  return result;
+}
+
+export async function runPermissionRetest(
+  root,
+  capability,
+  invokeFn = tauriInvoke,
+) {
+  const { result, revealSettings } = await retestUsedPermission(
+    capability,
+    invokeFn,
+  );
+  applyPermissionResult(root, result);
+  applyRetestFeedback(root, revealSettings ? "stillDenied" : "checked");
+  if (revealSettings) {
+    await invokeFn(OPEN_SETTINGS_COMMAND, { capability });
+  }
+  return { result, revealSettings };
+}
+
 export function bindPermissionHealth(root = document, invokeFn = tauriInvoke) {
-  invokeFn(READ_COMMAND)
-    .then((result) => applyPermissionResult(root, result))
-    .catch(() => {});
+  refreshUsedPermissions(root, invokeFn).catch(() => {});
   loadNoticeAuthorization(root, invokeFn).catch(() => {
     applyNoticeAuthorization(root, "unavailable");
   });
+  const onVisible = () => {
+    refreshUsedPermissions(root, invokeFn).catch(() => {});
+    loadNoticeAuthorization(root, invokeFn).catch(() => {});
+  };
+  if (globalThis.document) {
+    globalThis.document.addEventListener("visibilitychange", () => {
+      if (globalThis.document.visibilityState === "visible") {
+        onVisible();
+      }
+    });
+  }
+  if (globalThis.window) {
+    globalThis.window.addEventListener("pageshow", onVisible);
+    globalThis.window.addEventListener("focus", onVisible);
+  }
   if (globalThis.document) {
     globalThis.document.addEventListener(LOCALE_APPLIED_EVENT, () => {
       const remembered = LAST_PERMISSION_RESULT.get(root);
       if (remembered) {
         applyRunningBundle(root, remembered);
+      }
+      const feedback = root.querySelector("[data-permission-retest-feedback]");
+      const feedbackKey = feedback?.getAttribute("data-i18n");
+      if (feedback && feedbackKey && !feedback.hidden) {
+        feedback.textContent =
+          catalogMessage(feedbackKey) || feedback.textContent;
       }
       const status = root.querySelector('[data-capability="notifications"]')
         ?.dataset?.status;
@@ -256,10 +340,9 @@ export function bindPermissionHealth(root = document, invokeFn = tauriInvoke) {
     button.addEventListener("click", async () => {
       const capability = button.getAttribute("data-permission-retest");
       try {
-        const { result } = await retestUsedPermission(capability, invokeFn);
-        applyPermissionResult(root, result);
+        await runPermissionRetest(root, capability, invokeFn);
       } catch {
-        // Denial still leaves the manual composer path.
+        applyRetestFeedback(root, "failed");
       }
     });
   }
