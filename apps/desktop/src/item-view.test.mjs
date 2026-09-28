@@ -4,6 +4,10 @@ import {
   applyExpandState,
   applyItemSource,
   applySourceRow,
+  BODY_CLAMP_MAX_HEIGHT,
+  BODY_EXPAND_MS,
+  BODY_LINE_HEIGHT_EM,
+  collapsedBodyMaxHeightPx,
   fillItemChrome,
   formatCaptureSource,
   readExpandLabels,
@@ -30,19 +34,26 @@ function createDocument() {
       dir: "",
       scrollHeight: 0,
       clientHeight: 0,
+      style: {
+        maxHeight: "",
+        overflow: "",
+        height: "",
+      },
       ownerDocument: doc,
       get classList() {
         return {
           contains: (name) => el.className.split(/\s+/).includes(name),
-          add(name) {
-            if (!this.contains(name)) {
-              el.className = `${el.className} ${name}`.trim();
+          add(...names) {
+            for (const name of names) {
+              if (!this.contains(name)) {
+                el.className = `${el.className} ${name}`.trim();
+              }
             }
           },
-          remove(name) {
+          remove(...names) {
             el.className = el.className
               .split(/\s+/)
-              .filter((part) => part && part !== name)
+              .filter((part) => part && !names.includes(part))
               .join(" ");
           },
           toggle(name, force) {
@@ -150,6 +161,7 @@ function createDocument() {
 
   const timers = [];
   const doc = {
+    documentElement: { dataset: {}, hasAttribute: () => false },
     defaultView: {
       setTimeout(fn, ms) {
         const id = timers.length + 1;
@@ -319,6 +331,132 @@ test("expand button stays hidden until the body overflows", () => {
   body.clientHeight = 20;
   syncExpandVisibility(article);
   assert.equal(button.hidden, false);
+});
+
+function installMotionClock(doc) {
+  const frames = [];
+  let nextId = 1;
+  doc.documentElement.dataset.motion = "full";
+  doc.defaultView.getComputedStyle = () => ({
+    fontSize: "13px",
+    lineHeight: `${13 * BODY_LINE_HEIGHT_EM}px`,
+  });
+  doc.defaultView.requestAnimationFrame = (fn) => {
+    const id = nextId;
+    nextId += 1;
+    frames.push({ id, fn });
+    return id;
+  };
+  doc.defaultView.cancelAnimationFrame = (id) => {
+    const at = frames.findIndex((frame) => frame.id === id);
+    if (at >= 0) {
+      frames.splice(at, 1);
+    }
+  };
+  doc.flushFrame = (now) => {
+    const pending = frames.splice(0, frames.length);
+    for (const frame of pending) {
+      frame.fn(now);
+    }
+  };
+  return doc;
+}
+
+function overflowArticle(doc) {
+  const article = articleFixture(doc);
+  const body = article.querySelector("[data-slot=body]");
+  body.scrollHeight = 240;
+  body.clientHeight = 3 * BODY_LINE_HEIGHT_EM * 13;
+  return { article, body };
+}
+
+function maxHeightPx(body) {
+  return Number.parseFloat(body.style.maxHeight);
+}
+
+test("expand adds an opening class and does not assign full height in one step", () => {
+  const doc = installMotionClock(createDocument());
+  const { article, body } = overflowArticle(doc);
+  const labels = readExpandLabels(article);
+  const clamp = collapsedBodyMaxHeightPx(body);
+  fillItemChrome(article, { title: "T", body: "long body" }, labels);
+  applyExpandState(article, true, labels, { animate: true, motion: true });
+  assert.equal(article.classList.contains("is-body-opening"), true);
+  assert.equal(article.classList.contains("is-expanded"), true);
+  assert.equal(article.classList.contains("is-sort-expand"), false);
+  assert.equal(body.style.height, "");
+  assert.equal(body.style.maxHeight, `${clamp}px`);
+  assert.notEqual(body.style.maxHeight, `${body.scrollHeight}px`);
+  doc.flushFrame(0);
+  assert.equal(article.classList.contains("is-body-opening"), true);
+  assert.equal(maxHeightPx(body), clamp);
+  doc.flushFrame(BODY_EXPAND_MS / 2);
+  const mid = maxHeightPx(body);
+  assert.ok(mid > clamp);
+  assert.ok(mid < body.scrollHeight);
+  assert.equal(body.style.height, "");
+  doc.flushFrame(BODY_EXPAND_MS);
+  assert.equal(article.classList.contains("is-body-opening"), false);
+  assert.equal(article.classList.contains("is-expanded"), true);
+  assert.equal(body.style.maxHeight, "");
+  assert.equal(body.style.height, "");
+});
+
+test("collapse adds a closing class and eases back to the three-line clamp", () => {
+  const doc = installMotionClock(createDocument());
+  const { article, body } = overflowArticle(doc);
+  const labels = readExpandLabels(article);
+  const clamp = collapsedBodyMaxHeightPx(body);
+  fillItemChrome(article, { title: "T", body: "long body" }, labels);
+  applyExpandState(article, true, labels, { animate: false, motion: true });
+  applyExpandState(article, false, labels, { animate: true, motion: true });
+  assert.equal(article.classList.contains("is-body-closing"), true);
+  assert.equal(article.classList.contains("is-expanded"), false);
+  assert.equal(article.classList.contains("is-sort-expand"), false);
+  assert.equal(body.style.height, "");
+  assert.equal(body.style.maxHeight, `${body.scrollHeight}px`);
+  assert.notEqual(body.style.maxHeight, `${clamp}px`);
+  doc.flushFrame(0);
+  assert.equal(maxHeightPx(body), body.scrollHeight);
+  doc.flushFrame(BODY_EXPAND_MS / 2);
+  const mid = maxHeightPx(body);
+  assert.ok(mid < body.scrollHeight);
+  assert.ok(mid > clamp);
+  doc.flushFrame(BODY_EXPAND_MS);
+  assert.equal(article.classList.contains("is-body-closing"), false);
+  assert.equal(article.classList.contains("is-expanded"), false);
+  assert.equal(body.style.maxHeight, "");
+  assert.equal(BODY_CLAMP_MAX_HEIGHT, "calc(3 * 1.45em)");
+});
+
+test("Show more click uses the opening class when motion is on", () => {
+  const doc = installMotionClock(createDocument());
+  const { article, body } = overflowArticle(doc);
+  const labels = readExpandLabels(article);
+  fillItemChrome(article, { title: "T", body: "long body" }, labels);
+  const button = article.querySelector("[data-slot=expand]");
+  button.click();
+  assert.equal(article.classList.contains("is-body-opening"), true);
+  assert.equal(article.classList.contains("is-sort-expand"), false);
+  assert.equal(body.style.maxHeight, `${collapsedBodyMaxHeightPx(body)}px`);
+  assert.equal(body.style.height, "");
+});
+
+test("reduced motion snaps Show more open and closed", () => {
+  const doc = installMotionClock(createDocument());
+  doc.documentElement.dataset.motion = "reduce";
+  const { article, body } = overflowArticle(doc);
+  const labels = readExpandLabels(article);
+  fillItemChrome(article, { title: "T", body: "long body" }, labels);
+  applyExpandState(article, true, labels, { animate: true, motion: false });
+  assert.equal(article.classList.contains("is-expanded"), true);
+  assert.equal(article.classList.contains("is-body-opening"), false);
+  assert.equal(body.style.maxHeight, "");
+  assert.equal(body.style.height, "");
+  applyExpandState(article, false, labels, { animate: true, motion: false });
+  assert.equal(article.classList.contains("is-expanded"), false);
+  assert.equal(article.classList.contains("is-body-closing"), false);
+  assert.equal(body.style.maxHeight, "");
 });
 
 test("pending refine hides the extractive sentence until writing is shown", () => {

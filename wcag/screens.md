@@ -41,9 +41,10 @@ Purpose: capture in, act on the current item.
   first-page load expands only, with no insert slide. Reduce Motion,
   `data-reduce-motion`, and `data-motion="reduce"` skip the make-room
   translate, the slide, the eased scroll, the pulse, the icon
-  transform, the sort collapse/expand, and the first-page expand. The
-  card is in the list either way (2.2.2, 2.3.1, 2.3.3). This is not a
-  WCAG claim.
+  transform, the sort collapse/expand, the first-page expand, and the
+  body Show more open/close. The label and `aria-expanded` still
+  change. The card is in the list either way (2.2.2, 2.3.1, 2.3.3).
+  This is not a WCAG claim.
 
 ## Settings — `apps/desktop/src/settings.html`
 
