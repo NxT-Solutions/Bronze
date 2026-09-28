@@ -47,6 +47,7 @@
   "queue.item.showMore": "Vis mere",
   "queue.item.showLess": "Vis mindre",
   "queue.item.title": "Element",
+  "queue.item.writingTitle": "Skriver titel…",
   "queue.sort.showOldest": "Vis ældste først",
   "queue.sort.showNewest": "Vis nyeste først",
   "panel.section.active": "Indbakke",

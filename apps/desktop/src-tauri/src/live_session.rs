@@ -50,10 +50,15 @@ use bronze_title_model::{
     auto_pick_title_tier, present_gguf_tiers, request_tier, TitleTier, GGUF_TIERS,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+fn default_title_phase() -> String {
+    "final".into()
+}
 
 pub const HAND_TEST_UI_LOCALE: &str = "en";
 pub const AX_CAPTURE_LIVE: bool = true;
@@ -380,6 +385,8 @@ pub struct QueueItemDto {
     #[serde(default)]
     pub source_app_icon: Option<String>,
     pub created_at_ms: i64,
+    #[serde(default = "default_title_phase")]
+    pub title_phase: String,
 }
 
 #[derive(Clone, Debug, Serialize, Eq, PartialEq)]
@@ -408,6 +415,7 @@ impl fmt::Debug for QueueItemDto {
             .field("rank", &self.rank)
             .field("source_app_name", &self.source_app_name)
             .field("created_at_ms", &self.created_at_ms)
+            .field("title_phase", &self.title_phase)
             .field(
                 "source_app_icon",
                 &self
@@ -443,6 +451,7 @@ impl From<QueueItemRow> for QueueItemDto {
             source_app_name: row.source_app_name,
             source_app_icon,
             created_at_ms: row.created_at_ms,
+            title_phase: default_title_phase(),
         }
     }
 }
@@ -657,6 +666,7 @@ pub struct LiveSession {
     settings: SettingsV1,
     shortcuts: ShortcutRegistry,
     data_dir: PathBuf,
+    title_pending: HashSet<String>,
 }
 
 struct TerminalDiag {
@@ -695,6 +705,7 @@ impl LiveSession {
             settings,
             shortcuts,
             data_dir,
+            title_pending: HashSet::new(),
         };
         session.apply_live_capture_gesture();
         let now = now_ms();
@@ -738,10 +749,47 @@ impl LiveSession {
         Self::catalog_for(HAND_TEST_UI_LOCALE)
     }
 
+    fn with_title_phase(&self, mut dto: QueueItemDto) -> QueueItemDto {
+        dto.title_phase = if self.title_pending.contains(&dto.id) {
+            "pending".into()
+        } else {
+            default_title_phase()
+        };
+        dto
+    }
+
+    fn queue_item_dto(&self, row: QueueItemRow) -> QueueItemDto {
+        self.with_title_phase(QueueItemDto::from(row))
+    }
+
+    pub fn mark_title_pending(&mut self, id: &str) {
+        if !id.is_empty() {
+            self.title_pending.insert(id.to_string());
+        }
+    }
+
+    pub fn clear_title_pending(&mut self, id: &str) -> bool {
+        self.title_pending.remove(id)
+    }
+
+    pub fn schedule_title_refine(&mut self, id: &str, body: &str) -> bool {
+        if crate::title_refine::will_schedule_refine(&self.settings, body) {
+            self.mark_title_pending(id);
+            true
+        } else {
+            self.clear_title_pending(id);
+            false
+        }
+    }
+
     pub fn list_queue(&self, include_trashed: bool) -> Result<Vec<QueueItemDto>, String> {
         self.store
             .list_items(include_trashed)
-            .map(|rows| rows.into_iter().map(QueueItemDto::from).collect())
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|row| self.queue_item_dto(row))
+                    .collect()
+            })
             .map_err(|_| "queue_list_failed".into())
     }
 
@@ -788,7 +836,11 @@ impl LiveSession {
             }
         };
         Ok(QueuePageDto {
-            items: page.items.into_iter().map(QueueItemDto::from).collect(),
+            items: page
+                .items
+                .into_iter()
+                .map(|row| self.queue_item_dto(row))
+                .collect(),
             next_cursor: page.next_cursor,
         })
     }
@@ -803,6 +855,7 @@ impl LiveSession {
         expected_body: &str,
         title: &str,
     ) -> Result<bool, String> {
+        self.title_pending.remove(id);
         let row = self
             .store
             .get_item(id)
@@ -1004,7 +1057,7 @@ impl LiveSession {
             .map_err(|_| "composer_store_failed")?;
         self.store
             .get_item(&id)
-            .map(QueueItemDto::from)
+            .map(|row| self.queue_item_dto(row))
             .map_err(|_| "composer_store_failed".into())
     }
 
@@ -1038,7 +1091,7 @@ impl LiveSession {
             .map_err(|_| "capture_store_failed")?;
         self.store
             .get_item(&id)
-            .map(QueueItemDto::from)
+            .map(|row| self.queue_item_dto(row))
             .map_err(|_| "capture_store_failed".into())
     }
 
@@ -1057,7 +1110,7 @@ impl LiveSession {
             .map_err(|err| format!("{err:?}"))?;
         self.store
             .get_item(id)
-            .map(QueueItemDto::from)
+            .map(|row| self.queue_item_dto(row))
             .map_err(|_| "not_found".into())
     }
 
@@ -1140,7 +1193,7 @@ impl LiveSession {
         let mut items = Vec::new();
         for hit in &hits {
             if let Ok(row) = self.store.get_item(&hit.item_id) {
-                items.push(QueueItemDto::from(row));
+                items.push(self.queue_item_dto(row));
             }
         }
         Ok((items, hits.len()))
@@ -2015,7 +2068,12 @@ pub fn add_composer_item(
     session: tauri::State<std::sync::Mutex<LiveSession>>,
     body: String,
 ) -> Result<QueueItemDto, String> {
-    let dto = lock_session(&session)?.add_composer(body.clone())?;
+    let dto = {
+        let mut live = lock_session(&session)?;
+        let added = live.add_composer(body.clone())?;
+        live.schedule_title_refine(&added.id, &body);
+        live.with_title_phase(added)
+    };
     crate::title_refine::schedule(&app, dto.id.clone(), body);
     emit_queue_changed(&app);
     Ok(dto)
@@ -2042,7 +2100,12 @@ pub fn edit_queue_item(
     id: String,
     body: String,
 ) -> Result<QueueItemDto, String> {
-    let dto = lock_session(&session)?.edit_item(&id, &body)?;
+    let dto = {
+        let mut live = lock_session(&session)?;
+        let edited = live.edit_item(&id, &body)?;
+        live.schedule_title_refine(&id, &body);
+        live.with_title_phase(edited)
+    };
     crate::title_refine::schedule(&app, id, body);
     emit_queue_changed(&app);
     Ok(dto)
@@ -2546,6 +2609,73 @@ mod live_session_tests {
         assert!(!session
             .apply_refined_title(&added.id, "changed", "Ignored")
             .expect("stale"));
+        assert_eq!(added.title_phase, "final");
+    }
+
+    #[test]
+    fn title_phase_stays_pending_until_refine_finishes() {
+        let body = "Thanks for the note.\nThe migration timeout is the real bug in persist.";
+        let mut session = open_session();
+        let mut settings = session.settings();
+        settings.general.title_model = TitleModelId::Smol360;
+        session.replace_settings(settings).expect("model");
+        let added = session.add_composer(body.into()).expect("add");
+        assert_eq!(added.title_phase, "final");
+        assert!(session.schedule_title_refine(&added.id, body));
+        let pending = session
+            .list_queue(true)
+            .expect("list")
+            .into_iter()
+            .find(|item| item.id == added.id)
+            .expect("row");
+        assert_eq!(pending.title_phase, "pending");
+        assert_eq!(pending.title, Some(bronze_domain::compact_title(body)));
+        assert!(session
+            .apply_refined_title(&added.id, body, "Migration timeout")
+            .expect("apply"));
+        let done = session
+            .list_queue(true)
+            .expect("list")
+            .into_iter()
+            .find(|item| item.id == added.id)
+            .expect("row");
+        assert_eq!(done.title_phase, "final");
+        assert_eq!(done.title.as_deref(), Some("Migration timeout"));
+        session.mark_title_pending(&added.id);
+        assert!(!session
+            .apply_refined_title(&added.id, "changed", "Ignored")
+            .expect("stale"));
+        let fallback = session
+            .list_queue(true)
+            .expect("list")
+            .into_iter()
+            .find(|item| item.id == added.id)
+            .expect("row");
+        assert_eq!(fallback.title_phase, "final");
+        assert_eq!(fallback.title.as_deref(), Some("Migration timeout"));
+    }
+
+    #[test]
+    fn extractive_title_phase_is_final() {
+        let mut session = open_session();
+        let mut settings = session.settings();
+        settings.general.title_model = TitleModelId::Extractive;
+        session.replace_settings(settings).expect("extractive");
+        let added = session
+            .add_composer("The extractive sentence is the title.".into())
+            .expect("add");
+        assert!(!session.schedule_title_refine(&added.id, "The extractive sentence is the title."));
+        let listed = session
+            .list_queue(true)
+            .expect("list")
+            .into_iter()
+            .find(|item| item.id == added.id)
+            .expect("row");
+        assert_eq!(listed.title_phase, "final");
+        assert_eq!(
+            listed.title.as_deref(),
+            Some(bronze_domain::compact_title("The extractive sentence is the title.").as_str())
+        );
     }
 
     #[test]

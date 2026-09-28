@@ -47,6 +47,7 @@
   --radius-pill: 999px;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration: 180ms;
+  --title-fade: 200ms;
   --arrive: 380ms;
   --arrive-room: 320ms;
   --arrive-scroll: 340ms;
@@ -1169,6 +1170,66 @@ article [data-slot="title"] {
   overflow: hidden;
   text-overflow: ellipsis;
   min-height: calc(2 * 1lh);
+  position: relative;
+}
+
+#queue article [data-slot="title-text"],
+#queue article [data-slot="title-writing"] {
+  transition: opacity var(--title-fade) var(--ease-out);
+}
+
+#queue article.is-title-pending [data-slot="title"]:not([hidden]) {
+  display: block;
+}
+
+#queue article.is-title-pending [data-slot="title-text"] {
+  opacity: 0;
+}
+
+#queue article [data-slot="title-writing"] {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: calc(2 * 1lh);
+  color: var(--muted-foreground);
+  font-weight: 400;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#queue article.is-title-pending [data-slot="title-writing"] {
+  opacity: 1;
+}
+
+#queue article.is-title-revealing:not(.is-title-pending) [data-slot="title-text"] {
+  animation: bronze-title-in var(--title-fade) var(--ease-out);
+}
+
+@keyframes bronze-title-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.queue-title-spinner {
+  flex: 0 0 auto;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--muted-foreground);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: bronze-spin 0.6s linear infinite;
+}
+
+.queue-title-spinner[hidden] {
+  display: none;
 }
 
 article [data-slot="body"] {
@@ -2547,6 +2608,16 @@ html[data-motion="reduce"] .queue-item.is-sort-expand,
   animation: none;
   transform: none;
   opacity: 1;
+}
+
+html[data-motion="reduce"] #queue article [data-slot="title-text"],
+html[data-motion="reduce"] #queue article [data-slot="title-writing"],
+html[data-motion="reduce"] .queue-title-spinner,
+[data-reduce-motion] #queue article [data-slot="title-text"],
+[data-reduce-motion] #queue article [data-slot="title-writing"],
+[data-reduce-motion] .queue-title-spinner {
+  transition: none !important;
+  animation: none !important;
 }
 
 @media (prefers-contrast: more) {

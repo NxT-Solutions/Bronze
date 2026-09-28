@@ -152,6 +152,11 @@ test("applyHandTestLocale sets html lang and catalog chrome", () => {
   assert.equal(root.documentElement.lang, "nl");
   assert.equal(heading.textContent, "Instellingen");
   assert.equal(title.textContent, "Instellingen");
+  assert.match(applyLocaleSource, /closest\?\.\("\[data-slot=body\]"\)/);
+  assert.match(
+    applyLocaleSource,
+    /slot === "title" \|\| slot === "title-text"/,
+  );
   assert.match(applyLocaleSource, /setAttribute\("aria-placeholder", value\)/);
   assert.match(applyLocaleSource, /setAttribute\("title", value\)/);
   assert.match(applyLocaleSource, /setAttribute\("aria-label", value\)/);

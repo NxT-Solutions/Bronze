@@ -14,8 +14,14 @@ Purpose: capture in, act on the current item.
   up, Move down, Trash).
 - Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
 - The queue title sits in a reserved two-line slot (`min-height` 2lh,
-  clamp + ellipsis). A later generated title swaps in place without
-  changing card height. Reduce Motion adds no title motion.
+  clamp + ellipsis). While an on-this-Mac engine is still writing the
+  title, the slot stays 2lh and shows a small spinner plus
+  “Writing title…”. It does not show the extractive first sentence.
+  When the final title is known, the writing state fades out and the
+  title fades in over `--title-fade` (200ms). A refine that finishes
+  before 80ms skips the spinner. Extractive / Off never spins. Reduce
+  Motion shows the catalog string or the final title immediately, with
+  no fade and no spinner animation.
 - A new card inserted at the loaded edge first makes room: the current
   first card (newest-first) or last card (oldest-first, last page
   only) takes `is-make-room` and the existing stack eases one card

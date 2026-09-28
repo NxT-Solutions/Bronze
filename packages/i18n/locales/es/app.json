@@ -47,6 +47,7 @@
   "queue.item.showMore": "Mostrar más",
   "queue.item.showLess": "Mostrar menos",
   "queue.item.title": "Elemento",
+  "queue.item.writingTitle": "Escribiendo el título…",
   "queue.sort.showOldest": "Mostrar las más antiguas primero",
   "queue.sort.showNewest": "Mostrar las más recientes primero",
   "panel.section.active": "Entrada",

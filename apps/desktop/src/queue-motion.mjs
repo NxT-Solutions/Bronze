@@ -131,11 +131,11 @@ export async function applyQueueItemMutation(
   }
 }
 
-function fillQueueNode(node, item, labels) {
+function fillQueueNode(node, item, labels, reveal = "instant") {
   node.dataset.itemId = item.id;
   node.dataset.body = typeof item.body === "string" ? item.body : "";
   const article = node.querySelector("article");
-  fillItemChrome(article, item, labels);
+  fillItemChrome(article, item, labels, { reveal });
   node.querySelectorAll("[data-queue-action]").forEach((button) => {
     button.dataset.itemId = item.id;
   });
@@ -178,7 +178,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
         node.classList.add("is-entering");
         node.style.setProperty("--enter-delay", `${Math.min(index, 8) * 24}ms`);
       }
-      fillQueueNode(node, item, labels);
+      fillQueueNode(node, item, labels, "instant");
       placeQueueNode(list, node);
     }
     syncMoveAvailability(list);
@@ -206,7 +206,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
       if (!node) {
         node = template.content.firstElementChild.cloneNode(true);
       }
-      fillQueueNode(node, item, labels);
+      fillQueueNode(node, item, labels, fresh ? "enter" : "update");
       if (fresh && slide.has(item.id)) {
         node.classList.remove("is-entering");
         arriving.push(node);
@@ -240,7 +240,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
       let node = byId.get(item.id);
       if (!node) {
         node = template.content.firstElementChild.cloneNode(true);
-        fillQueueNode(node, item, labels);
+        fillQueueNode(node, item, labels, "instant");
       }
       placeQueueNode(list, node);
     }
@@ -367,7 +367,7 @@ export function createQueueRenderer({ queueItemRows, syncMoveAvailability }) {
         continue;
       }
       const node = template.content.firstElementChild.cloneNode(true);
-      fillQueueNode(node, item, labels);
+      fillQueueNode(node, item, labels, "enter");
       const beforeId = insertionBeforeId([...loaded], pageIds, item.id);
       const before = beforeId ? findItemNode(list, beforeId) : null;
       if (before) {

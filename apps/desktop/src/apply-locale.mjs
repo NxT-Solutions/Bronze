@@ -140,7 +140,11 @@ function applyCatalogMessages(scope, messages) {
     return;
   }
   for (const el of scope.querySelectorAll("[data-i18n]")) {
-    if (el.closest?.("[data-slot=title],[data-slot=body]")) {
+    if (el.closest?.("[data-slot=body]")) {
+      continue;
+    }
+    const slot = el.dataset?.slot;
+    if (slot === "title" || slot === "title-text") {
       continue;
     }
     const key = el.getAttribute("data-i18n");

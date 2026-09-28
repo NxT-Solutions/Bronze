@@ -9,7 +9,8 @@ updated in the same change.
 - Tauri 2 WebView, `frontendDist` is unbundled `apps/desktop/src`.
   No npm motion library, no Vite CDN, no remote `@font-face`.
 - Motion is CSS + WAAPI in existing modules (`control.mjs`), 180ms,
-  `cubic-bezier(0.22, 1, 0.36, 1)`. A new queue card first eases the
+  `cubic-bezier(0.22, 1, 0.36, 1)`. A pending queue title crossfades
+  over `--title-fade` (200ms). A new queue card first eases the
   existing stack one card height over `--arrive-room` (320ms), then
   slides from the inline-start edge over `--arrive` (380ms).
   Newest-first eases the scrollport to the top of the loaded page over

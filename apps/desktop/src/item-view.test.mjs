@@ -9,6 +9,8 @@ import {
   readExpandLabels,
   sourceIconSrc,
   syncExpandVisibility,
+  TITLE_WRITING_DELAY_MS,
+  titleSlotPresentation,
 } from "./item-view.mjs";
 
 function createDocument() {
@@ -146,7 +148,27 @@ function createDocument() {
     return found;
   }
 
+  const timers = [];
   const doc = {
+    defaultView: {
+      setTimeout(fn, ms) {
+        const id = timers.length + 1;
+        timers.push({ id, fn, ms });
+        return id;
+      },
+      clearTimeout(id) {
+        const at = timers.findIndex((timer) => timer.id === id);
+        if (at >= 0) {
+          timers.splice(at, 1);
+        }
+      },
+    },
+    flushTimers() {
+      const pending = timers.splice(0, timers.length);
+      for (const timer of pending) {
+        timer.fn();
+      }
+    },
     createElement,
     createTextNode(text) {
       return {
@@ -191,6 +213,26 @@ function articleFixture(doc) {
   label.textContent = "From {appName}";
   source.append(icon, label);
   article.append(title, body, expand, less, source);
+  return article;
+}
+
+function writingArticleFixture(doc) {
+  const article = articleFixture(doc);
+  const title = article.querySelector("[data-slot=title]");
+  const text = doc.createElement("span");
+  text.dataset.slot = "title-text";
+  const writing = doc.createElement("span");
+  writing.dataset.slot = "title-writing";
+  writing.setAttribute("aria-hidden", "true");
+  const spinner = doc.createElement("span");
+  spinner.dataset.slot = "title-spinner";
+  spinner.className = "queue-title-spinner";
+  spinner.hidden = true;
+  const label = doc.createElement("span");
+  label.dataset.slot = "title-writing-label";
+  label.textContent = "Writing title…";
+  writing.append(spinner, label);
+  title.append(text, writing);
   return article;
 }
 
@@ -275,6 +317,209 @@ test("expand button stays hidden until the body overflows", () => {
   body.clientHeight = 20;
   syncExpandVisibility(article);
   assert.equal(button.hidden, false);
+});
+
+test("pending refine hides the extractive sentence until writing is shown", () => {
+  const compact = "The persist timeout is the real bug in";
+  assert.deepEqual(
+    titleSlotPresentation({
+      phase: "pending",
+      title: compact,
+      elapsedMs: 0,
+      motion: true,
+      reveal: "enter",
+    }),
+    {
+      pending: true,
+      showTitle: false,
+      showWriting: false,
+      showSpinner: false,
+      title: "",
+      fade: false,
+    },
+  );
+  assert.deepEqual(
+    titleSlotPresentation({
+      phase: "pending",
+      title: compact,
+      elapsedMs: TITLE_WRITING_DELAY_MS,
+      motion: true,
+      reveal: "enter",
+    }),
+    {
+      pending: true,
+      showTitle: false,
+      showWriting: true,
+      showSpinner: true,
+      title: "",
+      fade: false,
+    },
+  );
+  const doc = createDocument();
+  const article = writingArticleFixture(doc);
+  const labels = readExpandLabels(article);
+  fillItemChrome(
+    article,
+    { title: compact, body: "body", titlePhase: "pending" },
+    labels,
+    { reveal: "enter", motion: true, now: 0 },
+  );
+  const title = article.querySelector("[data-slot=title]");
+  const text = article.querySelector("[data-slot=title-text]");
+  const writing = article.querySelector("[data-slot=title-writing]");
+  const spinner = article.querySelector("[data-slot=title-spinner]");
+  assert.equal(title.hidden, false);
+  assert.equal(text.textContent, "");
+  assert.doesNotMatch(title.textContent, /persist timeout/);
+  assert.equal(article.classList.contains("is-title-pending"), true);
+  assert.equal(writing.getAttribute("aria-hidden"), "true");
+  assert.equal(spinner.hidden, true);
+  assert.equal(title.getAttribute("aria-busy"), "true");
+  assert.equal(title.getAttribute("aria-label"), "Writing title…");
+  fillItemChrome(
+    article,
+    { title: compact, body: "body", titlePhase: "pending" },
+    labels,
+    { reveal: "enter", motion: true, now: TITLE_WRITING_DELAY_MS },
+  );
+  assert.equal(text.textContent, "");
+  assert.equal(writing.getAttribute("aria-hidden"), "false");
+  assert.equal(spinner.hidden, false);
+  assert.equal(
+    article.querySelector("[data-slot=title-writing-label]").textContent,
+    "Writing title…",
+  );
+  assert.equal(title.getAttribute("aria-label"), null);
+});
+
+test("final title appears in the reserved slot after refine or fallback", () => {
+  const generated = "Migration timeout";
+  const fallback = "The persist timeout is the real bug in";
+  assert.equal(
+    titleSlotPresentation({
+      phase: "final",
+      title: generated,
+      motion: true,
+      reveal: "update",
+    }).showTitle,
+    true,
+  );
+  const doc = createDocument();
+  const article = writingArticleFixture(doc);
+  const labels = readExpandLabels(article);
+  fillItemChrome(
+    article,
+    { title: fallback, body: "body", titlePhase: "pending" },
+    labels,
+    { reveal: "enter", motion: true, now: TITLE_WRITING_DELAY_MS },
+  );
+  fillItemChrome(
+    article,
+    { title: generated, body: "body", titlePhase: "final" },
+    labels,
+    { reveal: "update", motion: true, now: 240 },
+  );
+  const title = article.querySelector("[data-slot=title]");
+  assert.equal(title.hidden, false);
+  assert.equal(
+    article.querySelector("[data-slot=title-text]").textContent,
+    generated,
+  );
+  assert.equal(article.classList.contains("is-title-pending"), false);
+  assert.equal(article.classList.contains("is-title-revealing"), true);
+  assert.equal(title.getAttribute("aria-busy"), null);
+  fillItemChrome(
+    article,
+    { title: fallback, body: "body", titlePhase: "final" },
+    labels,
+    { reveal: "update", motion: true, now: 400 },
+  );
+  assert.equal(
+    article.querySelector("[data-slot=title-text]").textContent,
+    fallback,
+  );
+});
+
+test("extractive titles never enter the writing-title state", () => {
+  const extractive = "The extractive sentence is the title.";
+  assert.equal(
+    titleSlotPresentation({
+      phase: "final",
+      title: extractive,
+      motion: true,
+      reveal: "enter",
+    }).showWriting,
+    false,
+  );
+  const doc = createDocument();
+  const article = writingArticleFixture(doc);
+  const labels = readExpandLabels(article);
+  fillItemChrome(
+    article,
+    { title: extractive, body: "body", titlePhase: "final" },
+    labels,
+    { reveal: "enter", motion: true, now: 0 },
+  );
+  assert.equal(article.classList.contains("is-title-pending"), false);
+  assert.equal(
+    article.querySelector("[data-slot=title-text]").textContent,
+    extractive,
+  );
+  assert.equal(article.querySelector("[data-slot=title-spinner]").hidden, true);
+  assert.equal(
+    article
+      .querySelector("[data-slot=title-writing]")
+      .getAttribute("aria-hidden"),
+    "true",
+  );
+});
+
+test("reduced motion shows static writing text and the final title immediately", () => {
+  const compact = "Thanks for the note.";
+  assert.deepEqual(
+    titleSlotPresentation({
+      phase: "pending",
+      title: compact,
+      elapsedMs: 0,
+      motion: false,
+      reveal: "enter",
+    }),
+    {
+      pending: true,
+      showTitle: false,
+      showWriting: true,
+      showSpinner: false,
+      title: "",
+      fade: false,
+    },
+  );
+  const doc = createDocument();
+  const article = writingArticleFixture(doc);
+  const labels = readExpandLabels(article);
+  fillItemChrome(
+    article,
+    { title: compact, body: "body", titlePhase: "pending" },
+    labels,
+    { reveal: "enter", motion: false, now: 0 },
+  );
+  assert.equal(article.querySelector("[data-slot=title-text]").textContent, "");
+  assert.equal(
+    article.querySelector("[data-slot=title-writing-label]").textContent,
+    "Writing title…",
+  );
+  assert.equal(article.querySelector("[data-slot=title-spinner]").hidden, true);
+  assert.equal(article.classList.contains("is-title-revealing"), false);
+  fillItemChrome(
+    article,
+    { title: "Migration timeout", body: "body", titlePhase: "final" },
+    labels,
+    { reveal: "update", motion: false, now: 20 },
+  );
+  assert.equal(
+    article.querySelector("[data-slot=title-text]").textContent,
+    "Migration timeout",
+  );
+  assert.equal(article.classList.contains("is-title-revealing"), false);
 });
 
 test("source icon accepts only rust png data urls", () => {

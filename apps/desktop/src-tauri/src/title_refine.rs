@@ -49,6 +49,16 @@ pub fn title_engine_status() -> TitleEngineStatusDto {
     TitleEngineStatusDto::from(current_status())
 }
 
+pub fn will_schedule_refine(settings: &SettingsV1, body: &str) -> bool {
+    if body.trim().is_empty() {
+        return false;
+    }
+    !matches!(
+        settings.general.title_model,
+        TitleModelId::Unset | TitleModelId::Extractive
+    )
+}
+
 pub fn schedule(app: &AppHandle, item_id: String, body: String) {
     if item_id.is_empty() || body.trim().is_empty() {
         bronze_title_model::emit_diag("fallback reason=empty");
@@ -70,25 +80,32 @@ pub fn schedule(app: &AppHandle, item_id: String, body: String) {
             let Some(settings) = settings else {
                 return;
             };
-            let RefineOutcome::Title(title) = resolve_title(&settings, &body) else {
-                return;
-            };
+            let resolved = resolve_title(&settings, &body);
             let Some(state) = handle.try_state::<std::sync::Mutex<LiveSession>>() else {
                 return;
             };
-            let applied = {
+            let should_emit = {
                 let mut session = state
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
-                session
-                    .apply_refined_title(&item_id, &body, &title)
-                    .unwrap_or(false)
+                let was_pending = session.clear_title_pending(&item_id);
+                match resolved {
+                    RefineOutcome::Title(title) => {
+                        let applied = session
+                            .apply_refined_title(&item_id, &body, &title)
+                            .unwrap_or(false);
+                        if applied {
+                            bronze_title_model::emit_diag("refine applied");
+                        } else {
+                            bronze_title_model::emit_diag("fallback reason=stale_body");
+                        }
+                        applied || was_pending
+                    }
+                    RefineOutcome::Fallback(_) => was_pending,
+                }
             };
-            if applied {
-                bronze_title_model::emit_diag("refine applied");
+            if should_emit {
                 let _ = handle.emit("queue-changed", ());
-            } else {
-                bronze_title_model::emit_diag("fallback reason=stale_body");
             }
         });
 }
@@ -190,6 +207,27 @@ mod title_refine_tests {
         assert!(
             include_str!("../permissions/used-permissions.toml").contains("title_engine_status")
         );
+    }
+
+    #[test]
+    fn extractive_engine_does_not_schedule_a_pending_title() {
+        let mut extractive = bronze_settings::SettingsV1::defaults();
+        extractive.general.title_model = bronze_settings::TitleModelId::Extractive;
+        assert!(!super::will_schedule_refine(
+            &extractive,
+            "A real sentence."
+        ));
+        extractive.general.title_model = bronze_settings::TitleModelId::Unset;
+        assert!(!super::will_schedule_refine(
+            &extractive,
+            "A real sentence."
+        ));
+        extractive.general.title_model = bronze_settings::TitleModelId::Smol360;
+        assert!(super::will_schedule_refine(&extractive, "A real sentence."));
+        assert!(!super::will_schedule_refine(&extractive, "   "));
+        let src = include_str!("title_refine.rs");
+        assert!(src.contains("clear_title_pending"));
+        assert!(src.contains("fallback reason=stale_body"));
     }
 
     #[test]

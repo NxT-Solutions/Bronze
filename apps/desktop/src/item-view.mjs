@@ -1,4 +1,42 @@
+import { motionAllowed } from "./control.mjs";
 import { renderMarkdownBody } from "./markdown-body.mjs";
+
+export const TITLE_WRITING_DELAY_MS = 80;
+export const TITLE_FADE_MS = 200;
+
+export function titleSlotPresentation({
+  phase,
+  title,
+  elapsedMs = 0,
+  motion = true,
+  reveal = "instant",
+} = {}) {
+  const pending = phase === "pending";
+  const finalTitle = typeof title === "string" ? title.trim() : "";
+  if (pending) {
+    const showWriting =
+      reveal === "instant" || !motion || elapsedMs >= TITLE_WRITING_DELAY_MS;
+    return {
+      pending: true,
+      showTitle: false,
+      showWriting,
+      showSpinner: Boolean(showWriting && motion),
+      title: "",
+      fade: false,
+    };
+  }
+  return {
+    pending: false,
+    showTitle: finalTitle.length > 0,
+    showWriting: false,
+    showSpinner: false,
+    title: finalTitle,
+    fade:
+      motion &&
+      (reveal === "enter" || reveal === "update") &&
+      finalTitle.length > 0,
+  };
+}
 
 const PNG_DATA_PREFIX = "data:image/png;base64,";
 
@@ -123,10 +161,12 @@ export function readExpandLabels(root) {
   const more = root?.querySelector("[data-slot=expand]");
   const less = root?.querySelector("[data-slot=show-less]");
   const sourceLabel = root?.querySelector("[data-slot=source-label]");
+  const writing = root?.querySelector("[data-slot=title-writing-label]");
   return {
     showMore: more?.textContent?.trim() ?? "",
     showLess: less?.textContent?.trim() ?? "",
     sourceTemplate: sourceLabel?.textContent?.trim() ?? "",
+    writingTitle: writing?.textContent?.trim() ?? "",
   };
 }
 
@@ -183,16 +223,35 @@ export function wireExpandReader(article, labels) {
   });
 }
 
-export function fillItemChrome(article, item, labels) {
-  if (!article) {
+function clearTitleWritingTimer(article) {
+  const view = article.ownerDocument?.defaultView;
+  const id = article.dataset?.titleWritingTimer;
+  if (view && id && typeof view.clearTimeout === "function") {
+    view.clearTimeout(Number(id));
+  }
+  if (article.dataset) {
+    delete article.dataset.titleWritingTimer;
+  }
+}
+
+function applyTitleSlot(article, item, labels, options = {}) {
+  const titleEl = article.querySelector("[data-slot=title]");
+  if (!titleEl) {
     return;
   }
-  article.lang = item.contentLanguage || "und";
-  article.dir = "auto";
+  const textEl = titleEl.querySelector("[data-slot=title-text]");
+  const writingEl = titleEl.querySelector("[data-slot=title-writing]");
+  const labelEl = titleEl.querySelector("[data-slot=title-writing-label]");
+  const spinnerEl =
+    writingEl?.querySelector("[data-slot=title-spinner]") ??
+    writingEl?.querySelector(".queue-title-spinner");
+  const writingLabel =
+    (typeof labels?.writingTitle === "string" && labels.writingTitle.trim()) ||
+    labelEl?.textContent?.trim() ||
+    "";
 
-  const titleEl = article.querySelector("[data-slot=title]");
-  const title = typeof item.title === "string" ? item.title.trim() : "";
-  if (titleEl) {
+  if (!textEl || !writingEl) {
+    const title = typeof item.title === "string" ? item.title.trim() : "";
     if (title.length > 0) {
       titleEl.textContent = title;
       titleEl.hidden = false;
@@ -200,7 +259,92 @@ export function fillItemChrome(article, item, labels) {
       titleEl.textContent = "";
       titleEl.hidden = true;
     }
+    return;
   }
+
+  const motion = options.motion ?? motionAllowed(article.ownerDocument);
+  const reveal = options.reveal ?? "instant";
+  const now =
+    typeof options.now === "number"
+      ? options.now
+      : typeof Date.now === "function"
+        ? Date.now()
+        : 0;
+  const pending = item?.titlePhase === "pending";
+  if (pending && !article.dataset.titleWritingAt) {
+    article.dataset.titleWritingAt = String(now);
+  }
+  if (!pending) {
+    clearTitleWritingTimer(article);
+    delete article.dataset.titleWritingAt;
+  }
+  const started = Number(article.dataset.titleWritingAt || now);
+  const slot = titleSlotPresentation({
+    phase: pending ? "pending" : "final",
+    title: item?.title,
+    elapsedMs: Math.max(0, now - started),
+    motion,
+    reveal,
+  });
+
+  if (pending && !slot.showWriting && motion && reveal === "enter") {
+    const view = article.ownerDocument?.defaultView;
+    if (
+      view &&
+      typeof view.setTimeout === "function" &&
+      !article.dataset.titleWritingTimer
+    ) {
+      article.dataset.titleWritingTimer = String(
+        view.setTimeout(() => {
+          delete article.dataset.titleWritingTimer;
+          applyTitleSlot(article, item, labels, {
+            ...options,
+            now: now + TITLE_WRITING_DELAY_MS,
+            reveal: "enter",
+          });
+        }, TITLE_WRITING_DELAY_MS),
+      );
+    }
+  }
+
+  const previousPhase = article.dataset.titlePhase || "";
+  article.dataset.titlePhase = pending ? "pending" : "final";
+  article.classList.toggle("is-title-pending", slot.pending);
+  const shouldFade =
+    slot.fade &&
+    ((reveal === "enter" && !slot.pending) || previousPhase === "pending");
+  article.classList.toggle("is-title-revealing", shouldFade);
+
+  textEl.textContent = slot.title;
+  if (labelEl && writingLabel) {
+    labelEl.textContent = writingLabel;
+  }
+  writingEl.setAttribute("aria-hidden", slot.showWriting ? "false" : "true");
+  if (spinnerEl) {
+    spinnerEl.hidden = !slot.showSpinner;
+  }
+  if (slot.pending) {
+    titleEl.hidden = false;
+    titleEl.setAttribute("aria-busy", "true");
+    if (slot.showWriting) {
+      titleEl.removeAttribute("aria-label");
+    } else if (writingLabel) {
+      titleEl.setAttribute("aria-label", writingLabel);
+    }
+  } else {
+    titleEl.hidden = !slot.showTitle;
+    titleEl.removeAttribute("aria-busy");
+    titleEl.removeAttribute("aria-label");
+  }
+}
+
+export function fillItemChrome(article, item, labels, options = {}) {
+  if (!article) {
+    return;
+  }
+  article.lang = item.contentLanguage || "und";
+  article.dir = "auto";
+  applyTitleSlot(article, item, labels, options);
 
   const body = article.querySelector("[data-slot=body]");
   if (body) {
