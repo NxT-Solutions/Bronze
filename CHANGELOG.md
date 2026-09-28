@@ -5,7 +5,17 @@ This file is auto-updated by the release workflow.
 
 ## Unreleased
 
-- The update dialog summarizes what’s new in plain language.
+- Work in progress.
+
+## v0.2.0 - 2026-09-28
+
+### What's new
+
+- Capture from WhatsApp and other apps even when the selection is empty.
+- Sort the queue newest or oldest. Cards move instead of jumping.
+- Show more pages from the last row.
+- The interface is available in nine more languages.
+- Titles keep a reserved slot and show progress while a model loads.
 
 ## v0.1.2 - 2026-09-25
 
