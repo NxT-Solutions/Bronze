@@ -30,9 +30,15 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   );
   assert.ok(collapsedBody, "collapsed body clip");
   assert.match(collapsedBody[0], /line-height:\s*1\.45em/);
-  assert.match(collapsedBody[0], /max-height:\s*calc\(3 \* 1lh\)/);
+  assert.match(collapsedBody[0], /max-height:\s*calc\(3 \* 1\.45em\)/);
   assert.match(collapsedBody[0], /overflow:\s*hidden/);
+  assert.doesNotMatch(collapsedBody[0], /1lh/);
   assert.doesNotMatch(collapsedBody[0], /-webkit-line-clamp/);
+  assert.doesNotMatch(collapsedBody[0], /border-(?:top|block-start)/);
+  const expandSlot = chrome.match(/article \[data-slot="expand"\]\s*\{[^}]+\}/);
+  assert.ok(expandSlot, "queue expand slot");
+  assert.match(expandSlot[0], /margin-block-start:\s*var\(--space-1\)/);
+  assert.doesNotMatch(expandSlot[0], /border-(?:top|block-start)/);
   const queueTitleSlot = chrome.match(
     /#queue article \[data-slot="title"\]:not\(\[hidden\]\)\s*\{[^}]+\}/,
   );
