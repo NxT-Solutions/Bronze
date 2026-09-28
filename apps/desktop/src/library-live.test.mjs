@@ -33,6 +33,8 @@ test("library items sanitize markdown and keep a title plus expand reader", () =
   assert.match(html, /id="library-item-template"/);
   assert.match(html, /data-slot="title"/);
   assert.match(html, /data-slot="expand"/);
+  assert.match(html, /class="item-expand"/);
+  assert.doesNotMatch(html, /class="btn-ghost"[^>]*data-slot="expand"/);
   assert.match(html, /data-i18n="queue.item.showMore"/);
   assert.match(html, /data-i18n="queue.item.showLess"/);
   assert.match(html, /data-slot="source"/);

@@ -1328,7 +1328,52 @@ article.is-expanded [data-slot="body"] {
 }
 
 article [data-slot="expand"] {
+  align-self: start;
+  width: max-content;
+  max-width: 100%;
+  min-height: 1.5rem;
+  min-width: 1.5rem;
+  height: auto;
   margin-block-start: var(--space-1);
+  padding-block: 0;
+  padding-inline: 0;
+  justify-content: flex-start;
+  gap: 0.3em;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: var(--text-caption);
+  font-weight: 400;
+  box-shadow: none;
+}
+
+article [data-slot="expand"]::after {
+  content: "";
+  display: block;
+  width: 0.4em;
+  height: 0.25em;
+  flex-shrink: 0;
+  background: currentColor;
+  clip-path: polygon(0 15%, 50% 85%, 100% 15%);
+}
+
+article.is-expanded [data-slot="expand"]::after {
+  clip-path: polygon(0 85%, 50% 15%, 100% 85%);
+}
+
+article [data-slot="expand"]:hover:not(:disabled):not(.btn-primary):not(
+    [type="submit"]
+  ),
+article [data-slot="expand"]:active:not(:disabled):not(.btn-primary):not(
+    [type="submit"]
+  ) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  box-shadow: none;
 }
 
 article [data-slot="source"] {

@@ -290,6 +290,7 @@ test("expand toggle adds is-expanded and swaps catalog labels", () => {
   const labels = readExpandLabels(article);
   fillItemChrome(article, { title: "T", body: "body" }, labels);
   const button = article.querySelector("[data-slot=expand]");
+  assert.equal(button.tagName, "BUTTON");
   applyExpandState(article, true, labels);
   assert.equal(article.classList.contains("is-expanded"), true);
   assert.equal(button.getAttribute("aria-expanded"), "true");
@@ -302,6 +303,7 @@ test("expand toggle adds is-expanded and swaps catalog labels", () => {
   assert.equal(button.textContent, "Show more");
   button.click();
   assert.equal(article.classList.contains("is-expanded"), true);
+  assert.equal(button.textContent, "Show less");
 });
 
 test("expand button stays hidden until the body overflows", () => {
