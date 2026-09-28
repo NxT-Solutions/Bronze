@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 import {
   applyNoticeAuthorization,
   applyPermissionResult,
-  applyRunningBundle,
   formatCodeIdentity,
   formatRunningCopy,
   loadNoticeAuthorization,

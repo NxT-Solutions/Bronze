@@ -60,11 +60,7 @@ export function pillStatusForState(state) {
   if (state === "not_requested" || state === "requires_relaunch") {
     return "notRequested";
   }
-  if (
-    state === "unavailable" ||
-    state === "unknown" ||
-    state === "degraded"
-  ) {
+  if (state === "unavailable" || state === "unknown" || state === "degraded") {
     return "unavailable";
   }
   return "denied";
