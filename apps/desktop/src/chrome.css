@@ -49,7 +49,7 @@
   --duration: 180ms;
   --arrive: 380ms;
   --arrive-scroll: 340ms;
-  --ring-pulse: 1200ms;
+  --ring-pulse: 1000ms;
   --ease: 180ms var(--ease-out);
 
   --space-1: 4px;
@@ -826,10 +826,12 @@ pre {
 @keyframes bronze-copy-ring {
   0%,
   100% {
+    outline-color: transparent;
     outline-offset: 2px;
   }
 
   50% {
+    outline-color: var(--ring);
     outline-offset: 8px;
   }
 }
@@ -897,15 +899,11 @@ article {
   overflow: visible;
 }
 
-.queue-item.is-last-copied > article,
 .queue-item.is-ring-pulse > article {
   border-radius: var(--radius-card);
-  outline: 2px solid var(--ring);
+  outline: 2px solid transparent;
   outline-offset: 2px;
-}
-
-.queue-item.is-ring-pulse > article {
-  animation: bronze-copy-ring calc(var(--ring-pulse) / 3) var(--ease-out) 3;
+  animation: bronze-copy-ring calc(var(--ring-pulse) / 3) var(--ease-out) 3 both;
 }
 
 article p {
@@ -2278,7 +2276,6 @@ html[data-motion="reduce"] .queue-item.is-leaving-skip,
 html[data-motion="reduce"] .queue-item.is-leaving-trash,
 html[data-motion="reduce"] li.is-entering,
 html[data-motion="reduce"] .queue-item.is-slide-in,
-html[data-motion="reduce"] .queue-item.is-last-copied > article,
 html[data-motion="reduce"] .queue-item.is-ring-pulse > article {
   transition: none !important;
   animation: none !important;
@@ -2291,13 +2288,10 @@ html[data-motion="reduce"] .queue-item.is-slide-in,
   transform: none;
 }
 
-html[data-motion="reduce"] .queue-item.is-last-copied > article,
 html[data-motion="reduce"] .queue-item.is-ring-pulse > article,
-[data-reduce-motion] .queue-item.is-last-copied > article,
 [data-reduce-motion] .queue-item.is-ring-pulse > article {
   animation: none;
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: none;
 }
 
 @media (prefers-contrast: more) {

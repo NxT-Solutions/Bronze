@@ -162,7 +162,7 @@ test("newest-first at the top slides in and eases scroll", () => {
   });
   assert.equal(card.classList.has("is-slide-in"), true);
   assert.equal(card.classList.has("is-ring-pulse"), true);
-  assert.equal(card.classList.has("is-last-copied"), true);
+  assert.equal(card.classList.has("is-last-copied"), false);
   assert.equal(played.scrolled, true);
   assert.equal(played.from, 96);
   assert.equal(played.to, 0);
@@ -258,7 +258,7 @@ test("play animations applies the slide and the pulse", () => {
   });
   assert.equal(reduced.classList.has("is-slide-in"), false);
   assert.equal(reduced.classList.has("is-ring-pulse"), false);
-  assert.equal(reduced.classList.has("is-last-copied"), true);
+  assert.equal(reduced.classList.has("is-last-copied"), false);
   assert.equal(reducedWrites.length, 0);
 
   const system = {
@@ -300,7 +300,53 @@ test("reduced motion inserts the card without motion classes", () => {
   assert.equal(card.classList.has("is-slide-in"), false);
   assert.equal(card.classList.has("is-ring-pulse"), false);
   assert.equal(card.classList.has("is-entering"), false);
-  assert.equal(card.classList.has("is-last-copied"), true);
+  assert.equal(card.classList.has("is-last-copied"), false);
+});
+
+test("the arrival ring class leaves when the pulse ends", () => {
+  const timers = [];
+  const events = [];
+  const article = {
+    addEventListener(type, fn) {
+      events.push({ type, fn });
+    },
+  };
+  const card = slideCard(40);
+  card.querySelector = (sel) => (sel === "article" ? article : null);
+  card.ownerDocument = {
+    defaultView: {
+      setTimeout(fn, ms) {
+        timers.push({ fn, ms });
+        return 1;
+      },
+    },
+  };
+  presentNewQueueCard(card, null, { motion: true, pulse: true });
+  assert.equal(card.classList.has("is-slide-in"), true);
+  assert.equal(card.classList.has("is-ring-pulse"), true);
+  assert.equal(card.classList.has("is-last-copied"), false);
+  assert.equal(timers.length, 1);
+  assert.equal(timers[0].ms, 1000);
+  events[0].fn({ animationName: "bronze-slide-in" });
+  assert.equal(card.classList.has("is-ring-pulse"), true);
+  events[0].fn({ animationName: "bronze-copy-ring" });
+  assert.equal(card.classList.has("is-ring-pulse"), false);
+
+  const held = slideCard(40);
+  const later = [];
+  held.ownerDocument = {
+    defaultView: {
+      setTimeout(fn, ms) {
+        later.push({ fn, ms });
+        return 1;
+      },
+    },
+  };
+  presentNewQueueCard(held, null, { motion: true, pulse: true });
+  assert.equal(held.classList.has("is-ring-pulse"), true);
+  later[0].fn();
+  assert.equal(held.classList.has("is-ring-pulse"), false);
+  assert.equal(held.classList.has("is-slide-in"), true);
 });
 
 test("notification click reveals a loaded card and loads a missing page by id", async () => {
@@ -428,7 +474,7 @@ test("reduce motion skips the travel animation", () => {
   assert.equal(frames.length, 1);
 });
 
-test("last copied card keeps a ring that reduce motion holds still", () => {
+test("the copied pulse is temporary and is not the focus ring", () => {
   const rows = [
     {
       dataset: { itemId: "a" },
@@ -459,33 +505,34 @@ test("last copied card keeps a ring that reduce motion holds still", () => {
   assert.equal(rows[1].classList.has("is-ring-pulse"), false);
   assert.equal(rows[0].classList.has("is-ring-pulse"), true);
   assert.match(chrome, /@keyframes bronze-copy-ring/);
-  assert.match(chrome, /\.queue-item\.is-last-copied > article/);
-  assert.match(chrome, /outline:\s*2px solid var\(--ring\)/);
+  assert.match(chrome, /outline-color:\s*transparent/);
+  assert.match(chrome, /outline-color:\s*var\(--ring\)/);
   assert.match(chrome, /outline-offset:\s*2px/);
-  assert.match(chrome, /--ring-pulse:\s*1200ms/);
+  assert.match(chrome, /--ring-pulse:\s*1000ms/);
   assert.match(
     chrome,
-    /animation:\s*bronze-copy-ring calc\(var\(--ring-pulse\) \/ 3\) var\(--ease-out\) 3/,
+    /\.queue-item\.is-ring-pulse > article\s*\{[^}]*animation:\s*bronze-copy-ring calc\(var\(--ring-pulse\) \/ 3\) var\(--ease-out\) 3 both/,
   );
   assert.match(chrome, /outline-offset:\s*8px/);
   assert.match(chrome, /\.is-ring-pulse > article/);
   assert.match(chrome, /border-radius:\s*var\(--radius-card\)/);
-  assert.match(
+  assert.doesNotMatch(
     chrome,
-    /\[data-reduce-motion\] \.queue-item\.is-last-copied > article[\s\S]*animation:\s*none/,
+    /\.queue-item\.is-(?:last-copied|ring-pulse) > article\s*\{[^}]*outline:\s*2px solid var\(--ring\)/,
   );
   assert.match(
     chrome,
-    /\[data-reduce-motion\] \.queue-item\.is-last-copied > article[\s\S]*outline:\s*2px solid var\(--ring\)/,
-  );
-  assert.match(
-    chrome,
-    /:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ring\)/,
+    /\[data-reduce-motion\] \.queue-item\.is-ring-pulse > article[\s\S]*?outline:\s*none/,
   );
   assert.doesNotMatch(
     chrome,
-    /\.queue-item\.is-last-copied[^}]*outline:\s*none/,
+    /\[data-reduce-motion\] \.queue-item\.is-ring-pulse > article[\s\S]*?outline:\s*2px solid var\(--ring\)/,
   );
+  assert.match(
+    chrome,
+    /:focus-visible\s*\{\s*outline:\s*2px solid var\(--ring\);\s*outline-offset:\s*2px;\s*\}/,
+  );
+  assert.doesNotMatch(chrome, /:focus-visible\s*\{[^}]*outline:\s*none/);
   assert.match(html, /data-notice-reveal/);
   assert.match(html, /<button[^>]*id="chrome-notice-text"/);
   assert.doesNotMatch(html, /<div[^>]*data-notice-reveal/);

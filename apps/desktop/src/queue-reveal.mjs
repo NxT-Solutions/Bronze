@@ -2,7 +2,43 @@ import { MOTION, motionAllowed } from "./control.mjs";
 
 export const ARRIVE_SLIDE_MS = 380;
 export const ARRIVE_SCROLL_MS = 340;
+export const RING_PULSE_MS = 1000;
 export const ARRIVAL_MS = ARRIVE_SCROLL_MS;
+
+function armArrivalRing(card) {
+  if (!card?.classList) {
+    return;
+  }
+  if (!card.classList.contains("is-ring-pulse")) {
+    card.classList.add("is-ring-pulse");
+  }
+  const drop = () => {
+    card.classList?.remove("is-ring-pulse");
+  };
+  const article =
+    typeof card.querySelector === "function"
+      ? card.querySelector("article")
+      : null;
+  if (article && typeof article.addEventListener === "function") {
+    article.addEventListener(
+      "animationend",
+      (event) => {
+        if (
+          event?.animationName &&
+          event.animationName !== "bronze-copy-ring"
+        ) {
+          return;
+        }
+        drop();
+      },
+      { once: true },
+    );
+  }
+  const view = card.ownerDocument?.defaultView;
+  if (typeof view?.setTimeout === "function") {
+    view.setTimeout(drop, RING_PULSE_MS);
+  }
+}
 
 const NEWEST = new Set(["newest", "created-desc", "createddesc"]);
 
@@ -247,19 +283,15 @@ export function presentNewQueueCard(
   if (!motion) {
     card.classList.remove("is-slide-in");
     card.classList.remove("is-ring-pulse");
-    if (pulse) {
-      card.classList.add("is-last-copied");
-    }
     return { behavior: "auto", scrolled: false, from: null, to: null };
   }
   if (!card.classList.contains("is-slide-in")) {
     card.classList.add("is-slide-in");
   }
   if (pulse) {
-    card.classList.add("is-last-copied");
-    if (!card.classList.contains("is-ring-pulse")) {
-      card.classList.add("is-ring-pulse");
-    }
+    armArrivalRing(card);
+  } else {
+    card.classList.remove("is-ring-pulse");
   }
   if (!followScroll || !scroller) {
     return { behavior: "auto", scrolled: false, from: null, to: null };
@@ -294,7 +326,7 @@ export function markLastCopied(list, id, { pulse = false } = {}) {
     if (!copied) {
       row.classList.remove("is-ring-pulse");
     } else if (pulse && !row.classList.contains("is-ring-pulse")) {
-      row.classList.add("is-ring-pulse");
+      armArrivalRing(row);
     }
   }
 }

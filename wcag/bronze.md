@@ -18,7 +18,11 @@ must be updated in the same change.
 
 - Tauri 2 WebView, `frontendDist` is unbundled `apps/desktop/src`.
   No axe-in-browser runtime, no remote audit service.
-- Motion is CSS + WAAPI, ≤200ms. Reduce Motion wins.
+- Motion is CSS + WAAPI. Controls use ≤200ms. A queue arrival slide
+  is `--arrive` (380ms), the scroll ease is `--arrive-scroll` (340ms),
+  and the temporary `--ring` pulse is `--ring-pulse` (1000ms), three
+  cycles, then gone. Reduce Motion wins. The pulse is not
+  `:focus-visible`.
 - Event-tap callbacks never touch AX, DB, windows, clipboard, icons,
   or models.
 - System SF only. No remote fonts or CDN (SEC-001).

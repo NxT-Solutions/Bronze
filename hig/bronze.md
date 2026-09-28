@@ -11,8 +11,10 @@ updated in the same change.
 - Motion is CSS + WAAPI in existing modules (`control.mjs`), 180ms,
   `cubic-bezier(0.22, 1, 0.36, 1)`. A new queue card slides from the
   inline-start edge over `--arrive` (380ms). Newest-first at the top
-  eases scroll over `--arrive-scroll` (340ms). The copied ring pulses
-  for `--ring-pulse` (1200ms). Reduce Motion skips those three.
+  eases scroll over `--arrive-scroll` (340ms). The arrival ring uses
+  `--ring` and pulses three times over `--ring-pulse` (1000ms), then
+  the outline is gone. Reduce Motion skips those three and leaves no
+  arrival outline. `:focus-visible` is a separate ring.
 - Event-tap callbacks never touch AX, DB, windows, clipboard, icons,
   or models.
 
