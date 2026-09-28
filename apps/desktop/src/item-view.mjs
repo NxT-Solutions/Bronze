@@ -239,9 +239,9 @@ function applyTitleSlot(article, item, labels, options = {}) {
   if (!titleEl) {
     return;
   }
-  const textEl = titleEl.querySelector("[data-slot=title-text]");
-  const writingEl = titleEl.querySelector("[data-slot=title-writing]");
-  const labelEl = titleEl.querySelector("[data-slot=title-writing-label]");
+  const textEl = titleEl.querySelector?.("[data-slot=title-text]");
+  const writingEl = titleEl.querySelector?.("[data-slot=title-writing]");
+  const labelEl = titleEl.querySelector?.("[data-slot=title-writing-label]");
   const spinnerEl =
     writingEl?.querySelector("[data-slot=title-spinner]") ??
     writingEl?.querySelector(".queue-title-spinner");
