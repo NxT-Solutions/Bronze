@@ -1,29 +1,39 @@
 #!/usr/bin/env python3
-"""Require Dock icon artwork to cover the canvas.
+"""Require Dock icon artwork to be a flat opaque plate.
 
-macOS clips an app icon to a squircle. Pixels on that mask, including its
-rim, have to be the bronze plate. A pale or transparent margin stays
-visible as padding around a smaller rounded rect.
+macOS clips the Dock tile to a squircle. Get Info's preview is a rounded
+well of the raw asset. A second rounded rect — even an opaque one — reads
+as a grey box. Every pixel, including the corners macOS later clips, has
+to be the bronze plate or a cream dot. No alpha, no cream frame.
 
 The cream mark is three dots in a column. A cream frame around an inset
 plate is much wider than one dot. The 32px representation is the smallest
 span that still counts.
+
+32x32.png is the menu-bar template and is not in this check.
 """
 
 from __future__ import annotations
 
+import math
 import struct
 import sys
 import zlib
 from pathlib import Path
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
-# Superellipse n=5 approximates the Dock mask. The check samples that rim;
-# it does not draw a second shape into the artwork.
 SQUIRCLE_POWER = 5.0
 DOT_MIN_WIDTH = 0.18
 DOT_MAX_WIDTH = 0.45
 DOT_MIN_HEIGHT = 0.74
+PLATE_DEV = 8
+RESIZE_DEV = 18
+BLEND_PAD_FRAC = 0.02
+MASTER_SIZE = 1024
+MASTER_FILL = (196, 143, 98, 255)
+MASTER_DOT = (245, 232, 216, 255)
+MASTER_RADIUS = 124.0
+MASTER_CENTERS = ((511.5, 223.0), (511.5, 511.5), (511.5, 802.5))
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ICONS = (
     ROOT / "apps/desktop/src-tauri/icons/icon.icns",
@@ -112,17 +122,54 @@ def decode_png(data: bytes) -> tuple[int, int, list[bytearray]]:
     return width, height, rows
 
 
+def encode_png(width: int, height: int, rows: list[bytearray]) -> bytes:
+    def chunk(tag: bytes, payload: bytes) -> bytes:
+        crc = zlib.crc32(tag + payload) & 0xFFFFFFFF
+        return struct.pack(">I", len(payload)) + tag + payload + struct.pack(">I", crc)
+
+    raw = b"".join(b"\x00" + bytes(row) for row in rows)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    return (
+        PNG_MAGIC
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(raw, 9))
+        + chunk(b"IEND", b"")
+    )
+
+
 def is_margin(pixel: tuple[int, int, int, int]) -> bool:
     _red, green, blue, alpha = pixel
     if alpha != 255:
         return True
-    # Cream plate around the mark, near (245, 232, 216).
     return green >= 210 and blue >= 175 and _red >= 220
 
 
 def is_dot(pixel: tuple[int, int, int, int]) -> bool:
     red, green, blue, alpha = pixel
-    return alpha > 200 and red >= 230 and green >= 210 and blue >= 185
+    return alpha == 255 and red >= 230 and green >= 210 and blue >= 185
+
+
+def near_plate(
+    pixel: tuple[int, int, int, int], plate: tuple[int, int, int, int], dev: int = PLATE_DEV
+) -> bool:
+    if pixel[3] != 255 or plate[3] != 255:
+        return False
+    return all(abs(pixel[i] - plate[i]) <= dev for i in range(3))
+
+
+def is_blend(
+    pixel: tuple[int, int, int, int],
+    plate: tuple[int, int, int, int],
+    cream: tuple[int, int, int, int],
+) -> bool:
+    if pixel[3] != 255:
+        return False
+    for i in range(3):
+        lo = min(plate[i], cream[i])
+        hi = max(plate[i], cream[i])
+        if not (lo <= pixel[i] <= hi):
+            return False
+    return True
 
 
 def in_squircle(x: int, y: int, width: int, height: int) -> bool:
@@ -143,7 +190,9 @@ def on_squircle_rim(x: int, y: int, width: int, height: int) -> bool:
     return False
 
 
-def bbox(width: int, height: int, rows: list[bytearray], predicate) -> tuple[int, int]:
+def bbox_rect(
+    width: int, height: int, rows: list[bytearray], predicate
+) -> tuple[int, int, int, int] | None:
     min_x, min_y, max_x, max_y = width, height, -1, -1
     for y in range(height):
         row = rows[y]
@@ -155,8 +204,53 @@ def bbox(width: int, height: int, rows: list[bytearray], predicate) -> tuple[int
                 max_x = max(max_x, x)
                 max_y = max(max_y, y)
     if max_x < 0:
+        return None
+    return min_x, min_y, max_x, max_y
+
+
+def bbox(width: int, height: int, rows: list[bytearray], predicate) -> tuple[int, int]:
+    rect = bbox_rect(width, height, rows, predicate)
+    if rect is None:
         return 0, 0
+    min_x, min_y, max_x, max_y = rect
     return max_x - min_x + 1, max_y - min_y + 1
+
+
+def lerp_channel(a: int, b: int, t: float) -> int:
+    return int(round(a + (b - a) * t))
+
+
+def paint_master(size: int = MASTER_SIZE) -> list[bytearray]:
+    scale = size / MASTER_SIZE
+    radius = MASTER_RADIUS * scale
+    centers = tuple((cx * scale, cy * scale) for cx, cy in MASTER_CENTERS)
+    rows: list[bytearray] = []
+    for y in range(size):
+        row = bytearray(size * 4)
+        for x in range(size):
+            cover = 0.0
+            for cx, cy in centers:
+                dist = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+                cover = max(cover, min(1.0, max(0.0, radius + 0.65 - dist)))
+            if cover <= 0:
+                pixel = MASTER_FILL
+            elif cover >= 1:
+                pixel = MASTER_DOT
+            else:
+                pixel = (
+                    lerp_channel(MASTER_FILL[0], MASTER_DOT[0], cover),
+                    lerp_channel(MASTER_FILL[1], MASTER_DOT[1], cover),
+                    lerp_channel(MASTER_FILL[2], MASTER_DOT[2], cover),
+                    255,
+                )
+            row[x * 4 : x * 4 + 4] = pixel
+        rows.append(row)
+    return rows
+
+
+def write_master(path: Path) -> None:
+    rows = paint_master(MASTER_SIZE)
+    path.write_bytes(encode_png(MASTER_SIZE, MASTER_SIZE, rows))
 
 
 def check_image(label: str, data: bytes) -> list[str]:
@@ -172,6 +266,17 @@ def check_image(label: str, data: bytes) -> list[str]:
         (width // 2, 0),
         (width // 2, height - 1),
     )
+    alpha_bad = 0
+    for y in range(height):
+        row = rows[y]
+        for x in range(width):
+            if row[x * 4 + 3] != 255:
+                alpha_bad += 1
+                if alpha_bad <= 4:
+                    pixel = tuple(row[x * 4 : x * 4 + 4])
+                    errors.append(f"{label} {width}x{height} ({x},{y}) is not opaque {pixel}")
+    if alpha_bad > 4:
+        errors.append(f"{label} {width}x{height} has {alpha_bad} pixels with alpha")
     for x, y in points:
         pixel = tuple(rows[y][x * 4 : x * 4 + 4])
         if is_margin(pixel):
@@ -196,9 +301,48 @@ def check_image(label: str, data: bytes) -> list[str]:
         errors.append(
             f"{label} {width}x{height} has {rim_bad} margin pixels on the squircle rim"
         )
-    opaque_w, opaque_h = bbox(
-        width, height, rows, lambda pixel: pixel[3] > 200
-    )
+    plate = tuple(rows[0][0:4])
+    if is_margin(plate):
+        errors.append(f"{label} {width}x{height} corner plate is margin {plate}")
+    cream = MASTER_DOT
+    dot_rect = bbox_rect(width, height, rows, is_dot)
+    pad = max(2, int(min(width, height) * BLEND_PAD_FRAC))
+    if dot_rect is None:
+        pad_rect = None
+    else:
+        min_x, min_y, max_x, max_y = dot_rect
+        pad_rect = (
+            max(0, min_x - pad),
+            max(0, min_y - pad),
+            min(width - 1, max_x + pad),
+            min(height - 1, max_y + pad),
+        )
+    stray = 0
+    for y in range(height):
+        row = rows[y]
+        for x in range(width):
+            pixel = tuple(row[x * 4 : x * 4 + 4])
+            if near_plate(pixel, plate) or is_dot(pixel):
+                continue
+            inside_pad = (
+                pad_rect is not None
+                and pad_rect[0] <= x <= pad_rect[2]
+                and pad_rect[1] <= y <= pad_rect[3]
+            )
+            if inside_pad and (
+                is_blend(pixel, plate, cream) or near_plate(pixel, plate, RESIZE_DEV)
+            ):
+                continue
+            stray += 1
+            if stray <= 4:
+                errors.append(
+                    f"{label} {width}x{height} ({x},{y}) is not a flat plate {pixel}"
+                )
+    if stray > 4:
+        errors.append(
+            f"{label} {width}x{height} has {stray} pixels off the flat plate"
+        )
+    opaque_w, opaque_h = bbox(width, height, rows, lambda pixel: pixel[3] == 255)
     mark_w, mark_h = bbox(width, height, rows, is_dot)
     mark_wf = mark_w / width
     mark_hf = mark_h / height
@@ -208,6 +352,10 @@ def check_image(label: str, data: bytes) -> list[str]:
         f"dots {mark_w}x{mark_h} ({mark_wf:.2%} x {mark_hf:.2%})",
         flush=True,
     )
+    if opaque_w != width or opaque_h != height:
+        errors.append(
+            f"{label} {width}x{height} opaque bbox {opaque_w}x{opaque_h} is not the canvas"
+        )
     if mark_hf < DOT_MIN_HEIGHT or not (DOT_MIN_WIDTH <= mark_wf <= DOT_MAX_WIDTH):
         errors.append(
             f"{label} {width}x{height} dot span {mark_wf:.2%} x {mark_hf:.2%} "
@@ -231,7 +379,69 @@ def check_path(path: Path) -> list[str]:
     return check_image(str(path), data)
 
 
+def _fill_circle(
+    rows: list[bytearray],
+    cx: float,
+    cy: float,
+    radius: float,
+    color: tuple[int, int, int, int],
+) -> None:
+    height = len(rows)
+    width = len(rows[0]) // 4
+    y0 = max(0, int(cy - radius - 1))
+    y1 = min(height - 1, int(cy + radius + 1))
+    x0 = max(0, int(cx - radius - 1))
+    x1 = min(width - 1, int(cx + radius + 1))
+    pixel = bytes(color)
+    r2 = radius * radius
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            if (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= r2:
+                rows[y][x * 4 : x * 4 + 4] = pixel
+
+
+def self_test() -> list[str]:
+    errors: list[str] = []
+    size = 64
+    flat = paint_master(size)
+    if check_image("self-test flat", encode_png(size, size, flat)):
+        errors.append("self-test: flat full-bleed master must pass")
+
+    rounded = [bytearray(MASTER_FILL) * size for _ in range(size)]
+    for y in range(size):
+        for x in range(size):
+            nx = 2 * ((x + 0.5) / size) - 1
+            ny = 2 * ((y + 0.5) / size) - 1
+            if abs(nx) ** 5 + abs(ny) ** 5 <= 0.72:
+                rounded[y][x * 4 : x * 4 + 4] = bytes((173, 121, 78, 255))
+    _fill_circle(rounded, 31.5, 16.0, 7.5, MASTER_DOT)
+    _fill_circle(rounded, 31.5, 31.5, 7.5, MASTER_DOT)
+    _fill_circle(rounded, 31.5, 47.0, 7.5, MASTER_DOT)
+    if not check_image("self-test inset plate", encode_png(size, size, rounded)):
+        errors.append("self-test: rounded inset plate must fail")
+
+    punched = paint_master(size)
+    clear = bytes((196, 143, 98, 0))
+    punched[0][0:4] = clear
+    punched[0][-4:] = clear
+    punched[-1][0:4] = clear
+    punched[-1][-4:] = clear
+    if not check_image("self-test alpha corners", encode_png(size, size, punched)):
+        errors.append("self-test: transparent corners must fail")
+    return errors
+
+
 def main(argv: list[str]) -> int:
+    if len(argv) >= 3 and argv[1] == "--write-master":
+        write_master(Path(argv[2]))
+        return 0
+    self_errors = self_test()
+    if self_errors:
+        for error in self_errors:
+            print(f"FAIL: {error}", file=sys.stderr)
+        return 1
+    if len(argv) >= 2 and argv[1] == "--self-test":
+        return 0
     paths = [Path(arg) for arg in argv[1:]] or list(DEFAULT_ICONS)
     errors: list[str] = []
     for path in paths:
