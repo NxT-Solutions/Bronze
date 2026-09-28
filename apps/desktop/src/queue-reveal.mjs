@@ -8,6 +8,19 @@ export const RING_PULSE_MS = 1000;
 export const ARRIVAL_MS = ARRIVE_SCROLL_MS;
 export const SORT_COLLAPSE_MS = 220;
 export const SORT_EXPAND_MS = 280;
+export const SORT_STAGGER_MS = 18;
+export const SORT_STAGGER_MAX = 5;
+
+const sortExpandToken = new WeakMap();
+
+function nextSortToken(list) {
+  if (!list || (typeof list !== "object" && typeof list !== "function")) {
+    return 0;
+  }
+  const token = (sortExpandToken.get(list) ?? 0) + 1;
+  sortExpandToken.set(list, token);
+  return token;
+}
 
 function armArrivalRing(card) {
   if (!card?.classList) {
@@ -74,6 +87,18 @@ export function sortReflowPlan(motion, loadedCount) {
   return { collapse: play, expand: play };
 }
 
+export function sortCollapseWaitMs(rowCount) {
+  const extra =
+    Math.max(0, Math.min(Math.max(rowCount, 0) - 1, SORT_STAGGER_MAX)) *
+    SORT_STAGGER_MS;
+  return SORT_COLLAPSE_MS + extra;
+}
+
+export function holdSortList(list) {
+  list?.classList?.add?.("is-sort-reflow");
+  list?.classList?.add?.("is-sort-hold");
+}
+
 function sortRows(list) {
   if (!list) {
     return [];
@@ -93,9 +118,11 @@ function clearSortInline(el) {
 }
 
 export function clearSortReflow(list) {
+  nextSortToken(list);
   list?.classList?.remove?.("is-sort-reflow");
   list?.classList?.remove?.("is-sort-collapse");
   list?.classList?.remove?.("is-sort-expand");
+  list?.classList?.remove?.("is-sort-hold");
   for (const row of sortRows(list)) {
     row.classList?.remove?.("is-sort-collapse");
     row.classList?.remove?.("is-sort-expand");
@@ -113,8 +140,19 @@ function measureSortShift(rows) {
     const shift =
       usable && Number.isFinite(top) ? Math.max(0, top - firstTop) : 0;
     row.style?.setProperty?.("--sort-shift", `${shift}px`);
-    row.style?.setProperty?.("--sort-stagger", `${Math.min(index, 5) * 18}ms`);
+    row.style?.setProperty?.(
+      "--sort-stagger",
+      `${Math.min(index, SORT_STAGGER_MAX) * SORT_STAGGER_MS}ms`,
+    );
   });
+}
+
+function dropExpandClasses(list, rows) {
+  list.classList.remove("is-sort-expand");
+  for (const row of rows) {
+    row.classList.remove("is-sort-expand");
+    row.classList.remove("is-sort-lead");
+  }
 }
 
 export function beginSortCollapse(list) {
@@ -122,17 +160,22 @@ export function beginSortCollapse(list) {
   if (!list?.classList || rows.length === 0) {
     return { played: false, durationMs: 0 };
   }
-  clearSortReflow(list);
+  nextSortToken(list);
+  if (list.classList.contains("is-sort-expand")) {
+    holdSortList(list);
+    dropExpandClasses(list, rows);
+  }
   measureSortShift(rows);
   list.classList.add("is-sort-reflow");
   list.classList.add("is-sort-collapse");
+  list.classList.remove("is-sort-hold");
   rows.forEach((row, index) => {
     row.classList.add("is-sort-collapse");
     if (index === 0) {
       row.classList.add("is-sort-anchor");
     }
   });
-  return { played: true, durationMs: SORT_COLLAPSE_MS };
+  return { played: true, durationMs: sortCollapseWaitMs(rows.length) };
 }
 
 export function beginSortExpand(list) {
@@ -141,6 +184,8 @@ export function beginSortExpand(list) {
     clearSortReflow(list);
     return { played: false, durationMs: 0 };
   }
+  const token = nextSortToken(list);
+  holdSortList(list);
   list.classList.remove("is-sort-collapse");
   for (const row of rows) {
     row.classList.remove("is-sort-collapse");
@@ -155,15 +200,27 @@ export function beginSortExpand(list) {
       row.classList.add("is-sort-lead");
     }
   });
+  list.classList.remove("is-sort-hold");
   const view = list.ownerDocument?.defaultView;
   if (typeof view?.setTimeout === "function") {
     view.setTimeout(() => {
-      if (list.classList?.contains?.("is-sort-expand")) {
+      if (
+        sortExpandToken.get(list) === token &&
+        list.classList?.contains?.("is-sort-expand")
+      ) {
         clearSortReflow(list);
       }
     }, SORT_EXPAND_MS + 90);
   }
   return { played: true, durationMs: SORT_EXPAND_MS };
+}
+
+export function swapSortPage(list, paint) {
+  holdSortList(list);
+  if (typeof paint === "function") {
+    paint();
+  }
+  return beginSortExpand(list);
 }
 
 export function waitSortPhase(doc, durationMs) {

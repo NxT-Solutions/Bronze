@@ -99,6 +99,8 @@ test("composer submit is Shift-Enter or the form and live queue is wired", () =>
   assert.match(live, /queueListArgs/);
   assert.match(live, /resetPage/);
   assert.match(live, /listenQueueSortChanged/);
+  assert.match(live, /requestSortReload/);
+  assert.match(live, /swapSortPage/);
   assert.match(live, /queue-changed/);
   const cursor = "v2.newest.20.65";
   assert.deepEqual(queueListArgs("newest", cursor), {
@@ -1396,22 +1398,14 @@ test("clicking the sort toggle writes oldest and reloads the first page", async 
     );
     assert.equal(list.classList.contains("is-sort-collapse"), false);
     assert.equal(list.classList.contains("is-sort-expand"), false);
+    assert.equal(list.classList.contains("is-sort-hold"), false);
   } finally {
     tauri.restore();
   }
 });
 
-test("sort toggle with motion collapses then expands the loaded page", async () => {
-  const tauri = listenStub();
-  const { root, list, sortToggle, doc } = mountQueueRoot();
-  doc.documentElement.dataset.motion = "full";
-  doc.defaultView.matchMedia = () => ({ matches: false });
-  const timers = [];
-  doc.defaultView.setTimeout = (fn) => {
-    timers.push(fn);
-    return timers.length;
-  };
-  const invoke = stubQueueInvoke({
+function sortPages() {
+  return {
     newest: {
       items: [
         { id: "new", title: "just copied", body: "fresh" },
@@ -1426,10 +1420,39 @@ test("sort toggle with motion collapses then expands the loaded page", async () 
       ],
       nextCursor: null,
     },
-  });
+  };
+}
+
+function countReplaces(list) {
+  let replaces = 0;
+  const original = list.replaceChildren.bind(list);
+  list.replaceChildren = (...nodes) => {
+    replaces += 1;
+    return original(...nodes);
+  };
+  return {
+    get count() {
+      return replaces;
+    },
+  };
+}
+
+test("sort toggle with motion collapses then expands the loaded page", async () => {
+  const tauri = listenStub();
+  const { root, list, sortToggle, doc } = mountQueueRoot();
+  doc.documentElement.dataset.motion = "full";
+  doc.defaultView.matchMedia = () => ({ matches: false });
+  const timers = [];
+  doc.defaultView.setTimeout = (fn) => {
+    timers.push(fn);
+    return timers.length;
+  };
+  const invoke = stubQueueInvoke(sortPages());
+  const replaces = countReplaces(list);
   try {
     await bindQueueLive(root, invoke);
     assert.deepEqual(paintedIds(list), ["new", "old"]);
+    const replacesAfterLoad = replaces.count;
     timers.length = 0;
     sortToggle.click();
     await waitUntil(
@@ -1437,6 +1460,8 @@ test("sort toggle with motion collapses then expands the loaded page", async () 
       "sort collapse did not start",
     );
     assert.equal(list.classList.contains("is-sort-expand"), false);
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    assert.equal(replaces.count, replacesAfterLoad);
     const collapseTimer = timers.shift();
     collapseTimer?.();
     await waitUntil(
@@ -1445,13 +1470,129 @@ test("sort toggle with motion collapses then expands the loaded page", async () 
         list.classList.contains("is-sort-expand"),
       "sort expand did not follow collapse",
     );
+    assert.equal(replaces.count, replacesAfterLoad + 1);
     assert.equal(list.classList.contains("is-sort-collapse"), false);
     assert.equal(list.classList.contains("is-sort-expand"), true);
+    assert.equal(list.classList.contains("is-sort-hold"), false);
     assert.equal(sortToggle.dataset.queueSort, "oldest");
     assert.equal(
       sortToggle.querySelector("[data-slot=sort-tip]").textContent,
       "Oldest first",
     );
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("reduced motion sort replaces the first page once", async () => {
+  const tauri = listenStub();
+  const { root, list, sortToggle, doc } = mountQueueRoot();
+  doc.documentElement.dataset.motion = "reduce";
+  const invoke = stubQueueInvoke(sortPages());
+  const replaces = countReplaces(list);
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    const replacesAfterLoad = replaces.count;
+    sortToggle.click();
+    await waitUntil(
+      () => paintedIds(list).join() === "old,new",
+      "reduced motion sort did not replace the first page",
+    );
+    assert.equal(replaces.count, replacesAfterLoad + 1);
+    assert.equal(list.classList.contains("is-sort-collapse"), false);
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+    assert.equal(list.classList.contains("is-sort-hold"), false);
+    assert.equal(sortToggle.dataset.queueSort, "oldest");
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("a second sort click during collapse keeps the latest order", async () => {
+  const tauri = listenStub();
+  const { root, list, sortToggle, doc } = mountQueueRoot();
+  doc.documentElement.dataset.motion = "full";
+  doc.defaultView.matchMedia = () => ({ matches: false });
+  const timers = [];
+  doc.defaultView.setTimeout = (fn) => {
+    timers.push(fn);
+    return timers.length;
+  };
+  const invoke = stubQueueInvoke(sortPages());
+  try {
+    await bindQueueLive(root, invoke);
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    timers.length = 0;
+    sortToggle.click();
+    await waitUntil(
+      () => list.classList.contains("is-sort-collapse"),
+      "first sort collapse did not start",
+    );
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    sortToggle.click();
+    const collapseTimer = timers.shift();
+    collapseTimer?.();
+    await waitUntil(
+      () =>
+        paintedIds(list).join() === "new,old" &&
+        list.classList.contains("is-sort-expand"),
+      "second sort did not expand the latest first page",
+    );
+    assert.equal(list.classList.contains("is-sort-collapse"), false);
+    assert.equal(list.classList.contains("is-sort-hold"), false);
+    assert.equal(sortToggle.dataset.queueSort, "newest");
+    while (timers.length) {
+      timers.shift()?.();
+    }
+    assert.equal(list.classList.contains("is-sort-expand"), false);
+    assert.equal(list.classList.contains("is-sort-collapse"), false);
+    assert.equal(list.classList.contains("is-sort-hold"), false);
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    for (const row of list.children) {
+      assert.equal(row.classList.contains("is-sort-collapse"), false);
+      assert.equal(row.classList.contains("is-sort-expand"), false);
+      assert.equal(row.classList.contains("is-sort-hold"), false);
+    }
+  } finally {
+    tauri.restore();
+  }
+});
+
+test("a second queue-sort-changed during collapse does not swap early", async () => {
+  const tauri = listenStub();
+  const { root, list, sortToggle, doc } = mountQueueRoot();
+  doc.documentElement.dataset.motion = "full";
+  doc.defaultView.matchMedia = () => ({ matches: false });
+  const timers = [];
+  doc.defaultView.setTimeout = (fn) => {
+    timers.push(fn);
+    return timers.length;
+  };
+  const invoke = stubQueueInvoke(sortPages());
+  const replaces = countReplaces(list);
+  try {
+    await bindQueueLive(root, invoke);
+    const replacesAfterLoad = replaces.count;
+    timers.length = 0;
+    sortToggle.click();
+    await waitUntil(
+      () => list.classList.contains("is-sort-collapse"),
+      "sort collapse did not start",
+    );
+    tauri.handlers["queue-sort-changed"]?.({ payload: { sort: "oldest" } });
+    assert.deepEqual(paintedIds(list), ["new", "old"]);
+    assert.equal(replaces.count, replacesAfterLoad);
+    assert.equal(list.classList.contains("is-sort-collapse"), true);
+    const collapseTimer = timers.shift();
+    collapseTimer?.();
+    await waitUntil(
+      () =>
+        paintedIds(list).join() === "old,new" &&
+        list.classList.contains("is-sort-expand"),
+      "coalesced sort did not expand after collapse",
+    );
+    assert.equal(replaces.count, replacesAfterLoad + 1);
   } finally {
     tauri.restore();
   }
