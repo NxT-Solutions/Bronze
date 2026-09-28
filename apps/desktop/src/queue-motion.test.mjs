@@ -247,6 +247,7 @@ test("a new card is inserted once and neighbors stay attached", async () => {
   assert.equal(list.children[0].dataset.itemId, "n");
   assert.equal(list.children[0].classList.has("is-slide-in"), true);
   assert.equal(old.classList.has("is-slide-in"), false);
+  assert.equal(old.classList.has("is-ring-pulse"), false);
   assert.equal(list.children[1], old);
   assert.equal(list.relocations, parked);
   await renderer.renderQueueItems(
