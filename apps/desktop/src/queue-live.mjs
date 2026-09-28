@@ -19,15 +19,14 @@ import {
   createQueueRenderer,
 } from "./queue-motion.mjs";
 import {
-  ARRIVAL_MS,
+  ARRIVE_SCROLL_MS,
   findQueueCard,
   isNearLoadedStart,
   markLastCopied,
   planNewItemFollow,
-  playQueueArrival,
+  presentNewQueueCard,
   queueScrollParent,
   revealQueueItem,
-  scrollQueueCard,
   shouldLoadNextOnKey,
 } from "./queue-reveal.mjs";
 import {
@@ -958,17 +957,26 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       prevIds,
       nextIds,
     });
-    if (plan.scrollId && plan.cursor === "stay" && !plan.prepend) {
-      const motion = motionAllowed(list.ownerDocument);
-      playQueueArrival(list, plan.scrollId, { motion });
-      scrollQueueCard(findQueueCard(list, plan.scrollId), {
+    const motion = motionAllowed(list.ownerDocument);
+    const added = nextIds.filter((id) => id && !prevIds.includes(id));
+    const edgeId =
+      plan.scrollId && plan.cursor === "stay" && !plan.prepend
+        ? plan.scrollId
+        : null;
+    for (const id of added) {
+      presentNewQueueCard(findQueueCard(list, id), scroller, {
         motion,
-        duration: ARRIVAL_MS,
+        followScroll: id === edgeId,
+        pulse: added.length === 1,
+        duration: ARRIVE_SCROLL_MS,
       });
     }
-    if (lastCopiedId) {
+    if (added.length === 1) {
+      lastCopiedId = added[0];
+      markLastCopied(list, added[0], { pulse: motion });
+    } else if (lastCopiedId) {
       markLastCopied(list, lastCopiedId, {
-        pulse: Boolean(opts.pulseCopy) && motionAllowed(list.ownerDocument),
+        pulse: Boolean(opts.pulseCopy) && motion,
       });
     }
   }

@@ -4,13 +4,12 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
-  ARRIVAL_MS,
   insertionBeforeId,
   isNearLoadedStart,
   markLastCopied,
   normalizeQueueSort,
   planNewItemFollow,
-  playQueueArrival,
+  presentNewQueueCard,
   revealQueueItem,
   scrollDelta,
   shouldLoadNextOnKey,
@@ -119,35 +118,101 @@ test("oldest-first insert does not jump the cursor page", () => {
   const endNeighbor = insertionBeforeId(["a", "b"], ["a", "b", "n"], "n");
   assert.equal(endNeighbor, null);
   assert.equal(insertionBeforeId(["b"], ["n", "b"], "n"), "b");
-  const trailing = arrivalList("n", 1);
-  const stayed = playQueueArrival(trailing.list, "n", { motion: true });
-  assert.equal(stayed.traveled, false);
-  assert.equal(trailing.card.classList.has("is-arriving"), false);
+  const writes = [];
+  const scroller = scrollProbe(40, writes);
+  const trailing = slideCard(96);
+  const stayed = presentNewQueueCard(trailing, scroller, {
+    motion: true,
+    followScroll: false,
+    pulse: true,
+    duration: 340,
+    frame(fn) {
+      writes.push(["frame", fn]);
+      return 1;
+    },
+    now: () => 0,
+  });
+  assert.equal(stayed.scrolled, false);
+  assert.equal(scroller.scrollTop, 40);
+  assert.equal(
+    writes.filter((entry) => typeof entry === "number").length,
+    0,
+  );
+  assert.equal(trailing.classList.has("is-slide-in"), true);
+  assert.equal(trailing.classList.has("is-ring-pulse"), true);
 });
 
-test("newest-first insert at the top travels and reduced motion does not", () => {
-  assert.ok(ARRIVAL_MS >= 200 && ARRIVAL_MS <= 300);
-  const arriving = arrivalList("n", 0);
-  const played = playQueueArrival(arriving.list, "n", { motion: true });
-  assert.equal(played.traveled, true);
-  assert.equal(played.duration, ARRIVAL_MS);
-  assert.equal(arriving.card.classList.has("is-arriving"), true);
-  assert.match(arriving.list.style.props["--arrive-shift"], /^-\d+px$/);
-  arriving.card.classList.remove("is-arriving");
-  const still = playQueueArrival(arriving.list, "n", { motion: false });
-  assert.equal(still.traveled, false);
-  assert.equal(arriving.card.classList.has("is-arriving"), false);
-  assert.match(chrome, /--arrive:\s*280ms/);
-  assert.match(chrome, /@keyframes bronze-arrive/);
-  assert.match(chrome, /@keyframes bronze-make-room/);
+test("newest-first at the top slides in and eases scroll", () => {
+  const writes = [];
+  const frames = [];
+  const scroller = scrollProbe(0, writes);
+  const card = slideCard(96);
+  const played = presentNewQueueCard(card, scroller, {
+    motion: true,
+    followScroll: true,
+    pulse: true,
+    duration: 340,
+    frame(fn) {
+      frames.push(fn);
+      return 1;
+    },
+    now: () => 0,
+  });
+  assert.equal(card.classList.has("is-slide-in"), true);
+  assert.equal(card.classList.has("is-ring-pulse"), true);
+  assert.equal(card.classList.has("is-last-copied"), true);
+  assert.equal(played.scrolled, true);
+  assert.equal(played.from, 96);
+  assert.equal(played.to, 0);
+  assert.equal(scroller.scrollTop, 96);
+  assert.deepEqual(writes, [96]);
+  assert.equal(frames.length, 1);
+  frames[0](0);
+  assert.equal(scroller.scrollTop, 96);
+  const mid = frames[frames.length - 1];
+  mid(170);
+  assert.ok(scroller.scrollTop > 0 && scroller.scrollTop < 96);
+  frames[frames.length - 1](340);
+  assert.equal(scroller.scrollTop, 0);
+  assert.ok(writes.indexOf(0) > 0);
+  assert.match(chrome, /--arrive:\s*380ms/);
+  assert.match(chrome, /--arrive-scroll:\s*340ms/);
+  assert.match(chrome, /@keyframes bronze-slide-in/);
+  assert.match(chrome, /translateX\(-100%\)/);
+  assert.match(chrome, /@keyframes bronze-slide-in-rtl/);
+  assert.match(chrome, /translateX\(100%\)/);
   assert.match(
     chrome,
-    /\.queue-item\.is-arriving\s*\{[^}]*animation:\s*bronze-arrive var\(--arrive\)/,
+    /\.queue-item\.is-slide-in\s*\{[^}]*animation:\s*bronze-slide-in var\(--arrive\)/,
   );
+  assert.doesNotMatch(chrome, /@keyframes bronze-arrive/);
   assert.match(
     chrome,
-    /\[data-reduce-motion\] \.queue-item\.is-arriving[\s\S]*animation:\s*none/,
+    /\[data-reduce-motion\] \.queue-item\.is-slide-in[\s\S]*animation:\s*none/,
   );
+});
+
+test("reduced motion inserts the card without motion classes", () => {
+  const writes = [];
+  const scroller = scrollProbe(0, writes);
+  const card = slideCard(96);
+  const still = presentNewQueueCard(card, scroller, {
+    motion: false,
+    followScroll: true,
+    pulse: true,
+    duration: 340,
+    frame() {
+      throw new Error("scroll frame");
+    },
+    now: () => 0,
+  });
+  assert.equal(still.scrolled, false);
+  assert.equal(scroller.scrollTop, 0);
+  assert.equal(writes.length, 0);
+  assert.equal(card.classList.has("is-slide-in"), false);
+  assert.equal(card.classList.has("is-ring-pulse"), false);
+  assert.equal(card.classList.has("is-entering"), false);
+  assert.equal(card.classList.has("is-last-copied"), true);
 });
 
 test("notification click reveals a loaded card and loads a missing page by id", async () => {
@@ -301,23 +366,28 @@ test("last copied card keeps a ring that reduce motion holds still", () => {
   assert.equal(rows[0].classList.has("is-ring-pulse"), false);
   markLastCopied(list, "b");
   assert.equal(rows[1].classList.has("is-last-copied"), true);
+  assert.equal(rows[1].classList.has("is-ring-pulse"), true);
+  markLastCopied(list, "a", { pulse: true });
   assert.equal(rows[1].classList.has("is-ring-pulse"), false);
+  assert.equal(rows[0].classList.has("is-ring-pulse"), true);
   assert.match(chrome, /@keyframes bronze-copy-ring/);
   assert.match(chrome, /\.queue-item\.is-last-copied > article/);
+  assert.match(chrome, /outline:\s*2px solid var\(--ring\)/);
+  assert.match(chrome, /outline-offset:\s*2px/);
   assert.match(
     chrome,
-    /animation:\s*bronze-copy-ring var\(--arrive\) var\(--ease-out\) 3/,
+    /animation:\s*bronze-copy-ring var\(--ring-pulse\) var\(--ease-out\)/,
   );
+  assert.match(chrome, /outline-offset:\s*8px/);
   assert.match(chrome, /\.is-ring-pulse > article/);
   assert.match(chrome, /border-radius:\s*var\(--radius-card\)/);
-  assert.match(chrome, /0 0 0 8px color-mix\(in srgb, var\(--ring\)/);
   assert.match(
     chrome,
     /\[data-reduce-motion\] \.queue-item\.is-last-copied > article[\s\S]*animation:\s*none/,
   );
   assert.match(
     chrome,
-    /\[data-reduce-motion\] \.queue-item\.is-last-copied > article[\s\S]*box-shadow:\s*0 0 0 2px var\(--ring\)/,
+    /\[data-reduce-motion\] \.queue-item\.is-last-copied > article[\s\S]*outline:\s*2px solid var\(--ring\)/,
   );
   assert.match(
     chrome,
@@ -332,14 +402,15 @@ test("last copied card keeps a ring that reduce motion holds still", () => {
   assert.doesNotMatch(html, /<div[^>]*data-notice-reveal/);
   assert.match(live, /planNewItemFollow/);
   assert.match(live, /plan\.scrollId/);
-  assert.match(live, /playQueueArrival/);
+  assert.match(live, /presentNewQueueCard/);
+  assert.match(live, /followScroll: id === edgeId/);
+  assert.match(reveal, /is-slide-in/);
+  assert.match(reveal, /primeStart: true/);
   const follow = live.slice(live.indexOf("const plan = planNewItemFollow"));
-  const travel = follow.slice(
-    follow.indexOf("if (plan.scrollId"),
-    follow.indexOf("if (lastCopiedId)"),
-  );
-  assert.match(travel, /playQueueArrival/);
-  assert.doesNotMatch(travel, /markLastCopied/);
+  assert.match(follow, /presentNewQueueCard/);
+  assert.match(follow, /pulse: added\.length === 1/);
+  assert.match(follow, /markLastCopied\(list, added\[0\]/);
+  assert.doesNotMatch(follow, /scroller\.scrollTop\s*=/);
   assert.match(
     follow,
     /markLastCopied\(list, lastCopiedId(?:, \{[\s\S]*pulse:)/,
@@ -359,58 +430,15 @@ test("last copied card keeps a ring that reduce motion holds still", () => {
   assert.doesNotMatch(live, /loadNextPage|advanceCursor|prependPage/);
 });
 
-function arrivalList(id, index) {
-  const names = new Set();
-  const card = {
-    dataset: { itemId: id },
-    classList: {
-      add(name) {
-        names.add(name);
-      },
-      remove(name) {
-        names.delete(name);
-      },
-      has(name) {
-        return names.has(name);
-      },
-    },
-    getBoundingClientRect: () => ({ height: 80, top: 0, bottom: 80 }),
-  };
-  const head = {
-    dataset: { itemId: "a" },
-    classList: {
-      add() {},
-      remove() {},
-      has() {
-        return false;
-      },
-    },
-  };
-  const rows = index === 0 ? [card, head] : [head, card];
-  return {
-    card,
-    list: {
-      children: rows,
-      style: {
-        props: {},
-        setProperty(name, value) {
-          this.props[name] = value;
-        },
-        removeProperty(name) {
-          delete this.props[name];
-        },
-      },
-      querySelector(sel) {
-        return sel === `[data-item-id="${id}"]` ? card : null;
-      },
-      ownerDocument: { defaultView: null },
-    },
-  };
-}
-
-function toggleClass() {
+function classNames() {
   const names = new Set();
   return {
+    add(name) {
+      names.add(name);
+    },
+    remove(name) {
+      names.delete(name);
+    },
     toggle(name, on) {
       if (on) {
         names.add(name);
@@ -418,8 +446,37 @@ function toggleClass() {
         names.delete(name);
       }
     },
+    contains(name) {
+      return names.has(name);
+    },
     has(name) {
       return names.has(name);
     },
   };
+}
+
+function slideCard(height) {
+  return {
+    dataset: {},
+    classList: classNames(),
+    getBoundingClientRect: () => ({ height, top: 0, bottom: height }),
+  };
+}
+
+function scrollProbe(start, writes) {
+  let top = start;
+  return {
+    get scrollTop() {
+      return top;
+    },
+    set scrollTop(value) {
+      writes.push(value);
+      top = value;
+    },
+    ownerDocument: { defaultView: null },
+  };
+}
+
+function toggleClass() {
+  return classNames();
 }
