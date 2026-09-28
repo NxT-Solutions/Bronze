@@ -79,12 +79,22 @@ export function permissionHealthRows(states: {
 
 export function permissionStatusKind(
   row: Pick<PermissionHealthRow, "state" | "usage">,
-): "granted" | "denied" | "notUsed" {
+): "granted" | "denied" | "notUsed" | "notRequested" | "unavailable" {
   if (row.usage === "notUsed") {
     return "notUsed";
   }
   if (row.state === "granted_unverified" || row.state === "healthy") {
     return "granted";
+  }
+  if (row.state === "not_requested" || row.state === "requires_relaunch") {
+    return "notRequested";
+  }
+  if (
+    row.state === "unavailable" ||
+    row.state === "unknown" ||
+    row.state === "degraded"
+  ) {
+    return "unavailable";
   }
   return "denied";
 }

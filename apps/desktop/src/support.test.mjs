@@ -33,6 +33,8 @@ test("local help previews redacted diagnostics without automatic upload", () => 
   assert.match(html, /running_name=/);
   assert.match(html, /running_version=/);
   assert.match(html, /running_path=/);
+  assert.match(html, /running_cdhash=/);
+  assert.match(html, /signature_kind=/);
   assert.match(html, /Last-hour diagnostic events/);
   assert.match(html, /Last-hour copy attempts/);
   assert.match(html, /human_gates=/);

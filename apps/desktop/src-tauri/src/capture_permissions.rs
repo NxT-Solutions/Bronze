@@ -19,6 +19,8 @@ pub struct PermissionPromptDto {
     pub bundle_name: String,
     pub bundle_version: String,
     pub bundle_path: String,
+    pub cdhash: String,
+    pub signature_kind: String,
 }
 
 impl PermissionPromptDto {
@@ -41,6 +43,8 @@ impl PermissionPromptDto {
             bundle_name: bundle.name,
             bundle_version: bundle.version,
             bundle_path: bundle.bundle_path,
+            cdhash: bundle.cdhash,
+            signature_kind: bundle.signature_kind,
         }
     }
 }
@@ -332,6 +336,12 @@ mod tests {
         assert!(dto.privacy_settings_accessibility.is_some());
         assert!(!dto.bundle_path.is_empty());
         assert_eq!(dto.bundle_version, env!("CARGO_PKG_VERSION"));
+        assert!(
+            dto.signature_kind == "adhoc"
+                || dto.signature_kind == "signed"
+                || dto.signature_kind == "unknown"
+                || dto.signature_kind.is_empty()
+        );
         assert_eq!(privacy_settings_open_target("screenRecording"), None);
         let accessibility = privacy_open_plan("accessibility").expect("accessibility pane");
         assert!(accessibility.reveal_running_bundle);

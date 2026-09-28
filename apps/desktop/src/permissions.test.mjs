@@ -7,6 +7,7 @@ import {
   applyNoticeAuthorization,
   applyPermissionResult,
   applyRetestFeedback,
+  formatCodeIdentity,
   formatRunningCopy,
   loadNoticeAuthorization,
   NOTICE_REQUEST_COMMAND,
@@ -60,6 +61,7 @@ test("permission health lists independent rows and unused screen recording", () 
   assert.match(html, /data-permission-open-settings="notifications"/);
   assert.match(html, /data-permission-running-copy/);
   assert.match(html, /data-permission-bundle-path/);
+  assert.match(html, /data-permission-cdhash/);
   assert.match(html, /data-permission-stale-copy/);
   assert.match(html, /data-permission-exact-app/);
   assert.match(html, /data-permission-retest-feedback/);
@@ -153,11 +155,14 @@ test("retest uses an injected request hook and never asks for screen recording",
   );
   assert.equal(pillStatusForState("granted_unverified"), "granted");
   assert.equal(pillStatusForState("denied"), "denied");
+  assert.equal(pillStatusForState("not_requested"), "notRequested");
+  assert.equal(pillStatusForState("unknown"), "unavailable");
   const pill = { dataset: {}, textContent: "Denied", setAttribute() {} };
   const card = { dataset: {}, querySelector: () => pill };
   const open = { hidden: true };
   const copy = { hidden: true, textContent: "" };
   const pathEl = { hidden: true, textContent: "" };
+  const identityEl = { hidden: true, textContent: "" };
   const stale = { hidden: true };
   const exact = { hidden: true };
   const group = { hidden: true };
@@ -169,6 +174,7 @@ test("retest uses an injected request hook and never asks for screen recording",
         if (query.includes("open-settings")) return open;
         if (query.includes("running-copy")) return copy;
         if (query.includes("bundle-path")) return pathEl;
+        if (query.includes("permission-cdhash")) return identityEl;
         if (query.includes("stale-copy")) return stale;
         if (query.includes("exact-app")) return exact;
         if (query.includes("permission-copy")) return group;
@@ -180,6 +186,8 @@ test("retest uses an injected request hook and never asks for screen recording",
       bundle_name: "Bronze",
       bundle_version: "0.1.1",
       bundle_path: "/Applications/Bronze.app",
+      signature_kind: "adhoc",
+      cdhash: "4356750bd341b36fe7f65ed5ecb29e994c25458b",
     },
   );
   assert.equal(card.dataset.status, "denied");
@@ -187,6 +195,10 @@ test("retest uses an injected request hook and never asks for screen recording",
   assert.equal(copy.hidden, false);
   assert.equal(copy.textContent, "This copy is Bronze 0.1.1.");
   assert.equal(pathEl.textContent, "/Applications/Bronze.app");
+  assert.equal(
+    identityEl.textContent,
+    "adhoc 4356750bd341b36fe7f65ed5ecb29e994c25458b",
+  );
   assert.equal(stale.hidden, false);
   assert.equal(exact.hidden, false);
   assert.equal(group.hidden, false);
@@ -213,6 +225,7 @@ test("retest uses an injected request hook and never asks for screen recording",
         if (query.includes("open-settings")) return open;
         if (query.includes("running-copy")) return copy;
         if (query.includes("bundle-path")) return pathEl;
+        if (query.includes("permission-cdhash")) return identityEl;
         if (query.includes("stale-copy")) return stale;
         if (query.includes("exact-app")) return exact;
         if (query.includes("permission-copy")) return group;
@@ -232,6 +245,42 @@ test("retest uses an injected request hook and never asks for screen recording",
     formatRunningCopy("This copy is {name} {version}.", "Bronze", "0.1.1"),
     "This copy is Bronze 0.1.1.",
   );
+  assert.equal(
+    formatCodeIdentity("adhoc", "4356750bd341b36fe7f65ed5ecb29e994c25458b"),
+    "adhoc 4356750bd341b36fe7f65ed5ecb29e994c25458b",
+  );
+  applyPermissionResult(
+    {
+      querySelector(sel) {
+        const query = String(sel);
+        if (query.includes("data-capability")) return card;
+        if (query.includes("open-settings")) return open;
+        if (query.includes("running-copy")) return copy;
+        if (query.includes("bundle-path")) return pathEl;
+        if (query.includes("permission-cdhash")) return identityEl;
+        if (query.includes("stale-copy")) return stale;
+        if (query.includes("exact-app")) return exact;
+        if (query.includes("permission-copy")) return group;
+        return null;
+      },
+    },
+    {
+      input_monitoring: "granted_unverified",
+      accessibility: "not_requested",
+      listen_requested: false,
+      accessibility_requested: false,
+      screen_recording_requested: false,
+      bundle_name: "Bronze",
+      bundle_version: "0.2.0",
+      bundle_path: "/Applications/Bronze.app",
+      signature_kind: "adhoc",
+      cdhash: "4356750bd341b36fe7f65ed5ecb29e994c25458b",
+    },
+  );
+  assert.equal(card.dataset.status, "notRequested");
+  assert.equal(pill.dataset.status, "notRequested");
+  assert.equal(pill.textContent, "Not requested");
+  assert.equal(open.hidden, false);
 });
 
 test("notice health loads status only and shows Allow while undetermined", async () => {
@@ -304,13 +353,14 @@ test("opening permission health reads trust and does not prompt", async () => {
   assert.equal(commands.includes(NOTICE_REQUEST_COMMAND), false);
 });
 
-test("retest of a denied snapshot updates pills and opens Privacy when the prompt returns false", async () => {
+test("retest of a denied snapshot updates pills and does not auto-open Privacy", async () => {
   const commands = [];
   const pill = { dataset: {}, textContent: "Denied", setAttribute() {} };
   const card = { dataset: {}, querySelector: () => pill };
   const open = { hidden: true };
   const copy = { hidden: true, textContent: "" };
   const pathEl = { hidden: true, textContent: "" };
+  const identityEl = { hidden: true, textContent: "" };
   const stale = { hidden: true };
   const exact = { hidden: true };
   const group = { hidden: true };
@@ -323,6 +373,7 @@ test("retest of a denied snapshot updates pills and opens Privacy when the promp
       if (query.includes("open-settings")) return open;
       if (query.includes("running-copy")) return copy;
       if (query.includes("bundle-path")) return pathEl;
+      if (query.includes("permission-cdhash")) return identityEl;
       if (query.includes("stale-copy")) return stale;
       if (query.includes("exact-app")) return exact;
       if (query.includes("permission-copy")) return group;
@@ -338,6 +389,8 @@ test("retest of a denied snapshot updates pills and opens Privacy when the promp
     bundle_name: "Bronze",
     bundle_version: "0.2.0",
     bundle_path: "/Applications/Bronze.app",
+    signature_kind: "adhoc",
+    cdhash: "4356750bd341b36fe7f65ed5ecb29e994c25458b",
   };
   const { result, revealSettings } = await runPermissionRetest(
     root,
@@ -368,9 +421,8 @@ test("retest of a denied snapshot updates pills and opens Privacy when the promp
   assert.equal(feedback.textContent, en["settings.permission.retestFailed"]);
   assert.deepEqual(
     commands.map((row) => row.cmd),
-    [RETEST_COMMAND, OPEN_SETTINGS_COMMAND],
+    [RETEST_COMMAND],
   );
-  assert.deepEqual(commands[1].args, { capability: "accessibility" });
 });
 
 test("bind retest applies a denied snapshot and does not swallow the click", async () => {
@@ -451,7 +503,7 @@ test("bind retest applies a denied snapshot and does not swallow the click", asy
   assert.equal(clicks.length, 1);
   await clicks[0]();
   assert.ok(commands.includes(RETEST_COMMAND));
-  assert.ok(commands.includes(OPEN_SETTINGS_COMMAND));
+  assert.equal(commands.includes(OPEN_SETTINGS_COMMAND), false);
   assert.equal(card.dataset.status, "denied");
   assert.equal(pathEl.textContent, "/Applications/Bronze.app");
   assert.equal(feedback.hidden, false);

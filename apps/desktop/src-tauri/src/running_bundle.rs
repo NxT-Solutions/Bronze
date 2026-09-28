@@ -4,12 +4,15 @@
 //! same bundle id can belong to a different copy than the one that is running.
 
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RunningBundle {
     pub name: String,
     pub version: String,
     pub bundle_path: String,
+    pub cdhash: String,
+    pub signature_kind: String,
 }
 
 pub fn current_running_bundle() -> RunningBundle {
@@ -33,17 +36,52 @@ pub fn identity_from_exe(exe: &Path, fallback_version: &str) -> RunningBundle {
             .as_deref()
             .and_then(|xml| plist_string(xml, "CFBundleShortVersionString"))
             .unwrap_or_else(|| fallback_version.to_string());
+        let (cdhash, signature_kind) = code_identity(&app);
         return RunningBundle {
             name,
             version,
             bundle_path: app.to_string_lossy().into_owned(),
+            cdhash,
+            signature_kind,
         };
     }
+    let (cdhash, signature_kind) = code_identity(exe);
     RunningBundle {
         name: file_stem_string(exe),
         version: fallback_version.to_string(),
         bundle_path: exe.to_string_lossy().into_owned(),
+        cdhash,
+        signature_kind,
     }
+}
+
+fn code_identity(path: &Path) -> (String, String) {
+    if !path.exists() {
+        return (String::new(), String::new());
+    }
+    let Ok(output) = Command::new("/usr/bin/codesign")
+        .args(["-d", "--verbose=4"])
+        .arg(path)
+        .output()
+    else {
+        return (String::new(), String::new());
+    };
+    // codesign writes identity lines to stderr.
+    let text = String::from_utf8_lossy(&output.stderr);
+    let cdhash = text
+        .lines()
+        .find_map(|line| line.strip_prefix("CDHash="))
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let signature_kind = if text.contains("Signature=adhoc") {
+        "adhoc"
+    } else if text.contains("Authority=") {
+        "signed"
+    } else {
+        "unknown"
+    };
+    (cdhash, signature_kind.to_string())
 }
 
 fn app_bundle_root(exe: &Path) -> Option<PathBuf> {
@@ -136,6 +174,7 @@ mod tests {
         assert!(identity.name.starts_with("bronze-desktop"));
         assert_eq!(identity.version, "0.1.1");
         assert_eq!(identity.bundle_path, path.to_string_lossy());
+        assert!(identity.signature_kind == "adhoc" || identity.signature_kind == "unknown");
         let _ = fs::remove_file(&path);
     }
 }

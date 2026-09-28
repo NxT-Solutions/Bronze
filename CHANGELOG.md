@@ -5,7 +5,7 @@ This file is auto-updated by the release workflow.
 
 ## Unreleased
 
-- Retest in Permission health refreshes Granted/Denied, names the running app path, and opens Privacy when the grant still belongs to another copy.
+- Permission health names Not requested when Accessibility is still unchecked, shows the running code identity, and ad-hoc release builds omit the hardened-runtime flag so Add can take.
 
 ## v0.2.0 - 2026-09-28
 

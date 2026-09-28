@@ -1645,6 +1645,8 @@ impl LiveSession {
             running_name: bundle.name,
             running_version: bundle.version,
             running_path: redact_home_path(&bundle.bundle_path),
+            running_cdhash: bundle.cdhash,
+            signature_kind: bundle.signature_kind,
             permissions: support_permission_rows(),
             queue: SupportQueueCounts {
                 queued: counts.queued,
@@ -3231,6 +3233,8 @@ mod live_session_tests {
             "running_name=",
             "running_version=",
             "running_path=",
+            "running_cdhash=",
+            "signature_kind=",
             "human_gates=",
             "Last-hour diagnostic events",
             "Last-hour copy attempts",

@@ -8,6 +8,8 @@ const labels = {
   retest: "Retest",
   granted: "Granted",
   denied: "Denied",
+  notRequested: "Not requested",
+  unavailable: "Unavailable",
   notUsed: "Not used",
   composer: "Manual composer remains available",
   openSystemSettings: "Open System Settings",

@@ -94,9 +94,10 @@ Purpose: data, privacy, permission truth, shortcut inventory.
 - Grouped fieldsets (Data, Privacy) with Reset as ghost.
 - Permission health: why-text leading, status pill trailing, alternative
   in muted caption, Retest when useful. Screen Recording stays Not used.
-  The section names the running app copy and the exact path that must
-  be added. Retest that stays denied opens Privacy and reveals that
-  copy in Finder. Visible status text reports the check.
+  The section names the running app copy, path, and code identity.
+  The pill uses the closed-enum label (Not requested is not Denied).
+  Retest never auto-opens Settings. Open System Settings still reveals
+  that copy in Finder. Visible status text reports the check.
 - Shortcuts: section title + live status (only Shift double-tap is
   live). Record field and Skip test sit on one row without overlap.
 - Registry rows: localized action name leading, assignment trailing.
