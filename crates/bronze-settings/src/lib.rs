@@ -20,11 +20,11 @@ pub use health::{
 };
 pub use permission::{PermissionSnapshot, PermissionState};
 pub use schema::{
-    is_local_dev_build, persisted_locale_allowed, search_settings, BackupSchedule,
-    ClipboardFallback, Modifier, ModifierSide, MotionPref, PanelEdge, QueueSort, SchemaError,
-    SettingsField, SettingsGroup, SettingsV1, ShortcutActionId, ShortcutBinding, TestedState,
-    TitleModelId, TriggerKind, DEFAULT_GAP_MS, DEFAULT_MAX_HOLD_MS, PERSISTED_LOCALE_TAGS,
-    SCHEMA_VERSION, SETTINGS_FIELDS,
+    is_local_dev_build, persisted_locale_allowed, search_settings, AppPolicy, BackupSchedule,
+    ClipboardFallback, InheritAllowDeny, InheritAllowDenyAsk, InheritProvenance, Modifier,
+    ModifierSide, MotionPref, PanelEdge, QueueSort, SchemaError, SettingsField, SettingsGroup,
+    SettingsV1, ShortcutActionId, ShortcutBinding, TestedState, TitleModelId, TriggerKind,
+    DEFAULT_GAP_MS, DEFAULT_MAX_HOLD_MS, PERSISTED_LOCALE_TAGS, SCHEMA_VERSION, SETTINGS_FIELDS,
 };
 pub use shortcuts::{
     apply_recorded_double_tap_timing, capture_alternatives_ok, default_shortcut_binding,
