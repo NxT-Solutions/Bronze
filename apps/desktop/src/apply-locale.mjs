@@ -240,7 +240,11 @@ export function emitUiLocaleChanged(payload = {}) {
   try {
     const channel = new BroadcastChannel(UI_LOCALE_EVENT);
     channel.postMessage(payload);
-    channel.close();
+    if (typeof setTimeout === "function") {
+      setTimeout(() => channel.close(), 0);
+    } else {
+      channel.close();
+    }
   } catch {
     // BroadcastChannel is absent in some test runtimes.
   }
