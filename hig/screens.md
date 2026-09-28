@@ -15,13 +15,16 @@ Purpose: capture in, act on the current item.
 - Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
 - A new card inserted into the loaded pages slides in from the
   inline-start edge (`is-slide-in`, `--arrive` 380ms, short fade).
-  RTL uses the trailing edge. Newest-first, already within 24px of the
-  top, eases the scrollport to that card over `--arrive-scroll` (340ms)
-  across animation frames. Oldest-first leaves the scrollport where it
-  is. A later refresh updates the same row.
-- The arriving card and the last copied card hold a 2px `--ring`
-  outline, offset outside `--radius-card`. Motion pulses that outline
-  three times (`bronze-copy-ring`, `--ring-pulse` 1200ms), then it rests.
+  RTL slides from that same inline-start edge. Newest-first, already
+  within 24px of the top, eases the scrollport to that card over
+  `--arrive-scroll` (340ms) across animation frames. Oldest-first
+  leaves the scrollport where it is. A later refresh updates the same
+  row. Cards already in the list do not slide.
+- The new card, and a card just copied, can show a temporary 2px
+  `--ring` outline outside `--radius-card`. The outline fades three
+  times (`bronze-copy-ring`, `--ring-pulse` 1000ms) and is gone when
+  the pulse ends. It is not the keyboard focus ring. `:focus-visible`
+  stays on the focused control. Visible copy feedback is the action tip.
 - Complete / Skip / Trash leave the list: height collapse
   (`grid-template-rows` 1fr→0fr) plus fade, then the node is removed.
   Complete slides slightly up. Skip fades. Trash shrinks. Tokens are
@@ -32,8 +35,9 @@ Purpose: capture in, act on the current item.
 - Reduce Motion (`prefers-reduced-motion: reduce`,
   `data-reduce-motion`, or `data-motion="reduce"`) skips the slide, the
   scroll ease, the pulse, and collapse. The card appears in its final
-  place. The ring stays a static outline. Motion is never required to
-  understand the action.
+  place with no arrival outline. Motion is never required to understand
+  the action. `data-motion="full"` plays the entrance when Play
+  animations is on.
 
 ## Settings — `apps/desktop/src/settings.html`
 
