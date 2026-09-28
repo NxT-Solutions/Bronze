@@ -203,14 +203,17 @@ export function beginSortExpand(list) {
   list.classList.remove("is-sort-hold");
   const view = list.ownerDocument?.defaultView;
   if (typeof view?.setTimeout === "function") {
-    view.setTimeout(() => {
-      if (
-        sortExpandToken.get(list) === token &&
-        list.classList?.contains?.("is-sort-expand")
-      ) {
-        clearSortReflow(list);
-      }
-    }, SORT_EXPAND_MS + SORT_STAGGER_MAX * SORT_STAGGER_MS);
+    view.setTimeout(
+      () => {
+        if (
+          sortExpandToken.get(list) === token &&
+          list.classList?.contains?.("is-sort-expand")
+        ) {
+          clearSortReflow(list);
+        }
+      },
+      SORT_EXPAND_MS + SORT_STAGGER_MAX * SORT_STAGGER_MS,
+    );
   }
   return { played: true, durationMs: SORT_EXPAND_MS };
 }
