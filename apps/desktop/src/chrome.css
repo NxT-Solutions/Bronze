@@ -939,7 +939,8 @@ li.is-entering {
 }
 
 .queue-item.is-make-room:not(.is-make-room-end),
-.queue-item.is-make-room:not(.is-make-room-end) ~ .queue-item:not(.is-slide-in) {
+.queue-item.is-make-room:not(.is-make-room-end)
+  ~ .queue-item:not(.is-slide-in) {
   animation: bronze-make-room var(--arrive-room) var(--ease-out) both;
 }
 
