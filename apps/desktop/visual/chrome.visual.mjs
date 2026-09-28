@@ -60,6 +60,61 @@ test.describe("queue", () => {
     expect(measured.afterShort).toBe(measured.height);
     expect(measured.sameRow).toBe(true);
   });
+
+  test("collapsed body clip is three line boxes", async ({ page }) => {
+    await openSurface(page, "/index.html", "populated");
+    const body = page.locator("#queue .queue-item [data-slot='body']").first();
+    await expect(body).toBeVisible();
+    const measured = await page.evaluate(() => {
+      const article = document.querySelector("#queue .queue-item article");
+      const preview = article.querySelector("[data-slot='body']");
+      const expand = article.querySelector("[data-slot='expand']");
+      const lineHeight = Number.parseFloat(
+        getComputedStyle(preview).lineHeight,
+      );
+      const measure = (text) => {
+        preview.textContent = text;
+        const box = preview.getBoundingClientRect();
+        return box.height;
+      };
+      const three = measure("AAAA\nBBBB\nCCCC");
+      const long = measure(
+        "AAAA\nBBBB\nCCCC\n________________\n________________",
+      );
+      expand.hidden = false;
+      const box = preview.getBoundingClientRect();
+      const expandBox = expand.getBoundingClientRect();
+      const gapTop = box.bottom;
+      const gapBottom = expandBox.top;
+      const midX = box.left + box.width / 2;
+      const gapHits = [];
+      if (gapBottom - gapTop > 0.5) {
+        const steps = 3;
+        for (let i = 0; i < steps; i += 1) {
+          const y = gapTop + ((i + 0.5) * (gapBottom - gapTop)) / steps;
+          const hit = document.elementFromPoint(midX, y);
+          gapHits.push(hit?.getAttribute?.("data-slot") ?? hit?.tagName ?? "");
+        }
+      }
+      const style = getComputedStyle(preview);
+      return {
+        three,
+        long,
+        lineHeight,
+        maxHeight: style.maxHeight,
+        overflow: style.overflow,
+        gap: gapBottom - gapTop,
+        gapHits,
+      };
+    });
+    expect(measured.lineHeight).toBeGreaterThan(0);
+    expect(measured.three).toBeCloseTo(3 * measured.lineHeight, 0);
+    expect(measured.long).toBeCloseTo(3 * measured.lineHeight, 0);
+    expect(measured.long).toBeCloseTo(measured.three, 0);
+    expect(measured.overflow).toBe("hidden");
+    expect(measured.gap).toBeGreaterThan(0);
+    expect(measured.gapHits.every((slot) => slot !== "body")).toBe(true);
+  });
 });
 
 test.describe("settings", () => {

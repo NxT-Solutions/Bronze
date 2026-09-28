@@ -1100,8 +1100,9 @@ article [data-slot="body"] li > p {
 }
 
 article:not(.is-expanded) [data-slot="body"] {
+  /* Used line boxes follow 1.45em; a different length unit can leak a hairline. */
   line-height: 1.45em;
-  max-height: calc(3 * 1lh);
+  max-height: calc(3 * 1.45em);
   overflow: hidden;
 }
 
