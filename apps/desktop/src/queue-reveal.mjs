@@ -6,9 +6,9 @@ export const ARRIVE_SLIDE_DELAY_MS = 80;
 export const ARRIVE_SCROLL_MS = 340;
 export const RING_PULSE_MS = 1000;
 export const ARRIVAL_MS = ARRIVE_SCROLL_MS;
-export const SORT_COLLAPSE_MS = 220;
-export const SORT_EXPAND_MS = 280;
-export const SORT_STAGGER_MS = 18;
+export const SORT_COLLAPSE_MS = 380;
+export const SORT_EXPAND_MS = 480;
+export const SORT_STAGGER_MS = 31;
 export const SORT_STAGGER_MAX = 5;
 
 const sortExpandToken = new WeakMap();
@@ -210,7 +210,7 @@ export function beginSortExpand(list) {
       ) {
         clearSortReflow(list);
       }
-    }, SORT_EXPAND_MS + 90);
+    }, SORT_EXPAND_MS + SORT_STAGGER_MAX * SORT_STAGGER_MS);
   }
   return { played: true, durationMs: SORT_EXPAND_MS };
 }
