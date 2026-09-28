@@ -47,6 +47,8 @@
   "queue.item.showMore": "Visa mer",
   "queue.item.showLess": "Visa mindre",
   "queue.item.title": "Objekt",
+  "queue.sort.showOldest": "Visa äldst först",
+  "queue.sort.showNewest": "Visa nyast först",
   "panel.section.active": "Inkorg",
   "library.heading.items": "Objekt",
   "library.title": "Bibliotek",

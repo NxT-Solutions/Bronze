@@ -22,6 +22,8 @@ test("settings copy group persists newest and oldest queue order", () => {
   assert.equal(en["settings.field.queueSort"], "Queue order");
   assert.equal(en["settings.field.queueSort.newest"], "Newest first");
   assert.equal(en["settings.field.queueSort.oldest"], "Oldest first");
+  assert.equal(en["queue.sort.showOldest"], "Show oldest first");
+  assert.equal(en["queue.sort.showNewest"], "Show newest first");
   assert.equal(
     en["settings.field.queueSort.info"],
     "Bronze lists queue cards in this order until you change it.",

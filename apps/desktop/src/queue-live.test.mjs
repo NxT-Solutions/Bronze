@@ -22,7 +22,13 @@ import {
   syncQueueMoveAvailability,
 } from "./queue-live.mjs";
 import { planNewItemFollow } from "./queue-reveal.mjs";
-import { queueListArgs, queueSortFromEvent } from "./queue-sort.mjs";
+import {
+  applyQueueSortControl,
+  persistQueueSort,
+  queueListArgs,
+  queueSortFromEvent,
+} from "./queue-sort.mjs";
+import { applySettingsForm } from "./settings-live.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(join(root, "index.html"), "utf8");
@@ -594,8 +600,114 @@ test("a status change patches the visible row without moving it", () => {
   assert.equal(queueSortFromEvent({ sort: "newest" }), "newest");
   assert.equal(queueSortFromEvent(null), null);
   assert.match(live, /queueSortFromEvent/);
+  assert.match(live, /persistQueueSort/);
+  assert.match(live, /#queue-sort-toggle/);
   const copyAt = live.indexOf('action === "copy"');
   const assignAt = live.indexOf("lastCopiedId = id", copyAt);
   const invokeAt = live.indexOf("copy_queue_items", copyAt);
   assert.ok(copyAt >= 0 && assignAt > copyAt && assignAt < invokeAt);
+});
+
+test("queue sort toggle writes newest then oldest and reloads the list", async () => {
+  const en = JSON.parse(
+    readFileSync(
+      join(root, "../../../packages/i18n/locales/en/app.json"),
+      "utf8",
+    ),
+  );
+  assert.equal(en["queue.sort.showOldest"], "Show oldest first");
+  assert.equal(en["queue.sort.showNewest"], "Show newest first");
+  assert.match(html, /id="queue-sort-toggle"/);
+  assert.match(html, /<button\b[^>]*type="button"[^>]*id="queue-sort-toggle"/);
+  assert.match(html, /data-i18n-aria-label="queue.sort.showOldest"/);
+  assert.match(html, /aria-label="Show oldest first"/);
+  const composerEnd = html.indexOf("</form>");
+  const sortBar = html.indexOf("queue-sort-bar");
+  const queueId = html.indexOf('id="queue"');
+  assert.ok(composerEnd > 0 && sortBar > composerEnd && sortBar < queueId);
+  assert.match(chrome, /\.queue-sort-bar[\s\S]*justify-content:\s*flex-end/);
+  assert.match(chrome, /\.queue-sort-toggle[\s\S]*--control-h/);
+  assert.match(chrome, /\.queue-sort-toggle[\s\S]*--radius-control/);
+  assert.doesNotMatch(
+    chrome,
+    /\.queue-sort-toggle[\s\S]{0,240}outline:\s*none/,
+  );
+
+  const button = {
+    dataset: {},
+    _attr: {},
+    getAttribute(name) {
+      return Object.hasOwn(this._attr, name) ? this._attr[name] : null;
+    },
+    setAttribute(name, value) {
+      this._attr[name] = String(value);
+    },
+  };
+  applyQueueSortControl(button, "newest", en);
+  assert.equal(button.dataset.queueSort, "newest");
+  assert.equal(button.getAttribute("aria-label"), en["queue.sort.showOldest"]);
+  assert.equal(
+    button.getAttribute("data-i18n-aria-label"),
+    "queue.sort.showOldest",
+  );
+  applyQueueSortControl(button, "oldest", en);
+  assert.equal(button.getAttribute("aria-label"), en["queue.sort.showNewest"]);
+
+  let store = {
+    general: {},
+    copy: { defaultProfileId: "plain", queueSort: "oldest" },
+    data: {},
+    privacy: {},
+  };
+  const saved = [];
+  const queried = [];
+  const invoke = async (cmd, args) => {
+    if (cmd === "load_settings_v1") {
+      return structuredClone(store);
+    }
+    if (cmd === "save_settings_v1") {
+      store = structuredClone(args.settings);
+      saved.push(store.copy.queueSort);
+      return store;
+    }
+    if (cmd === "queue_query") {
+      queried.push(args.sort);
+      return { items: [{ id: args.sort, body: args.sort }], nextCursor: null };
+    }
+    if (cmd === "take_notice_activation") {
+      return null;
+    }
+    throw new Error(cmd);
+  };
+
+  let settings = await invoke("load_settings_v1");
+  settings = await persistQueueSort(invoke, settings, "newest");
+  assert.equal(settings.copy.queueSort, "newest");
+  settings = await persistQueueSort(invoke, settings, "oldest");
+  assert.equal(settings.copy.queueSort, "oldest");
+  assert.deepEqual(saved, ["newest", "oldest"]);
+  const newestPage = await invoke("queue_query", {
+    filter: "overview",
+    limit: QUEUE_PAGE_SIZE,
+    ...queueListArgs("newest", null),
+  });
+  const oldestPage = await invoke("queue_query", {
+    filter: "overview",
+    limit: QUEUE_PAGE_SIZE,
+    ...queueListArgs("oldest", null),
+  });
+  assert.equal(newestPage.items[0].id, "newest");
+  assert.equal(oldestPage.items[0].id, "oldest");
+  assert.deepEqual(queried, ["newest", "oldest"]);
+
+  const queueSort = { value: "newest" };
+  applySettingsForm(
+    {
+      querySelector(sel) {
+        return sel === "#queue-sort" ? queueSort : null;
+      },
+    },
+    settings,
+  );
+  assert.equal(queueSort.value, "oldest");
 });

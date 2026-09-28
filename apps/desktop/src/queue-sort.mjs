@@ -36,6 +36,51 @@ export function queueSortChange(before, after) {
   return { sort: next };
 }
 
+export function nextQueueSort(raw) {
+  return parseQueueSort(raw) === "newest" ? "oldest" : "newest";
+}
+
+export function queueSortActionKey(raw) {
+  return parseQueueSort(raw) === "newest"
+    ? "queue.sort.showOldest"
+    : "queue.sort.showNewest";
+}
+
+export function patchSettingsQueueSort(settings, sort) {
+  const queueSort = parseQueueSort(sort);
+  return {
+    ...settings,
+    copy: { ...(settings?.copy ?? {}), queueSort },
+  };
+}
+
+export function applyQueueSortControl(button, sort, messages = {}) {
+  const current = parseQueueSort(sort);
+  if (!button) {
+    return current;
+  }
+  const key = queueSortActionKey(current);
+  const label = messages[key];
+  if (button.dataset) {
+    button.dataset.queueSort = current;
+  }
+  button.setAttribute?.("data-i18n-aria-label", key);
+  button.setAttribute?.("data-i18n-title", key);
+  if (typeof label === "string" && label) {
+    button.setAttribute?.("aria-label", label);
+    button.setAttribute?.("title", label);
+  }
+  return current;
+}
+
+export async function persistQueueSort(invokeFn, settings, sort) {
+  const queueSort = parseQueueSort(sort);
+  const next = patchSettingsQueueSort(settings, queueSort);
+  const saved = await invokeFn("save_settings_v1", { settings: next });
+  await emitQueueSortChanged({ sort: queueSort });
+  return saved ?? next;
+}
+
 export function emitQueueSortChanged(payload) {
   try {
     const channel = new BroadcastChannel(QUEUE_SORT_EVENT);

@@ -47,6 +47,8 @@
   "queue.item.showMore": "Mehr anzeigen",
   "queue.item.showLess": "Weniger anzeigen",
   "queue.item.title": "Element",
+  "queue.sort.showOldest": "Älteste zuerst anzeigen",
+  "queue.sort.showNewest": "Neueste zuerst anzeigen",
   "panel.section.active": "Eingang",
   "library.heading.items": "Elemente",
   "library.title": "Mediathek",

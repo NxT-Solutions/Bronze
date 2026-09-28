@@ -47,6 +47,8 @@
   "queue.item.showMore": "Prikaži više",
   "queue.item.showLess": "Prikaži manje",
   "queue.item.title": "Stavka",
+  "queue.sort.showOldest": "Prikaži najstarije prvo",
+  "queue.sort.showNewest": "Prikaži najnovije prvo",
   "panel.section.active": "Ulaz",
   "library.heading.items": "Stavke",
   "library.title": "Knjižnica",

@@ -123,6 +123,51 @@
         </p>
         <p hidden data-action-message data-i18n="action.working">Working</p>
       </form>
+      <div class="queue-sort-bar">
+        <button
+          type="button"
+          id="queue-sort-toggle"
+          class="queue-sort-toggle"
+          data-queue-sort="newest"
+          aria-label="Show oldest first"
+          data-i18n-aria-label="queue.sort.showOldest"
+          title="Show oldest first"
+          data-i18n-title="queue.sort.showOldest"
+        >
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <g data-sort-glyph="newest">
+              <path
+                d="M3.25 2.75v9.5M1.5 9.5 3.25 12.25 5 9.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M7.25 3.5h7.25M7.25 8h5.25M7.25 12.5h3.25"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </g>
+            <g data-sort-glyph="oldest">
+              <path
+                d="M3.25 13.25V3.75M1.5 6.5 3.25 3.75 5 6.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M7.25 3.5h3.25M7.25 8h5.25M7.25 12.5h7.25"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </g>
+          </svg>
+        </button>
+      </div>
       <p id="queue-empty" class="empty-state" data-i18n="panel.empty">
         Select text and Capture, or type here.
       </p>

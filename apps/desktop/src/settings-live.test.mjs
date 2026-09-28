@@ -84,6 +84,8 @@ test("settings form keeps queue order on the copy group", () => {
   assert.equal(parseQueueSort("rank"), "newest");
   assert.deepEqual(queueSortChange("newest", "oldest"), { sort: "oldest" });
   assert.equal(queueSortChange("oldest", "oldest"), null);
+  assert.match(live, /listenQueueSortChanged/);
+  assert.match(live, /patchSettingsQueueSort/);
 });
 
 test("settings form patches backup schedule, excluded apps, and locale", () => {

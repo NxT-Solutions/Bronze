@@ -30,8 +30,11 @@ import {
   shouldLoadNextOnKey,
 } from "./queue-reveal.mjs";
 import {
+  applyQueueSortControl,
   listenQueueSortChanged,
+  nextQueueSort,
   parseQueueSort,
+  persistQueueSort,
   queueListArgs,
   queueSortFromEvent,
 } from "./queue-sort.mjs";
@@ -726,6 +729,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   syncSubmitLabel();
 
   const moreStatus = root.querySelector("#queue-more-status");
+  const sortToggle = root.querySelector("#queue-sort-toggle");
   let state = {
     items: [],
     nextCursor: null,
@@ -740,6 +744,15 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   function noteQueueSort(raw) {
     list.dataset.queueSort = parseQueueSort(raw);
+  }
+
+  function paintSortToggle(sort = activeSort) {
+    applyQueueSortControl(sortToggle, sort, {
+      "queue.sort.showOldest":
+        catalogMessage("queue.sort.showOldest") || "Show oldest first",
+      "queue.sort.showNewest":
+        catalogMessage("queue.sort.showNewest") || "Show newest first",
+    });
   }
 
   function focusedQueueControl() {
@@ -921,6 +934,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       activeSort = sort;
     }
     list.dataset.queueSort = activeSort;
+    paintSortToggle(activeSort);
     const action = opts.action;
     if (action === "complete" || action === "skip" || action === "trash") {
       state = removeQueueItem(state, opts.id);
@@ -1236,8 +1250,25 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     const announced = queueSortFromEvent(payload);
     if (announced) {
       noteQueueSort(announced);
+      paintSortToggle(announced);
     }
     refresh({ resetPage: true, sort: announced ?? undefined });
+  });
+  sortToggle?.addEventListener("click", () => {
+    runBusy(sortToggle, async () => {
+      const next = nextQueueSort(activeSort);
+      let current;
+      try {
+        current = await invokeFn("load_settings_v1");
+      } catch {
+        return;
+      }
+      await persistQueueSort(invokeFn, current, next);
+      activeSort = next;
+      noteQueueSort(next);
+      paintSortToggle(next);
+      await refresh({ resetPage: true, sort: next });
+    });
   });
   listenCaptureResult((event) => {
     const result = event?.payload ?? event;
@@ -1266,6 +1297,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   root.addEventListener?.(LOCALE_APPLIED_EVENT, () => {
     refresh({ action: "replace" });
     syncSubmitLabel();
+    paintSortToggle();
   });
 
   try {
