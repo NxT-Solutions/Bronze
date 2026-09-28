@@ -33,8 +33,18 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(collapsedBody[0], /max-height:\s*calc\(3 \* 1lh\)/);
   assert.match(collapsedBody[0], /overflow:\s*hidden/);
   assert.doesNotMatch(collapsedBody[0], /-webkit-line-clamp/);
-  assert.doesNotMatch(chrome, /-webkit-line-clamp/);
-  assert.doesNotMatch(chrome, /-webkit-box-orient/);
+  const queueTitleSlot = chrome.match(
+    /#queue article \[data-slot="title"\]:not\(\[hidden\]\)\s*\{[^}]+\}/,
+  );
+  assert.ok(queueTitleSlot, "queue title reserved slot");
+  assert.match(queueTitleSlot[0], /-webkit-line-clamp:\s*2/);
+  assert.match(queueTitleSlot[0], /-webkit-box-orient:\s*vertical/);
+  assert.match(queueTitleSlot[0], /min-height:\s*calc\(2 \* 1lh\)/);
+  assert.match(queueTitleSlot[0], /text-overflow:\s*ellipsis/);
+  assert.match(queueTitleSlot[0], /overflow:\s*hidden/);
+  const chromeWithoutQueueTitle = chrome.replace(queueTitleSlot[0], "");
+  assert.doesNotMatch(chromeWithoutQueueTitle, /-webkit-line-clamp/);
+  assert.doesNotMatch(chromeWithoutQueueTitle, /-webkit-box-orient/);
   assert.match(
     chrome,
     /\[data-slot="source-icon"\][\s\S]*object-fit:\s*contain/,

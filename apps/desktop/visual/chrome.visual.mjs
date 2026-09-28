@@ -36,6 +36,30 @@ test.describe("queue", () => {
       shot("queue-populated"),
     );
   });
+
+  test("title swap keeps the reserved title box", async ({ page }) => {
+    await openSurface(page, "/index.html", "populated");
+    const title = page
+      .locator("#queue .queue-item [data-slot='title']")
+      .first();
+    await expect(title).toBeVisible();
+    const measured = await page.evaluate(() => {
+      const row = document.querySelector("#queue .queue-item");
+      const heading = row.querySelector("[data-slot='title']");
+      const height = heading.getBoundingClientRect().height;
+      heading.textContent =
+        "The generated title wraps onto a second line of this queue card";
+      const afterLong = heading.getBoundingClientRect().height;
+      const sameRow = document.querySelector("#queue .queue-item") === row;
+      heading.textContent = "Hi";
+      const afterShort = heading.getBoundingClientRect().height;
+      return { height, afterLong, afterShort, sameRow };
+    });
+    expect(measured.height).toBeGreaterThan(0);
+    expect(measured.afterLong).toBe(measured.height);
+    expect(measured.afterShort).toBe(measured.height);
+    expect(measured.sameRow).toBe(true);
+  });
 });
 
 test.describe("settings", () => {

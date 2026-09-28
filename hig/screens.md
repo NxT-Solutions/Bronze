@@ -13,6 +13,9 @@ Purpose: capture in, act on the current item.
   icon → Copy (filled) + compact icon row (Complete, Skip, Edit, Move
   up, Move down, Trash).
 - Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
+- The queue title sits in a reserved two-line slot (`min-height` 2lh,
+  clamp + ellipsis). A later generated title swaps in place without
+  changing card height. Reduce Motion adds no title motion.
 - A new card inserted into the loaded pages slides in from the
   inline-start edge (`is-slide-in`, `--arrive` 380ms, short fade).
   RTL slides from that same inline-start edge. Newest-first eases the
