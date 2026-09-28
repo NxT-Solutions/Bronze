@@ -8,8 +8,9 @@ use crate::portability::{accept_native_path, PathSource};
 use crate::window_edge::{TextDirection, CAPTURE_ONLY_REVEALS_PANEL};
 use bronze_capture::{
     apply_capture_success, capture_target_bundle_id, clipboard_restore_generation_matches,
-    Announcer, AxOutcome, CaptureCoordinator, CaptureIngressContext, CaptureMode, CapturedText,
-    FocusOwner, FocusSnapshot, PersistError, PersistHook, Terminal, INGRESS_ROUTE_MENU,
+    empty_ax_uses_clipboard_fallback, Announcer, AxOutcome, CaptureCoordinator,
+    CaptureIngressContext, CaptureMode, CapturedText, FocusOwner, FocusSnapshot, PersistError,
+    PersistHook, Terminal, INGRESS_ROUTE_MENU,
 };
 #[cfg(test)]
 use bronze_capture::{ax_capture, FakeAxTree};
@@ -997,6 +998,9 @@ impl LiveSession {
                     .as_ref()
                     .and_then(|captured| captured.source_bundle_id.clone())
                     .or_else(|| host.peek_bundle_id());
+                let app_name = source
+                    .as_ref()
+                    .and_then(|captured| captured.source_app_name.as_deref());
                 if bundle
                     .as_deref()
                     .is_some_and(|id| self.settings.privacy.excludes_bundle(id))
@@ -1007,7 +1011,9 @@ impl LiveSession {
                         item_id: None,
                     });
                 }
-                if !self.allows_clipboard_fallback(bundle.as_deref()) {
+                if !self.allows_clipboard_fallback(bundle.as_deref())
+                    || !empty_ax_uses_clipboard_fallback(bundle.as_deref(), app_name)
+                {
                     return Ok(CapturePersistOutcome {
                         terminal: Terminal::Rejected,
                         reason: "no_selection",
@@ -3939,7 +3945,11 @@ mod live_session_tests {
         use bronze_settings::{
             AppPolicy, InheritAllowDeny, InheritAllowDenyAsk, InheritProvenance,
         };
-        fn empty_host(clipboard: ClipboardMarkupOffer) -> FakeSelectionHost {
+        fn empty_host(
+            app: &str,
+            bundle: &str,
+            clipboard: ClipboardMarkupOffer,
+        ) -> FakeSelectionHost {
             FakeSelectionHost {
                 tree: FakeAxTree {
                     nodes: vec![FakeAxNode::new(
@@ -3952,11 +3962,14 @@ mod live_session_tests {
                     excluded: false,
                     accessibility_granted: true,
                 },
-                source_app_name: Some("WhatsApp".into()),
-                source_bundle_id: Some("net.whatsapp.WhatsApp".into()),
+                source_app_name: Some(app.into()),
+                source_bundle_id: Some(bundle.into()),
                 clipboard,
                 clipboard_restored: std::cell::Cell::new(false),
             }
+        }
+        fn whatsapp_host(clipboard: ClipboardMarkupOffer) -> FakeSelectionHost {
+            empty_host("WhatsApp", "net.whatsapp.WhatsApp", clipboard)
         }
         let plain = ClipboardMarkupOffer::Types {
             html: None,
@@ -3967,7 +3980,7 @@ mod live_session_tests {
             snapshot: vec![2],
         };
         let mut session = open_session();
-        let saved = empty_host(plain);
+        let saved = whatsapp_host(plain.clone());
         let mut announce = FakeAnnouncer::default();
         let persisted = session
             .persist_selection(&saved, &mut announce, false)
@@ -3987,7 +4000,52 @@ mod live_session_tests {
         );
         assert!(saved.clipboard_restored.get());
 
-        let failed = empty_host(ClipboardMarkupOffer::Failed);
+        let named = empty_host("WhatsApp Web", "net.whatsapp.WhatsApp", plain.clone());
+        let persisted = session
+            .persist_selection(&named, &mut announce, false)
+            .expect("web");
+        assert_eq!(persisted.terminal, Terminal::Saved);
+        assert!(named.clipboard_restored.get());
+
+        let slack = empty_host(
+            "Slack",
+            "com.tinyspeck.slackmacgap",
+            ClipboardMarkupOffer::Types {
+                html: None,
+                rtf: None,
+                plain: Some("slack clipboard must not save".into()),
+                post_copy_generation: 9,
+                current_generation: 9,
+                snapshot: vec![9],
+            },
+        );
+        let persisted = session
+            .persist_selection(&slack, &mut announce, false)
+            .expect("slack empty");
+        assert_eq!(persisted.terminal, Terminal::Rejected);
+        assert_eq!(persisted.reason, "no_selection");
+        assert!(!slack.clipboard_restored.get());
+
+        let vscode = empty_host(
+            "Code",
+            "com.microsoft.VSCode",
+            ClipboardMarkupOffer::Types {
+                html: None,
+                rtf: None,
+                plain: Some("vscode clipboard must not save".into()),
+                post_copy_generation: 10,
+                current_generation: 10,
+                snapshot: vec![10],
+            },
+        );
+        let persisted = session
+            .persist_selection(&vscode, &mut announce, false)
+            .expect("vscode empty");
+        assert_eq!(persisted.terminal, Terminal::Rejected);
+        assert_eq!(persisted.reason, "no_selection");
+        assert!(!vscode.clipboard_restored.get());
+
+        let failed = whatsapp_host(ClipboardMarkupOffer::Failed);
         let persisted = session
             .persist_selection(&failed, &mut announce, false)
             .expect("failed copy");
@@ -3995,7 +4053,7 @@ mod live_session_tests {
         assert_eq!(persisted.reason, "no_selection");
         assert!(!failed.clipboard_restored.get());
 
-        let none = empty_host(ClipboardMarkupOffer::None);
+        let none = whatsapp_host(ClipboardMarkupOffer::None);
         let persisted = session
             .persist_selection(&none, &mut announce, false)
             .expect("none");
@@ -4013,7 +4071,7 @@ mod live_session_tests {
             },
         );
         session.replace_settings(denied).expect("deny");
-        let blocked = empty_host(ClipboardMarkupOffer::Types {
+        let blocked = whatsapp_host(ClipboardMarkupOffer::Types {
             html: None,
             rtf: None,
             plain: Some("blocked".into()),
@@ -4032,7 +4090,7 @@ mod live_session_tests {
         off.capture.clipboard_fallback = ClipboardFallback::Off;
         off.privacy.app_policies.clear();
         session.replace_settings(off).expect("off");
-        let ignored = empty_host(ClipboardMarkupOffer::Types {
+        let ignored = whatsapp_host(ClipboardMarkupOffer::Types {
             html: None,
             rtf: None,
             plain: Some("ignored".into()),
@@ -4046,12 +4104,14 @@ mod live_session_tests {
         assert_eq!(persisted.terminal, Terminal::Rejected);
         assert_eq!(persisted.reason, "no_selection");
         assert!(!ignored.clipboard_restored.get());
-        assert!(session
-            .list_overview()
-            .expect("one saved")
-            .iter()
-            .all(|item| item.source_app_name.as_deref() == Some("WhatsApp")));
-        assert_eq!(session.list_overview().expect("count").len(), 1);
+        let overview = session.list_overview().expect("whatsapp only");
+        assert_eq!(overview.len(), 2);
+        assert!(overview.iter().all(|item| {
+            matches!(
+                item.source_app_name.as_deref(),
+                Some("WhatsApp") | Some("WhatsApp Web")
+            )
+        }));
 
         let lib = include_str!("lib.rs");
         let persist = lib
@@ -4060,6 +4120,7 @@ mod live_session_tests {
             .expect("persist");
         assert!(persist.contains("AxOutcome::NoSelection"));
         assert!(persist.contains("AxOutcome::FocusedElementMissing"));
+        assert!(persist.contains("empty_ax_uses_clipboard_fallback"));
         assert!(persist.contains("offer_clipboard_markup"));
         let peek = include_str!("live_session.rs");
         assert!(peek.contains("capture_target_bundle_id"));

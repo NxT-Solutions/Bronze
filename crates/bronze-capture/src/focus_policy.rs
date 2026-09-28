@@ -73,6 +73,30 @@ pub fn capture_target_bundle_id(
     last_external.or_else(|| bronze_frontmost.then_some(own_bundle).flatten())
 }
 
+pub fn empty_ax_uses_clipboard_fallback(bundle_id: Option<&str>, app_name: Option<&str>) -> bool {
+    bundle_id.is_some_and(is_whatsapp_bundle_id) || app_name.is_some_and(is_whatsapp_app_name)
+}
+
+fn is_whatsapp_bundle_id(bundle_id: &str) -> bool {
+    bundle_id
+        .trim()
+        .eq_ignore_ascii_case("net.whatsapp.WhatsApp")
+}
+
+fn is_whatsapp_app_name(app_name: &str) -> bool {
+    let stem = app_identity_stem(app_name);
+    stem.eq_ignore_ascii_case("WhatsApp") || stem.eq_ignore_ascii_case("WhatsApp Web")
+}
+
+fn app_identity_stem(name: &str) -> &str {
+    let trimmed = name.trim();
+    if trimmed.len() >= 4 && trimmed[trimmed.len() - 4..].eq_ignore_ascii_case(".app") {
+        trimmed[..trimmed.len() - 4].trim()
+    } else {
+        trimmed
+    }
+}
+
 #[cfg(test)]
 mod focus_policy_tests {
     use super::*;
@@ -143,5 +167,32 @@ mod focus_policy_tests {
             Some("net.whatsapp.WhatsApp".into())
         );
         assert_eq!(capture_target_bundle_id(None, false, None), None);
+    }
+
+    #[test]
+    fn focus_policy_empty_ax_clipboard_fallback_is_whatsapp_only() {
+        assert!(empty_ax_uses_clipboard_fallback(
+            Some("net.whatsapp.WhatsApp"),
+            None
+        ));
+        assert!(empty_ax_uses_clipboard_fallback(
+            Some("NET.WHATSAPP.WHATSAPP"),
+            Some("Slack")
+        ));
+        assert!(empty_ax_uses_clipboard_fallback(None, Some("WhatsApp.app")));
+        assert!(empty_ax_uses_clipboard_fallback(None, Some("WhatsApp Web")));
+        assert!(!empty_ax_uses_clipboard_fallback(
+            Some("com.tinyspeck.slackmacgap"),
+            Some("Slack")
+        ));
+        assert!(!empty_ax_uses_clipboard_fallback(
+            Some("com.microsoft.VSCode"),
+            Some("Code")
+        ));
+        assert!(!empty_ax_uses_clipboard_fallback(
+            None,
+            Some("Google Chrome")
+        ));
+        assert!(!empty_ax_uses_clipboard_fallback(None, None));
     }
 }

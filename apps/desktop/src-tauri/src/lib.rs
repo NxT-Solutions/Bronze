@@ -773,8 +773,22 @@ fn persist_capture_request(app: &tauri::AppHandle, own: Option<own_selection::Ow
                 (
                     bronze_capture::AxOutcome::NoSelection
                     | bronze_capture::AxOutcome::FocusedElementMissing,
-                    _,
-                ) => Some(probe.offer_clipboard_markup()),
+                    source,
+                ) => {
+                    let bundle = source
+                        .as_ref()
+                        .and_then(|captured| captured.source_bundle_id.clone())
+                        .or_else(|| probe.peek_bundle_id());
+                    let app_name = source
+                        .as_ref()
+                        .and_then(|captured| captured.source_app_name.as_deref());
+                    if bronze_capture::empty_ax_uses_clipboard_fallback(bundle.as_deref(), app_name)
+                    {
+                        Some(probe.offer_clipboard_markup())
+                    } else {
+                        Some(ClipboardMarkupOffer::None)
+                    }
+                }
                 _ => Some(ClipboardMarkupOffer::None),
             }
         }
@@ -1209,6 +1223,7 @@ mod tests {
         assert!(persist[..persist_end].contains("offer_clipboard_markup"));
         assert!(persist[..persist_end].contains("AxOutcome::NoSelection"));
         assert!(persist[..persist_end].contains("AxOutcome::FocusedElementMissing"));
+        assert!(persist[..persist_end].contains("empty_ax_uses_clipboard_fallback"));
         let hop_at = persist[..persist_end]
             .find("isMainThread")
             .expect("main hop");
