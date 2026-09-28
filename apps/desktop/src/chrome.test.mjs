@@ -54,7 +54,25 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   );
   assert.match(
     chrome,
-    /article\.is-expanded \[data-slot="expand"\]::after\s*\{[^}]*clip-path/,
+    /article \[data-slot="expand"\]::after\s*\{[^}]*clip-path/,
+  );
+  assert.match(
+    chrome,
+    /article\.is-expanded \[data-slot="expand"\]::after\s*\{[^}]*transform:\s*rotate\(180deg\)/,
+  );
+  assert.match(chrome, /--body-expand:\s*320ms/);
+  assert.match(chrome, /--sort-expand:\s*480ms/);
+  assert.match(chrome, /--arrive:\s*380ms/);
+  assert.match(
+    chrome,
+    /article \[data-slot="expand"\]::after\s*\{[^}]*transition:\s*transform var\(--body-expand\)/,
+  );
+  assert.match(chrome, /article\.is-body-opening \[data-slot="body"\]/);
+  assert.match(chrome, /article\.is-body-closing \[data-slot="body"\]/);
+  assert.doesNotMatch(chrome, /max-height:\s*2000px/);
+  assert.doesNotMatch(
+    chrome,
+    /article\.is-body-opening[\s\S]{0,80}is-sort-expand/,
   );
   assert.match(
     chrome,
@@ -77,6 +95,14 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(queueTitleSlot[0], /text-overflow:\s*ellipsis/);
   assert.match(queueTitleSlot[0], /overflow:\s*hidden/);
   assert.match(chrome, /--title-fade:\s*200ms/);
+  assert.match(
+    chrome,
+    /:focus-visible\s*\{\s*outline:\s*2px solid var\(--ring\);\s*outline-offset:\s*2px;\s*\}/,
+  );
+  assert.doesNotMatch(
+    chrome,
+    /article \[data-slot="expand"\][^{]*\{[^}]*outline:\s*none/,
+  );
   assert.match(chrome, /\.queue-title-spinner\s*\{/);
   assert.match(
     chrome,

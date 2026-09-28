@@ -13,7 +13,14 @@ Purpose: capture in, act on the current item.
   more disclosure when the body overflows → source + official
   icon → Copy (filled) + compact icon row (Complete, Skip, Edit, Move
   up, Move down, Trash).
-- Collapse is max-height + pre-wrap, not `-webkit-line-clamp`.
+- Collapse is max-height + pre-wrap, not `-webkit-line-clamp`. The
+  clamp stays `calc(3 * 1.45em)` so a later line does not leak a
+  hairline. Play animations eases that preview to the measured body
+  height over `--body-expand` (320ms, ease-out) and rotates the
+  disclosure chevron. Neighbors move in normal flow with the card.
+  The control stays the compact catalog Show more / Show less
+  `button`. Reduce Motion and `data-motion="reduce"` snap the clamp
+  and the chevron. Do not reuse `is-sort-expand` here.
 - The queue title sits in a reserved two-line slot (`min-height` 2lh,
   clamp + ellipsis). While an on-this-Mac engine is still writing the
   title, the slot stays 2lh and shows a small spinner plus
@@ -64,10 +71,10 @@ Purpose: capture in, act on the current item.
 - Reduce Motion (`prefers-reduced-motion: reduce`,
   `data-reduce-motion`, or `data-motion="reduce"`) skips the make-room
   translate, the slide, the scroll ease, the pulse, the sort-icon
-  transform, the sort collapse/expand, and collapse. The card appears
-  in its final place with no arrival outline. Motion is never required
-  to understand the action. `data-motion="full"` plays the entrance
-  when Play animations is on.
+  transform, the sort collapse/expand, the body Show more open/close,
+  and collapse. The card appears in its final place with no arrival
+  outline. Motion is never required to understand the action.
+  `data-motion="full"` plays the entrance when Play animations is on.
 
 ## Settings — `apps/desktop/src/settings.html`
 

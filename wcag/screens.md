@@ -40,8 +40,10 @@ Purpose: capture in, act on the current item.
   card, then expands the new first page. Reduce Motion,
   `data-reduce-motion`, and `data-motion="reduce"` skip the make-room
   translate, the slide, the eased scroll, the pulse, the icon
-  transform, and the sort collapse/expand. The card is in the list
-  either way (2.2.2, 2.3.1, 2.3.3). This is not a WCAG claim.
+  transform, the sort collapse/expand, and the body Show more
+  open/close. The label and `aria-expanded` still change. The card is
+  in the list either way (2.2.2, 2.3.1, 2.3.3). This is not a WCAG
+  claim.
 
 ## Settings — `apps/desktop/src/settings.html`
 

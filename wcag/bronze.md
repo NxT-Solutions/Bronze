@@ -21,7 +21,8 @@ must be updated in the same change.
 - Motion is CSS + WAAPI. Controls use ≤200ms. A queue arrival slide
   is `--arrive` (380ms), the scroll ease is `--arrive-scroll` (340ms),
   the sort-icon flip is `--sort-flip` (200ms), a sort reload uses
-  `--sort-collapse` (380ms) then `--sort-expand` (480ms), and the
+  `--sort-collapse` (380ms) then `--sort-expand` (480ms), Show more
+  uses `--body-expand` (320ms), and the
   temporary `--ring` pulse is `--ring-pulse`
   (1000ms), three cycles, then gone. Reduce Motion wins. The pulse
   is not `:focus-visible`.
