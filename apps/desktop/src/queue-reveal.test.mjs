@@ -4,6 +4,11 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  applyMotionDataset,
+  reduceMotionFromSettings,
+} from "./apply-motion.mjs";
+import { motionAllowed } from "./control.mjs";
+import {
   insertionBeforeId,
   isNearLoadedStart,
   markLastCopied,
@@ -189,6 +194,92 @@ test("newest-first at the top slides in and eases scroll", () => {
   );
 });
 
+test("play animations applies the slide and the pulse", () => {
+  assert.equal(
+    reduceMotionFromSettings({ general: { reduceMotion: "off" } }),
+    "off",
+  );
+  const attrs = new Set();
+  const html = {
+    dataset: {},
+    toggleAttribute(name, on) {
+      if (on) {
+        attrs.add(name);
+      } else {
+        attrs.delete(name);
+      }
+    },
+  };
+  const doc = {
+    documentElement: html,
+    defaultView: { matchMedia: () => ({ matches: true }) },
+  };
+  applyMotionDataset(html, "off", true);
+  assert.equal(html.dataset.motion, "full");
+  assert.equal(motionAllowed(doc), true);
+  const writes = [];
+  const frames = [];
+  const card = slideCard(80);
+  const played = presentNewQueueCard(card, scrollProbe(0, writes), {
+    motion: motionAllowed(doc),
+    followScroll: true,
+    pulse: true,
+    duration: 340,
+    frame(fn) {
+      frames.push(fn);
+      return 1;
+    },
+    now: () => 0,
+  });
+  assert.equal(card.classList.has("is-slide-in"), true);
+  assert.equal(card.classList.has("is-ring-pulse"), true);
+  assert.equal(played.behavior, "smooth");
+  assert.deepEqual(writes, [80]);
+  frames[0](0);
+  frames[frames.length - 1](170);
+  assert.ok(writes.length > 1);
+  assert.ok(writes.some((value) => value > 0 && value < 80));
+  frames[frames.length - 1](340);
+  assert.equal(writes.at(-1), 0);
+  assert.ok(writes.indexOf(0) > 0);
+
+  applyMotionDataset(html, "on", false);
+  assert.equal(html.dataset.motion, "reduce");
+  assert.equal(motionAllowed(doc), false);
+  const reducedWrites = [];
+  const reduced = slideCard(80);
+  presentNewQueueCard(reduced, scrollProbe(0, reducedWrites), {
+    motion: motionAllowed(doc),
+    followScroll: true,
+    pulse: true,
+    frame() {
+      throw new Error("reduced motion must not scroll");
+    },
+  });
+  assert.equal(reduced.classList.has("is-slide-in"), false);
+  assert.equal(reduced.classList.has("is-ring-pulse"), false);
+  assert.equal(reduced.classList.has("is-last-copied"), true);
+  assert.equal(reducedWrites.length, 0);
+
+  const system = {
+    documentElement: {
+      dataset: {},
+      hasAttribute: () => false,
+    },
+    defaultView: { matchMedia: () => ({ matches: true }) },
+  };
+  assert.equal(motionAllowed(system), false);
+  const systemCard = slideCard(40);
+  presentNewQueueCard(systemCard, scrollProbe(12, []), {
+    motion: motionAllowed(system),
+    followScroll: true,
+    pulse: true,
+  });
+  assert.equal(systemCard.classList.has("is-slide-in"), false);
+  assert.equal(systemCard.classList.has("is-ring-pulse"), false);
+  assert.equal(attrs.has("data-reduce-motion"), true);
+});
+
 test("reduced motion inserts the card without motion classes", () => {
   const writes = [];
   const scroller = scrollProbe(0, writes);
@@ -371,9 +462,10 @@ test("last copied card keeps a ring that reduce motion holds still", () => {
   assert.match(chrome, /\.queue-item\.is-last-copied > article/);
   assert.match(chrome, /outline:\s*2px solid var\(--ring\)/);
   assert.match(chrome, /outline-offset:\s*2px/);
+  assert.match(chrome, /--ring-pulse:\s*1200ms/);
   assert.match(
     chrome,
-    /animation:\s*bronze-copy-ring var\(--ring-pulse\) var\(--ease-out\)/,
+    /animation:\s*bronze-copy-ring calc\(var\(--ring-pulse\) \/ 3\) var\(--ease-out\) 3/,
   );
   assert.match(chrome, /outline-offset:\s*8px/);
   assert.match(chrome, /\.is-ring-pulse > article/);

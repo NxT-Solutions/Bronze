@@ -734,6 +734,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   };
   let loadingMore = false;
   let refreshGen = 0;
+  let insertSlide = false;
   let activeSort = "newest";
   let lastCopiedId = "";
 
@@ -893,6 +894,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
 
   async function refresh(opts = {}) {
     const gen = ++refreshGen;
+    if (opts.action === "insert" || opts.slide === true) {
+      insertSlide = true;
+    }
     const scroller = queueScrollParent(list);
     const nearStart = isNearLoadedStart(scroller);
     const prevIds = queueItemRows(list)
@@ -944,7 +948,12 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     if (gen !== refreshGen) {
       return;
     }
-    await paint(opts);
+    const paintOpts = { ...opts };
+    if (insertSlide) {
+      paintOpts.slide = true;
+    }
+    insertSlide = false;
+    await paint(paintOpts);
     if (gen !== refreshGen) {
       return;
     }
@@ -1003,7 +1012,7 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
         pagesLoaded:
           next.items.length > beforeCount ? loadedPages + 1 : loadedPages,
       };
-      await paint({ action: "insert" });
+      await paint({ action: "insert", slide: false });
     } finally {
       loadingMore = false;
       if (moreStatus) {

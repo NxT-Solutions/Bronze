@@ -204,12 +204,72 @@ test("a later refresh keeps the sliding row instead of replacing it", async () =
   assert.equal(list.children.length, 1);
   assert.equal(list.children[0], card);
   assert.equal(card.classList.has("is-slide-in"), true);
+  assert.equal(list.relocations, 0);
+  const removed = [];
+  const originalRemove = card.classList.remove.bind(card.classList);
+  card.classList.remove = (name) => {
+    removed.push(name);
+    originalRemove(name);
+  };
+  await renderer.renderQueueItems(
+    list,
+    [{ id: "n", body: "new", title: "still sliding" }],
+    template,
+    { action: "replace" },
+  );
+  assert.equal(list.children[0], card);
+  assert.equal(card.classList.has("is-slide-in"), true);
+  assert.equal(removed.includes("is-slide-in"), false);
+  assert.equal(list.relocations, 0);
+});
+
+test("a new card is inserted once and neighbors stay attached", async () => {
+  const list = fakeQueueList();
+  const template = fakeQueueTemplate();
+  const renderer = createQueueRenderer({
+    queueItemRows(target) {
+      return target.children;
+    },
+    syncMoveAvailability() {},
+  });
+  await renderer.renderQueueItems(list, [{ id: "a", body: "old" }], template);
+  const old = list.children[0];
+  const parked = list.relocations;
+  await renderer.renderQueueItems(
+    list,
+    [
+      { id: "n", body: "new" },
+      { id: "a", body: "old" },
+    ],
+    template,
+    { action: "insert", slide: true },
+  );
+  assert.equal(list.children[0].dataset.itemId, "n");
+  assert.equal(list.children[0].classList.has("is-slide-in"), true);
+  assert.equal(list.children[1], old);
+  assert.equal(list.relocations, parked);
+  await renderer.renderQueueItems(
+    list,
+    [
+      { id: "a", body: "old" },
+      { id: "b", body: "paged" },
+      { id: "c", body: "paged" },
+    ],
+    template,
+    { action: "insert", slide: false },
+  );
+  const paged = list.children.filter((node) => node.dataset.itemId !== "a");
+  assert.equal(
+    paged.some((node) => node.classList.has("is-slide-in")),
+    false,
+  );
 });
 
 function fakeQueueList() {
   const children = [];
-  return {
+  const list = {
     children,
+    relocations: 0,
     ownerDocument: {
       documentElement: {
         dataset: { motion: "full" },
@@ -219,16 +279,41 @@ function fakeQueueList() {
       },
     },
     append(node) {
-      const index = children.indexOf(node);
-      if (index >= 0) {
-        children.splice(index, 1);
-      }
+      detach(node);
       children.push(node);
+      own(node);
+    },
+    insertBefore(node, before) {
+      detach(node);
+      const at = children.indexOf(before);
+      if (at < 0) {
+        children.push(node);
+      } else {
+        children.splice(at, 0, node);
+      }
+      own(node);
     },
     replaceChildren() {
       children.length = 0;
     },
   };
+  function detach(node) {
+    const index = children.indexOf(node);
+    if (index < 0) {
+      return;
+    }
+    children.splice(index, 1);
+    list.relocations += 1;
+  }
+  function own(node) {
+    node.remove = () => {
+      const index = children.indexOf(node);
+      if (index >= 0) {
+        children.splice(index, 1);
+      }
+    };
+  }
+  return list;
 }
 
 function fakeQueueTemplate() {
