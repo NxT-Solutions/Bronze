@@ -1,7 +1,8 @@
-//! Local title refine. Loads hash-pinned bundled GGUFs or one imported file. No hub, no HTTP.
+//! Local title refine. Loads hash-pinned GGUFs from cache, vendor, or one imported file.
 
 mod bundle;
 mod custom;
+mod fetch;
 mod infer;
 mod prompt;
 mod status;
@@ -14,6 +15,7 @@ pub use custom::{
     import_custom_gguf, is_gguf_magic, set_custom_path, CustomGguf, CustomGgufError, GGUF_MAGIC,
     MAX_CUSTOM_BYTES,
 };
+pub use fetch::{cache_file, ensure_cached_for, pin_url};
 pub use infer::{
     classify_refine_reject, classify_weights_error, desired_tier, refine_outcome, refine_tier,
     refine_title, request_custom, request_tier, should_attempt_refine, warmup, FallbackReason,
@@ -29,10 +31,10 @@ pub use status::{
 };
 pub use tiers::{auto_pick_title_tier, TierSpec, TitleTier, GGUF_TIERS};
 pub use weights::{
-    any_candidate_file, candidate_paths, present_gguf_tiers, set_weights_dir, set_weights_path,
-    vendor_weights_path, verified_weights, verified_weights_for, verified_weights_path,
-    verify_weights, weights_present, weights_present_for, WeightsError, WeightsSource, FILENAME,
-    HF_BASE_REPO, HF_GGUF_REPO, HF_REVISION, SHA256_HEX,
+    any_candidate_file, cache_dir, candidate_paths, present_gguf_tiers, set_cache_dir,
+    set_weights_dir, set_weights_path, vendor_weights_path, verified_weights, verified_weights_for,
+    verified_weights_path, verify_weights, weights_present, weights_present_for, WeightsError,
+    WeightsSource, FILENAME, HF_BASE_REPO, HF_GGUF_REPO, HF_REVISION, SHA256_HEX,
 };
 
 pub fn emit_diag(message: &str) {

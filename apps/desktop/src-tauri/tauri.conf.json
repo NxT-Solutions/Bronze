@@ -92,7 +92,6 @@
       "icons/32x32.png"
     ],
     "resources": {
-      "../../../crates/bronze-title-model/vendor/*.gguf": "models/",
       "../../../packages/i18n/locales": "locales/"
     },
     "macOS": {

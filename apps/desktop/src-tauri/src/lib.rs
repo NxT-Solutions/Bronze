@@ -70,6 +70,7 @@ pub fn run() {
             .setup(|app| {
                 use tauri::Manager;
                 let data_dir = app.path().app_data_dir()?;
+                bronze_title_model::set_cache_dir(data_dir.join("title-models"));
                 let _ = capture_permissions::prompt_on_native_start(&data_dir);
                 let _ = capture_permissions::prompt_notification_if_undetermined();
                 let _ = bronze_platform_macos::NativeRuntime::event_tap_start_shared();
