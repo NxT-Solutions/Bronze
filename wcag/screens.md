@@ -60,7 +60,9 @@ Purpose: data, privacy, permission truth, shortcut inventory.
 - Permission status is a text pill plus why-text. Color is not the
   only signal (1.4.1). The pill text names the closed-enum state
   (`Not requested` is not `Denied`). Retest writes a visible
-  `role="status"` line when the grant is still denied.
+  `role="status"` line when the grant is still denied. After an
+  ad-hoc update the section also states that this is a new binary
+  identity and names the running path and code identity.
 - Help opener is a trailing outlined button, not a second primary. One Help
   surface (3.2.6 stays N/A).
 

@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Voor deze versie zijn geen opmerkingen gepubliceerd.",
   "settings.field.version.note.checkForUpdates": "„Controleren op updates” is makkelijker te zien.",
   "settings.field.version.note.engineSwitch": "Wisselen van de titel-engine op deze Mac eindigt in plaats van op laden te blijven.",
-  "settings.field.version.note.permissions": "Bronze vraagt één keer om de macOS-machtigingen die het gebruikt.",
+  "settings.field.version.note.permissions": "Bronze vraagt één keer per ad-hoc-binair, dus een update kan opnieuw Toegankelijkheid en Invoermonitoring nodig hebben.",
   "settings.field.version.openRelease": "Release openen",
   "settings.field.version.brew": "Homebrew-opdracht kopiëren",
   "settings.field.version.brewCopied": "Gekopieerd",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Instellingen",
   "settings.permission.title": "Machtigingsstatus",
   "settings.permission.title.infoName": "Over Machtigingsstatus",
-  "settings.permission.title.info": "Toont of macOS de machtigingen voor vastleggen heeft gegeven, met een manier om opnieuw te testen of Systeeminstellingen te openen.",
+  "settings.permission.title.info": "Toont of macOS de machtigingen voor vastleggen heeft gegeven, met een manier om opnieuw te testen of Systeeminstellingen te openen, en legt uit wanneer een ad-hoc-update een nieuwe binaire identiteit is.",
   "settings.permission.retest": "Opnieuw testen",
   "settings.permission.status.granted": "Toegestaan",
   "settings.permission.status.denied": "Geweigerd",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Toegankelijkheidsrechten, vastleggen uit andere apps, meerdere beeldschermen, VoiceOver en Apple-ondertekening moeten nog door een persoon op een ondertekende Mac worden nagelopen.",
   "help.upload.none": "Bronze uploadt diagnostiek of het ondersteuningsbestand nooit automatisch, dus alles blijft op deze Mac.",
   "help.capture.heading": "Tekst vastleggen",
-  "help.capture.composer": "Selecteer tekst in elke app, ook Bronze, en kies Vastleggen in de menubalk, gebruik de Vastleggen-sneltoets uit Instellingen, of typ in de invoer wanneer vastleggen niet beschikbaar is."
+  "help.capture.composer": "Selecteer tekst in elke app, ook Bronze, en kies Vastleggen in de menubalk, gebruik de Vastleggen-sneltoets uit Instellingen, of typ in de invoer wanneer vastleggen niet beschikbaar is.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc-updates vragen opnieuw om Toegankelijkheid en Invoermonitoring.",
+  "settings.permission.identityDrift": "Een ad-hoc of ongetekende update is een nieuwe binaire identiteit, dus voeg Toegankelijkheid en Invoermonitoring opnieuw toe voor het pad en de code-identiteit hierboven tot uitgaven dezelfde Developer ID Application-handtekening delen.",
+  "settings.permission.versionReadd": "Na deze versiewijziging voeg je Toegankelijkheid en Invoermonitoring nog een keer toe voor dit ad-hoc-exemplaar."
 }

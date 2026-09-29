@@ -224,3 +224,4 @@ Documented command: `tooling/package-debug.sh`.
 - Writes SHA-256 checksums and an SBOM stub (`cargo metadata` / `pnpm list`, not notarized CycloneDX).
 - Release entitlements must not include `get-task-allow`.
 - Does not notarize, use Apple Developer credentials, or open a network updater.
+- GitHub Release currently signs with `signingIdentity: "-"` because Actions has no Developer ID Application secret. Ad-hoc packages cannot preserve Accessibility or Input Monitoring across upgrades. Do not invent a private key in the repo. Do not claim notarization.

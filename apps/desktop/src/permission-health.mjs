@@ -94,6 +94,92 @@ export function shouldShowStaleCopyHint(result) {
   );
 }
 
+export const SEEN_PERMISSION_VERSION_KEY = "bronze.permissionSeenVersion";
+
+export function isAdhocSignature(kind) {
+  return kind !== "signed";
+}
+
+export function shouldShowIdentityDriftHint(result) {
+  return (
+    shouldShowStaleCopyHint(result) && isAdhocSignature(result?.signature_kind)
+  );
+}
+
+export function shouldShowVersionReaddHint(result, previousVersion) {
+  const current = String(result?.bundle_version || "").trim();
+  const previous = String(previousVersion || "").trim();
+  return Boolean(
+    current &&
+      previous &&
+      previous !== current &&
+      shouldShowIdentityDriftHint(result),
+  );
+}
+
+export function readSeenPermissionVersion(storage) {
+  try {
+    return String(storage?.getItem?.(SEEN_PERMISSION_VERSION_KEY) || "");
+  } catch {
+    return "";
+  }
+}
+
+export function rememberPermissionVersion(version, storage) {
+  const value = String(version || "").trim();
+  if (!value) {
+    return;
+  }
+  try {
+    storage?.setItem?.(SEEN_PERMISSION_VERSION_KEY, value);
+  } catch {
+    // WKWebView storage can throw when quota is exhausted.
+  }
+}
+
+function resolvePermissionStorage(storage) {
+  if (storage && typeof storage.getItem === "function") {
+    return storage;
+  }
+  try {
+    const fallback = globalThis.localStorage;
+    if (fallback && typeof fallback.getItem === "function") {
+      return fallback;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function applyPermissionHint(el, key, fallback, visible) {
+  if (!el) {
+    return;
+  }
+  el.hidden = !visible;
+  if (visible) {
+    if (typeof el.setAttribute === "function") {
+      el.setAttribute("data-i18n", key);
+    }
+    el.textContent = catalogMessage(key) || fallback;
+  }
+}
+
+export function rememberSeenPermissionVersion(result, storage) {
+  const current = String(result?.bundle_version || "").trim();
+  if (!current) {
+    return;
+  }
+  const previous = readSeenPermissionVersion(storage);
+  if (
+    !previous ||
+    previous === current ||
+    !shouldShowIdentityDriftHint(result)
+  ) {
+    rememberPermissionVersion(current, storage);
+  }
+}
+
 export function retestFeedbackKey(kind) {
   if (kind === "checked") {
     return "settings.permission.retestChecked";
@@ -125,10 +211,14 @@ export function applyRetestFeedback(root, kind) {
   feedback.textContent = catalogMessage(key) || retestFeedbackFallback(kind);
 }
 
-export function applyRunningBundle(root, result) {
+export function applyRunningBundle(root, result, storage) {
   const name = result?.bundle_name || "";
   const version = result?.bundle_version || "";
   const path = result?.bundle_path || "";
+  const store = resolvePermissionStorage(storage);
+  const previous = readSeenPermissionVersion(store);
+  const showDrift = shouldShowIdentityDriftHint(result);
+  const showVersion = shouldShowVersionReaddHint(result, previous);
   const copy = root.querySelector("[data-permission-running-copy]");
   if (copy) {
     copy.hidden = !name;
@@ -158,17 +248,30 @@ export function applyRunningBundle(root, result) {
   if (exact) {
     exact.hidden = !shouldShowStaleCopyHint(result);
   }
+  applyPermissionHint(
+    root.querySelector("[data-permission-identity-drift]"),
+    "settings.permission.identityDrift",
+    "An ad-hoc or unsigned update is a new binary identity, so add Accessibility and Input Monitoring again for the path and code identity above until releases share one Developer ID Application signature.",
+    showDrift,
+  );
+  applyPermissionHint(
+    root.querySelector("[data-permission-version-readd]"),
+    "settings.permission.versionReadd",
+    "After this version change, add Accessibility and Input Monitoring once more for this ad-hoc copy.",
+    showVersion,
+  );
+  rememberSeenPermissionVersion(result, store);
   const group = root.querySelector("[data-permission-copy]");
   if (group) {
     group.hidden = !name && !path && !identity;
   }
 }
 
-export function applyPermissionResult(root, result) {
+export function applyPermissionResult(root, result, storage) {
   if (root && typeof root === "object") {
     LAST_PERMISSION_RESULT.set(root, result);
   }
-  applyRunningBundle(root, result);
+  applyRunningBundle(root, result, storage);
   const rows = [
     ["inputMonitoring", result.input_monitoring],
     ["accessibility", result.accessibility],

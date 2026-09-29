@@ -1308,4 +1308,14 @@ test("app version loads locally and check is user-initiated", async () => {
     displayUpdateNote("Version 0.1.2 is available."),
     "Version 0.1.2 is available.",
   );
+  assert.equal(
+    displayUpdateNote(
+      "Ad-hoc updates need Accessibility and Input Monitoring added again.",
+      (key) =>
+        key === "settings.field.version.note.permissionsAfterUpdate"
+          ? "Ad-hoc updates vragen opnieuw om Toegankelijkheid en Invoermonitoring."
+          : "",
+    ),
+    "Ad-hoc updates vragen opnieuw om Toegankelijkheid en Invoermonitoring.",
+  );
 });

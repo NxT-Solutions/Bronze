@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Der blev ikke udgivet versionsnoter til denne version.",
   "settings.field.version.note.checkForUpdates": "„Søg efter opdateringer“ er lettere at se.",
   "settings.field.version.note.engineSwitch": "Skift af titelmotoren på denne Mac bliver færdigt i stedet for at blive på Indlæser.",
-  "settings.field.version.note.permissions": "Bronze spørger én gang om de macOS-tilladelser, den bruger.",
+  "settings.field.version.note.permissions": "Bronze spørger én gang pr. ad hoc-binær, så en opdatering kan igen kræve Tilgængelighed og Overvågning af input.",
   "settings.field.version.openRelease": "Åbn udgivelse",
   "settings.field.version.brew": "Kopier Homebrew-kommando",
   "settings.field.version.brewCopied": "Kopieret",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Indstillinger",
   "settings.permission.title": "Tilladelsestilstand",
   "settings.permission.title.infoName": "Om tilladelsestilstand",
-  "settings.permission.title.info": "Viser om macOS har givet de tilladelser, indfangning af tekst kræver, med en måde at prøve igen eller åbne Systemindstillinger.",
+  "settings.permission.title.info": "Viser om macOS har givet de tilladelser, indfangning af tekst kræver, med en måde at prøve igen eller åbne Systemindstillinger, og forklarer hvornår en ad hoc-opdatering er en ny binær identitet.",
   "settings.permission.retest": "Prøv igen",
   "settings.permission.status.granted": "Givet",
   "settings.permission.status.denied": "Afvist",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Tilladelse til tilgængelighed, indfangning af tekst fra andre apps, flere skærme, VoiceOver og Apple-signering skal stadig kontrolleres af en person på en signeret Mac.",
   "help.upload.none": "Bronze uploader ikke diagnostik eller supportfilen af sig selv, så alt bliver på denne Mac.",
   "help.capture.heading": "Sådan indfanger du tekst",
-  "help.capture.composer": "Vælg tekst i en hvilken som helst app, også Bronze, vælg derefter Indfang på menulinjen, brug genvejen Indfang markering fra Indstillinger, eller skriv i feltet, når handlingen ikke er tilgængelig."
+  "help.capture.composer": "Vælg tekst i en hvilken som helst app, også Bronze, vælg derefter Indfang på menulinjen, brug genvejen Indfang markering fra Indstillinger, eller skriv i feltet, når handlingen ikke er tilgængelig.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad hoc-opdateringer kræver igen Tilgængelighed og Overvågning af input.",
+  "settings.permission.identityDrift": "En ad hoc- eller usigneret opdatering er en ny binær identitet, så tilføj Tilgængelighed og Overvågning af input igen for stien og kodeidentiteten ovenfor, indtil udgivelser deler samme Developer ID Application-signatur.",
+  "settings.permission.versionReadd": "Efter denne versionsændring skal du tilføje Tilgængelighed og Overvågning af input én gang mere for denne ad hoc-kopi."
 }

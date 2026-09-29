@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Bu sürüm için sürüm notları yayımlanmadı.",
   "settings.field.version.note.checkForUpdates": "„Güncellemeleri denetle“ daha kolay görünür.",
   "settings.field.version.note.engineSwitch": "Bu Mac’teki başlık motorunu değiştirmek yükleniyor durumunda kalmadan biter.",
-  "settings.field.version.note.permissions": "Bronze, kullandığı macOS izinlerini bir kez sorar.",
+  "settings.field.version.note.permissions": "Bronze her ad-hoc ikili için bir kez sorar, bu yüzden bir güncelleme yeniden Erişilebilirlik ve Giriş İzleme isteyebilir.",
   "settings.field.version.openRelease": "Sürümü aç",
   "settings.field.version.brew": "Homebrew komutunu kopyala",
   "settings.field.version.brewCopied": "Kopyalandı",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Ayarlar",
   "settings.permission.title": "İzin durumu",
   "settings.permission.title.infoName": "İzin durumu hakkında",
-  "settings.permission.title.info": "macOS’un metin yakalama için gereken izinleri verip vermediğini gösterir ve yeniden deneme ya da Sistem Ayarları yolunu sunar.",
+  "settings.permission.title.info": "macOS’un metin yakalama için gereken izinleri verip vermediğini gösterir, yeniden deneme ya da Sistem Ayarları yolunu sunar ve ad-hoc bir güncellemenin ne zaman yeni bir ikili kimlik olduğunu açıklar.",
   "settings.permission.retest": "Yeniden dene",
   "settings.permission.status.granted": "Verildi",
   "settings.permission.status.denied": "Reddedildi",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Erişilebilirlik izni, diğer uygulamalardan metin yakalama, birden çok ekran, VoiceOver ve Apple imzası hâlâ imzalı bir Mac’te bir kişi tarafından denetlenmelidir.",
   "help.upload.none": "Bronze tanı verisini veya destek dosyasını kendiliğinden yüklemez, bu yüzden her şey bu Mac’te kalır.",
   "help.capture.heading": "Metin nasıl yakalanır",
-  "help.capture.composer": "Bronze dahil herhangi bir uygulamada metin seçin, ardından menü çubuğundan Yakala’yı seçin, Ayarlar’daki Seçimi yakala kısayolunu kullanın veya işlem kullanılamadığında alana yazın."
+  "help.capture.composer": "Bronze dahil herhangi bir uygulamada metin seçin, ardından menü çubuğundan Yakala’yı seçin, Ayarlar’daki Seçimi yakala kısayolunu kullanın veya işlem kullanılamadığında alana yazın.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc güncellemeler yeniden Erişilebilirlik ve Giriş İzleme ister.",
+  "settings.permission.identityDrift": "Ad-hoc veya imzasız bir güncelleme yeni bir ikili kimliktir, bu yüzden sürümler aynı Developer ID Application imzasını paylaşana kadar yukarıdaki yol ve kod kimliği için Erişilebilirlik ile Giriş İzleme’yi yeniden ekleyin.",
+  "settings.permission.versionReadd": "Bu sürüm değişikliğinden sonra bu ad-hoc kopya için Erişilebilirlik ve Giriş İzleme’yi bir kez daha ekleyin."
 }

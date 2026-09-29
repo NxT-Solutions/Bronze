@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Utgivelsesnotater ble ikke publisert for denne versjonen.",
   "settings.field.version.note.checkForUpdates": "„Se etter oppdateringer“ er lettere å se.",
   "settings.field.version.note.engineSwitch": "Bytte av tittelmotoren på denne Macen fullføres i stedet for å bli stående på Laster.",
-  "settings.field.version.note.permissions": "Bronze spør én gang om macOS-tillatelsene den bruker.",
+  "settings.field.version.note.permissions": "Bronze spør én gang per ad hoc-binær, så en oppdatering kan trenge Tilgjengelighet og Overvåking av inndata på nytt.",
   "settings.field.version.openRelease": "Åpne utgivelse",
   "settings.field.version.brew": "Kopier Homebrew-kommando",
   "settings.field.version.brewCopied": "Kopiert",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Innstillinger",
   "settings.permission.title": "Tillatelsesstatus",
   "settings.permission.title.infoName": "Om tillatelsesstatus",
-  "settings.permission.title.info": "Viser om macOS har gitt tillatelsene tekstfangst trenger, med en måte å prøve igjen eller åpne Systeminnstillinger.",
+  "settings.permission.title.info": "Viser om macOS har gitt tillatelsene tekstfangst trenger, med en måte å prøve igjen eller åpne Systeminnstillinger, og forklarer når en ad hoc-oppdatering er en ny binær identitet.",
   "settings.permission.retest": "Prøv igjen",
   "settings.permission.status.granted": "Gitt",
   "settings.permission.status.denied": "Avslått",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Tillatelse for tilgjengelighet, tekstfangst fra andre apper, flere skjermer, VoiceOver og Apple-signering må fortsatt kontrolleres av en person på en signert Mac.",
   "help.upload.none": "Bronze laster ikke opp diagnostikk eller støttefilen selv, så alt blir på denne Macen.",
   "help.capture.heading": "Slik fanger du tekst",
-  "help.capture.composer": "Marker tekst i en hvilken som helst app, også Bronze, velg deretter Fang på menylinjen, bruk snarveien Fang utvalg fra Innstillinger, eller skriv i feltet når handlingen ikke er tilgjengelig."
+  "help.capture.composer": "Marker tekst i en hvilken som helst app, også Bronze, velg deretter Fang på menylinjen, bruk snarveien Fang utvalg fra Innstillinger, eller skriv i feltet når handlingen ikke er tilgjengelig.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad hoc-oppdateringer trenger Tilgjengelighet og Overvåking av inndata på nytt.",
+  "settings.permission.identityDrift": "En ad hoc- eller usignert oppdatering er en ny binær identitet, så legg til Tilgjengelighet og Overvåking av inndata på nytt for banen og kodeidentiteten ovenfor til utgivelser deler samme Developer ID Application-signatur.",
+  "settings.permission.versionReadd": "Etter denne versjonsendringen, legg til Tilgjengelighet og Overvåking av inndata én gang til for denne ad hoc-kopien."
 }

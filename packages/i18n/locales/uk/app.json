@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Для цієї версії не опубліковано приміток до випуску.",
   "settings.field.version.note.checkForUpdates": "«Перевірити оновлення» легше побачити.",
   "settings.field.version.note.engineSwitch": "Перемикання рушія заголовка на цьому Mac завершується і не лишається на «Завантаження».",
-  "settings.field.version.note.permissions": "Bronze один раз запитує дозволи macOS, які йому потрібні.",
+  "settings.field.version.note.permissions": "Bronze запитує один раз на ad-hoc двійковий файл, тож оновлення може знову потребувати Універсальний доступ і Моніторинг введення.",
   "settings.field.version.openRelease": "Відкрити випуск",
   "settings.field.version.brew": "Скопіювати команду Homebrew",
   "settings.field.version.brewCopied": "Скопійовано",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Параметри",
   "settings.permission.title": "Стан дозволів",
   "settings.permission.title.infoName": "Про стан дозволів",
-  "settings.permission.title.info": "Показує, чи надала macOS дозволи, потрібні для захоплення тексту, і дає повторити перевірку або відкрити Системні параметри.",
+  "settings.permission.title.info": "Показує, чи надала macOS дозволи, потрібні для захоплення тексту, дає повторити перевірку або відкрити Системні параметри й пояснює, коли ad-hoc оновлення стає новою двійковою тотожністю.",
   "settings.permission.retest": "Перевірити знову",
   "settings.permission.status.granted": "Дозволено",
   "settings.permission.status.denied": "Заборонено",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Дозвіл універсального доступу, захоплення тексту з інших програм, кілька дисплеїв, VoiceOver і підпис Apple все ще має перевірити людина на підписаному Mac.",
   "help.upload.none": "Bronze не надсилає діагностику і файл підтримки сам, тому все лишається на цьому Mac.",
   "help.capture.heading": "Як захопити текст",
-  "help.capture.composer": "Виділіть текст у будь-якій програмі, включно з Bronze, потім виберіть «Захопити» в меню, використайте сполучення «Захопити виділення» з Параметрів або введіть текст у поле, коли дія недоступна."
+  "help.capture.composer": "Виділіть текст у будь-якій програмі, включно з Bronze, потім виберіть «Захопити» в меню, використайте сполучення «Захопити виділення» з Параметрів або введіть текст у поле, коли дія недоступна.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc оновлення знову потребують Універсальний доступ і Моніторинг введення.",
+  "settings.permission.identityDrift": "Ad-hoc або непідписане оновлення — нова двійкова тотожність, тож знову додайте Універсальний доступ і Моніторинг введення для шляху та ідентичності коду вище, доки випуски не матимуть одного підпису Developer ID Application.",
+  "settings.permission.versionReadd": "Після цієї зміни версії ще раз додайте Універсальний доступ і Моніторинг введення для цієї ad-hoc копії."
 }

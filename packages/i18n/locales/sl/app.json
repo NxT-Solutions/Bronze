@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Opombe ob izdaji za to različico niso bile objavljene.",
   "settings.field.version.note.checkForUpdates": "„Preveri posodobitve“ je lažje opaziti.",
   "settings.field.version.note.engineSwitch": "Preklop mehanizma naslova na tem Macu se konča, namesto da ostane na Nalaganje.",
-  "settings.field.version.note.permissions": "Bronze enkrat vpraša za dovoljenja macOS, ki jih uporablja.",
+  "settings.field.version.note.permissions": "Bronze vpraša enkrat na ad-hoc dvojiško datoteko, zato posodobitev lahko znova potrebuje Dostopnost in Nadzor vnosa.",
   "settings.field.version.openRelease": "Odpri izdajo",
   "settings.field.version.brew": "Kopiraj ukaz Homebrew",
   "settings.field.version.brewCopied": "Kopirano",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Nastavitve",
   "settings.permission.title": "Stanje dovoljenj",
   "settings.permission.title.infoName": "O stanju dovoljenj",
-  "settings.permission.title.info": "Pokaže, ali je macOS podelil dovoljenja, ki jih zajem besedila potrebuje, z možnostjo ponovnega preverjanja ali odpiranja Sistemskih nastavitev.",
+  "settings.permission.title.info": "Pokaže, ali je macOS podelil dovoljenja, ki jih zajem besedila potrebuje, z možnostjo ponovnega preverjanja ali odpiranja Sistemskih nastavitev, in pojasni, kdaj je ad-hoc posodobitev nova dvojiška identiteta.",
   "settings.permission.retest": "Preveri znova",
   "settings.permission.status.granted": "Podeljeno",
   "settings.permission.status.denied": "Zavrnjeno",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Dovoljenje za dostopnost, zajem besedila iz drugih aplikacij, več zaslonov, VoiceOver in Applov podpis mora še vedno preveriti oseba na podpisanem Macu.",
   "help.upload.none": "Bronze ne pošlje diagnostike ali datoteke podpore sam, zato vse ostane na tem Macu.",
   "help.capture.heading": "Kako zajeti besedilo",
-  "help.capture.composer": "Izberite besedilo v kateri koli aplikaciji, vključno z Bronze, nato Zajemi v menijski vrstici, uporabite bližnjico Zajemi izbor iz Nastavitev ali vnesite v polje, ko dejanje ni na voljo."
+  "help.capture.composer": "Izberite besedilo v kateri koli aplikaciji, vključno z Bronze, nato Zajemi v menijski vrstici, uporabite bližnjico Zajemi izbor iz Nastavitev ali vnesite v polje, ko dejanje ni na voljo.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc posodobitve znova potrebujejo Dostopnost in Nadzor vnosa.",
+  "settings.permission.identityDrift": "Ad-hoc ali nepodpisana posodobitev je nova dvojiška identiteta, zato znova dodajte Dostopnost in Nadzor vnosa za pot in identiteto kode zgoraj, dokler izdaje ne delijo istega podpisa Developer ID Application.",
+  "settings.permission.versionReadd": "Po tej spremembi različice še enkrat dodajte Dostopnost in Nadzor vnosa za to ad-hoc kopijo."
 }

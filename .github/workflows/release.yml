@@ -191,6 +191,11 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
+      # Ad-hoc (`-`) is the only identity this repo can use today: GitHub
+      # Actions has no Developer ID Application cert. Each pkg gets a new
+      # cdhash, so TCC Accessibility / Input Monitoring do not survive
+      # brew upgrade. Do not add a notarize job here. Do not invent a
+      # signing key in the repo.
       - name: Build ${{ matrix.pkg_arch }} app
         shell: bash
         run: |

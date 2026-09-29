@@ -21,9 +21,12 @@ import {
   retestFeedbackKey,
   retestUsedPermission,
   runPermissionRetest,
+  SEEN_PERMISSION_VERSION_KEY,
   shouldRevealNoticeAllow,
   shouldRevealNoticeSettings,
+  shouldShowIdentityDriftHint,
   shouldShowStaleCopyHint,
+  shouldShowVersionReaddHint,
 } from "./permission-health.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +67,8 @@ test("permission health lists independent rows and unused screen recording", () 
   assert.match(html, /data-permission-cdhash/);
   assert.match(html, /data-permission-stale-copy/);
   assert.match(html, /data-permission-exact-app/);
+  assert.match(html, /data-permission-identity-drift/);
+  assert.match(html, /data-permission-version-readd/);
   assert.match(html, /data-permission-retest-feedback/);
   assert.equal(
     en["settings.permission.runningCopy"],
@@ -76,6 +81,18 @@ test("permission health lists independent rows and unused screen recording", () 
   assert.equal(
     en["settings.permission.exactApp"],
     "Add the exact file at the path above; another Bronze.app, bronze-desktop, or older copy will not grant this running app.",
+  );
+  assert.equal(
+    en["settings.permission.identityDrift"],
+    "An ad-hoc or unsigned update is a new binary identity, so add Accessibility and Input Monitoring again for the path and code identity above until releases share one Developer ID Application signature.",
+  );
+  assert.equal(
+    en["settings.permission.versionReadd"],
+    "After this version change, add Accessibility and Input Monitoring once more for this ad-hoc copy.",
+  );
+  assert.equal(
+    en["settings.permission.title.info"],
+    "Shows whether macOS has granted the permissions capture needs, with a way to retest or open System Settings, and explains when an ad-hoc update is a new binary identity.",
   );
   assert.equal(
     en["settings.permission.retestStillDenied"],
@@ -165,6 +182,8 @@ test("retest uses an injected request hook and never asks for screen recording",
   const identityEl = { hidden: true, textContent: "" };
   const stale = { hidden: true };
   const exact = { hidden: true };
+  const drift = { hidden: true, textContent: "", setAttribute() {} };
+  const versionReadd = { hidden: true, textContent: "", setAttribute() {} };
   const group = { hidden: true };
   applyPermissionResult(
     {
@@ -177,6 +196,8 @@ test("retest uses an injected request hook and never asks for screen recording",
         if (query.includes("permission-cdhash")) return identityEl;
         if (query.includes("stale-copy")) return stale;
         if (query.includes("exact-app")) return exact;
+        if (query.includes("identity-drift")) return drift;
+        if (query.includes("version-readd")) return versionReadd;
         if (query.includes("permission-copy")) return group;
         return null;
       },
@@ -201,8 +222,18 @@ test("retest uses an injected request hook and never asks for screen recording",
   );
   assert.equal(stale.hidden, false);
   assert.equal(exact.hidden, false);
+  assert.equal(drift.hidden, false);
+  assert.equal(versionReadd.hidden, true);
   assert.equal(group.hidden, false);
   assert.equal(shouldShowStaleCopyHint(denied), true);
+  assert.equal(
+    shouldShowIdentityDriftHint({ ...denied, signature_kind: "adhoc" }),
+    true,
+  );
+  assert.equal(
+    shouldShowIdentityDriftHint({ ...denied, signature_kind: "signed" }),
+    false,
+  );
   const granted = {
     input_monitoring: "granted_unverified",
     accessibility: "granted_unverified",
@@ -507,4 +538,77 @@ test("bind retest applies a denied snapshot and does not swallow the click", asy
   assert.equal(card.dataset.status, "denied");
   assert.equal(pathEl.textContent, "/Applications/Bronze.app");
   assert.equal(feedback.hidden, false);
+});
+
+test("ad-hoc version change asks for a one-time re-add", () => {
+  const deniedAdhoc = {
+    input_monitoring: "denied",
+    accessibility: "denied",
+    signature_kind: "adhoc",
+    bundle_version: "0.2.1",
+  };
+  assert.equal(shouldShowIdentityDriftHint(deniedAdhoc), true);
+  assert.equal(shouldShowVersionReaddHint(deniedAdhoc, "0.2.0"), true);
+  assert.equal(shouldShowVersionReaddHint(deniedAdhoc, "0.2.1"), false);
+  assert.equal(shouldShowVersionReaddHint(deniedAdhoc, ""), false);
+  assert.equal(
+    shouldShowIdentityDriftHint({
+      ...deniedAdhoc,
+      signature_kind: "signed",
+    }),
+    false,
+  );
+  const drift = { hidden: true, textContent: "", setAttribute() {} };
+  const versionReadd = { hidden: true, textContent: "", setAttribute() {} };
+  const storage = {
+    data: { [SEEN_PERMISSION_VERSION_KEY]: "0.2.0" },
+    getItem(key) {
+      return this.data[key] ?? null;
+    },
+    setItem(key, value) {
+      this.data[key] = value;
+    },
+  };
+  applyPermissionResult(
+    {
+      querySelector(sel) {
+        const query = String(sel);
+        if (query.includes("identity-drift")) return drift;
+        if (query.includes("version-readd")) return versionReadd;
+        return null;
+      },
+    },
+    {
+      ...deniedAdhoc,
+      bundle_name: "Bronze",
+      bundle_path: "/Applications/Bronze.app",
+      cdhash: "4356750bd341b36fe7f65ed5ecb29e994c25458b",
+    },
+    storage,
+  );
+  assert.equal(drift.hidden, false);
+  assert.equal(versionReadd.hidden, false);
+  assert.equal(storage.data[SEEN_PERMISSION_VERSION_KEY], "0.2.0");
+  applyPermissionResult(
+    {
+      querySelector(sel) {
+        const query = String(sel);
+        if (query.includes("identity-drift")) return drift;
+        if (query.includes("version-readd")) return versionReadd;
+        return null;
+      },
+    },
+    {
+      input_monitoring: "granted_unverified",
+      accessibility: "granted_unverified",
+      signature_kind: "adhoc",
+      bundle_name: "Bronze",
+      bundle_version: "0.2.1",
+      bundle_path: "/Applications/Bronze.app",
+    },
+    storage,
+  );
+  assert.equal(drift.hidden, true);
+  assert.equal(versionReadd.hidden, true);
+  assert.equal(storage.data[SEEN_PERMISSION_VERSION_KEY], "0.2.1");
 });

@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Für diese Version wurden keine Hinweise veröffentlicht.",
   "settings.field.version.note.checkForUpdates": "„Nach Updates suchen“ ist leichter zu sehen.",
   "settings.field.version.note.engineSwitch": "Der Wechsel der Titel-Engine auf diesem Mac endet, statt bei „Wird geladen“ zu bleiben.",
-  "settings.field.version.note.permissions": "Bronze fragt einmal nach den macOS-Berechtigungen, die es nutzt.",
+  "settings.field.version.note.permissions": "Bronze fragt einmal pro Ad-hoc-Binary, daher kann ein Update erneut Bedienungshilfen und Eingabeüberwachung brauchen.",
   "settings.field.version.openRelease": "Release öffnen",
   "settings.field.version.brew": "Homebrew-Befehl kopieren",
   "settings.field.version.brewCopied": "Kopiert",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Einstellungen",
   "settings.permission.title": "Berechtigungsstatus",
   "settings.permission.title.infoName": "Über Berechtigungsstatus",
-  "settings.permission.title.info": "Zeigt, ob macOS die für die Aufnahme nötigen Berechtigungen erteilt hat, mit einer Möglichkeit zum erneuten Testen oder zum Öffnen der Systemeinstellungen.",
+  "settings.permission.title.info": "Zeigt, ob macOS die für die Aufnahme nötigen Berechtigungen erteilt hat, mit einer Möglichkeit zum erneuten Testen oder zum Öffnen der Systemeinstellungen, und erklärt, wann ein Ad-hoc-Update eine neue Binäridentität ist.",
   "settings.permission.retest": "Erneut prüfen",
   "settings.permission.status.granted": "Erteilt",
   "settings.permission.status.denied": "Verweigert",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Zugriffsberechtigung, Erfassen aus anderen Apps, mehrere Displays, VoiceOver und die Apple-Signierung müssen noch von einer Person auf einem signierten Mac geprüft werden.",
   "help.upload.none": "Bronze lädt Diagnosen oder die Supportdatei niemals automatisch hoch, sodass alles auf diesem Mac bleibt.",
   "help.capture.heading": "Text erfassen",
-  "help.capture.composer": "Text in jeder App einschließlich Bronze auswählen, dann Erfassen in der Menüleiste, den Erfassen-Kurzbefehl aus Einstellungen nutzen oder hier tippen, wenn Erfassen nicht verfügbar ist."
+  "help.capture.composer": "Text in jeder App einschließlich Bronze auswählen, dann Erfassen in der Menüleiste, den Erfassen-Kurzbefehl aus Einstellungen nutzen oder hier tippen, wenn Erfassen nicht verfügbar ist.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc-Updates brauchen erneut Bedienungshilfen und Eingabeüberwachung.",
+  "settings.permission.identityDrift": "Ein Ad-hoc- oder unsigniertes Update ist eine neue Binäridentität, also fügen Sie Bedienungshilfen und Eingabeüberwachung erneut für den Pfad und die Codeidentität oben hinzu, bis jede Ausgabe dieselbe Developer-ID-Application-Signatur teilt.",
+  "settings.permission.versionReadd": "Nach dieser Versionsänderung fügen Sie Bedienungshilfen und Eingabeüberwachung einmal neu für diese Ad-hoc-Kopie hinzu."
 }

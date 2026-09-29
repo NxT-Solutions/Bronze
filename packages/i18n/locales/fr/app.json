@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Aucune note de version n’a été publiée pour cette version.",
   "settings.field.version.note.checkForUpdates": "« Rechercher des mises à jour » est plus facile à voir.",
   "settings.field.version.note.engineSwitch": "Changer le moteur de titre sur ce Mac se termine au lieu de rester sur Chargement.",
-  "settings.field.version.note.permissions": "Bronze demande une seule fois les autorisations macOS qu’il utilise.",
+  "settings.field.version.note.permissions": "Bronze demande une fois par binaire ad hoc, donc une mise à jour peut exiger de nouveau Accessibilité et Contrôle de saisie.",
   "settings.field.version.openRelease": "Ouvrir la version",
   "settings.field.version.brew": "Copier la commande Homebrew",
   "settings.field.version.brewCopied": "Copié",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Réglages",
   "settings.permission.title": "État des autorisations",
   "settings.permission.title.infoName": "À propos de l’état des autorisations",
-  "settings.permission.title.info": "Indique si macOS a accordé les autorisations nécessaires à la capture, avec un moyen de retester ou d’ouvrir Réglages Système.",
+  "settings.permission.title.info": "Indique si macOS a accordé les autorisations nécessaires à la capture, avec un moyen de retester ou d’ouvrir Réglages Système, et explique quand une mise à jour ad hoc est une nouvelle identité binaire.",
   "settings.permission.retest": "Retester",
   "settings.permission.status.granted": "Accordée",
   "settings.permission.status.denied": "Refusée",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "L’autorisation d’accessibilité, la capture depuis d’autres apps, les écrans multiples, VoiceOver et la signature Apple doivent encore être vérifiés par une personne sur un Mac signé.",
   "help.upload.none": "Bronze n’envoie jamais automatiquement les diagnostics ni le fichier d’assistance, donc tout reste sur ce Mac.",
   "help.capture.heading": "Comment capturer",
-  "help.capture.composer": "Sélectionnez du texte dans n’importe quelle app, y compris Bronze, puis Capturer depuis la barre de menus, utilisez le raccourci Capturer de Réglages, ou saisissez dans le champ lorsque la capture est indisponible."
+  "help.capture.composer": "Sélectionnez du texte dans n’importe quelle app, y compris Bronze, puis Capturer depuis la barre de menus, utilisez le raccourci Capturer de Réglages, ou saisissez dans le champ lorsque la capture est indisponible.",
+  "settings.field.version.note.permissionsAfterUpdate": "Les mises à jour ad hoc exigent de nouveau Accessibilité et Contrôle de saisie.",
+  "settings.permission.identityDrift": "Une mise à jour ad hoc ou non signée est une nouvelle identité binaire, donc ajoutez de nouveau Accessibilité et Contrôle de saisie pour le chemin et l’identité de code ci-dessus jusqu’à ce que les versions partagent une même signature Developer ID Application.",
+  "settings.permission.versionReadd": "Après ce changement de version, ajoutez une fois de plus Accessibilité et Contrôle de saisie pour cette copie ad hoc."
 }

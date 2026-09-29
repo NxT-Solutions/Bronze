@@ -43,7 +43,7 @@ brew upgrade --cask bronze
 
 Or download `bronze-macos-arm64.pkg` or `bronze-macos-x86_64.pkg` from [Releases](https://github.com/NxT-Solutions/Bronze/releases). Settings shows the running version. **Check for updates** is a button (ADR-023 Proposed). Homebrew installs copy `brew upgrade --cask bronze`. A package install opens the GitHub release.
 
-The cask appears after the first published `.pkg`. Until then, use the GitHub asset. Unsigned packages are not a notarization claim.
+The cask appears after the first published `.pkg`. Until then, use the GitHub asset. Current GitHub Release packages are ad-hoc (`signingIdentity: "-"`), not Developer ID. An ad-hoc upgrade is a new binary identity, so Accessibility and Input Monitoring must be added again. Those grants persist across versions only when every release is signed with the same Developer ID Application certificate. Unsigned packages are not a notarization claim.
 
 ## Highlights
 
@@ -114,7 +114,7 @@ pnpm --filter desktop tauri dev
 pnpm verify
 ```
 
-A local debug package (unsigned) is `tooling/package-debug.sh`. Pull requests run the [CI](.github/workflows/ci.yml) quality jobs. CI does not notarize.
+A local debug package (unsigned) is `tooling/package-debug.sh`. A debug or ad-hoc `.app` cannot keep Accessibility or Input Monitoring across rebuilds: each binary has a new cdhash. Pull requests run the [CI](.github/workflows/ci.yml) quality jobs. CI does not notarize and has no Apple signing secrets.
 
 ### Visual regression
 

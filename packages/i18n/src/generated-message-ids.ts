@@ -156,6 +156,8 @@ export const MessageIds = {
     "settings.field.version.note.engineSwitch",
   "settings.field.version.note.permissions":
     "settings.field.version.note.permissions",
+  "settings.field.version.note.permissionsAfterUpdate":
+    "settings.field.version.note.permissionsAfterUpdate",
   "settings.field.version.openRelease": "settings.field.version.openRelease",
   "settings.field.version.brew": "settings.field.version.brew",
   "settings.field.version.brewCopied": "settings.field.version.brewCopied",
@@ -449,6 +451,8 @@ export const MessageIds = {
   "settings.permission.runningCopy": "settings.permission.runningCopy",
   "settings.permission.staleCopy": "settings.permission.staleCopy",
   "settings.permission.exactApp": "settings.permission.exactApp",
+  "settings.permission.identityDrift": "settings.permission.identityDrift",
+  "settings.permission.versionReadd": "settings.permission.versionReadd",
   "settings.permission.retestStillDenied":
     "settings.permission.retestStillDenied",
   "settings.permission.retestChecked": "settings.permission.retestChecked",

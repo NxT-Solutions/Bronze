@@ -1330,6 +1330,8 @@ export const UPDATE_NOTE_MESSAGES = Object.freeze({
     "settings.field.version.note.engineSwitch",
   "Bronze asks once for the macOS permissions it uses.":
     "settings.field.version.note.permissions",
+  "Ad-hoc updates need Accessibility and Input Monitoring added again.":
+    "settings.field.version.note.permissionsAfterUpdate",
 });
 
 export function displayUpdateNote(note, lookup = catalogMessage) {

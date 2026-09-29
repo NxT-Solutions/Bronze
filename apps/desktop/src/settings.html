@@ -1002,7 +1002,7 @@
               data-setting-info
               data-i18n="settings.permission.title.info"
             >
-              Shows whether macOS has granted the permissions capture needs, with a way to retest or open System Settings.
+              Shows whether macOS has granted the permissions capture needs, with a way to retest or open System Settings, and explains when an ad-hoc update is a new binary identity.
             </p>
           </details>
         </div>
@@ -1027,6 +1027,22 @@
             data-i18n="settings.permission.exactApp"
           >
             Add the exact file at the path above; another Bronze.app, bronze-desktop, or older copy will not grant this running app.
+          </p>
+          <p
+            class="muted"
+            data-permission-identity-drift
+            hidden
+            data-i18n="settings.permission.identityDrift"
+          >
+            An ad-hoc or unsigned update is a new binary identity, so add Accessibility and Input Monitoring again for the path and code identity above until releases share one Developer ID Application signature.
+          </p>
+          <p
+            class="muted"
+            data-permission-version-readd
+            hidden
+            data-i18n="settings.permission.versionReadd"
+          >
+            After this version change, add Accessibility and Input Monitoring once more for this ad-hoc copy.
           </p>
           <p
             class="muted"
