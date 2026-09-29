@@ -159,8 +159,13 @@ mod packaging_tests {
             fs::read_to_string(manifest.join("../../../.github/workflows/release.yml")).unwrap();
         assert!(release.contains("differs from icon.icns"));
         assert!(release.contains("BronzeNotice AppIcon.icns was not produced"));
-        assert!(release.contains("cp -R \"$notice_src\" \"$app/Contents/MacOS/BronzeNotice.app\""));
         assert!(release.contains("BronzeNotice.app was not produced next to the cargo binary."));
+        assert!(
+            !release.contains("cp -R \"$notice_src\" \"$app/Contents/MacOS/BronzeNotice.app\""),
+            "copying BronzeNotice.app after tauri codesign breaks the seal"
+        );
+        assert!(release.contains("BronzeNotice.app must not be copied into the signed app"));
+        assert!(release.contains("codesign --verify --deep --strict"));
         assert!(
             release.contains("signingIdentity\":\"-\"")
                 && release.contains("hardenedRuntime\":false"),

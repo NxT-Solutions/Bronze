@@ -248,15 +248,21 @@ jobs:
             echo "BronzeNotice.app was not produced next to the cargo binary."
             exit 1
           fi
-          rm -rf "$app/Contents/MacOS/BronzeNotice.app"
-          cp -R "$notice_src" "$app/Contents/MacOS/BronzeNotice.app"
+          # A file added under Contents/MacOS after tauri codesign invalidates
+          # the CDHash. usernoted then drops banners while Settings still
+          # reports Granted on app.bronze.desktop.
+          if [[ -e "$app/Contents/MacOS/BronzeNotice.app" ]]; then
+            echo "BronzeNotice.app must not be copied into the signed app."
+            exit 1
+          fi
+          if ! /usr/bin/codesign --verify --deep --strict "$app"; then
+            echo "Bronze.app seal is invalid; Notification Center will drop banners."
+            exit 1
+          fi
           notices=()
           while IFS= read -r notice; do
             notices+=("$notice")
-          done < <(find target apps/desktop/src-tauri/target "$app" \( \
-            -path '*/release/BronzeNotice.app/Contents/Resources/AppIcon.icns' \
-            -o -path '*/Contents/MacOS/BronzeNotice.app/Contents/Resources/AppIcon.icns' \
-            \) -type f 2>/dev/null || true)
+          done < <(find "$notice_src" -path '*/Contents/Resources/AppIcon.icns' -type f 2>/dev/null || true)
           if [[ ${#notices[@]} -eq 0 ]]; then
             echo "BronzeNotice AppIcon.icns was not produced from icon.icns."
             exit 1
