@@ -14,6 +14,8 @@ const REQUIRED_KEYS = [
   "settings.title",
   "queue.item.complete",
   "settings.permission.retest",
+  "onboarding.title",
+  "onboarding.finish",
 ];
 
 test("packaged desktop entry points exist and locale catalogs load", () => {
@@ -25,7 +27,7 @@ test("packaged desktop entry points exist and locale catalogs load", () => {
   assert.equal(conf.build.frontendDist, "../src");
   assert.deepEqual(
     conf.app.windows.map((window) => window.label),
-    ["quick", "library", "settings", "help"],
+    ["quick", "library", "settings", "help", "onboarding"],
   );
   for (const window of conf.app.windows) {
     assert.equal(existsSync(join(desktop, window.url)), true, window.url);
