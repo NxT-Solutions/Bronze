@@ -21,13 +21,13 @@ public func bronze_native_deliver_user_notice(
         announceNotice(bodyText)
         let itemId = NoticeBridge.claimItemId()
         if let center = bundledNotificationCenter() {
-            switch readAuthorizationStatus(center) {
-            case .authorized, .provisional:
-                postUserNotice(center, title: titleText, body: bodyText, itemId: itemId)
-                return BRONZE_STATUS_OK
-            default:
+            // A timed-out settings read stays .notDetermined. Denied is the
+            // only status that must not add a request.
+            if readAuthorizationStatus(center) == .denied {
                 return BRONZE_STATUS_DEGRADED
             }
+            postUserNotice(center, title: titleText, body: bodyText, itemId: itemId)
+            return BRONZE_STATUS_OK
         }
         postLegacyNotice(title: titleText, body: bodyText, itemId: itemId)
         return BRONZE_STATUS_OK
@@ -57,7 +57,10 @@ public func bronze_native_set_notice_click_hook(
 ) -> UInt32 {
     NoticeBridge.clickHook = hook
     installNoticeObserver()
-    return BRONZE_STATUS_OK
+    return bronzeOnAppKit {
+        _ = bundledNotificationCenter()
+        return BRONZE_STATUS_OK
+    }
 }
 
 private enum NoticeBridge {
@@ -216,7 +219,7 @@ private func postUserNotice(
     let request = UNNotificationRequest(
         identifier: "bronze.capture.\(UUID().uuidString)",
         content: content,
-        trigger: UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
+        trigger: nil
     )
     center.add(request, withCompletionHandler: nil)
 }
@@ -276,7 +279,10 @@ private final class AuthStatusBox: @unchecked Sendable {
 private final class BronzeNoticeCenter: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
     nonisolated(unsafe) static let shared = BronzeNoticeCenter()
 
-    func userNotificationCenter(
+    // Swift 6 drops an isolated witness from the ObjC vtable. The Quick Panel
+    // is activating, so capture posts while Bronze is frontmost; without
+    // .banner here usernoted keeps the request and shows no banner.
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
@@ -284,7 +290,7 @@ private final class BronzeNoticeCenter: NSObject, UNUserNotificationCenterDelega
         completionHandler([.banner, .list])
     }
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void

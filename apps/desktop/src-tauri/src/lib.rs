@@ -1402,6 +1402,18 @@ mod tests {
             capture_fn.contains("deliver_capture_user_notice")
                 || lib.contains("deliver_capture_user_notice")
         );
+        let persist = lib
+            .split("fn persist_capture_request")
+            .nth(1)
+            .expect("persist");
+        let persist_end = persist.find("\nmod ").unwrap_or(persist.len());
+        let persist = &persist[..persist_end];
+        assert!(persist.contains("deliver_capture_user_notice"));
+        assert!(persist.contains("capture-result"));
+        assert!(
+            !persist.contains("if visible"),
+            "Notification Center must post while the Quick Panel is open"
+        );
         assert!(lib.contains("capture-result"));
         assert!(!use_system_focused_fallback(Some(42)));
         assert!(use_system_focused_fallback(None));
