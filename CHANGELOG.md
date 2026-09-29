@@ -7,6 +7,14 @@ This file is auto-updated by the release workflow.
 
 - Work in progress.
 
+## v0.2.3 - 2026-09-29
+
+### What's new
+
+- Notifications work again.
+- Version 0.2.2 broke the app seal by adding a helper after signing.
+- If you already granted Notification Center banners, you do not need to grant them again.
+
 ## v0.2.2 - 2026-09-29
 
 ### What's new
