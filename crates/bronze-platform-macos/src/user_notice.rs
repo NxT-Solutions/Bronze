@@ -145,6 +145,10 @@ mod user_notice_tests {
         assert!(swift.contains(".denied"));
         assert!(swift.contains("willPresent"));
         assert!(swift.contains("didReceive"));
+        assert!(swift.contains("nonisolated func userNotificationCenter"));
+        assert!(swift.contains("[.banner, .list]"));
+        assert!(swift.contains("trigger: nil"));
+        assert!(swift.contains("== .denied"));
         assert!(swift.contains("bronze_native_set_notice_item"));
         assert!(swift.contains("bronze_native_set_notice_click_hook"));
         assert!(swift.contains("bronzeItemId"));
@@ -159,7 +163,7 @@ mod user_notice_tests {
         assert!(swift.contains("\"-g\""));
         assert!(swift.contains("\"--args\""));
         assert!(swift.contains("interruptionLevel"));
-        assert!(swift.contains("UNTimeIntervalNotificationTrigger"));
+        assert!(!swift.contains("UNTimeIntervalNotificationTrigger"));
         assert!(!swift.contains("display notification"));
         assert!(!swift.contains("osascript"));
         assert!(!swift.contains("NSUserNotificationCenter"));
