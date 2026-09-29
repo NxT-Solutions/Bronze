@@ -116,6 +116,18 @@ Toasts do not contain sole copy of critical recovery action; Notification Center
 
 ## 8. First-run onboarding
 
+When required title models are missing or their checksum does not match the
+cached ready marker, the Quick Panel shows a full first-launch splash before
+the queue. Status copy is “Downloading title model…”, “Checking model…”, or
+“Finishing setup…”, plus the model name when one is known. A determinate
+`<progress>` follows `bytesRead` / `bytesTotal` from the title-engine worker;
+without a byte count the bar stays indeterminate. Reduce Motion still shows
+the bar and percent. `#first-launch-status` is `role="status"`. Failure keeps
+the splash with a readable catalog error and a Retry button — never a blank
+window. A later launch skips the splash when `title-models/ready.json` still
+matches the verified checksums. This is markup and copy, not a WCAG or
+notarization claim.
+
 Progressive, permission-late flow:
 
 1. Explain deliberate local queue with one static diagram.
