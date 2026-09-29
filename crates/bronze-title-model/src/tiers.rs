@@ -7,6 +7,7 @@ pub enum TitleTier {
     Custom,
 }
 
+#[derive(Clone, Copy)]
 pub struct TierSpec {
     pub tier: TitleTier,
     pub filename: &'static str,

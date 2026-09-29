@@ -3,9 +3,9 @@ use std::path::Path;
 /// Tauri errors when this glob matches nothing.
 pub const TITLE_GGUF_RESOURCE: &str = "../../../crates/bronze-title-model/vendor/*.gguf";
 
-/// Release packaging still requires vendored weights. Other profiles do not.
-pub fn omit_unvendored_title_gguf(profile: &str, gguf_present: bool) -> bool {
-    profile != "release" && !gguf_present
+/// Release and debug packages omit GGUF. Pins live in Application Support.
+pub fn omit_unvendored_title_gguf(_profile: &str, _gguf_present: bool) -> bool {
+    true
 }
 
 pub fn gguf_files_present(vendor: &Path) -> bool {
@@ -48,18 +48,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn debug_without_gguf_drops_the_resource() {
+    fn every_profile_omits_the_gguf_glob() {
         assert!(omit_unvendored_title_gguf("debug", false));
+        assert!(omit_unvendored_title_gguf("release", false));
+        assert!(omit_unvendored_title_gguf("debug", true));
+        assert!(omit_unvendored_title_gguf("release", true));
         let patched = tauri_config_without_title_gguf(None);
         let value: serde_json::Value = serde_json::from_str(&patched).unwrap();
         assert!(value["bundle"]["resources"][TITLE_GGUF_RESOURCE].is_null());
-    }
-
-    #[test]
-    fn release_and_present_files_keep_the_glob() {
-        assert!(!omit_unvendored_title_gguf("release", false));
-        assert!(!omit_unvendored_title_gguf("debug", true));
-        assert!(!omit_unvendored_title_gguf("release", true));
     }
 
     #[test]

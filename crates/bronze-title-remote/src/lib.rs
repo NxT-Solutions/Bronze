@@ -59,7 +59,7 @@ mod remote_tests {
     }
 
     #[test]
-    fn title_model_crate_still_has_no_http() {
+    fn title_model_http_stays_in_fetch_only() {
         let infer = prod(include_str!("../../bronze-title-model/src/infer.rs"));
         let weights = prod(include_str!("../../bronze-title-model/src/weights.rs"));
         let custom = prod(include_str!("../../bronze-title-model/src/custom.rs"));
@@ -70,6 +70,10 @@ mod remote_tests {
             assert!(!lower.contains("ureq"));
             assert!(!lower.contains("openai"));
         }
+        let fetch = prod(include_str!("../../bronze-title-model/src/fetch.rs"));
+        assert!(fetch.contains("ureq::AgentBuilder::new()"));
+        assert!(!fetch.contains("proxy_from_env"));
+        assert!(!fetch.contains("openai"));
     }
 
     #[test]

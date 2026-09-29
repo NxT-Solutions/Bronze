@@ -35,6 +35,9 @@ commands.allow = [
   "copy_queue_items",
   "load_settings_v1",
   "set_queue_sort",
+  "first_launch_setup",
+  "retry_first_launch_setup",
+  "finish_first_launch_setup",
   "ui_locale",
   "ui_catalog",
 ]

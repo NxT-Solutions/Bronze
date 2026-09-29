@@ -6,6 +6,7 @@ use std::sync::Mutex;
 pub enum EnginePhase {
     Idle,
     Loading,
+    Downloading,
     Hashing,
     Ready,
     Missing,
@@ -17,6 +18,7 @@ impl EnginePhase {
         match self {
             Self::Idle => "idle",
             Self::Loading => "loading",
+            Self::Downloading => "downloading",
             Self::Hashing => "hashing",
             Self::Ready => "ready",
             Self::Missing => "missing",
@@ -110,7 +112,10 @@ fn parse_read_progress(message: &str) -> Option<(u64, u64)> {
 pub fn apply_diag(current: TitleEngineStatus, message: &str) -> TitleEngineStatus {
     let message = message.trim();
     if let Some((bytes_read, bytes_total)) = parse_read_progress(message) {
-        if !matches!(current.phase, EnginePhase::Loading | EnginePhase::Hashing) {
+        if !matches!(
+            current.phase,
+            EnginePhase::Loading | EnginePhase::Hashing | EnginePhase::Downloading
+        ) {
             return current;
         }
         return TitleEngineStatus {
@@ -131,8 +136,20 @@ pub fn apply_diag(current: TitleEngineStatus, message: &str) -> TitleEngineStatu
             TitleEngineStatus::at(tier, EnginePhase::Loading, None)
         };
     }
+    if message == "download started" {
+        return TitleEngineStatus {
+            tier: current.tier,
+            phase: EnginePhase::Downloading,
+            reason: None,
+            bytes_read: None,
+            bytes_total: None,
+        };
+    }
     if message.starts_with("weights resolved") || message == "hash ok" {
-        if matches!(current.phase, EnginePhase::Loading | EnginePhase::Hashing) {
+        if matches!(
+            current.phase,
+            EnginePhase::Loading | EnginePhase::Hashing | EnginePhase::Downloading
+        ) {
             return TitleEngineStatus::at(current.tier, EnginePhase::Hashing, None);
         }
         return current;
@@ -161,13 +178,14 @@ pub fn apply_diag(current: TitleEngineStatus, message: &str) -> TitleEngineStatu
             EnginePhase::Missing,
             Some(FallbackReason::MissingWeights),
         ),
-        "bad_hash" | "timeout" | "unreadable" => {
+        "bad_hash" | "timeout" | "unreadable" | "download_failed" => {
             if current.phase == EnginePhase::Ready {
                 return current;
             }
             let reason = match raw {
                 "bad_hash" => FallbackReason::BadHash,
                 "timeout" => FallbackReason::Timeout,
+                "download_failed" => FallbackReason::DownloadFailed,
                 _ => FallbackReason::Unreadable,
             };
             TitleEngineStatus::at(current.tier, EnginePhase::Failed, Some(reason))
@@ -267,6 +285,12 @@ mod status_tests {
         assert_eq!(loading.bytes_read, None);
         assert_eq!(loading.bytes_total, None);
 
+        let downloading = apply_diag(loading, "download started");
+        assert_eq!(downloading.phase, EnginePhase::Downloading);
+        let downloading = apply_diag(downloading, "read progress bytes=135295440 total=270590880");
+        assert_eq!(downloading.phase, EnginePhase::Downloading);
+        assert_eq!(downloading.bytes_read, Some(135_295_440));
+
         let reading = apply_diag(loading, "read progress bytes=135295440 total=270590880");
         assert_eq!(reading.phase, EnginePhase::Loading);
         assert_eq!(reading.bytes_read, Some(135_295_440));
@@ -302,6 +326,7 @@ mod status_tests {
         for phase in [
             EnginePhase::Idle,
             EnginePhase::Loading,
+            EnginePhase::Downloading,
             EnginePhase::Hashing,
             EnginePhase::Ready,
             EnginePhase::Missing,

@@ -12,6 +12,7 @@ import {
   runBusy,
   showChromeNotice,
 } from "./control.mjs";
+import { bindFirstLaunchSetup } from "./first-launch.mjs";
 import { formatCaptureSource } from "./item-view.mjs";
 import { serializeComposerDom } from "./markdown-body.mjs";
 import {
@@ -1496,6 +1497,17 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   }
 }
 
+async function startQuickPanel() {
+  const gate = await bindFirstLaunchSetup();
+  if (!gate.blocked) {
+    await bindQueueLive();
+    return;
+  }
+  gate.whenReady(() => {
+    bindQueueLive();
+  });
+}
+
 if (globalThis.document?.readyState) {
-  bindQueueLive();
+  startQuickPanel();
 }

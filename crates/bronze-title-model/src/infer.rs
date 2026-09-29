@@ -27,6 +27,7 @@ pub enum FallbackReason {
     MissingWeights,
     BadHash,
     Unreadable,
+    DownloadFailed,
     Timeout,
     ShortBody,
     Ungrounded,
@@ -41,6 +42,7 @@ impl FallbackReason {
             Self::MissingWeights => "missing_weights",
             Self::BadHash => "bad_hash",
             Self::Unreadable => "unreadable",
+            Self::DownloadFailed => "download_failed",
             Self::Timeout => "timeout",
             Self::ShortBody => "short_body",
             Self::Ungrounded => "ungrounded",
@@ -86,6 +88,7 @@ pub fn classify_weights_error(err: WeightsError) -> FallbackReason {
         WeightsError::Missing => FallbackReason::MissingWeights,
         WeightsError::HashMismatch => FallbackReason::BadHash,
         WeightsError::Unreadable => FallbackReason::Unreadable,
+        WeightsError::DownloadFailed => FallbackReason::DownloadFailed,
     }
 }
 
@@ -217,11 +220,7 @@ pub fn warmup() {
         crate::emit_diag("fallback reason=extractive");
         return;
     }
-    if crate::weights::weights_present_for(tier).is_ok() {
-        enqueue_set_model(tier);
-    } else {
-        crate::emit_diag("fallback reason=missing_weights");
-    }
+    enqueue_set_model(tier);
 }
 
 fn sender() -> Sender<Job> {
@@ -348,6 +347,11 @@ fn load_model(state: &mut WorkerState, tier: TitleTier) -> Result<(), FallbackRe
         crate::emit_diag("weights resolved source=custom");
         path
     } else {
+        if crate::weights::weights_present_for(tier) == Err(WeightsError::Missing) {
+            if let Some(spec) = tier.spec() {
+                crate::fetch::ensure_cached_for(spec).map_err(classify_weights_error)?;
+            }
+        }
         verified_weights_for(tier)
             .map_err(classify_weights_error)?
             .0
@@ -549,7 +553,9 @@ mod infer_tests {
             let status = crate::current_status();
             if !matches!(
                 status.phase,
-                crate::EnginePhase::Loading | crate::EnginePhase::Hashing
+                crate::EnginePhase::Loading
+                    | crate::EnginePhase::Hashing
+                    | crate::EnginePhase::Downloading
             ) {
                 return status;
             }

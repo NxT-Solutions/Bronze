@@ -102,7 +102,7 @@ cd Bronze
 pnpm install
 ```
 
-6. Run the desktop app. Hand-test only in the native window. Opening the HTML files in a browser has no Tauri invoke. A dev build compiles when `crates/bronze-title-model/vendor/` contains no `.gguf`. Release packaging still bundles those files when the release workflow has vendored them.
+6. Run the desktop app. Hand-test only in the native window. Opening the HTML files in a browser has no Tauri invoke. A dev build compiles when `crates/bronze-title-model/vendor/` contains no `.gguf`. Release `bronze-macos-*.pkg` files omit those GGUFs. A selected pin first-fetches once into Application Support `title-models/<sha256>/` (ADR-024); a matching checksum is reused on upgrade. Extractive titles work with no download. Local vendor remains `sh crates/bronze-title-model/scripts/vendor-gguf.sh <id>`.
 
 ```bash
 pnpm --filter desktop tauri dev

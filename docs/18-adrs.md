@@ -44,6 +44,7 @@ An ADR change must name affected PRD IDs, migration impact, tests, distribution/
 | ADR-021 | Opt-in loopback Ollama title client | Accepted | SEC-004, G-05, QUE-002 |
 | ADR-022 | Opt-in hosted title providers | Accepted | SEC-004, G-05, QUE-002, ADR-017 |
 | ADR-023 | User-initiated GitHub Releases version check | Proposed | SEC-001, SEC-004, ADR-017 |
+| ADR-024 | First-fetch hash-pinned title weights outside the pkg | Accepted | SEC-004, G-05, QUE-002, ADR-017 |
 
 ## ADR-001: Local selection-to-action queue
 
@@ -710,6 +711,7 @@ SEC-001 and SEC-004 require no remote code/content and no runtime network by def
 - Future updater/cloud/action requires separate opt-in design, signed protocol, threat model, capability, CSP, privacy UI, and superseding ADR.
 - ADR-022 is the superseding record for an explicit, off-by-default title API only. Default install still makes no hosted call.
 - ADR-023 is the Proposed record for a user-initiated GitHub latest-release check only. It does not accept Sparkle, the Tauri updater plugin, a silent download, or a background poll.
+- ADR-024 is the Accepted record for a weights-only, hash-pinned first-fetch of allow-listed title GGUFs into Application Support. It does not accept Hub at capture, a capture-payload upload, or embedding those files in every `.pkg`.
 
 ### Consequences
 
@@ -763,7 +765,7 @@ Planning gate: TITLE-01
 
 ### Context
 
-Captured bodies can be long. The inbox and status-menu overview need a title that is not the first sentence by policy. First-sentence-only is not the shipped title. Hosted AI, Private Cloud Compute, and a runtime Hugging Face Hub download violate ADR-017 and SEC-004. An OS-AI entitlement (`SystemLanguageModel`, NLEmbedding, Foundation Models) is not portable to Linux or Windows. T-10 allows only an offline SHA-256-pinned GGUF allow-list plus extractive `compact_title`; it does not allow hosted AI, PCC, or runtime fetch. ADR-017 remains Accepted. ADR-002 is Accepted (split arm64 and x86_64 packages; operator asked for the Intel build). ADR-009 and ADR-018 remain Proposed.
+Captured bodies can be long. The inbox and status-menu overview need a title that is not the first sentence by policy. First-sentence-only is not the shipped title. Hosted AI, Private Cloud Compute, and a runtime Hugging Face Hub download violate ADR-017 and SEC-004. An OS-AI entitlement (`SystemLanguageModel`, NLEmbedding, Foundation Models) is not portable to Linux or Windows. T-10 allows only an offline SHA-256-pinned GGUF allow-list plus extractive `compact_title`; it does not allow hosted AI, PCC, or Hub at capture. ADR-024 is the weights-only first-fetch carve-out. ADR-017 remains Accepted. ADR-002 is Accepted (split arm64 and x86_64 packages; operator asked for the Intel build). ADR-009 and ADR-018 remain Proposed.
 
 ### Decision gate
 
@@ -773,14 +775,14 @@ Candidate path:
 
 - Persist `compact_title` first: term-frequency best sentence over significant terms, 40-character word-boundary clamp, markup stripped, no ellipsis glyph. Not first-sentence-only. The clamp fits one title row in the 400px Quick Panel card at `--text-body` 0.9375rem. Composer add and body edit write the same function before any refine.
 - After persist (and after composer add / body edit), a Rust `llama-cpp-2` 0.1.156 worker on thread `bronze-title-model` / `bronze-item-title` may refine the stored title. Inference is not on AppKit main and not in the event-tap. `TitleABI.swift` stays a compile-only stub (`BRONZE_STATUS_DEGRADED`). Linux and Windows call the same Rust function.
-- Settings `general.titleModel` is a schema-valid, exportable, non-secret id: `extractive` | `smol-135` | `smol-360` | `qwen-05`. `extractive` uses `compact_title` only (no GGUF). A Settings change unloads the previous llama context and loads the chosen file on that worker for the next refine; capture never waits on the load. Reload failure stays on `compact_title` and surfaces the fallback reason. No app relaunch is required when load succeeds. Existing `bronze-title:` stages (`switch scheduled`, `weights resolved`, `hash ok`, `model loaded`, `missing_weights`, plus load fallbacks `bad_hash` / `timeout` / `unreadable`) map to a Settings-only snapshot. Command `title_engine_status` returns `{ tier, phase, reason, bytesRead, bytesTotal }`. Event `title-engine-status` publishes the same DTO from the title worker, never from the event-tap. Phases: idle (extractive), loading, hashing, ready, missing, failed. Refine logs do not flip a ready engine to failed.
+- Settings `general.titleModel` is a schema-valid, exportable, non-secret id: `extractive` | `smol-135` | `smol-360` | `qwen-05`. `extractive` uses `compact_title` only (no GGUF). A Settings change unloads the previous llama context and loads the chosen file on that worker for the next refine; capture never waits on the load. Reload failure stays on `compact_title` and surfaces the fallback reason. No app relaunch is required when load succeeds. Existing `bronze-title:` stages (`switch scheduled`, `download started`, `weights resolved`, `hash ok`, `model loaded`, `missing_weights`, plus load fallbacks `bad_hash` / `timeout` / `unreadable` / `download_failed`) map to a Settings-only snapshot. Command `title_engine_status` returns `{ tier, phase, reason, bytesRead, bytesTotal }`. Event `title-engine-status` publishes the same DTO from the title worker, never from the event-tap. Phases: idle (extractive), downloading, loading, hashing, ready, missing, failed. Refine logs do not flip a ready engine to failed.
 - Auto-pick runs only when `general.titleModel` is missing or empty (first install / setup). It does not overwrite a stored user value. Rust reads physical RAM locally with no telemetry. Bands: missing RAM, `< 8 GiB`, or no GGUF on disk → `extractive`; `8–16 GiB` → `smol-135` if present else extractive; `16–32 GiB` → `smol-360` if present else the next smaller present file; `≥ 32 GiB` → `qwen-05` if present else the next smaller present file. Most fit is the largest tier the RAM band can hold whose file is already on disk. Bronze never downloads to honor the recommendation. The resolved id is persisted so the Settings picker shows it.
-- Allow-listed weights, each vendorable with `crates/bronze-title-model/scripts/vendor-gguf.sh <id>` (or `all`). The packaged app copies those same hashed files into `Contents/Resources/models` at build time when they are already vendored. Load only a verified path (`set_weights_dir` / `set_weights_path`, else `BRONZE_TITLE_WEIGHTS`, else crate `vendor/`, else exe-relative `models/`). Never `-hf`. Never Hub at capture, first launch, or Settings switch. Never a WebView path (SEC-003). Weights are not user-writable via the app.
+- Allow-listed weights, each vendorable with `crates/bronze-title-model/scripts/vendor-gguf.sh <id>` (or `all`) for local/dev. Release `bronze-macos-*.pkg` files do not copy those files into `Contents/Resources/models`. A matching SHA-256 file under Application Support `title-models/<sha256>/` is reused (ADR-024). Load only a verified path (`set_cache_dir` / `set_weights_dir` / `set_weights_path`, else `BRONZE_TITLE_WEIGHTS`, else crate `vendor/`, else exe-relative `models/`). Never `-hf`. Never Hub at capture. Auto-pick never fetches. A selected missing pin may first-fetch the hash-pinned HTTPS URL once when a cache dir is set (ADR-024). Never a WebView path (SEC-003).
   - `smol-135`: HuggingFaceTB/SmolLM2-135M-Instruct, bartowski `SmolLM2-135M-Instruct-Q4_K_M.gguf`, revision `09816acd5d99df7be770d85ea30822623dab342c`, SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d` (~105 MB, Apache-2.0).
   - `smol-360`: HuggingFaceTB/SmolLM2-360M-Instruct, bartowski `SmolLM2-360M-Instruct-Q4_K_M.gguf`, revision `ab928a97ee49f3a015f35194879f68211291d6ca`, SHA-256 `2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2` (~271 MB, Apache-2.0).
   - `qwen-05`: official `Qwen/Qwen2.5-0.5B-Instruct-GGUF` `qwen2.5-0.5b-instruct-q4_k_m.gguf`, revision `9217f5db79a29953eb74d5343926648285ec7e67`, SHA-256 `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db` (~491 MB, Apache-2.0). Not Qwen3 thinking mode.
 - Inference: greedy / low temperature; truncate input to 2048 characters; `max_new_tokens` 16; no tools; stop on newline; clamp with the same 40-character word-boundary function; English prompt v3 (short topic, no sentence copy, no `Title:` prefix). `clean_title` strips a leading `Title:` / `title:` (optional space) and surrounding quotes before clamp and groundedness. Skip refine when the body is already at most 40 characters, or when the candidate shares no 3+ character term with the body. A refine can still copy a source sentence; groundedness only rejects titles with no shared 3+ character term.
-- Missing file, hash mismatch, first-load or generate timeout, empty output, load failure, or an ungrounded candidate keeps `compact_title`. Missing weights log `bronze-title: missing_weights`. Settings marks that tier unavailable and says the model is not in this build; there is no download button. Capture ID and terminal result are never dropped.
+- Missing file, hash mismatch, first-load or generate timeout, empty output, load failure, or an ungrounded candidate keeps `compact_title`. Missing weights log `bronze-title: missing_weights`. When a cache dir is set, Settings shows catalog Downloading `{engine}` plus `#title-model-progress` while that pin first-fetches; a failed fetch uses `download_failed`. When no cache dir is set (dev), Settings says the model is not in this build and keeps the vendor-command copy. There is no download button. Capture ID and terminal result are never dropped.
 - CPU path only (`n_gpu_layers=0`). No `allow-jit` or `allow-unsigned-executable-memory` entitlement. `llama-cpp-2` may still compile Metal on Apple Silicon; the worker does not offload.
 - No Needle, Gemma, Llama 1B, Qwen3-thinking, hosted AI, Private Cloud Compute, `SystemLanguageModel`, NLEmbedding, URLSession, or OpenAI on this Proposed candidate path. Custom import, loopback Ollama, and opt-in hosted keys are ADR-020, ADR-021, and ADR-022.
 
@@ -790,20 +792,20 @@ Candidate path:
 - Refine is best-effort and local. Failure leaves the extractive title in place.
 - Private Cloud Compute remains forbidden. Release copy must not treat this as an Accepted inference contract.
 - Queue chrome does not show Apple Intelligence or model-status copy. Titles clip without an ellipsis glyph. A leaked `Title:` label is stripped before the card shows the heading.
-- Settings → General Title engine shows a semantic spinner (`span.title-engine-spinner`) next to the select while phase is loading or hashing, and `#title-model-status` (`role=status`, `aria-live=polite`) shows catalog copy. Extractive stays idle with no spinner. Missing weights keep the vendor-command copy. Ready uses catalog `settings.field.titleModel.loaded`. Failed reasons are catalog strings (`bad_hash`, `timeout`, `unreadable`) with no huge paths. Focus stays on the select. Reduce Motion stops decorative spin; text still updates. This is not a WCAG or VoiceOver claim.
+- Settings → General Title engine shows a semantic spinner (`span.title-engine-spinner`) next to the select while phase is downloading, loading, or hashing, and `#title-model-status` (`role=status`, `aria-live=polite`) shows catalog copy. Extractive stays idle with no spinner. A first-fetch shows Downloading `{engine}` and a determinate bar when `bytesRead` / `bytesTotal` are known. Missing weights without a cache dir keep the vendor-command copy. Ready uses catalog `settings.field.titleModel.loaded`. Failed reasons are catalog strings (`bad_hash`, `timeout`, `unreadable`, `download_failed`) with no huge paths. Focus stays on the select. Reduce Motion stops decorative spin; text still updates. This is not a WCAG or VoiceOver claim.
 
 ### Verification
 
 - `compact_title` tests: a middle content-bearing sentence wins over a greeting; the clamp is 40 characters without an ellipsis glyph.
 - Persist writes `compact_title` even when the GGUF is missing, the hash mismatches, or the worker fails.
 - `clean_title` turns `Title: Landing Page Change Hasimproved` into `Landing Page Change Hasimproved` before clamp and groundedness.
-- Auto-pick does not overwrite a stored `general.titleModel`. Missing `qwen-05` does not fetch.
-- Title-worker sources have no runtime network. Capture ID and terminal result are never dropped.
+- Auto-pick does not overwrite a stored `general.titleModel`. Missing `qwen-05` does not fetch during auto-pick.
+- Title-worker infer sources have no runtime network. First-fetch lives in `fetch.rs` only (ADR-024). Capture ID and terminal result are never dropped.
 - Swift source-scan of `TitleABI.swift`: no `PrivateCloudCompute`, `URLSession`, `openai`, `llama`, `gguf`, `SystemLanguageModel`, or `NLEmbedding`.
 - Packaging asserts no `allow-jit` or `allow-unsigned-executable-memory`.
 - Live binary does not link FoundationModels or NaturalLanguage.
-- `apply_diag` maps `switch scheduled` → loading; `weights resolved` / `hash ok` → hashing; `model loaded` → ready; extractive → idle; `missing_weights` → missing; `bad_hash`, `timeout`, or `unreadable` during load → failed.
-- Settings shows spinner plus catalog Loading `{engine}` while loading; no spinner and loaded copy when ready; no spinner and vendor-command copy when missing.
+- `apply_diag` maps `switch scheduled` → loading; `download started` → downloading; `weights resolved` / `hash ok` → hashing; `model loaded` → ready; extractive → idle; `missing_weights` → missing; `bad_hash`, `timeout`, `unreadable`, or `download_failed` during load → failed.
+- Settings shows spinner plus catalog Downloading `{engine}` or Loading `{engine}` while downloading or loading; no spinner and loaded copy when ready; no spinner and vendor-command copy when missing without a cache dir.
 - Event `title-engine-status` and command `title_engine_status` stay Settings-capability only. Capture never waits on load.
 
 ## ADR-020: User-imported local GGUF title engines
@@ -910,6 +912,43 @@ ADR-017 forbids a production-default HTTP client and says security advisories an
 - A same or older tag returns `available=false`.
 - `open_release_page` rejects a URL that is not a Bronze GitHub release page.
 - Settings chrome does not contain `api.github.com`.
+
+## ADR-024: First-fetch hash-pinned title weights outside the pkg
+
+Status: Accepted
+
+Supersedes: ADR-017 for a weights-only, hash-pinned first-fetch of the three allow-listed title GGUFs only
+
+### Context
+
+v0.2.1 `bronze-macos-arm64.pkg` and `bronze-macos-x86_64.pkg` each embed the three allow-listed GGUFs (~827 MB raw). Homebrew cask `bronze` fetches the full GitHub release `.pkg` on every upgrade. Homebrew has no binary delta. Sparkle or Tauri updater deltas would not shrink `brew upgrade --cask bronze`. Re-shipping unchanged weights on every version is the size.
+
+ADR-017 stays Accepted for every other client. Capture still never opens a socket. Auto-pick still never fetches. Hosted titles stay ADR-022. Version check stays ADR-023.
+
+### Decision
+
+- Release `bronze-macos-*.pkg` files omit the three GGUFs. They do not copy those files into `Contents/Resources/models`. Dual-arch pkgs stay slim (the app, not 800 MB+).
+- Pins persist under Application Support `title-models/<sha256>/<filename>` (Tauri identifier `app.bronze.desktop`). A matching SHA-256 file is reused and not re-downloaded.
+- A selected missing pin first-fetches the hash-pinned HTTPS URL once when a cache dir is set. Destination is the pin URL only. Require `User-Agent: Bronze-title-model`. Ignore `HTTP_PROXY` and `ALL_PROXY`. Stream to a `.part` file, verify SHA-256, then install `0o600` under a `0o700` directory. Never send capture text, settings, or diagnostics.
+- Settings phase `downloading` shows catalog Downloading `{engine}` and `#title-model-progress` (determinate when `bytesRead` / `bytesTotal` are known). Failed fetch is `download_failed`. There is no download button.
+- First-run and in-flight capture stay on `compact_title` / extractive while the pin is absent or downloading. Capture never waits on the fetch.
+- Auto-pick among files already on disk stays extractive when no GGUF is present. Dev builds without a cache dir keep the vendor-command / not-in-this-build path.
+- Homebrew cask still fetches the named `.pkg`. The `.pkg` is the app. Operators who already have a matching checksum keep it across upgrades.
+- ADR-019 stays Proposed. ADR-002 stays Accepted. ADR-009 and ADR-018 stay Proposed.
+
+### Consequences
+
+- `brew upgrade --cask bronze` no longer re-downloads ~850 MB of unchanged weights.
+- The first selected pin on a Mac downloads that file once. Later app upgrades reuse it.
+- An upgrade from a pkg that still had `Contents/Resources/models` loses those in-app copies; the first matching pin then first-fetches once into Application Support.
+
+### Verification
+
+- Packaging asserts the Tauri bundle does not embed `*.gguf` or a `models/` resource glob.
+- `ensure_cached_for` skips the network when the SHA-256 file is already present.
+- Tests do not set a cache dir, so parallel `cargo test` never fetches.
+- Capture and refine during `downloading` keep `compact_title`.
+- Settings shows determinate progress while `bytesRead` / `bytesTotal` are known.
 
 ## 3. Decision-change checklist
 

@@ -5,6 +5,7 @@ This file is auto-updated by the release workflow.
 
 ## Unreleased
 
+- Homebrew and GitHub `.pkg` upgrades no longer re-download ~850 MB of title models. Those files live in Application Support and download once, with a progress bar, when you pick an engine.
 - Ad-hoc updates need Accessibility and Input Monitoring added again.
 
 ## v0.2.1 - 2026-09-29

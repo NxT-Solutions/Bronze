@@ -7,6 +7,10 @@ Four HTML windows share `chrome.css`. Native titles stay “Bronze”,
 
 Purpose: capture in, act on the current item.
 
+- First launch (or a missing / checksum-mismatched title model) covers the
+  queue with `#first-launch-setup` before composer or cards. One filled
+  Retry on failure. Existing `--radius-page-card` and `--radius-control`.
+  Reduce Motion still shows the progress bar. Not a WCAG claim.
 - Composer first: labeled textarea, one filled Add.
 - Empty state names the next action (capture or type).
 - Item: title (15/590) → body (13, pre-wrap, lists) → compact Show

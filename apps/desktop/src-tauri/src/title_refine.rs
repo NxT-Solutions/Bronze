@@ -40,6 +40,7 @@ pub fn attach_title_engine_status(app: &AppHandle) {
             TITLE_ENGINE_STATUS_EVENT,
             TitleEngineStatusDto::from(status),
         );
+        crate::first_launch::emit_from_engine(&handle, status);
     });
 }
 
@@ -199,6 +200,9 @@ mod title_refine_tests {
         let lib = include_str!("lib.rs");
         assert!(lib.contains("title_engine_status"));
         assert!(lib.contains("attach_title_engine_status"));
+        assert!(lib.contains("first_launch_setup"));
+        assert!(lib.contains("retry_first_launch_setup"));
+        assert!(lib.contains("finish_first_launch_setup"));
         assert!(src.contains("title-engine-status"));
         assert!(!include_str!(
             "../../../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"

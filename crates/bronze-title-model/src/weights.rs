@@ -14,6 +14,7 @@ pub const HF_REVISION: &str = "ab928a97ee49f3a015f35194879f68211291d6ca";
 
 static OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 static WEIGHTS_DIR: OnceLock<PathBuf> = OnceLock::new();
+static CACHE_DIR: Mutex<Option<PathBuf>> = Mutex::new(None);
 static HASH_CACHE: Mutex<Option<HashMap<PathBuf, Result<(), WeightsError>>>> = Mutex::new(None);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -21,6 +22,7 @@ pub enum WeightsError {
     Missing,
     HashMismatch,
     Unreadable,
+    DownloadFailed,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -32,6 +34,7 @@ pub enum WeightsSource {
     Exe,
     Resources,
     BundleDir,
+    Cache,
     Custom,
 }
 
@@ -45,6 +48,7 @@ impl WeightsSource {
             Self::Exe => "exe",
             Self::Resources => "resources",
             Self::BundleDir => "bundle",
+            Self::Cache => "cache",
             Self::Custom => "custom",
         }
     }
@@ -56,6 +60,19 @@ pub fn set_weights_path(path: PathBuf) {
 
 pub fn set_weights_dir(dir: PathBuf) {
     let _ = WEIGHTS_DIR.set(dir);
+}
+
+pub fn set_cache_dir(dir: PathBuf) {
+    *CACHE_DIR
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(dir);
+}
+
+pub fn cache_dir() -> Option<PathBuf> {
+    CACHE_DIR
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .clone()
 }
 
 pub fn vendor_weights_path() -> PathBuf {
@@ -139,6 +156,13 @@ pub fn candidate_paths_for(spec: &TierSpec) -> Vec<(PathBuf, WeightsSource)> {
             }
         }
     }
+    if let Some(dir) = cache_dir() {
+        push_unique(
+            &mut out,
+            Some(dir.join(spec.sha256_hex).join(spec.filename)),
+            WeightsSource::Cache,
+        );
+    }
     if let Some(dir) = WEIGHTS_DIR.get() {
         push_unique(
             &mut out,
@@ -207,6 +231,7 @@ pub fn verified_weights_for(tier: TitleTier) -> Result<(PathBuf, WeightsSource),
             Err(WeightsError::Missing) => {}
             Err(WeightsError::HashMismatch) => saw_mismatch = true,
             Err(WeightsError::Unreadable) => saw_unreadable = true,
+            Err(WeightsError::DownloadFailed) => {}
         }
     }
     if saw_mismatch {
@@ -394,6 +419,17 @@ mod weights_tests {
         drop(file);
         assert_eq!(verify_weights(&path), Err(WeightsError::HashMismatch));
         let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn cache_source_is_keyed_by_sha() {
+        let weights = include_str!("weights.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("prod");
+        assert!(weights.contains("WeightsSource::Cache"));
+        assert!(weights.contains("spec.sha256_hex"));
+        assert!(!weights.contains("huggingface.co"));
     }
 
     #[test]

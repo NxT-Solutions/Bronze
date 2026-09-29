@@ -178,8 +178,8 @@ mod packaging_tests {
         assert!(build.contains("swift_target_triple") || build.contains("apple-macosx14.0"));
         assert!(!build.contains("externalBin"));
         assert!(conf.contains("\"resources\""));
-        assert!(conf.contains("bronze-title-model/vendor/*.gguf"));
-        assert!(conf.contains("\"models/\""));
+        assert!(!conf.contains("bronze-title-model/vendor/*.gguf"));
+        assert!(!conf.contains("\"models/\""));
         assert!(conf.contains("\"../../../packages/i18n/locales\": \"locales/\""));
         assert!(!build.contains("stage_bundled_title_models"));
         assert!(!build.contains("same_len"));

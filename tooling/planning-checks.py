@@ -166,6 +166,8 @@ def check_title_adr() -> list[str]:
             errors.append(f"ADR-019 missing {needle}")
     if "Contents/Resources/models" not in section:
         errors.append("ADR-019 missing packaged models path")
+    if "title-models" not in section:
+        errors.append("ADR-019 missing Application Support title-models cache")
     for adr_id, needles in (
         (
             "ADR-020",
@@ -187,6 +189,18 @@ def check_title_adr() -> list[str]:
                 "brew upgrade --cask bronze",
                 "No Sparkle",
                 "user-initiated",
+            ),
+        ),
+        (
+            "ADR-024",
+            (
+                "Status: Accepted",
+                "title-models",
+                "SHA-256",
+                "Application Support",
+                "downloading",
+                "compact_title",
+                "bronze-macos",
             ),
         ),
     ):
@@ -215,6 +229,15 @@ def check_title_adr() -> list[str]:
             )
             if "Proposed" not in row:
                 errors.append("ADR-023 index row must stay Proposed")
+        if adr_id == "ADR-024":
+            if re.search(r"^Status: Proposed", body, re.M):
+                errors.append("ADR-024 must stay Accepted")
+            row = next(
+                (line for line in adrs.splitlines() if line.startswith("| ADR-024 |")),
+                "",
+            )
+            if "Accepted" not in row:
+                errors.append("ADR-024 index row must stay Accepted")
     t10 = next((line for line in threat.splitlines() if line.startswith("| T-10 ")), "")
     if not t10:
         errors.append("T-10 row missing")

@@ -7,8 +7,12 @@ Four HTML windows share `chrome.css`. Native titles stay “Bronze”,
 
 Purpose: capture in, act on the current item.
 
-- Skip link → `#composer-body`.
-- `h1` Bronze, `h2` Inbox, item `h3`.
+- Skip link → `#composer-body`. While the first-launch splash is open the
+  skip target is `#first-launch-status` (`role="status"`). Failure uses
+  `role="alert"` and a real Retry `button` (4.1.3, 3.3.1). Reduce Motion
+  still shows the determinate bar. This is not a WCAG claim.
+- `h1` Bronze, `h2` Inbox, item `h3`. The splash heading is “Setting up
+  Bronze” while that gate is visible.
 - Composer: label for the textarea, one filled Add, `role="alert"`
   on add failure.
 - Capture and copy results: visually hidden `role="status"`. Visible

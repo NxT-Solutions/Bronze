@@ -111,6 +111,7 @@ function bumpTitleEngineRevision(root, phase) {
 
 const TITLE_ENGINE_PHASES = Object.freeze([
   "idle",
+  "downloading",
   "loading",
   "hashing",
   "ready",
@@ -126,6 +127,7 @@ const TITLE_MODEL_STATUS_FALLBACK = {
   notInBuild: "This model is not in this build, so titles stay extractive.",
   progressPercent: "{percent}%",
   unavailable: "Title engines could not be listed.",
+  downloading: "Downloading {engine}…",
   loading: "Loading {engine}…",
   hashing: "Checking {engine}…",
   ready: "Ready",
@@ -135,6 +137,8 @@ const TITLE_MODEL_STATUS_FALLBACK = {
   "failed.timeout": "Loading timed out, so titles stay extractive.",
   "failed.unreadable":
     "This file could not be read, so titles stay extractive.",
+  "failed.download_failed":
+    "The model file could not be downloaded, so titles stay extractive.",
   customEmpty: "Import a GGUF to use it for titles.",
   customPresent: "This imported file can title the next capture.",
   customOption: "Imported GGUF — RAM follows the file, 2 CPU threads",
@@ -324,7 +328,7 @@ export function parseTitleEnginePhase(raw) {
 }
 
 export function titleEngineBusy(phase) {
-  return phase === "loading" || phase === "hashing";
+  return phase === "downloading" || phase === "loading" || phase === "hashing";
 }
 
 const titleModelPresence = new WeakMap();
@@ -373,6 +377,9 @@ export function bundledWeightsAbsent(status, row) {
     return false;
   }
   const phase = parseTitleEnginePhase(status?.phase);
+  if (phase === "downloading") {
+    return false;
+  }
   if (phase === "missing") {
     return true;
   }
@@ -502,6 +509,13 @@ export function formatTitleEngineLifecycle(status, row, options = {}) {
     return notInBuildStatus();
   }
   const engine = titleEngineName(id);
+  if (phase === "downloading") {
+    return formatLifecycleTemplate(
+      "settings.field.titleModel.downloading",
+      "downloading",
+      engine,
+    );
+  }
   if (phase === "loading") {
     return formatLifecycleTemplate(
       "settings.field.titleModel.loading",

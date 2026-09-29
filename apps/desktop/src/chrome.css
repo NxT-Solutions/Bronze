@@ -2038,6 +2038,46 @@ menu {
   display: none;
 }
 
+.first-launch-setup {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--background);
+}
+
+.first-launch-setup[hidden] {
+  display: none;
+}
+
+.first-launch-card {
+  width: min(22rem, 100%);
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-page-card);
+  background: var(--card);
+}
+
+.first-launch-card h1 {
+  margin: 0;
+  font-size: var(--text-title);
+  font-weight: 590;
+  letter-spacing: -0.02em;
+}
+
+.first-launch-card .btn-primary {
+  justify-self: start;
+  min-height: var(--control-h);
+}
+
+#first-launch-error {
+  color: var(--destructive);
+}
+
 .title-engine-progress progress {
   flex: 1 1 auto;
   width: 100%;

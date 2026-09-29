@@ -60,6 +60,8 @@ test("four surfaces expose a skip link and section headings", () => {
     );
   }
   assert.match(html, /href="#composer-body"/);
+  assert.match(html, /id="first-launch-status"[^>]*role="status"/);
+  assert.match(html, /id="first-launch-error"[^>]*role="alert"/);
   assert.match(html, /data-i18n="panel.section.active">\s*Inbox\s*</);
   assert.match(settings, /href="#settings-search"/);
   assert.match(library, /href="#library-search"/);
