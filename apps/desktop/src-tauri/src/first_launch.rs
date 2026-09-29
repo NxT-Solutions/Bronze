@@ -249,17 +249,30 @@ fn clear_ready_marker() {
 mod first_launch_tests {
     use super::*;
     use bronze_title_model::{apply_diag, EnginePhase};
+    use std::sync::Mutex;
+
+    static TEST_DIR_LOCK: Mutex<()> = Mutex::new(());
 
     fn temp_dir(name: &str) -> PathBuf {
-        let dir =
-            std::env::temp_dir().join(format!("bronze-first-launch-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!(
+            "bronze-first-launch-{name}-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).expect("temp");
         dir
     }
 
+    fn lock_data_dir() -> std::sync::MutexGuard<'static, ()> {
+        TEST_DIR_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
     #[test]
     fn matching_marker_skips_splash() {
+        let _lock = lock_data_dir();
         let dir = temp_dir("skip");
         bind_data_dir(dir.clone());
         let path = dir.join("title-models").join("ready.json");
@@ -275,6 +288,7 @@ mod first_launch_tests {
 
     #[test]
     fn missing_marker_shows_checking() {
+        let _lock = lock_data_dir();
         let dir = temp_dir("check");
         bind_data_dir(dir.clone());
         let dto = snapshot_from_engine(TitleEngineStatus::idle());
@@ -285,6 +299,7 @@ mod first_launch_tests {
 
     #[test]
     fn progress_bytes_pass_through_while_downloading() {
+        let _lock = lock_data_dir();
         let loading = apply_diag(TitleEngineStatus::idle(), "switch scheduled tier=smol-360");
         let reading = apply_diag(loading, "read progress bytes=50 total=100");
         let dir = temp_dir("bytes");
@@ -299,6 +314,7 @@ mod first_launch_tests {
 
     #[test]
     fn hashing_is_checking_and_ready_writes_marker() {
+        let _lock = lock_data_dir();
         let loading = apply_diag(TitleEngineStatus::idle(), "switch scheduled tier=qwen-05");
         let hashing = apply_diag(loading, "hash ok");
         let dir = temp_dir("hash");
@@ -327,6 +343,7 @@ mod first_launch_tests {
 
     #[test]
     fn failed_model_keeps_splash_and_retry_clears_marker() {
+        let _lock = lock_data_dir();
         let loading = apply_diag(TitleEngineStatus::idle(), "switch scheduled tier=smol-135");
         let failed = apply_diag(loading, "fallback reason=bad_hash");
         let dir = temp_dir("fail");
@@ -348,6 +365,7 @@ mod first_launch_tests {
 
     #[test]
     fn download_started_diag_is_downloading_when_present() {
+        let _lock = lock_data_dir();
         let loading = apply_diag(TitleEngineStatus::idle(), "switch scheduled tier=smol-360");
         let downloading = apply_diag(loading, "download started");
         let dir = temp_dir("dl");
