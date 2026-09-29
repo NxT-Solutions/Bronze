@@ -242,7 +242,11 @@ test("settings window is searchable grouped with daily weekly backup and export 
   );
   assert.equal(
     en["settings.field.version.note.permissions"],
-    "Bronze asks once for the macOS permissions it uses.",
+    "Bronze asks once per ad-hoc binary, so an update can need Accessibility and Input Monitoring added again.",
+  );
+  assert.equal(
+    en["settings.field.version.note.permissionsAfterUpdate"],
+    "Ad-hoc updates need Accessibility and Input Monitoring added again.",
   );
   assert.match(html, /aria-labelledby="update-sheet-title"/);
   assert.match(html, /<button[\s\S]*settings\.field\.version\.close/);

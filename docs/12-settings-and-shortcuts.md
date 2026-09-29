@@ -246,7 +246,7 @@ Show Input Monitoring state and Secure Input limitation. Reset FSM after setting
 
 ## 8. Permission health settings
 
-Each row includes status, why needed, last test, Retest, Open System Settings/help, and alternative. The section names the running copy, path, and code identity. Retest re-queries trust and updates the closed-enum pills. It does not auto-open Privacy.
+Each row includes status, why needed, last test, Retest, Open System Settings/help, and alternative. The section names the running copy, path, and code identity. When Accessibility or Input Monitoring is ungranted on an ad-hoc or unsigned binary, it explains that an update is a new binary identity and that a version change may need those grants added once more. Retest re-queries trust and updates the closed-enum pills. It does not auto-open Privacy. Ad-hoc releases cannot keep TCC across upgrades; persist requires Developer ID Application signing. Bronze never writes TCC.db.
 
 - Input Monitoring: global modifier event tap.
 - Accessibility: AX selection and synthetic fallback.

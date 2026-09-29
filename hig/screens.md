@@ -95,6 +95,8 @@ Purpose: data, privacy, permission truth, shortcut inventory.
 - Permission health: why-text leading, status pill trailing, alternative
   in muted caption, Retest when useful. Screen Recording stays Not used.
   The section names the running app copy, path, and code identity.
+  After an ad-hoc update it says that this is a new binary identity
+  and that Accessibility and Input Monitoring may need adding again.
   The pill uses the closed-enum label (Not requested is not Denied).
   Retest never auto-opens Settings. Open System Settings still reveals
   that copy in Finder. Visible status text reports the check.

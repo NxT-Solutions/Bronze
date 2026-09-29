@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Для этой версии не опубликованы примечания к выпуску.",
   "settings.field.version.note.checkForUpdates": "«Проверить обновления» легче заметить.",
   "settings.field.version.note.engineSwitch": "Переключение механизма заголовка на этом Mac завершается и не остаётся на «Загрузка».",
-  "settings.field.version.note.permissions": "Bronze один раз запрашивает разрешения macOS, которые ему нужны.",
+  "settings.field.version.note.permissions": "Bronze запрашивает один раз на ad-hoc двоичный файл, поэтому обновление может снова потребовать Универсальный доступ и Мониторинг ввода.",
   "settings.field.version.openRelease": "Открыть выпуск",
   "settings.field.version.brew": "Скопировать команду Homebrew",
   "settings.field.version.brewCopied": "Скопировано",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Настройки",
   "settings.permission.title": "Состояние разрешений",
   "settings.permission.title.infoName": "О состоянии разрешений",
-  "settings.permission.title.info": "Показывает, выдала ли macOS разрешения, нужные для захвата текста, и даёт повторить проверку или открыть Системные настройки.",
+  "settings.permission.title.info": "Показывает, выдала ли macOS разрешения, нужные для захвата текста, даёт повторить проверку или открыть Системные настройки и объясняет, когда ad-hoc обновление становится новой двоичной идентичностью.",
   "settings.permission.retest": "Проверить снова",
   "settings.permission.status.granted": "Разрешено",
   "settings.permission.status.denied": "Запрещено",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Разрешение универсального доступа, захват текста из других приложений, несколько дисплеев, VoiceOver и подпись Apple всё ещё должен проверить человек на подписанном Mac.",
   "help.upload.none": "Bronze не отправляет диагностику и файл поддержки сам, поэтому всё остаётся на этом Mac.",
   "help.capture.heading": "Как захватить текст",
-  "help.capture.composer": "Выделите текст в любом приложении, включая Bronze, затем выберите «Захватить» в меню, используйте сочетание «Захватить выделение» из Настроек или введите текст в поле, когда действие недоступно."
+  "help.capture.composer": "Выделите текст в любом приложении, включая Bronze, затем выберите «Захватить» в меню, используйте сочетание «Захватить выделение» из Настроек или введите текст в поле, когда действие недоступно.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc обновления снова требуют Универсальный доступ и Мониторинг ввода.",
+  "settings.permission.identityDrift": "Ad-hoc или неподписанное обновление — новая двоичная идентичность, поэтому снова добавьте Универсальный доступ и Мониторинг ввода для пути и идентификатора кода выше, пока выпуски не будут подписаны одним сертификатом Developer ID Application.",
+  "settings.permission.versionReadd": "После этой смены версии ещё раз добавьте Универсальный доступ и Мониторинг ввода для этой ad-hoc копии."
 }

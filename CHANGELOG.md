@@ -5,7 +5,7 @@ This file is auto-updated by the release workflow.
 
 ## Unreleased
 
-- Work in progress.
+- Ad-hoc updates need Accessibility and Input Monitoring added again.
 
 ## v0.2.1 - 2026-09-29
 

@@ -138,7 +138,7 @@
   "settings.field.version.notesEmpty": "Bilješke izdanja nisu objavljene za ovu inačicu.",
   "settings.field.version.note.checkForUpdates": "„Provjeri ažuriranja” lakše je uočiti.",
   "settings.field.version.note.engineSwitch": "Promjena mehanizma naslova na ovom Macu završava umjesto da ostane na Učitavanje.",
-  "settings.field.version.note.permissions": "Bronze jednom traži dopuštenja za macOS koja koristi.",
+  "settings.field.version.note.permissions": "Bronze pita jednom po ad-hoc binarnom zapisu, pa ažuriranje opet može zahtijevati Pristupačnost i Nadzor unosa.",
   "settings.field.version.openRelease": "Otvori izdanje",
   "settings.field.version.brew": "Kopiraj naredbu Homebrew",
   "settings.field.version.brewCopied": "Kopirano",
@@ -306,7 +306,7 @@
   "settings.shortcuts.action.window.settings": "Postavke",
   "settings.permission.title": "Stanje dopuštenja",
   "settings.permission.title.infoName": "O stanju dopuštenja",
-  "settings.permission.title.info": "Pokazuje je li macOS dodijelio dopuštenja potrebna za zabilježavanje teksta, uz način ponovne provjere ili otvaranja Postavki sustava.",
+  "settings.permission.title.info": "Pokazuje je li macOS dodijelio dopuštenja potrebna za zabilježavanje teksta, uz način ponovne provjere ili otvaranja Postavki sustava, i objašnjava kada je ad-hoc ažuriranje novi binarni identitet.",
   "settings.permission.retest": "Provjeri ponovno",
   "settings.permission.status.granted": "Dodijeljeno",
   "settings.permission.status.denied": "Odbijeno",
@@ -352,5 +352,8 @@
   "help.limitations.humanGates": "Dopuštenje pristupačnosti, zabilježavanje teksta iz drugih aplikacija, više zaslona, VoiceOver i Appleov potpis i dalje mora provjeriti osoba na potpisanom Macu.",
   "help.upload.none": "Bronze ne šalje dijagnostiku ni datoteku podrške sam, pa sve ostaje na ovom Macu.",
   "help.capture.heading": "Kako zabilježiti tekst",
-  "help.capture.composer": "Odaberite tekst u bilo kojoj aplikaciji, uključujući Bronze, zatim Zabilježi s trake izbornika, upotrijebite prečac Zabilježi odabir iz Postavki ili upišite u polje kad radnja nije dostupna."
+  "help.capture.composer": "Odaberite tekst u bilo kojoj aplikaciji, uključujući Bronze, zatim Zabilježi s trake izbornika, upotrijebite prečac Zabilježi odabir iz Postavki ili upišite u polje kad radnja nije dostupna.",
+  "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc ažuriranja opet zahtijevaju Pristupačnost i Nadzor unosa.",
+  "settings.permission.identityDrift": "Ad-hoc ili nepotpisano ažuriranje novi je binarni identitet, pa ponovo dodajte Pristupačnost i Nadzor unosa za put i identitet koda iznad dok izdanja ne dijele isti Developer ID Application potpis.",
+  "settings.permission.versionReadd": "Nakon ove promjene verzije još jednom dodajte Pristupačnost i Nadzor unosa za ovu ad-hoc kopiju."
 }
