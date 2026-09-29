@@ -248,6 +248,24 @@ jobs:
             echo "Bundled icon.icns ${bundle_hash} differs from icon.icns ${source_hash}."
             exit 1
           fi
+          notice_src=""
+          for candidate in \
+            "target/${RUST_TARGET}/release/BronzeNotice.app" \
+            "apps/desktop/src-tauri/target/${RUST_TARGET}/release/BronzeNotice.app" \
+            "target/release/BronzeNotice.app" \
+            "apps/desktop/src-tauri/target/release/BronzeNotice.app"
+          do
+            if [[ -d "$candidate/Contents/Resources" ]]; then
+              notice_src="$candidate"
+              break
+            fi
+          done
+          if [[ -z "$notice_src" ]]; then
+            echo "BronzeNotice.app was not produced next to the cargo binary."
+            exit 1
+          fi
+          rm -rf "$app/Contents/MacOS/BronzeNotice.app"
+          cp -R "$notice_src" "$app/Contents/MacOS/BronzeNotice.app"
           notices=()
           while IFS= read -r notice; do
             notices+=("$notice")

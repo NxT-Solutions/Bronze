@@ -124,7 +124,14 @@ mod packaging_tests {
         assert!(fill_src.contains("Every pixel"));
         assert!(fill_src.contains("flat opaque plate"));
         assert!(fill_src.contains("--write-master"));
+        assert!(fill_src.contains("--rebuild-icns"));
+        assert!(fill_src.contains("Notification Center"));
+        assert!(fill_src.contains("icon_16x16@2x.png"));
+        assert!(fill_src.contains("icon_32x32@2x.png"));
+        assert!(fill_src.contains("il32"));
         assert!(fill_src.contains("self-test: rounded inset plate must fail"));
+        assert!(fill_src.contains("self-test: 16px full-bleed master must pass"));
+        assert!(!fill_src.contains("DEFAULT_ICONS") || fill_src.contains("32x32.png is the menu-bar template"));
         let fill = std::process::Command::new("python3")
             .arg(&checker)
             .arg(manifest.join("icons/icon.icns"))
@@ -153,6 +160,8 @@ mod packaging_tests {
             fs::read_to_string(manifest.join("../../../.github/workflows/release.yml")).unwrap();
         assert!(release.contains("differs from icon.icns"));
         assert!(release.contains("BronzeNotice AppIcon.icns was not produced"));
+        assert!(release.contains("cp -R \"$notice_src\" \"$app/Contents/MacOS/BronzeNotice.app\""));
+        assert!(release.contains("BronzeNotice.app was not produced next to the cargo binary."));
         assert!(
             release.contains("signingIdentity\":\"-\"")
                 && release.contains("hardenedRuntime\":false"),

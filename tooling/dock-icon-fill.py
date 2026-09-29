@@ -7,8 +7,10 @@ as a grey box. Every pixel, including the corners macOS later clips, has
 to be the bronze plate or a cream dot. No alpha, no cream frame.
 
 The cream mark is three dots in a column. A cream frame around an inset
-plate is much wider than one dot. The 32px representation is the smallest
-span that still counts.
+plate is much wider than one dot. The 16px face is the smallest span
+that still counts: Notification Center asks icon services for 16px and
+32px, and those faces must be PNG. Packed RGB slots (il32 / is32) are a
+different image and read as a cream well around the mark.
 
 32x32.png is the menu-bar template and is not in this check.
 """
@@ -16,8 +18,11 @@ span that still counts.
 from __future__ import annotations
 
 import math
+import shutil
 import struct
+import subprocess
 import sys
+import tempfile
 import zlib
 from pathlib import Path
 
@@ -41,22 +46,88 @@ DEFAULT_ICONS = (
     ROOT / "apps/desktop/src-tauri/icons/128x128.png",
     ROOT / "apps/desktop/src-tauri/icons/128x128@2x.png",
 )
+NOTICE_PNG_SIZES = (16, 32)
+NOTICE_ICONSET = ("icon_16x16@2x.png", "icon_32x32@2x.png")
+LEGACY_ICNS = (b"il32", b"is32", b"l8mk", b"s8mk", b"ic04", b"ic05")
 
 
-def icns_pngs(data: bytes) -> list[bytes]:
+def icns_entries(data: bytes) -> list[tuple[bytes, bytes]]:
     if len(data) < 8 or data[:4] != b"icns":
         raise ValueError("not an icns")
-    images: list[bytes] = []
+    entries: list[tuple[bytes, bytes]] = []
     offset = 8
     while offset + 8 <= len(data):
+        kind = data[offset : offset + 4]
         length = int.from_bytes(data[offset + 4 : offset + 8], "big")
         if length < 8 or offset + length > len(data):
             break
-        payload = data[offset + 8 : offset + length]
-        if payload.startswith(PNG_MAGIC):
-            images.append(payload)
+        entries.append((kind, data[offset + 8 : offset + length]))
         offset += length
-    return images
+    return entries
+
+
+def icns_pngs(data: bytes) -> list[bytes]:
+    return [payload for _kind, payload in icns_entries(data) if payload.startswith(PNG_MAGIC)]
+
+
+def write_icns(path: Path, entries: list[tuple[bytes, bytes]]) -> None:
+    parts = bytearray()
+    for kind, payload in entries:
+        if len(kind) != 4:
+            raise ValueError(f"icns type {kind!r}")
+        length = 8 + len(payload)
+        parts.extend(kind)
+        parts.extend(length.to_bytes(4, "big"))
+        parts.extend(payload)
+    path.write_bytes(b"icns" + (8 + len(parts)).to_bytes(4, "big") + parts)
+
+
+def rebuild_notice_faces(path: Path) -> None:
+    """Keep large PNG faces. Replace the 16/32 banner faces with the master.
+
+    Packed RGB/ARGB slots are a different image. Notification Center prefers
+    those slots for the 16px and 32px faces, so they have to go.
+    """
+    kept: list[tuple[bytes, bytes]] = []
+    for kind, payload in icns_entries(path.read_bytes()):
+        if kind in LEGACY_ICNS:
+            continue
+        if payload.startswith(PNG_MAGIC):
+            width = int.from_bytes(payload[16:20], "big")
+            if width <= 32:
+                continue
+        kept.append((kind, payload))
+    kept.append((b"icp4", encode_png(16, 16, paint_master(16))))
+    kept.append((b"icp5", encode_png(32, 32, paint_master(32))))
+    kept.append((b"ic11", encode_png(32, 32, paint_master(32))))
+    write_icns(path, kept)
+
+
+def iconutil_pngs(path: Path) -> list[tuple[str, bytes]]:
+    iconutil = shutil.which("iconutil")
+    if iconutil is None:
+        return []
+    work = Path(tempfile.mkdtemp(prefix="bronze-iconset-"))
+    iconset = work / "App.iconset"
+    try:
+        built = subprocess.run(
+            [iconutil, "-c", "iconset", str(path), "-o", str(iconset)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if built.returncode != 0 or not iconset.is_dir():
+            raise ValueError(
+                f"iconutil could not extract {path}: {built.stderr.strip() or built.stdout.strip()}"
+            )
+        images: list[tuple[str, bytes]] = []
+        for name in NOTICE_ICONSET:
+            image = iconset / name
+            if image.is_file():
+                images.append((name, image.read_bytes()))
+        return images
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
 
 
 def decode_png(data: bytes) -> tuple[int, int, list[bytearray]]:
@@ -367,14 +438,39 @@ def check_image(label: str, data: bytes) -> list[str]:
 def check_path(path: Path) -> list[str]:
     data = path.read_bytes()
     if data[:4] == b"icns":
-        images = icns_pngs(data)
+        entries = icns_entries(data)
+        images = [payload for _kind, payload in entries if payload.startswith(PNG_MAGIC)]
         if not images:
             return [f"{path} contains no png"]
-        if not any(decode_png(image)[0] == 1024 for image in images):
-            return [f"{path} has no 1024px image"]
+        sizes = [decode_png(image)[0] for image in images]
         errors: list[str] = []
+        if 1024 not in sizes:
+            errors.append(f"{path} has no 1024px image")
+        for need in NOTICE_PNG_SIZES:
+            if need not in sizes:
+                errors.append(
+                    f"{path} has no {need}px png; Notification Center uses that face"
+                )
+        for kind, _payload in entries:
+            if kind in LEGACY_ICNS:
+                errors.append(
+                    f"{path} still has {kind.decode()}; "
+                    "Notification Center prefers that slot over the PNG face"
+                )
         for image in images:
             errors.extend(check_image(str(path), image))
+        try:
+            extracted = iconutil_pngs(path)
+        except ValueError as exc:
+            errors.append(str(exc))
+            extracted = []
+        if extracted:
+            found = {name for name, _image in extracted}
+            for name in NOTICE_ICONSET:
+                if name not in found:
+                    errors.append(f"{path} iconutil extract is missing {name}")
+            for name, image in extracted:
+                errors.extend(check_image(f"{path} {name}", image))
         return errors
     return check_image(str(path), data)
 
@@ -428,12 +524,23 @@ def self_test() -> list[str]:
     punched[-1][-4:] = clear
     if not check_image("self-test alpha corners", encode_png(size, size, punched)):
         errors.append("self-test: transparent corners must fail")
+
+    notice16 = paint_master(16)
+    if check_image("self-test notice 16", encode_png(16, 16, notice16)):
+        errors.append("self-test: 16px full-bleed master must pass")
+    notice32 = paint_master(32)
+    if check_image("self-test notice 32", encode_png(32, 32, notice32)):
+        errors.append("self-test: 32px full-bleed master must pass")
     return errors
 
 
 def main(argv: list[str]) -> int:
     if len(argv) >= 3 and argv[1] == "--write-master":
         write_master(Path(argv[2]))
+        return 0
+    if len(argv) >= 2 and argv[1] == "--rebuild-icns":
+        target = Path(argv[2]) if len(argv) >= 3 else DEFAULT_ICONS[0]
+        rebuild_notice_faces(target)
         return 0
     self_errors = self_test()
     if self_errors:

@@ -219,6 +219,15 @@ mod user_notice_tests {
         assert!(wrap.contains("dock-icon-fill.py"));
         assert!(!wrap.contains("32x32"));
         assert!(!wrap.contains("128x128"));
+        let fill = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tooling/dock-icon-fill.py"
+        ));
+        assert!(fill.contains("Notification Center"));
+        assert!(fill.contains("icon_16x16@2x.png"));
+        assert!(fill.contains("il32"));
+        assert!(fill.contains("--rebuild-icns"));
+        assert!(fill.contains("32x32.png is the menu-bar template"));
         let call_at = build
             .find("wrap_notice_helper(")
             .expect("notice helper call");
