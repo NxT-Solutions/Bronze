@@ -63,6 +63,19 @@
         "fullscreen": false,
         "visible": false,
         "devtools": false
+      },
+      {
+        "label": "onboarding",
+        "title": "Bronze",
+        "url": "onboarding.html",
+        "width": 640,
+        "height": 720,
+        "minWidth": 480,
+        "minHeight": 560,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": false,
+        "devtools": false
       }
     ],
     "security": {

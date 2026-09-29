@@ -9,6 +9,7 @@ const html = readFileSync(join(root, "index.html"), "utf8");
 const settings = readFileSync(join(root, "settings.html"), "utf8");
 const library = readFileSync(join(root, "library.html"), "utf8");
 const help = readFileSync(join(root, "help.html"), "utf8");
+const onboarding = readFileSync(join(root, "onboarding.html"), "utf8");
 
 test("queue action accessible names contain visible labels", () => {
   assert.match(html, /data-i18n-aria-label="queue.item.moveUp"/);
@@ -51,8 +52,8 @@ test("queue action accessible names contain visible labels", () => {
   assert.match(html, /<button\b[^>]*type="button"[^>]*id="queue-sort-toggle"/);
 });
 
-test("four surfaces expose a skip link and section headings", () => {
-  for (const page of [html, settings, library, help]) {
+test("five surfaces expose a skip link and section headings", () => {
+  for (const page of [html, settings, library, help, onboarding]) {
     assert.match(page, /class="skip-link"/);
     assert.match(
       page,
@@ -69,4 +70,7 @@ test("four surfaces expose a skip link and section headings", () => {
   assert.match(library, /data-i18n="library.heading.items">\s*Items\s*</);
   assert.match(help, /href="#help-about"/);
   assert.match(help, /id="help-about"/);
+  assert.match(onboarding, /href="#onboarding-title"/);
+  assert.match(onboarding, /id="onboarding-title"/);
+  assert.match(onboarding, /role="status"/);
 });

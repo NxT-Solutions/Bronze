@@ -431,6 +431,9 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
   assert.match(chrome, /#library\.page-shell/);
   assert.match(chrome, /#library \.library-empty/);
   assert.match(chrome, /#help\.page-shell/);
+  assert.match(chrome, /#onboarding\.page-shell/);
+  assert.match(chrome, /\.onboarding-dock/);
+  assert.match(chrome, /\.onboarding-shot/);
   assert.match(chrome, /\.help-dock/);
   assert.match(chrome, /\.help-dock-tools/);
   assert.match(chrome, /\.help-dock-tools \.btn-primary[\s\S]*?width:\s*100%/);
@@ -466,6 +469,9 @@ test("four surfaces share zinc chrome and kill native appearance", () => {
     assert.doesNotMatch(page.html, /#111|#eee/, page.name);
     assert.doesNotMatch(page.html.toLowerCase(), /copper|cooper/);
   }
+  const onboardingHtml = readFileSync(join(root, "onboarding.html"), "utf8");
+  assert.match(onboardingHtml, /href="\.\/chrome\.css"/);
+  assert.doesNotMatch(onboardingHtml.toLowerCase(), /copper|cooper/);
   assert.match(pages[2].html, /settings\.permission\.status\.denied/);
   assert.match(pages[2].html, /data-status="notUsed"/);
   assert.match(pages[0].html, /class="queue-item"/);

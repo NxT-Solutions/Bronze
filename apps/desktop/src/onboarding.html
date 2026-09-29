@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bronze</title>
+    <link rel="stylesheet" href="./chrome.css" />
+  </head>
+  <body class="page">
+    <a class="skip-link" href="#onboarding-title" data-i18n="chrome.skip.toContent">Skip to content</a>
+    <main id="onboarding" class="page-shell" data-slot="onboarding" data-phase="wizard">
+      <header class="chrome-header">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <h1 id="onboarding-title" tabindex="-1" data-i18n="onboarding.title">Set up Bronze</h1>
+        </div>
+      </header>
+
+      <section
+        id="onboarding-splash"
+        class="onboarding-pane"
+        data-onboarding-pane="splash"
+        hidden
+        aria-labelledby="onboarding-splash-title"
+      >
+        <h2 id="onboarding-splash-title" data-i18n="onboarding.splash.title">Setting up Bronze</h2>
+        <p data-i18n="onboarding.splash.body">This is only the first time to set up the app.</p>
+        <p
+          id="onboarding-splash-status"
+          class="muted"
+          role="status"
+          data-onboarding-splash-status
+          data-i18n="onboarding.splash.status"
+        >
+          Preparing the title model
+        </p>
+        <div class="title-engine-progress" data-onboarding-splash-progress hidden>
+          <progress
+            id="onboarding-splash-bar"
+            max="100"
+            value="0"
+            aria-labelledby="onboarding-splash-status"
+          ></progress>
+          <span class="title-engine-progress-value" data-onboarding-splash-percent></span>
+        </div>
+        <div class="toolbar">
+          <button
+            type="button"
+            hidden
+            data-onboarding-splash-retry
+            data-i18n="onboarding.splash.retry"
+          >
+            Try again
+          </button>
+        </div>
+      </section>
+
+      <section
+        id="onboarding-wizard"
+        class="onboarding-pane"
+        data-onboarding-pane="wizard"
+        aria-labelledby="onboarding-step-title"
+      >
+        <article data-onboarding-step="welcome">
+          <figure class="onboarding-figure">
+            <img class="onboarding-shot" src="./onboarding-media/bronze-hero.png" alt="" />
+            <figcaption class="visually-hidden" data-i18n="onboarding.shot.queue">
+              Bronze queue
+            </figcaption>
+          </figure>
+          <h2 id="onboarding-step-title" data-i18n="onboarding.step.welcome.title">
+            A queue for what you select
+          </h2>
+          <p data-i18n="onboarding.step.welcome.body">
+            Bronze keeps selected text in a local queue so you can act on it without leaving this Mac.
+          </p>
+        </article>
+        <article data-onboarding-step="capture" hidden>
+          <figure class="onboarding-figure">
+            <img class="onboarding-shot" src="./onboarding-media/bronze-queue.png" alt="" />
+            <figcaption class="visually-hidden" data-i18n="onboarding.shot.capture">
+              Capture into the queue
+            </figcaption>
+          </figure>
+          <h2 data-i18n="onboarding.step.capture.title">Capture from any app</h2>
+          <p data-i18n="onboarding.step.capture.body">
+            Select text, then capture from the menu or the shortcut so the selection lands in the queue.
+          </p>
+        </article>
+        <article data-onboarding-step="queue" hidden>
+          <figure class="onboarding-figure">
+            <img class="onboarding-shot" src="./onboarding-media/bronze-queue.png" alt="" />
+            <figcaption class="visually-hidden" data-i18n="onboarding.shot.queue">
+              Bronze queue
+            </figcaption>
+          </figure>
+          <h2 data-i18n="onboarding.step.queue.title">Act from the queue</h2>
+          <p data-i18n="onboarding.step.queue.body">
+            Copy, complete, skip, or edit each item from the inbox when you are ready.
+          </p>
+        </article>
+        <article data-onboarding-step="settings" hidden>
+          <figure class="onboarding-figure">
+            <img class="onboarding-shot" src="./onboarding-media/bronze-settings.png" alt="" />
+            <figcaption class="visually-hidden" data-i18n="onboarding.shot.settings">
+              Bronze settings
+            </figcaption>
+          </figure>
+          <h2 data-i18n="onboarding.step.settings.title">Settings stay on this Mac</h2>
+          <p data-i18n="onboarding.step.settings.body">
+            Permission health, shortcuts, and the title engine live in Settings if you need them later.
+          </p>
+        </article>
+        <article data-onboarding-step="permissions" hidden>
+          <h2 data-i18n="onboarding.step.permissions.title">Allow capture on this Mac</h2>
+          <p data-i18n="onboarding.step.permissions.body">
+            Bronze asks for Accessibility, Input Monitoring, and Notifications so capture works after this setup.
+          </p>
+          <div class="permission-copy" data-permission-copy hidden>
+            <p class="muted" data-permission-running-copy hidden>
+              This copy is {name} {version}.
+            </p>
+            <p class="muted" data-permission-bundle-path hidden></p>
+            <p class="muted" data-permission-cdhash hidden></p>
+            <p
+              class="muted"
+              data-permission-stale-copy
+              hidden
+              data-i18n="settings.permission.staleCopy"
+            >
+              If System Settings already shows this app as on, turn that switch off, click Add, and choose the app revealed in Finder, then quit and reopen Bronze.
+            </p>
+            <p
+              class="muted"
+              data-permission-exact-app
+              hidden
+              data-i18n="settings.permission.exactApp"
+            >
+              Add the exact file at the path above; another Bronze.app, bronze-desktop, or older copy will not grant this running app.
+            </p>
+            <p
+              class="muted"
+              data-permission-identity-drift
+              hidden
+              data-i18n="settings.permission.identityDrift"
+            >
+              An ad-hoc or unsigned update is a new binary identity, so add Accessibility and Input Monitoring again for the path and code identity above until releases share one Developer ID Application signature.
+            </p>
+            <p
+              class="muted"
+              data-permission-version-readd
+              hidden
+              data-i18n="settings.permission.versionReadd"
+            >
+              After this version change, add Accessibility and Input Monitoring once more for this ad-hoc copy.
+            </p>
+            <p
+              class="muted"
+              data-permission-retest-feedback
+              hidden
+              role="status"
+            ></p>
+          </div>
+          <ul class="health-list">
+            <li
+              class="health-card"
+              data-capability="inputMonitoring"
+              data-usage="required"
+              data-status="denied"
+            >
+              <div class="health-head">
+                <p data-i18n="settings.permission.inputMonitoring.why">
+                  Needed for the global capture chord
+                </p>
+                <p
+                  class="pill"
+                  data-status="denied"
+                  data-i18n="settings.permission.status.denied"
+                >
+                  Denied
+                </p>
+              </div>
+              <p class="muted" data-i18n="settings.permission.inputMonitoring.alternative">
+                Use the menu or composer
+              </p>
+              <div class="toolbar">
+                <button
+                  type="button"
+                  data-permission-retest="inputMonitoring"
+                  data-i18n="settings.permission.retest"
+                >
+                  Retest
+                </button>
+                <button
+                  type="button"
+                  hidden
+                  class="btn-ghost"
+                  data-permission-open-settings="inputMonitoring"
+                  data-i18n="settings.permission.openSystemSettings"
+                >
+                  Open System Settings
+                </button>
+              </div>
+            </li>
+            <li
+              class="health-card"
+              data-capability="accessibility"
+              data-usage="required"
+              data-status="denied"
+            >
+              <div class="health-head">
+                <p data-i18n="settings.permission.accessibility.why">
+                  Needed to read the current selection
+                </p>
+                <p
+                  class="pill"
+                  data-status="denied"
+                  data-i18n="settings.permission.status.denied"
+                >
+                  Denied
+                </p>
+              </div>
+              <p class="muted" data-i18n="settings.permission.accessibility.alternative">
+                Paste or type into the composer
+              </p>
+              <div class="toolbar">
+                <button
+                  type="button"
+                  data-permission-retest="accessibility"
+                  data-i18n="settings.permission.retest"
+                >
+                  Retest
+                </button>
+                <button
+                  type="button"
+                  hidden
+                  class="btn-ghost"
+                  data-permission-open-settings="accessibility"
+                  data-i18n="settings.permission.openSystemSettings"
+                >
+                  Open System Settings
+                </button>
+              </div>
+            </li>
+            <li
+              class="health-card"
+              data-capability="notifications"
+              data-usage="required"
+              data-status="unavailable"
+            >
+              <div class="health-head">
+                <p data-i18n="settings.permission.notifications.why">
+                  Needed for Notification Center banners
+                </p>
+                <p
+                  class="pill"
+                  data-status="unavailable"
+                  data-i18n="settings.permission.status.unavailable"
+                >
+                  Unavailable
+                </p>
+              </div>
+              <p class="muted" data-i18n="settings.permission.notifications.alternative">
+                The in-app notice still appears
+              </p>
+              <div class="toolbar">
+                <button
+                  type="button"
+                  hidden
+                  data-permission-allow-notifications
+                  data-i18n="settings.permission.notifications.allow"
+                >
+                  Allow notifications
+                </button>
+                <button
+                  type="button"
+                  hidden
+                  class="btn-ghost"
+                  data-permission-open-settings="notifications"
+                  data-i18n="settings.permission.openSystemSettings"
+                >
+                  Open System Settings
+                </button>
+              </div>
+            </li>
+          </ul>
+        </article>
+      </section>
+
+      <footer class="onboarding-dock">
+        <p class="muted onboarding-dock-status" role="status" data-onboarding-status hidden></p>
+        <div class="onboarding-dock-tools">
+          <button
+            type="button"
+            class="btn-ghost"
+            hidden
+            data-onboarding-back
+            data-i18n="onboarding.back"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            class="btn-primary"
+            data-onboarding-next
+            data-i18n="onboarding.next"
+          >
+            Continue
+          </button>
+        </div>
+      </footer>
+    </main>
+    <script type="module" src="./apply-locale.mjs"></script>
+    <script type="module" src="./onboarding.mjs"></script>
+  </body>
+</html>

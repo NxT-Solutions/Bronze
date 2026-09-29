@@ -1,6 +1,7 @@
 mod capture_permissions;
 mod first_launch;
 mod live_session;
+mod onboarding;
 mod own_selection;
 mod running_bundle;
 mod title_engines;
@@ -23,6 +24,8 @@ pub fn run() {
                 capture_permissions::open_privacy_settings,
                 capture_permissions::notification_authorization_status,
                 capture_permissions::request_notification_authorization,
+                onboarding::first_run_status,
+                complete_onboarding,
                 show_chrome_window,
                 live_session::list_queue_items,
                 live_session::list_overview_items,
@@ -60,7 +63,7 @@ pub fn run() {
                 title_refine::title_engine_status,
                 first_launch::first_launch_setup,
                 first_launch::retry_first_launch_setup,
-                first_launch::finish_first_launch_setup,
+                finish_first_launch_setup,
                 title_engines::import_title_gguf,
                 title_engines::list_ollama_title_models,
                 title_engines::set_hosted_title_key,
@@ -94,7 +97,7 @@ pub fn run() {
                     *slot = Some(app.handle().clone());
                 }
                 bronze_platform_macos::install_notice_click_hook(on_notice_click);
-                reveal_quick_panel(app.handle())?;
+                reveal_primary_surface(app.handle())?;
                 start_capture_pump(app.handle().clone());
                 Ok(())
             })
@@ -108,7 +111,7 @@ pub fn run() {
         .run(|app, event| {
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen { .. } = event {
-                let _ = reveal_quick_panel(app);
+                let _ = reveal_primary_surface(app);
             }
         });
 }
@@ -133,6 +136,59 @@ fn show_chrome_window(app: tauri::AppHandle, kind: String) -> Result<(), String>
         .map_err(|err| err.to_string())?;
     let _ = window.set_focus();
     Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn hide_labeled_window(app: &tauri::AppHandle, label: &str) {
+    use tauri::Manager;
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.hide();
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn reveal_primary_surface(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::Manager;
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir());
+    if first_launch::needs_setup() {
+        hide_labeled_window(app, "onboarding");
+        return reveal_quick_panel(app);
+    }
+    if onboarding::needs_first_run(&data_dir) {
+        hide_labeled_window(app, "quick");
+        show_chrome_window(app.clone(), "onboarding".into())?;
+        return Ok(());
+    }
+    hide_labeled_window(app, "onboarding");
+    reveal_quick_panel(app)
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn complete_onboarding(app: tauri::AppHandle) -> Result<onboarding::FirstRunStatusDto, String> {
+    use tauri::Manager;
+    let dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
+    let status = onboarding::mark_completed(&dir)?;
+    hide_labeled_window(&app, "onboarding");
+    reveal_quick_panel(&app).map_err(|err| err.to_string())?;
+    Ok(status)
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn finish_first_launch_setup(app: tauri::AppHandle) -> first_launch::FirstLaunchSetupDto {
+    use tauri::Manager;
+    let dto = first_launch::finish_first_launch_setup();
+    if let Ok(dir) = app.path().app_data_dir() {
+        if onboarding::needs_first_run(&dir) {
+            hide_labeled_window(&app, "quick");
+            let _ = show_chrome_window(app, "onboarding".into());
+        }
+    }
+    dto
 }
 
 #[cfg(target_os = "macos")]
@@ -177,7 +233,7 @@ unsafe extern "C" fn on_notice_click(ptr: *const u8, len: u64) {
     let app = notice_app().lock().ok().and_then(|guard| guard.clone());
     if let Some(app) = app {
         use tauri::Emitter;
-        let _ = reveal_quick_panel(&app);
+        let _ = reveal_primary_surface(&app);
         let _ = app.emit(
             "notice-activate",
             NoticeActivate {
@@ -514,7 +570,7 @@ objc2::define_class!(
         fn show_panel(&self, _sender: Option<&objc2::runtime::AnyObject>) {
             let app = STATUS_APP.lock().ok().and_then(|guard| guard.clone());
             if let Some(app) = app {
-                let _ = reveal_quick_panel(&app);
+                let _ = reveal_primary_surface(&app);
             }
         }
     }
@@ -578,7 +634,7 @@ fn handle_status_item_event(app: &tauri::AppHandle, event: &tauri::tray::TrayIco
             if let Some(tray) = app.tray_by_id(TRAY_ID) {
                 let _ = tray.set_menu(None::<tauri::menu::Menu<tauri::Wry>>);
             }
-            let _ = reveal_quick_panel(app);
+            let _ = reveal_primary_surface(app);
         }
         Some(StatusItemClick::PopupMenu) => popup_status_menu(app),
         None => {}
@@ -695,7 +751,7 @@ fn handle_menu_id(app: &tauri::AppHandle, id: &str) {
             let _ = show_chrome_window(app.clone(), "help".into());
         }
         "show-panel" => {
-            let _ = reveal_quick_panel(app);
+            let _ = reveal_primary_surface(app);
         }
         "capture-selection" => {
             on_capture_requested(app);
@@ -981,6 +1037,10 @@ mod tests {
                     "allow-queue-live must include first_launch_setup"
                 );
                 assert!(
+                    permission_block(&used, "allow-queue-live").contains("first_run_status"),
+                    "allow-queue-live must include first_run_status"
+                );
+                assert!(
                     !permission_block(&used, "allow-queue-live").contains("save_settings_v1"),
                     "allow-queue-live must not grant save_settings_v1"
                 );
@@ -1003,6 +1063,41 @@ mod tests {
                         Value::String("allow-ui-catalog".into()),
                         Value::String("allow-help-support".into())
                     ]
+                );
+            } else if name == "onboarding" {
+                assert!(permissions.iter().any(|permission| {
+                    permission.as_str() == Some("allow-retest-used-permissions")
+                }));
+                assert!(permissions.iter().any(|permission| {
+                    permission.as_str() == Some("allow-open-privacy-settings")
+                }));
+                assert!(permissions.iter().any(|permission| {
+                    permission.as_str() == Some("allow-notification-authorization")
+                }));
+                assert!(permissions
+                    .iter()
+                    .any(|permission| permission.as_str() == Some("allow-ui-catalog")));
+                assert!(permissions
+                    .iter()
+                    .any(|permission| permission.as_str() == Some("allow-onboarding")));
+                let used =
+                    fs::read_to_string(manifest_dir().join("permissions/used-permissions.toml"))
+                        .expect("permissions");
+                assert!(
+                    permission_block(&used, "allow-onboarding").contains("first_run_status"),
+                    "allow-onboarding must include first_run_status"
+                );
+                assert!(
+                    permission_block(&used, "allow-onboarding").contains("complete_onboarding"),
+                    "allow-onboarding must include complete_onboarding"
+                );
+                assert!(
+                    permission_block(&used, "allow-onboarding").contains("title_engine_status"),
+                    "allow-onboarding must include title_engine_status"
+                );
+                assert!(
+                    !permission_block(&used, "allow-onboarding").contains("save_settings_v1"),
+                    "allow-onboarding must not grant save_settings_v1"
                 );
             } else {
                 assert_eq!(permissions, &vec![Value::String("core:default".into())]);
@@ -1082,6 +1177,12 @@ mod tests {
             .expect("help window");
         assert_eq!(help["visible"], false);
         assert_eq!(help["url"], "help.html");
+        let onboarding = windows
+            .iter()
+            .find(|window| window["label"] == "onboarding")
+            .expect("onboarding window");
+        assert_eq!(onboarding["visible"], false);
+        assert_eq!(onboarding["url"], "onboarding.html");
         assert_eq!(conf["app"]["withGlobalTauri"], true);
         let csp = &conf["app"]["security"]["csp"];
         assert_eq!(csp["frame-src"], "'none'");
@@ -1174,6 +1275,9 @@ mod tests {
         assert!(lib.contains("show_menu_on_left_click(false)"));
         assert!(lib.contains("menu.status.show"));
         assert!(lib.contains("raise_quick_panel"));
+        assert!(lib.contains("reveal_primary_surface"));
+        assert!(lib.contains("complete_onboarding"));
+        assert!(lib.contains("first_run_status"));
         assert!(lib.contains("RunEvent::Reopen"));
         let tray_menu = lib.split("fn status_tray_menu").nth(1).expect("tray menu");
         let tray_menu_end = tray_menu.find("\nfn ").unwrap_or(tray_menu.len());
