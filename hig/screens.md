@@ -1,7 +1,8 @@
 # Surfaces
 
-Four HTML windows share `chrome.css`. Native titles stay “Bronze”,
-“Bronze Settings”, “Bronze Library”, “Bronze Help”.
+Five HTML windows share `chrome.css`. Native titles stay “Bronze”,
+“Bronze Settings”, “Bronze Library”, “Bronze Help”. The first-run
+wizard window also uses the “Bronze” title.
 
 ## Queue — `apps/desktop/src/index.html`
 
@@ -134,6 +135,24 @@ Purpose: what Bronze is, how to capture, export a local bundle.
   already in “Export … bundle”).
 - No automatic upload (`data-automatic-upload="false"`).
 - One help surface; do not add a second help button on this window.
+
+## Onboarding — `apps/desktop/src/onboarding.html`
+
+Purpose: first-run setup so the queue is usable when the person
+finishes. Later launches skip this window when the complete flag is
+set and title models are already cached.
+
+- Title-model splash runs first on the Quick Panel
+  (`#first-launch-setup`) when models are missing. This window then
+  continues with the wizard. A fallback splash pane stays on this
+  page if models are still missing.
+- Wizard steps: welcome, capture, queue, Settings, then permissions.
+  Stills are the in-repo README shots, not generated art.
+- One filled Continue / Finish. Back is ghost. Finish writes the
+  complete flag and reveals the queue.
+- Permissions use the same Retest, Open System Settings, Allow
+  notifications, path, and cdhash copy as Settings. Denial still
+  finishes; the composer remains.
 
 ## Shared defects to refuse
 

@@ -1716,6 +1716,85 @@ menu {
   white-space: nowrap;
 }
 
+#onboarding.page-shell {
+  gap: var(--space-4);
+  min-height: calc(100vh - (var(--space-6) * 2));
+  padding-block-end: 0;
+}
+
+.onboarding-pane {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.onboarding-figure {
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--radius-page-card);
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--stroke);
+}
+
+.onboarding-shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 16rem;
+  object-fit: cover;
+  object-position: top;
+}
+
+#onboarding article h2 {
+  margin: 0;
+  font-size: var(--text-title);
+  font-weight: 590;
+}
+
+#onboarding article p {
+  margin: 0;
+  max-width: 80ch;
+  line-height: 1.5;
+}
+
+.onboarding-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  margin-block-start: auto;
+  padding-block-start: var(--space-2);
+  border: none;
+  border-block-start: 1px solid var(--stroke);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.onboarding-dock-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.onboarding-dock-tools .btn-primary {
+  min-width: 8rem;
+}
+
+.onboarding-dock-status {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-micro);
+  color: var(--muted-foreground);
+  text-align: end;
+}
+
+html[data-motion="reduce"] .onboarding-shot,
+[data-reduce-motion] .onboarding-shot {
+  transition: none;
+}
+
 [data-standard-chord]:empty {
   display: none;
 }

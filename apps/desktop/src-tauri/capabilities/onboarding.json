@@ -3,5 +3,12 @@
   "description": "Capability for the onboarding window",
   "local": true,
   "windows": ["onboarding"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "allow-retest-used-permissions",
+    "allow-open-privacy-settings",
+    "allow-notification-authorization",
+    "allow-ui-catalog",
+    "allow-onboarding"
+  ]
 }

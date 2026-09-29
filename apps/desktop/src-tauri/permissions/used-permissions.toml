@@ -38,6 +38,7 @@ commands.allow = [
   "first_launch_setup",
   "retry_first_launch_setup",
   "finish_first_launch_setup",
+  "first_run_status",
   "ui_locale",
   "ui_catalog",
 ]
@@ -88,6 +89,15 @@ commands.allow = [
   "open_release_page",
   "ui_locale",
   "ui_catalog",
+]
+
+[[permission]]
+identifier = "allow-onboarding"
+description = "First-run wizard status, title-engine progress, and finish"
+commands.allow = [
+  "first_run_status",
+  "complete_onboarding",
+  "title_engine_status",
 ]
 
 [[permission]]

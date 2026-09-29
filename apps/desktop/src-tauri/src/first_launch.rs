@@ -60,8 +60,10 @@ pub fn retry_first_launch_setup() -> FirstLaunchSetupDto {
     snapshot_from_engine(current_status())
 }
 
-#[cfg(target_os = "macos")]
-#[tauri::command]
+pub fn needs_setup() -> bool {
+    snapshot_from_engine(current_status()).needed
+}
+
 pub fn finish_first_launch_setup() -> FirstLaunchSetupDto {
     remember_ready();
     snapshot_from_engine(current_status())

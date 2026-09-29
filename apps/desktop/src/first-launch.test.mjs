@@ -184,6 +184,8 @@ test("show and hide follow needed, and failure keeps retry", () => {
 test("queue waits for the setup gate and maps invoke progress", () => {
   assert.match(queueLive, /bindFirstLaunchSetup/);
   assert.match(queueLive, /startQuickPanel/);
+  assert.match(queueLive, /first_run_status/);
+  assert.match(queueLive, /showChromeWindow\("onboarding"\)/);
   assert.match(live, /first_launch_setup/);
   assert.match(live, /retry_first_launch_setup/);
   assert.match(live, /finish_first_launch_setup/);
