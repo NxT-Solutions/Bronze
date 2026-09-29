@@ -122,7 +122,8 @@ mod packaging_tests {
         let checker = manifest.join("../../../tooling/dock-icon-fill.py");
         let fill_src = fs::read_to_string(&checker).unwrap();
         assert!(fill_src.contains("Every pixel"));
-        assert!(fill_src.contains("flat opaque plate"));
+        assert!(fill_src.contains("opaque plate"));
+        assert!(fill_src.contains("top-lighting gradient"));
         assert!(fill_src.contains("--write-master"));
         assert!(fill_src.contains("--rebuild-icns"));
         assert!(fill_src.contains("Notification Center"));
@@ -130,6 +131,7 @@ mod packaging_tests {
         assert!(fill_src.contains("icon_32x32@2x.png"));
         assert!(fill_src.contains("il32"));
         assert!(fill_src.contains("self-test: rounded inset plate must fail"));
+        assert!(fill_src.contains("self-test: letterbox must fail"));
         assert!(fill_src.contains("self-test: 16px full-bleed master must pass"));
         assert!(fill_src.contains("32x32.png is the menu-bar template"));
         let fill = std::process::Command::new("python3")
@@ -140,10 +142,7 @@ mod packaging_tests {
             .arg(manifest.join("icons/128x128@2x.png"))
             .status()
             .expect("dock icon fill check");
-        assert!(
-            fill.success(),
-            "Dock icon artwork must be a flat opaque plate"
-        );
+        assert!(fill.success(), "Dock icon artwork must be an opaque plate");
         let icns_at = conf.find("\"icons/icon.icns\"").unwrap();
         let template_at = conf.find("\"icons/32x32.png\"").unwrap();
         assert!(
