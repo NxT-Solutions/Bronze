@@ -236,6 +236,16 @@ mod user_notice_tests {
             call.contains("icons/icon.icns"),
             "BronzeNotice must copy the Dock icon.icns, got {call}"
         );
+        let release = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../.github/workflows/release.yml"
+        ));
+        assert!(
+            !release.contains("cp -R \"$notice_src\" \"$app/Contents/MacOS/BronzeNotice.app\""),
+            "release must not add BronzeNotice.app after tauri codesign"
+        );
+        assert!(release.contains("BronzeNotice.app must not be copied into the signed app"));
+        assert!(release.contains("codesign --verify --deep --strict"));
         let tap = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../native/macos/BronzeNative/Sources/BronzeNative/EventTapEngine.swift"
