@@ -944,6 +944,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
       sortReflow.target = next;
       return sortReflow.done;
     }
+    if (next === activeSort) {
+      return Promise.resolve(true);
+    }
     const slot = {
       target: next,
       phase: "idle",
@@ -1444,15 +1447,9 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
     }
   });
   sortToggle?.addEventListener("click", () => {
-    runBusy(sortToggle, async () => {
-      const next = nextQueueSort(currentSortIntent());
-      try {
-        await persistQueueSort(invokeFn, null, next);
-      } catch {
-        return;
-      }
-      requestSortReload(next);
-    });
+    const next = nextQueueSort(currentSortIntent());
+    requestSortReload(next);
+    persistQueueSort(invokeFn, null, next).catch(() => {});
   });
   listenCaptureResult((event) => {
     const result = event?.payload ?? event;
