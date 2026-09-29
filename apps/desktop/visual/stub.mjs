@@ -31,6 +31,9 @@ export function installVisualStub(scenario) {
     if (cmd === "load_settings_v1") {
       return Promise.resolve({ copy: { queueSort: "newest" } });
     }
+    if (cmd === "first_launch_setup" || cmd === "finish_first_launch_setup") {
+      return Promise.resolve({ needed: false, phase: "ready", complete: true });
+    }
     if (cmd === "search_library_items") {
       return Promise.resolve([]);
     }
