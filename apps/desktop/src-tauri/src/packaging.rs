@@ -131,7 +131,7 @@ mod packaging_tests {
         assert!(fill_src.contains("il32"));
         assert!(fill_src.contains("self-test: rounded inset plate must fail"));
         assert!(fill_src.contains("self-test: 16px full-bleed master must pass"));
-        assert!(!fill_src.contains("DEFAULT_ICONS") || fill_src.contains("32x32.png is the menu-bar template"));
+        assert!(fill_src.contains("32x32.png is the menu-bar template"));
         let fill = std::process::Command::new("python3")
             .arg(&checker)
             .arg(manifest.join("icons/icon.icns"))
