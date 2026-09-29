@@ -58,6 +58,8 @@ test("shipped locales cover native menu InfoPlist and WebView keys", () => {
     assert.ok(catalog["queue.sort.showNewest"]);
     assert.ok(catalog["settings.title"]);
     assert.ok(catalog["settings.field.locale"]);
+    assert.ok(catalog["onboarding.title"]);
+    assert.ok(catalog["onboarding.finish"]);
     assert.equal(catalog["app.name"], catalog["app.name"]);
   }
   assert.match(html, /data-i18n="panel.quick.title"/);
