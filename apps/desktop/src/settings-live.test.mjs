@@ -716,6 +716,10 @@ test("title model status shows present vs vendor command and never fetches", asy
   assert.doesNotMatch(status.textContent, /Loading/);
   assert.equal(spinner.hidden, true);
   assert.equal(
+    formatTitleEngineLifecycle({ tier: "qwen-05", phase: "downloading" }),
+    "Downloading Qwen2.5 0.5B…",
+  );
+  assert.equal(
     formatTitleEngineLifecycle({ tier: "qwen-05", phase: "loading" }),
     "Loading Qwen2.5 0.5B…",
   );
@@ -727,6 +731,15 @@ test("title model status shows present vs vendor command and never fetches", asy
     formatTitleEngineLifecycle({ tier: "qwen-05", phase: "ready" }),
     "Loaded — will title the next capture",
   );
+  assert.equal(
+    formatTitleEngineLifecycle({
+      tier: "qwen-05",
+      phase: "failed",
+      reason: "download_failed",
+    }),
+    "The model file could not be downloaded, so titles stay extractive.",
+  );
+  assert.equal(titleEngineBusy("downloading"), true);
   assert.equal(titleEngineBusy("loading"), true);
   assert.equal(titleEngineBusy("ready"), false);
   applyTitleEngineLifecycle(
@@ -928,6 +941,13 @@ test("title engine progress follows bytes and terminal phases", () => {
     },
   };
 
+  assert.deepEqual(titleEngineProgress({ phase: "downloading" }), {
+    visible: true,
+    determinate: false,
+    percent: null,
+    value: 0,
+    max: 1,
+  });
   assert.deepEqual(titleEngineProgress({ phase: "loading" }), {
     visible: true,
     determinate: false,
@@ -954,6 +974,31 @@ test("title engine progress follows bytes and terminal phases", () => {
   assert.equal(titleEngineProgress({ phase: "ready" }).visible, false);
   assert.equal(titleEngineProgress({ phase: "failed" }).visible, false);
   assert.equal(titleEngineProgress({ phase: "missing" }).visible, false);
+
+  applyTitleEngineLifecycle(
+    root,
+    {
+      tier: "smol-360",
+      phase: "downloading",
+      bytesRead: 135295440,
+      bytesTotal: 270590880,
+    },
+    { id: "smol-360", present: false },
+  );
+  assert.match(status.textContent, /Downloading SmolLM2 360M/);
+  assert.doesNotMatch(status.textContent, /not in this build/);
+  assert.equal(wrap.hidden, false);
+  assert.equal(meter.value, 135295440);
+  assert.equal(percent.hidden, false);
+  assert.equal(percent.textContent, "50%");
+  assert.equal(spinner.hidden, false);
+  assert.equal(
+    bundledWeightsAbsent(
+      { tier: "smol-360", phase: "downloading" },
+      { id: "smol-360", present: false },
+    ),
+    false,
+  );
 
   applyTitleEngineLifecycle(
     root,
@@ -1021,6 +1066,18 @@ test("title engine progress follows bytes and terminal phases", () => {
   assert.equal(
     status.textContent,
     "This file could not be read, so titles stay extractive.",
+  );
+  assert.equal(wrap.hidden, true);
+  assert.equal(spinner.hidden, true);
+
+  applyTitleEngineLifecycle(
+    root,
+    { tier: "smol-360", phase: "failed", reason: "download_failed" },
+    { id: "smol-360", present: false },
+  );
+  assert.equal(
+    status.textContent,
+    "The model file could not be downloaded, so titles stay extractive.",
   );
   assert.equal(wrap.hidden, true);
   assert.equal(spinner.hidden, true);

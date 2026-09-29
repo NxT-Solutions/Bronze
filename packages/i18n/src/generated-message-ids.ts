@@ -213,6 +213,8 @@ export const MessageIds = {
     "settings.field.titleModel.engine.smol360",
   "settings.field.titleModel.engine.qwen05":
     "settings.field.titleModel.engine.qwen05",
+  "settings.field.titleModel.downloading":
+    "settings.field.titleModel.downloading",
   "settings.field.titleModel.loading": "settings.field.titleModel.loading",
   "settings.field.titleModel.hashing": "settings.field.titleModel.hashing",
   "settings.field.titleModel.notInBuild":
@@ -227,6 +229,8 @@ export const MessageIds = {
     "settings.field.titleModel.failed.timeout",
   "settings.field.titleModel.failed.unreadable":
     "settings.field.titleModel.failed.unreadable",
+  "settings.field.titleModel.failed.download_failed":
+    "settings.field.titleModel.failed.download_failed",
   "settings.field.titleModel.custom": "settings.field.titleModel.custom",
   "settings.field.titleModel.custom.sized":
     "settings.field.titleModel.custom.sized",

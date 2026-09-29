@@ -326,6 +326,14 @@ test("settings window is searchable grouped with daily weekly backup and export 
   assert.equal(en["settings.field.titleModel.loading"], "Loading {engine}…");
   assert.equal(en["settings.field.titleModel.hashing"], "Checking {engine}…");
   assert.equal(
+    en["settings.field.titleModel.downloading"],
+    "Downloading {engine}…",
+  );
+  assert.equal(
+    en["settings.field.titleModel.failed.download_failed"],
+    "The model file could not be downloaded, so titles stay extractive.",
+  );
+  assert.equal(
     en["settings.field.titleModel.loaded"],
     "Loaded — will title the next capture",
   );
