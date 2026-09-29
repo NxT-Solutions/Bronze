@@ -5,7 +5,17 @@ This file is auto-updated by the release workflow.
 
 ## Unreleased
 
-- Permission health names Not requested when Accessibility is still unchecked, shows the running code identity, and ad-hoc release builds omit the hardened-runtime flag so Add can take.
+- Work in progress.
+
+## v0.2.1 - 2026-09-29
+
+### What's new
+
+- Accessibility and Retest now show Not requested, plus the running path and code identity.
+- This release no longer uses hardened runtime, so Add in System Settings can stick. Installed 0.2.0 cannot become trusted — quit it, install 0.2.1, then add Accessibility again.
+- Copy no longer pulses the card ring.
+- The Dock and Get Info icon is a flat full-bleed plate.
+- WhatsApp selection works again.
 
 ## v0.2.0 - 2026-09-28
 
