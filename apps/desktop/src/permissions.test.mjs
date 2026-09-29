@@ -21,12 +21,12 @@ import {
   retestFeedbackKey,
   retestUsedPermission,
   runPermissionRetest,
+  SEEN_PERMISSION_VERSION_KEY,
   shouldRevealNoticeAllow,
   shouldRevealNoticeSettings,
   shouldShowIdentityDriftHint,
   shouldShowStaleCopyHint,
   shouldShowVersionReaddHint,
-  SEEN_PERMISSION_VERSION_KEY,
 } from "./permission-health.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
