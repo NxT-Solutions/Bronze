@@ -1,4 +1,5 @@
 mod capture_permissions;
+mod first_launch;
 mod live_session;
 mod own_selection;
 mod running_bundle;
@@ -57,6 +58,9 @@ pub fn run() {
                 live_session::export_support_file,
                 live_session::list_title_models,
                 title_refine::title_engine_status,
+                first_launch::first_launch_setup,
+                first_launch::retry_first_launch_setup,
+                first_launch::finish_first_launch_setup,
                 title_engines::import_title_gguf,
                 title_engines::list_ollama_title_models,
                 title_engines::set_hosted_title_key,
@@ -70,6 +74,7 @@ pub fn run() {
             .setup(|app| {
                 use tauri::Manager;
                 let data_dir = app.path().app_data_dir()?;
+                first_launch::bind_data_dir(data_dir.clone());
                 let _ = capture_permissions::prompt_on_native_start(&data_dir);
                 let _ = capture_permissions::prompt_notification_if_undetermined();
                 let _ = bronze_platform_macos::NativeRuntime::event_tap_start_shared();
@@ -970,6 +975,10 @@ mod tests {
                 assert!(
                     permission_block(&used, "allow-queue-live").contains("set_queue_sort"),
                     "allow-queue-live must include set_queue_sort"
+                );
+                assert!(
+                    permission_block(&used, "allow-queue-live").contains("first_launch_setup"),
+                    "allow-queue-live must include first_launch_setup"
                 );
                 assert!(
                     !permission_block(&used, "allow-queue-live").contains("save_settings_v1"),

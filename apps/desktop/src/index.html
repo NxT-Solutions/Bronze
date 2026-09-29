@@ -8,6 +8,45 @@
   </head>
   <body>
     <a class="skip-link" href="#composer-body" data-i18n="chrome.skip.toContent">Skip to content</a>
+    <section
+      id="first-launch-setup"
+      class="first-launch-setup"
+      hidden
+      aria-labelledby="first-launch-title"
+    >
+      <div class="first-launch-card card">
+        <h1 id="first-launch-title" data-i18n="setup.splash.title">Setting up Bronze</h1>
+        <p class="muted" data-i18n="setup.splash.once">
+          This only happens the first time to set up the app, and later launches skip this when the title model is already ready.
+        </p>
+        <p id="first-launch-status" role="status" aria-live="polite" data-i18n="setup.splash.checking">
+          Checking model…
+        </p>
+        <div class="title-engine-progress" data-first-launch-progress hidden>
+          <progress
+            id="first-launch-progress"
+            max="100"
+            aria-labelledby="first-launch-status"
+          ></progress>
+          <span
+            id="first-launch-progress-value"
+            class="title-engine-progress-value"
+            data-first-launch-progress-value
+            hidden
+          ></span>
+        </div>
+        <p id="first-launch-error" role="alert" hidden></p>
+        <button
+          type="button"
+          class="btn-primary"
+          data-first-launch-retry
+          hidden
+          data-i18n="setup.splash.retry"
+        >
+          Retry
+        </button>
+      </div>
+    </section>
     <main id="quick-panel" data-physical-edge="left" lang="en" dir="ltr">
       <header class="chrome-header">
         <div class="brand">
@@ -364,6 +403,7 @@
       </form>
     </dialog>
     <script type="module" src="./apply-locale.mjs"></script>
+    <script type="module" src="./first-launch.mjs"></script>
     <script type="module" src="./queue-live.mjs"></script>
   </body>
 </html>
