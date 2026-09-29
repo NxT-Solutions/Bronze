@@ -5,8 +5,17 @@ This file is auto-updated by the release workflow.
 
 ## Unreleased
 
-- Homebrew and GitHub `.pkg` upgrades no longer re-download ~850 MB of title models. Those files live in Application Support and download once, with a progress bar, when you pick an engine.
-- Ad-hoc updates need Accessibility and Input Monitoring added again.
+- Work in progress.
+
+## v0.2.2 - 2026-09-29
+
+### What's new
+
+- The Dock and notification icons are a full-bleed Apple-feel gradient.
+- Changing sort starts right away.
+- First launch shows a setup splash that copies the title model once, then a wizard with real screenshots and live permission asks.
+- Settings explains that ad-hoc updates still need permissions re-granted until Developer ID signing.
+- Homebrew updates no longer re-download the title model.
 
 ## v0.2.1 - 2026-09-29
 
