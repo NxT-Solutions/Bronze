@@ -357,5 +357,20 @@
   "help.capture.composer": "Sélectionnez du texte dans n’importe quelle app, y compris Bronze, puis Capturer depuis la barre de menus, utilisez le raccourci Capturer de Réglages, ou saisissez dans le champ lorsque la capture est indisponible.",
   "settings.field.version.note.permissionsAfterUpdate": "Les mises à jour ad hoc exigent de nouveau Accessibilité et Contrôle de saisie.",
   "settings.permission.identityDrift": "Une mise à jour ad hoc ou non signée est une nouvelle identité binaire, donc ajoutez de nouveau Accessibilité et Contrôle de saisie pour le chemin et l’identité de code ci-dessus jusqu’à ce que les versions partagent une même signature Developer ID Application.",
-  "settings.permission.versionReadd": "Après ce changement de version, ajoutez une fois de plus Accessibilité et Contrôle de saisie pour cette copie ad hoc."
+  "settings.permission.versionReadd": "Après ce changement de version, ajoutez une fois de plus Accessibilité et Contrôle de saisie pour cette copie ad hoc.",
+  "setup.splash.title": "Configuration de Bronze",
+  "setup.splash.once": "Cela n’arrive que la première fois pour préparer l’app, et les lancements suivants ignorent cet écran lorsque le modèle de titre est déjà prêt.",
+  "setup.splash.checking": "Vérification du modèle…",
+  "setup.splash.checkingNamed": "Vérification du modèle… {name}",
+  "setup.splash.downloading": "Téléchargement du modèle de titre…",
+  "setup.splash.downloadingNamed": "Téléchargement du modèle de titre… {name}",
+  "setup.splash.finishing": "Finalisation de la configuration…",
+  "setup.splash.finishingNamed": "Finalisation de la configuration… {name}",
+  "setup.splash.retry": "Réessayer",
+  "setup.splash.error.generic": "La configuration n’a pas pu se terminer — réessayez.",
+  "setup.splash.error.download_failed": "Le modèle de titre n’a pas pu être téléchargé — réessayez.",
+  "setup.splash.error.bad_hash": "Le modèle de titre ne correspondait pas à la somme de contrôle attendue — réessayez.",
+  "setup.splash.error.missing": "Le modèle de titre est introuvable — réessayez.",
+  "setup.splash.error.unreadable": "Le modèle de titre n’a pas pu être lu — réessayez.",
+  "setup.splash.progressPercent": "{percent}%"
 }

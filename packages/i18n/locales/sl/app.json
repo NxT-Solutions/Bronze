@@ -357,5 +357,20 @@
   "help.capture.composer": "Izberite besedilo v kateri koli aplikaciji, vključno z Bronze, nato Zajemi v menijski vrstici, uporabite bližnjico Zajemi izbor iz Nastavitev ali vnesite v polje, ko dejanje ni na voljo.",
   "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc posodobitve znova potrebujejo Dostopnost in Nadzor vnosa.",
   "settings.permission.identityDrift": "Ad-hoc ali nepodpisana posodobitev je nova dvojiška identiteta, zato znova dodajte Dostopnost in Nadzor vnosa za pot in identiteto kode zgoraj, dokler izdaje ne delijo istega podpisa Developer ID Application.",
-  "settings.permission.versionReadd": "Po tej spremembi različice še enkrat dodajte Dostopnost in Nadzor vnosa za to ad-hoc kopijo."
+  "settings.permission.versionReadd": "Po tej spremembi različice še enkrat dodajte Dostopnost in Nadzor vnosa za to ad-hoc kopijo.",
+  "setup.splash.title": "Nastavljanje Bronze",
+  "setup.splash.once": "To se zgodi samo prvič, da se aplikacija pripravi, poznejši zagoni pa ta zaslon preskočijo, ko je model naslovov že pripravljen.",
+  "setup.splash.checking": "Preverjanje modela…",
+  "setup.splash.checkingNamed": "Preverjanje modela… {name}",
+  "setup.splash.downloading": "Prenašanje modela naslovov…",
+  "setup.splash.downloadingNamed": "Prenašanje modela naslovov… {name}",
+  "setup.splash.finishing": "Zaključevanje nastavitve…",
+  "setup.splash.finishingNamed": "Zaključevanje nastavitve… {name}",
+  "setup.splash.retry": "Poskusi znova",
+  "setup.splash.error.generic": "Nastavitve ni bilo mogoče dokončati — poskusite znova.",
+  "setup.splash.error.download_failed": "Modela naslovov ni bilo mogoče prenesti — poskusite znova.",
+  "setup.splash.error.bad_hash": "Model naslovov se ni ujemal s pričakovano kontrolno vsoto — poskusite znova.",
+  "setup.splash.error.missing": "Manjka model naslovov — poskusite znova.",
+  "setup.splash.error.unreadable": "Modela naslovov ni bilo mogoče prebrati — poskusite znova.",
+  "setup.splash.progressPercent": "{percent}%"
 }

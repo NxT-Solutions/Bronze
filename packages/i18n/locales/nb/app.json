@@ -357,5 +357,20 @@
   "help.capture.composer": "Marker tekst i en hvilken som helst app, også Bronze, velg deretter Fang på menylinjen, bruk snarveien Fang utvalg fra Innstillinger, eller skriv i feltet når handlingen ikke er tilgjengelig.",
   "settings.field.version.note.permissionsAfterUpdate": "Ad hoc-oppdateringer trenger Tilgjengelighet og Overvåking av inndata på nytt.",
   "settings.permission.identityDrift": "En ad hoc- eller usignert oppdatering er en ny binær identitet, så legg til Tilgjengelighet og Overvåking av inndata på nytt for banen og kodeidentiteten ovenfor til utgivelser deler samme Developer ID Application-signatur.",
-  "settings.permission.versionReadd": "Etter denne versjonsendringen, legg til Tilgjengelighet og Overvåking av inndata én gang til for denne ad hoc-kopien."
+  "settings.permission.versionReadd": "Etter denne versjonsendringen, legg til Tilgjengelighet og Overvåking av inndata én gang til for denne ad hoc-kopien.",
+  "setup.splash.title": "Bronze settes opp",
+  "setup.splash.once": "Dette skjer bare første gang for å klargjøre appen, og senere starter hopper over dette når tittelmodellen allerede er klar.",
+  "setup.splash.checking": "Kontrollerer modell…",
+  "setup.splash.checkingNamed": "Kontrollerer modell… {name}",
+  "setup.splash.downloading": "Laster ned tittelmodell…",
+  "setup.splash.downloadingNamed": "Laster ned tittelmodell… {name}",
+  "setup.splash.finishing": "Fullfører oppsettet…",
+  "setup.splash.finishingNamed": "Fullfører oppsettet… {name}",
+  "setup.splash.retry": "Prøv igjen",
+  "setup.splash.error.generic": "Oppsettet kunne ikke fullføres — prøv igjen.",
+  "setup.splash.error.download_failed": "Tittelmodellen kunne ikke lastes ned — prøv igjen.",
+  "setup.splash.error.bad_hash": "Tittelmodellen samsvarte ikke med forventet sjekksum — prøv igjen.",
+  "setup.splash.error.missing": "Tittelmodellen mangler — prøv igjen.",
+  "setup.splash.error.unreadable": "Tittelmodellen kunne ikke leses — prøv igjen.",
+  "setup.splash.progressPercent": "{percent}%"
 }

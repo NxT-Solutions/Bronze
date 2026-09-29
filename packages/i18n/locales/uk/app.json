@@ -357,5 +357,20 @@
   "help.capture.composer": "Виділіть текст у будь-якій програмі, включно з Bronze, потім виберіть «Захопити» в меню, використайте сполучення «Захопити виділення» з Параметрів або введіть текст у поле, коли дія недоступна.",
   "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc оновлення знову потребують Універсальний доступ і Моніторинг введення.",
   "settings.permission.identityDrift": "Ad-hoc або непідписане оновлення — нова двійкова тотожність, тож знову додайте Універсальний доступ і Моніторинг введення для шляху та ідентичності коду вище, доки випуски не матимуть одного підпису Developer ID Application.",
-  "settings.permission.versionReadd": "Після цієї зміни версії ще раз додайте Універсальний доступ і Моніторинг введення для цієї ad-hoc копії."
+  "settings.permission.versionReadd": "Після цієї зміни версії ще раз додайте Універсальний доступ і Моніторинг введення для цієї ad-hoc копії.",
+  "setup.splash.title": "Налаштування Bronze",
+  "setup.splash.once": "Це відбувається лише під час першого запуску, щоб підготувати застосунок, а пізніше цей екран пропускається, коли модель заголовків уже готова.",
+  "setup.splash.checking": "Перевірка моделі…",
+  "setup.splash.checkingNamed": "Перевірка моделі… {name}",
+  "setup.splash.downloading": "Завантаження моделі заголовків…",
+  "setup.splash.downloadingNamed": "Завантаження моделі заголовків… {name}",
+  "setup.splash.finishing": "Завершення налаштування…",
+  "setup.splash.finishingNamed": "Завершення налаштування… {name}",
+  "setup.splash.retry": "Повторити",
+  "setup.splash.error.generic": "Налаштування не вдалося завершити — спробуйте ще раз.",
+  "setup.splash.error.download_failed": "Не вдалося завантажити модель заголовків — спробуйте ще раз.",
+  "setup.splash.error.bad_hash": "Модель заголовків не збіглася з очікуваною контрольною сумою — спробуйте ще раз.",
+  "setup.splash.error.missing": "Модель заголовків відсутня — спробуйте ще раз.",
+  "setup.splash.error.unreadable": "Не вдалося прочитати модель заголовків — спробуйте ще раз.",
+  "setup.splash.progressPercent": "{percent}%"
 }

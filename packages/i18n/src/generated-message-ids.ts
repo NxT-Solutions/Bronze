@@ -487,6 +487,21 @@ export const MessageIds = {
   "help.upload.none": "help.upload.none",
   "help.capture.heading": "help.capture.heading",
   "help.capture.composer": "help.capture.composer",
+  "setup.splash.title": "setup.splash.title",
+  "setup.splash.once": "setup.splash.once",
+  "setup.splash.checking": "setup.splash.checking",
+  "setup.splash.checkingNamed": "setup.splash.checkingNamed",
+  "setup.splash.downloading": "setup.splash.downloading",
+  "setup.splash.downloadingNamed": "setup.splash.downloadingNamed",
+  "setup.splash.finishing": "setup.splash.finishing",
+  "setup.splash.finishingNamed": "setup.splash.finishingNamed",
+  "setup.splash.retry": "setup.splash.retry",
+  "setup.splash.error.generic": "setup.splash.error.generic",
+  "setup.splash.error.download_failed": "setup.splash.error.download_failed",
+  "setup.splash.error.bad_hash": "setup.splash.error.bad_hash",
+  "setup.splash.error.missing": "setup.splash.error.missing",
+  "setup.splash.error.unreadable": "setup.splash.error.unreadable",
+  "setup.splash.progressPercent": "setup.splash.progressPercent",
 } as const;
 
 export type MessageId = keyof typeof MessageIds;

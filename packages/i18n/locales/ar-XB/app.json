@@ -357,5 +357,20 @@
   "help.limitations.humanGates": ".caM dengis a no nosrep a deen llits gningis elppA dna ,revOecioV ,syalpsid elpitlum ,sppa rehto morf erutpac ,noissimrep ytilibisseccA",
   "help.upload.none": ".caM siht no syats gnihtyreve os ,yllacitamotua elif troppus eht ro scitsongaid daolpu ton seod eznorB",
   "help.capture.heading": "erutpac ot woH",
-  "help.capture.composer": ".elbaliavanu si erutpac nehw resopmoc eht otni epyt ro ,sgnitteS morf tuctrohs noitceles erutpaC eht esu ,rab unem eht morf erutpaC neht ,eznorB gnidulcni ppa yna ni txet tceleS"
+  "help.capture.composer": ".elbaliavanu si erutpac nehw resopmoc eht otni epyt ro ,sgnitteS morf tuctrohs noitceles erutpaC eht esu ,rab unem eht morf erutpaC neht ,eznorB gnidulcni ppa yna ni txet tceleS",
+  "setup.splash.title": "eznorB pu gnitteS",
+  "setup.splash.once": ".ydaer ydaerla si ledom eltit eht nehw siht piks sehcnual retal dna ,ppa eht pu tes ot emit tsrif eht sneppah ylno sihT",
+  "setup.splash.checking": "…ledom gnikcehC",
+  "setup.splash.checkingNamed": " …ledom gnikcehC⁧{name}⁩",
+  "setup.splash.downloading": "…ledom eltit gnidaolnwoD",
+  "setup.splash.downloadingNamed": " …ledom eltit gnidaolnwoD⁧{name}⁩",
+  "setup.splash.finishing": "…putes gnihsiniF",
+  "setup.splash.finishingNamed": " …putes gnihsiniF⁧{name}⁩",
+  "setup.splash.retry": "yrteR",
+  "setup.splash.error.generic": ".niaga yrt — hsinif ton dluoc puteS",
+  "setup.splash.error.download_failed": ".niaga yrt — dedaolnwod eb ton dluoc ledom eltit ehT",
+  "setup.splash.error.bad_hash": ".niaga yrt — muskcehc detcepxe eht hctam ton did ledom eltit ehT",
+  "setup.splash.error.missing": ".niaga yrt — gnissim si ledom eltit ehT",
+  "setup.splash.error.unreadable": ".niaga yrt — daer eb ton dluoc ledom eltit ehT",
+  "setup.splash.progressPercent": "⁧{percent}⁩%"
 }
