@@ -116,28 +116,42 @@ Toasts do not contain sole copy of critical recovery action; Notification Center
 
 ## 8. First-run onboarding
 
+Order: splash first when title models are missing or the ready marker
+does not match, then the `onboarding` window wizard. Later launches skip
+both when `title-models/ready.json` still matches and
+`onboarding-state.json` is complete (existing `settings.json` or
+`permission-prompts.json` installs are grandfathered).
+
 When required title models are missing or their checksum does not match the
-cached ready marker, the Quick Panel shows a full first-launch splash before
+cached ready marker, the Quick Panel shows `#first-launch-setup` before
 the queue. Status copy is “Downloading title model…”, “Checking model…”, or
 “Finishing setup…”, plus the model name when one is known. A determinate
 `<progress>` follows `bytesRead` / `bytesTotal` from the title-engine worker;
 without a byte count the bar stays indeterminate. Reduce Motion still shows
 the bar and percent. `#first-launch-status` is `role="status"`. Failure keeps
 the splash with a readable catalog error and a Retry button — never a blank
-window. A later launch skips the splash when `title-models/ready.json` still
-matches the verified checksums. This is markup and copy, not a WCAG or
-notarization claim.
+window. Copy says this is only the first time to set up the app. This is
+markup and copy, not a WCAG or notarization claim.
 
-Progressive, permission-late flow:
+After splash (or immediately when models are already cached), the existing
+Tauri `onboarding` window (`onboarding.html`) runs the wizard. Steps use
+in-repo stills (`docs/images` copies under
+`apps/desktop/src/onboarding-media/`), not generated art:
 
-1. Explain deliberate local queue with one static diagram.
-2. Create manual note; proves app value without permissions.
-3. Choose capture route: standard chord recommended, optional double Shift.
-4. Explain Input Monitoring before system request if gesture enabled.
-5. Explain Accessibility before AX capture test.
-6. Guide user to select known non-sensitive text in an external supported app such as TextEdit, then invoke capture. Testing Bronze's own WebView does not prove cross-process Accessibility or target preservation.
-7. Show stage result and alternative routes.
-8. Offer launch-at-login and Dock behavior; default off unless clearly beneficial.
+1. Welcome — local queue, hero still.
+2. Capture — select text, then menu or shortcut.
+3. Queue — copy, complete, skip, or edit.
+4. Settings — permission health, shortcuts, and the title engine stay
+   on this Mac.
+5. Permissions — live Accessibility, Input Monitoring, and
+   Notifications via `retest_used_permissions`,
+   `open_privacy_settings`, and notification authorization. Retest and
+   Open System Settings are on the step. Ad-hoc copies show the same
+   running path and cdhash copy as Settings (PR 97 / e631bfa).
+
+Finish writes the complete flag, hides onboarding, and reveals the
+queue. Denial still finishes; the composer remains. The model is ready
+or retryable from Settings.
 
 No dark patterns. Denial leaves app usable and can be revisited.
 

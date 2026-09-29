@@ -29,7 +29,7 @@ updated in the same change.
 
 ## Live tokens
 
-Defined in `apps/desktop/src/chrome.css` (four HTML surfaces) and
+Defined in `apps/desktop/src/chrome.css` (five HTML surfaces) and
 mirrored in `packages/ui/src/styles/globals.css`.
 
 | Token | Role | macOS analogue |

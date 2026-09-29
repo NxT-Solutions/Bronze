@@ -1,7 +1,9 @@
 # Surfaces
 
-Four HTML windows share `chrome.css`. Native titles stay “Bronze”,
-“Bronze Settings”, “Bronze Library”, “Bronze Help” (2.4.2).
+Five HTML windows share `chrome.css`. Native titles stay “Bronze”,
+“Bronze Settings”, “Bronze Library”, “Bronze Help” (2.4.2). The
+first-run wizard window also uses the “Bronze” title. This is not a
+WCAG claim.
 
 ## Queue — `apps/desktop/src/index.html`
 
@@ -92,6 +94,19 @@ Purpose: what Bronze is, how to capture, export a local bundle.
 - Prose ≤80ch, line-height 1.5, not justified (1.4.8 Partial).
 - One filled control: Export Support Bundle….
 - No automatic upload (`data-automatic-upload="false"`).
+
+## Onboarding — `apps/desktop/src/onboarding.html`
+
+Purpose: first-run setup. This is not a WCAG or VoiceOver claim.
+
+- Skip link → `#onboarding-title` (`tabindex="-1"`).
+- `h1` Set up Bronze. Splash and each wizard step use `h2`.
+- Splash status and dock errors use `role="status"` (4.1.3).
+- Stills are decorative `alt=""` with a visually hidden figcaption.
+- One filled Continue / Finish. Back is outlined. Retest and Open
+  System Settings are real buttons.
+- Reduce Motion stops decorative progress animation; the percent
+  text still updates.
 
 ## Shared defects to refuse
 
