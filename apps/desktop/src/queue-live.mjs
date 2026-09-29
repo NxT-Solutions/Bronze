@@ -46,7 +46,7 @@ import {
   queueListArgs,
   queueSortFromEvent,
 } from "./queue-sort.mjs";
-import { tauriInvoke } from "./tauri-bridge.mjs";
+import { showChromeWindow, tauriInvoke } from "./tauri-bridge.mjs";
 
 export { formatCaptureSource, serializeComposerDom };
 
@@ -1497,14 +1497,26 @@ export async function bindQueueLive(root = document, invokeFn = tauriInvoke) {
   }
 }
 
+async function continueAfterSplash() {
+  await bindQueueLive();
+  try {
+    const status = await tauriInvoke("first_run_status");
+    if (status?.needsWizard === true) {
+      await showChromeWindow("onboarding");
+    }
+  } catch {
+    // Wizard commands stay on the onboarding window if this panel cannot ask.
+  }
+}
+
 async function startQuickPanel() {
   const gate = await bindFirstLaunchSetup();
   if (!gate.blocked) {
-    await bindQueueLive();
+    await continueAfterSplash();
     return;
   }
   gate.whenReady(() => {
-    bindQueueLive();
+    continueAfterSplash();
   });
 }
 
