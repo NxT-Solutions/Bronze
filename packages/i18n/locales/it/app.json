@@ -355,5 +355,20 @@
   "help.capture.composer": "Seleziona testo in qualsiasi app, incluso Bronze, poi Cattura dalla barra dei menu, usa il collegamento Cattura in Impostazioni oppure digita nel campo quando la cattura non è disponibile.",
   "settings.field.version.note.permissionsAfterUpdate": "Gli aggiornamenti ad hoc richiedono di nuovo Accessibilità e Monitoraggio input.",
   "settings.permission.identityDrift": "Un aggiornamento ad hoc o non firmato è una nuova identità binaria, quindi aggiungi di nuovo Accessibilità e Monitoraggio input per il percorso e l’identità del codice sopra finché le versioni non condividono la stessa firma Developer ID Application.",
-  "settings.permission.versionReadd": "Dopo questo cambio di versione, aggiungi un’altra volta Accessibilità e Monitoraggio input per questa copia ad hoc."
+  "settings.permission.versionReadd": "Dopo questo cambio di versione, aggiungi un’altra volta Accessibilità e Monitoraggio input per questa copia ad hoc.",
+  "setup.splash.title": "Configurazione di Bronze",
+  "setup.splash.once": "Succede solo la prima volta per preparare l’app, e i lanci successivi saltano questa schermata quando il modello del titolo è già pronto.",
+  "setup.splash.checking": "Controllo del modello…",
+  "setup.splash.checkingNamed": "Controllo del modello… {name}",
+  "setup.splash.downloading": "Download del modello del titolo…",
+  "setup.splash.downloadingNamed": "Download del modello del titolo… {name}",
+  "setup.splash.finishing": "Completamento della configurazione…",
+  "setup.splash.finishingNamed": "Completamento della configurazione… {name}",
+  "setup.splash.retry": "Riprova",
+  "setup.splash.error.generic": "La configurazione non è riuscita — riprova.",
+  "setup.splash.error.download_failed": "Impossibile scaricare il modello del titolo — riprova.",
+  "setup.splash.error.bad_hash": "Il modello del titolo non corrisponde al checksum atteso — riprova.",
+  "setup.splash.error.missing": "Manca il modello del titolo — riprova.",
+  "setup.splash.error.unreadable": "Impossibile leggere il modello del titolo — riprova.",
+  "setup.splash.progressPercent": "{percent}%"
 }

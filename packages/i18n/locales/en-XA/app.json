@@ -355,5 +355,20 @@
   "help.limitations.humanGates": "【ÁAçcçcéessssíibbíillíittyy ppéerrmmíissssíióoñn, çcáappttúurrée ffrróomm óotthhéerr áappppss, mmúullttíippllée ddíisspplláayyss, VVóoíiçcéeÓOvvéerr, áañndd ÁAppppllée ssíiggñníiñngg ssttíillll ñnéeéedd áa ppéerrssóoñn óoñn áa ssíiggñnéedd MMáaçc.】",
   "help.upload.none": "【BBrróoñnzzée ddóoéess ñnóott úuppllóoáadd ddíiáaggñnóossttíiçcss óorr tthhée ssúuppppóorrtt ffíillée áaúuttóommáattíiçcáallllyy, ssóo éevvéerryytthhíiñngg ssttáayyss óoñn tthhíiss MMáaçc.】",
   "help.capture.heading": "【HHóoww ttóo çcáappttúurrée】",
-  "help.capture.composer": "【SSéelléeçctt ttéexxtt íiñn áañnyy áapppp íiñnçcllúuddíiñngg BBrróoñnzzée, tthhéeñn CCáappttúurrée ffrróomm tthhée mméeñnúu bbáarr, úussée tthhée CCáappttúurrée sséelléeçcttíióoñn sshhóorrttçcúutt ffrróomm SSéettttíiñnggss, óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr wwhhéeñn çcáappttúurrée íiss úuñnáavváaíilláabbllée.】"
+  "help.capture.composer": "【SSéelléeçctt ttéexxtt íiñn áañnyy áapppp íiñnçcllúuddíiñngg BBrróoñnzzée, tthhéeñn CCáappttúurrée ffrróomm tthhée mméeñnúu bbáarr, úussée tthhée CCáappttúurrée sséelléeçcttíióoñn sshhóorrttçcúutt ffrróomm SSéettttíiñnggss, óorr ttyyppée íiñnttóo tthhée çcóommppóosséerr wwhhéeñn çcáappttúurrée íiss úuñnáavváaíilláabbllée.】",
+  "setup.splash.title": "【SSéettttíiñngg úupp BBrróoñnzzée】",
+  "setup.splash.once": "【TThhíiss óoñnllyy hháappppéeñnss tthhée ffíirrsstt ttíimmée ttóo sséett úupp tthhée áapppp, áañndd lláattéerr lláaúuñnçchhéess sskkíipp tthhíiss wwhhéeñn tthhée ttíittllée mmóoddéell íiss áallrréeáaddyy rréeáaddyy.】",
+  "setup.splash.checking": "【CChhéeçckkíiñngg mmóoddéell…】",
+  "setup.splash.checkingNamed": "【CChhéeçckkíiñngg mmóoddéell… {name}】",
+  "setup.splash.downloading": "【DDóowwñnllóoáaddíiñngg ttíittllée mmóoddéell…】",
+  "setup.splash.downloadingNamed": "【DDóowwñnllóoáaddíiñngg ttíittllée mmóoddéell… {name}】",
+  "setup.splash.finishing": "【FFíiñníisshhíiñngg sséettúupp…】",
+  "setup.splash.finishingNamed": "【FFíiñníisshhíiñngg sséettúupp… {name}】",
+  "setup.splash.retry": "【RRéettrryy】",
+  "setup.splash.error.generic": "【SSéettúupp çcóoúulldd ñnóott ffíiñníisshh — ttrryy áaggáaíiñn.】",
+  "setup.splash.error.download_failed": "【TThhée ttíittllée mmóoddéell çcóoúulldd ñnóott bbée ddóowwñnllóoáaddéedd — ttrryy áaggáaíiñn.】",
+  "setup.splash.error.bad_hash": "【TThhée ttíittllée mmóoddéell ddíidd ñnóott mmáattçchh tthhée éexxppéeçcttéedd çchhéeçckkssúumm — ttrryy áaggáaíiñn.】",
+  "setup.splash.error.missing": "【TThhée ttíittllée mmóoddéell íiss mmíissssíiñngg — ttrryy áaggáaíiñn.】",
+  "setup.splash.error.unreadable": "【TThhée ttíittllée mmóoddéell çcóoúulldd ñnóott bbée rréeáadd — ttrryy áaggáaíiñn.】",
+  "setup.splash.progressPercent": "【{percent}% [·]  [·] 】"
 }

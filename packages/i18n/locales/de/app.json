@@ -355,5 +355,20 @@
   "help.capture.composer": "Text in jeder App einschließlich Bronze auswählen, dann Erfassen in der Menüleiste, den Erfassen-Kurzbefehl aus Einstellungen nutzen oder hier tippen, wenn Erfassen nicht verfügbar ist.",
   "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc-Updates brauchen erneut Bedienungshilfen und Eingabeüberwachung.",
   "settings.permission.identityDrift": "Ein Ad-hoc- oder unsigniertes Update ist eine neue Binäridentität, also fügen Sie Bedienungshilfen und Eingabeüberwachung erneut für den Pfad und die Codeidentität oben hinzu, bis jede Ausgabe dieselbe Developer-ID-Application-Signatur teilt.",
-  "settings.permission.versionReadd": "Nach dieser Versionsänderung fügen Sie Bedienungshilfen und Eingabeüberwachung einmal neu für diese Ad-hoc-Kopie hinzu."
+  "settings.permission.versionReadd": "Nach dieser Versionsänderung fügen Sie Bedienungshilfen und Eingabeüberwachung einmal neu für diese Ad-hoc-Kopie hinzu.",
+  "setup.splash.title": "Bronze wird eingerichtet",
+  "setup.splash.once": "Das passiert nur beim ersten Mal, um die App einzurichten, und spätere Starts überspringen das, wenn das Titelmodell bereits bereit ist.",
+  "setup.splash.checking": "Modell wird geprüft…",
+  "setup.splash.checkingNamed": "Modell wird geprüft… {name}",
+  "setup.splash.downloading": "Titelmodell wird geladen…",
+  "setup.splash.downloadingNamed": "Titelmodell wird geladen… {name}",
+  "setup.splash.finishing": "Einrichtung wird abgeschlossen…",
+  "setup.splash.finishingNamed": "Einrichtung wird abgeschlossen… {name}",
+  "setup.splash.retry": "Erneut versuchen",
+  "setup.splash.error.generic": "Die Einrichtung konnte nicht abgeschlossen werden — erneut versuchen.",
+  "setup.splash.error.download_failed": "Das Titelmodell konnte nicht geladen werden — erneut versuchen.",
+  "setup.splash.error.bad_hash": "Das Titelmodell stimmte nicht mit der erwarteten Prüfsumme überein — erneut versuchen.",
+  "setup.splash.error.missing": "Das Titelmodell fehlt — erneut versuchen.",
+  "setup.splash.error.unreadable": "Das Titelmodell konnte nicht gelesen werden — erneut versuchen.",
+  "setup.splash.progressPercent": "{percent}%"
 }

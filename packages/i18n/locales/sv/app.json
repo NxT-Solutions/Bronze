@@ -355,5 +355,20 @@
   "help.capture.composer": "Markera text i valfri app, även Bronze, välj sedan Fånga i menyraden, använd kortkommandot Fånga markering från Inställningar, eller skriv i fältet när åtgärden inte är tillgänglig.",
   "settings.field.version.note.permissionsAfterUpdate": "Ad hoc-uppdateringar behöver Hjälpmedel och Inmatningsövervakning igen.",
   "settings.permission.identityDrift": "En ad hoc- eller osignerad uppdatering är en ny binär identitet, så lägg till Hjälpmedel och Inmatningsövervakning igen för sökvägen och kodidentiteten ovan tills utgåvorna delar samma Developer ID Application-signatur.",
-  "settings.permission.versionReadd": "Efter den här versionsändringen, lägg till Hjälpmedel och Inmatningsövervakning en gång till för den här ad hoc-kopian."
+  "settings.permission.versionReadd": "Efter den här versionsändringen, lägg till Hjälpmedel och Inmatningsövervakning en gång till för den här ad hoc-kopian.",
+  "setup.splash.title": "Bronze ställs in",
+  "setup.splash.once": "Detta händer bara första gången för att ställa in appen, och senare starter hoppar över det här när titelmodellen redan är klar.",
+  "setup.splash.checking": "Kontrollerar modell…",
+  "setup.splash.checkingNamed": "Kontrollerar modell… {name}",
+  "setup.splash.downloading": "Hämtar titelmodell…",
+  "setup.splash.downloadingNamed": "Hämtar titelmodell… {name}",
+  "setup.splash.finishing": "Slutför inställningen…",
+  "setup.splash.finishingNamed": "Slutför inställningen… {name}",
+  "setup.splash.retry": "Försök igen",
+  "setup.splash.error.generic": "Inställningen kunde inte slutföras — försök igen.",
+  "setup.splash.error.download_failed": "Titelmodellen kunde inte hämtas — försök igen.",
+  "setup.splash.error.bad_hash": "Titelmodellen stämde inte med den förväntade kontrollsumman — försök igen.",
+  "setup.splash.error.missing": "Titelmodellen saknas — försök igen.",
+  "setup.splash.error.unreadable": "Titelmodellen kunde inte läsas — försök igen.",
+  "setup.splash.progressPercent": "{percent}%"
 }

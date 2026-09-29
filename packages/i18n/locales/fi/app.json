@@ -355,5 +355,20 @@
   "help.capture.composer": "Valitse teksti missä tahansa apissa, myös Bronzessa, valitse sitten Poimi valikkoriviltä, käytä Poimi valinta -pikanäppäintä Asetuksista tai kirjoita kenttään, kun toiminto ei ole käytettävissä.",
   "settings.field.version.note.permissionsAfterUpdate": "Ad hoc -päivitykset tarvitsevat Esteettömyyden ja Syötteenvalvonnan uudelleen.",
   "settings.permission.identityDrift": "Ad hoc- tai allekirjoittamaton päivitys on uusi binaari-identiteetti, joten lisää Esteettömyys ja Syötteenvalvonta uudelleen yllä olevalle polulle ja koodi-identiteetille, kunnes julkaisut jakavat saman Developer ID Application -allekirjoituksen.",
-  "settings.permission.versionReadd": "Tämän versionvaihdon jälkeen lisää Esteettömyys ja Syötteenvalvonta vielä kerran tälle ad hoc -kopiolle."
+  "settings.permission.versionReadd": "Tämän versionvaihdon jälkeen lisää Esteettömyys ja Syötteenvalvonta vielä kerran tälle ad hoc -kopiolle.",
+  "setup.splash.title": "Bronzen käyttöönotto",
+  "setup.splash.once": "Tämä tapahtuu vain ensimmäisellä kerralla sovelluksen valmistelemiseksi, ja myöhemmät käynnistykset ohittavat tämän, kun otsikkomalli on jo valmis.",
+  "setup.splash.checking": "Tarkistetaan mallia…",
+  "setup.splash.checkingNamed": "Tarkistetaan mallia… {name}",
+  "setup.splash.downloading": "Ladataan otsikkomallia…",
+  "setup.splash.downloadingNamed": "Ladataan otsikkomallia… {name}",
+  "setup.splash.finishing": "Viimeistellään asetusta…",
+  "setup.splash.finishingNamed": "Viimeistellään asetusta… {name}",
+  "setup.splash.retry": "Yritä uudelleen",
+  "setup.splash.error.generic": "Asetusta ei voitu viimeistellä — yritä uudelleen.",
+  "setup.splash.error.download_failed": "Otsikkomallia ei voitu ladata — yritä uudelleen.",
+  "setup.splash.error.bad_hash": "Otsikkomalli ei vastannut odotettua tarkistussummaa — yritä uudelleen.",
+  "setup.splash.error.missing": "Otsikkomalli puuttuu — yritä uudelleen.",
+  "setup.splash.error.unreadable": "Otsikkomallia ei voitu lukea — yritä uudelleen.",
+  "setup.splash.progressPercent": "{percent}%"
 }

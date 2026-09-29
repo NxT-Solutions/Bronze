@@ -355,5 +355,20 @@
   "help.capture.composer": "Selecciona texto en cualquier app, incluida Bronze, y luego Capturar en la barra de menús, usa el atajo de Capturar en Ajustes o escribe en el campo cuando la captura no esté disponible.",
   "settings.field.version.note.permissionsAfterUpdate": "Las actualizaciones ad hoc necesitan de nuevo Accesibilidad y Monitorización de entrada.",
   "settings.permission.identityDrift": "Una actualización ad hoc o sin firmar es una identidad binaria nueva, así que vuelve a añadir Accesibilidad y Monitorización de entrada para la ruta y la identidad de código de arriba hasta que las versiones compartan la misma firma Developer ID Application.",
-  "settings.permission.versionReadd": "Tras este cambio de versión, vuelve a añadir una vez Accesibilidad y Monitorización de entrada para esta copia ad hoc."
+  "settings.permission.versionReadd": "Tras este cambio de versión, vuelve a añadir una vez Accesibilidad y Monitorización de entrada para esta copia ad hoc.",
+  "setup.splash.title": "Configurando Bronze",
+  "setup.splash.once": "Esto solo ocurre la primera vez para preparar la app, y los siguientes inicios omiten esta pantalla cuando el modelo de título ya está listo.",
+  "setup.splash.checking": "Comprobando el modelo…",
+  "setup.splash.checkingNamed": "Comprobando el modelo… {name}",
+  "setup.splash.downloading": "Descargando el modelo de título…",
+  "setup.splash.downloadingNamed": "Descargando el modelo de título… {name}",
+  "setup.splash.finishing": "Terminando la configuración…",
+  "setup.splash.finishingNamed": "Terminando la configuración… {name}",
+  "setup.splash.retry": "Reintentar",
+  "setup.splash.error.generic": "No se pudo terminar la configuración — inténtalo de nuevo.",
+  "setup.splash.error.download_failed": "No se pudo descargar el modelo de título — inténtalo de nuevo.",
+  "setup.splash.error.bad_hash": "El modelo de título no coincidió con la suma de comprobación esperada — inténtalo de nuevo.",
+  "setup.splash.error.missing": "Falta el modelo de título — inténtalo de nuevo.",
+  "setup.splash.error.unreadable": "No se pudo leer el modelo de título — inténtalo de nuevo.",
+  "setup.splash.progressPercent": "{percent}%"
 }

@@ -355,5 +355,20 @@
   "help.capture.composer": "Selecteer tekst in elke app, ook Bronze, en kies Vastleggen in de menubalk, gebruik de Vastleggen-sneltoets uit Instellingen, of typ in de invoer wanneer vastleggen niet beschikbaar is.",
   "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc-updates vragen opnieuw om Toegankelijkheid en Invoermonitoring.",
   "settings.permission.identityDrift": "Een ad-hoc of ongetekende update is een nieuwe binaire identiteit, dus voeg Toegankelijkheid en Invoermonitoring opnieuw toe voor het pad en de code-identiteit hierboven tot uitgaven dezelfde Developer ID Application-handtekening delen.",
-  "settings.permission.versionReadd": "Na deze versiewijziging voeg je Toegankelijkheid en Invoermonitoring nog een keer toe voor dit ad-hoc-exemplaar."
+  "settings.permission.versionReadd": "Na deze versiewijziging voeg je Toegankelijkheid en Invoermonitoring nog een keer toe voor dit ad-hoc-exemplaar.",
+  "setup.splash.title": "Bronze instellen",
+  "setup.splash.once": "Dit gebeurt alleen de eerste keer om de app in te stellen, en latere starts slaan dit over wanneer het titelmodel al klaar is.",
+  "setup.splash.checking": "Model controleren…",
+  "setup.splash.checkingNamed": "Model controleren… {name}",
+  "setup.splash.downloading": "Titelmodel downloaden…",
+  "setup.splash.downloadingNamed": "Titelmodel downloaden… {name}",
+  "setup.splash.finishing": "Installatie afronden…",
+  "setup.splash.finishingNamed": "Installatie afronden… {name}",
+  "setup.splash.retry": "Opnieuw",
+  "setup.splash.error.generic": "De installatie kon niet worden afgerond — probeer het opnieuw.",
+  "setup.splash.error.download_failed": "Het titelmodel kon niet worden gedownload — probeer het opnieuw.",
+  "setup.splash.error.bad_hash": "Het titelmodel kwam niet overeen met de verwachte checksum — probeer het opnieuw.",
+  "setup.splash.error.missing": "Het titelmodel ontbreekt — probeer het opnieuw.",
+  "setup.splash.error.unreadable": "Het titelmodel kon niet worden gelezen — probeer het opnieuw.",
+  "setup.splash.progressPercent": "{percent}%"
 }

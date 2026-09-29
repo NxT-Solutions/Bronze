@@ -355,5 +355,20 @@
   "help.capture.composer": "Bronze dahil herhangi bir uygulamada metin seçin, ardından menü çubuğundan Yakala’yı seçin, Ayarlar’daki Seçimi yakala kısayolunu kullanın veya işlem kullanılamadığında alana yazın.",
   "settings.field.version.note.permissionsAfterUpdate": "Ad-hoc güncellemeler yeniden Erişilebilirlik ve Giriş İzleme ister.",
   "settings.permission.identityDrift": "Ad-hoc veya imzasız bir güncelleme yeni bir ikili kimliktir, bu yüzden sürümler aynı Developer ID Application imzasını paylaşana kadar yukarıdaki yol ve kod kimliği için Erişilebilirlik ile Giriş İzleme’yi yeniden ekleyin.",
-  "settings.permission.versionReadd": "Bu sürüm değişikliğinden sonra bu ad-hoc kopya için Erişilebilirlik ve Giriş İzleme’yi bir kez daha ekleyin."
+  "settings.permission.versionReadd": "Bu sürüm değişikliğinden sonra bu ad-hoc kopya için Erişilebilirlik ve Giriş İzleme’yi bir kez daha ekleyin.",
+  "setup.splash.title": "Bronze kuruluyor",
+  "setup.splash.once": "Bu yalnızca uygulamayı hazırlamak için ilk kez olur ve başlık modeli hazırsa sonraki açılışlar bu ekranı atlar.",
+  "setup.splash.checking": "Model denetleniyor…",
+  "setup.splash.checkingNamed": "Model denetleniyor… {name}",
+  "setup.splash.downloading": "Başlık modeli indiriliyor…",
+  "setup.splash.downloadingNamed": "Başlık modeli indiriliyor… {name}",
+  "setup.splash.finishing": "Kurulum bitiriliyor…",
+  "setup.splash.finishingNamed": "Kurulum bitiriliyor… {name}",
+  "setup.splash.retry": "Yeniden dene",
+  "setup.splash.error.generic": "Kurulum bitirilemedi — yeniden dene.",
+  "setup.splash.error.download_failed": "Başlık modeli indirilemedi — yeniden dene.",
+  "setup.splash.error.bad_hash": "Başlık modeli beklenen sağlama ile eşleşmedi — yeniden dene.",
+  "setup.splash.error.missing": "Başlık modeli eksik — yeniden dene.",
+  "setup.splash.error.unreadable": "Başlık modeli okunamadı — yeniden dene.",
+  "setup.splash.progressPercent": "{percent}%"
 }

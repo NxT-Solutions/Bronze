@@ -355,5 +355,20 @@
   "help.limitations.humanGates": "Accessibility permission, capture from other apps, multiple displays, VoiceOver, and Apple signing still need a person on a signed Mac.",
   "help.upload.none": "Bronze does not upload diagnostics or the support file automatically, so everything stays on this Mac.",
   "help.capture.heading": "How to capture",
-  "help.capture.composer": "Select text in any app including Bronze, then Capture from the menu bar, use the Capture selection shortcut from Settings, or type into the composer when capture is unavailable."
+  "help.capture.composer": "Select text in any app including Bronze, then Capture from the menu bar, use the Capture selection shortcut from Settings, or type into the composer when capture is unavailable.",
+  "setup.splash.title": "Setting up Bronze",
+  "setup.splash.once": "This only happens the first time to set up the app, and later launches skip this when the title model is already ready.",
+  "setup.splash.checking": "Checking model…",
+  "setup.splash.checkingNamed": "Checking model… {name}",
+  "setup.splash.downloading": "Downloading title model…",
+  "setup.splash.downloadingNamed": "Downloading title model… {name}",
+  "setup.splash.finishing": "Finishing setup…",
+  "setup.splash.finishingNamed": "Finishing setup… {name}",
+  "setup.splash.retry": "Retry",
+  "setup.splash.error.generic": "Setup could not finish — try again.",
+  "setup.splash.error.download_failed": "The title model could not be downloaded — try again.",
+  "setup.splash.error.bad_hash": "The title model did not match the expected checksum — try again.",
+  "setup.splash.error.missing": "The title model is missing — try again.",
+  "setup.splash.error.unreadable": "The title model could not be read — try again.",
+  "setup.splash.progressPercent": "{percent}%"
 }
