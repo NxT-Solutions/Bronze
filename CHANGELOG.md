@@ -7,6 +7,13 @@ This file is auto-updated by the release workflow.
 
 - Work in progress.
 
+## v0.2.4 - 2026-09-29
+
+### What's new
+
+- Capture always shows a system banner, including while Bronze is open.
+- Version 0.2.3 only showed the in-app Saved toast when the Quick Panel was frontmost.
+
 ## v0.2.3 - 2026-09-29
 
 ### What's new

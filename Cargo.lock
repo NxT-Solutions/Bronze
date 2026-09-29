@@ -177,7 +177,7 @@ version = "0.0.0"
 
 [[package]]
 name = "bronze-desktop"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "bronze-capture",
  "bronze-diagnostics",
