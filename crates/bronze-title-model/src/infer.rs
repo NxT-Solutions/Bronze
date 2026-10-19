@@ -9,7 +9,7 @@ use llama_cpp_2::context::params::LlamaContextParams;
 use llama_cpp_2::llama_backend::LlamaBackend;
 use llama_cpp_2::llama_batch::LlamaBatch;
 use llama_cpp_2::model::params::LlamaModelParams;
-use llama_cpp_2::model::{AddBos, LlamaModel};
+use llama_cpp_2::model::LlamaModel;
 use llama_cpp_2::sampling::LlamaSampler;
 use llama_cpp_2::{send_logs_to_tracing, LogOptions};
 use std::num::NonZeroU32;
@@ -380,6 +380,20 @@ pub fn classify_refine_reject(body: &str, raw: &str) -> FallbackReason {
     }
 }
 
+fn decode_token_piece(decoder: &mut encoding_rs::Decoder, bytes: &[u8]) -> String {
+    let mut output = String::with_capacity(
+        decoder
+            .max_utf8_buffer_length(bytes.len())
+            .expect("token output is too large to decode"),
+    );
+    let (result, read, _) = decoder.decode_to_string(bytes, &mut output, false);
+    assert!(
+        matches!(result, encoding_rs::CoderResult::InputEmpty) && read == bytes.len(),
+        "UTF-8 decoder capacity bound must consume the complete token"
+    );
+    output
+}
+
 fn emit_raw_preview(raw: &str) {
     crate::emit_diag(&format!(
         "fallback raw_len={} raw_preview={}",
@@ -402,9 +416,8 @@ fn infer_once(
     let mut ctx = model
         .new_context(backend, ctx_params)
         .map_err(|_| FallbackReason::Unreadable)?;
-    let tokens = model
-        .str_to_token(&prompt, AddBos::Never)
-        .map_err(|_| FallbackReason::Empty)?;
+    let vocab = model.vocab();
+    let tokens = vocab.tokenize(prompt.as_bytes(), false, true);
     if tokens.is_empty() || tokens.len() > 1000 {
         return Err(FallbackReason::Empty);
     }
@@ -425,12 +438,11 @@ fn infer_once(
     for offset in 0..MAX_NEW_TOKENS {
         let token = sampler.sample(&ctx, batch.n_tokens() - 1);
         sampler.accept(token);
-        if model.is_eog_token(token) {
+        if vocab.is_eog(token) {
             break;
         }
-        let piece = model
-            .token_to_piece(token, &mut decoder, true, None)
-            .map_err(|_| FallbackReason::Empty)?;
+        let bytes = vocab.token_to_piece(token, true, None);
+        let piece = decode_token_piece(&mut decoder, &bytes);
         if take_generated_piece(&mut raw, &piece) {
             break;
         }
