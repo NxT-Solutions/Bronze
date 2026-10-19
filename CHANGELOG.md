@@ -7,6 +7,12 @@ This file is auto-updated by the release workflow.
 
 - Work in progress.
 
+## v0.2.5 - 2026-10-19
+
+### What's new
+
+- Libraries Bronze is built with are updated, including the desktop shell and the on-this-Mac title engine.
+
 ## v0.2.4 - 2026-09-29
 
 ### What's new
