@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "i18next": "26.4.2",
-    "i18next-icu": "2.4.4",
+    "i18next-icu": "2.6.1",
     "react-i18next": "17.0.19"
   },
   "devDependencies": {
