@@ -197,8 +197,8 @@ importers:
         specifier: 26.4.2
         version: 26.4.2(typescript@7.0.2)
       i18next-icu:
-        specifier: 2.4.4
-        version: 2.4.4(intl-messageformat@11.2.14)
+        specifier: 2.6.1
+        version: 2.6.1(intl-messageformat@11.2.14)
       react-i18next:
         specifier: 17.0.19
         version: 17.0.19(i18next@26.4.2(typescript@7.0.2))(react-dom@19.2.8(react@19.3.1))(react@19.3.1)(typescript@7.0.2)
@@ -1281,10 +1281,10 @@ packages:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
 
-  i18next-icu@2.4.4:
-    resolution: {integrity: sha512-yfYdGTftClNUnZAQG1cu0yHHLaMVsrqfcgQHHchGDufkunBLKHuw2wXTCDuE+8mWMMcdePl8UBR0EUUA/3+FDw==}
+  i18next-icu@2.6.1:
+    resolution: {integrity: sha512-ATlbwNqJoa3dUl2+eBcbU7gVgRulPB/rUy1ddLUDTrc9qO2Yjdg3agZSyTrpjhRXKRXxNvMXymoyXvE23/QhbA==}
     peerDependencies:
-      intl-messageformat: '>=10.3.3 <12.0.0'
+      intl-messageformat: '>=10.3.3 <13.0.0'
 
   i18next@26.4.2:
     resolution: {integrity: sha512-RX+R0VLg13IbvRuJSxnqykUFS9vQZTl8wYpWPCIUDWVrSGjsQywB5Y+pjzrkboxGAuYfJZVH1InFTdgBdxq6ug==}
@@ -1464,10 +1464,6 @@ packages:
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
-
-  picomatch@4.0.5:
-    resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
-    engines: {node: '>=12'}
 
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
@@ -2478,9 +2474,9 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  fdir@6.5.0(picomatch@4.0.5):
+  fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
-      picomatch: 4.0.5
+      picomatch: 4.0.7
 
   form-data@4.0.6:
     dependencies:
@@ -2565,7 +2561,7 @@ snapshots:
       - supports-color
     optional: true
 
-  i18next-icu@2.4.4(intl-messageformat@11.2.14):
+  i18next-icu@2.6.1(intl-messageformat@11.2.14):
     dependencies:
       intl-messageformat: 11.2.14
 
@@ -2743,8 +2739,6 @@ snapshots:
 
   picocolors@1.1.1: {}
 
-  picomatch@4.0.5: {}
-
   picomatch@4.0.7: {}
 
   playwright-core@1.63.0: {}
@@ -2898,8 +2892,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.5)
-      picomatch: 4.0.5
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
 
   tldts-core@6.1.86:
     optional: true
